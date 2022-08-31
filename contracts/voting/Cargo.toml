@@ -1,0 +1,20 @@
+[package]
+name = "mars-vesting"
+version = "0.1.0"
+authors = ["larry <larry@delphidigital.io>"]
+edition = "2018"
+license = "UNLICENSED"
+repository = "https://github.com/mars-protocol/hub-periphery"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+backtraces = ["cosmwasm-std/backtraces"]
+
+[dependencies]
+cosmwasm-std = { version = "1.0", features = ["stargate"] }
+cw2 = "0.13"
+cw-storage-plus = "0.13"
+schemars = "0.8.1"
+serde = { version = "1.0.103", default-features = false, features = ["derive"] }
