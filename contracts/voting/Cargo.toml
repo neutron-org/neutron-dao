@@ -1,10 +1,10 @@
 [package]
-name = "mars-vesting"
+name = "neutron-dao"
 version = "0.1.0"
-authors = ["larry <larry@delphidigital.io>"]
-edition = "2018"
+authors = ["quasisamurai"]
+edition = "2021"
 license = "UNLICENSED"
-repository = "https://github.com/mars-protocol/hub-periphery"
+repository = "https://github.com/neutron/neutron-dao"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
