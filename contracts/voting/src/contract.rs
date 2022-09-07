@@ -40,13 +40,13 @@ pub fn instantiate(
 //--------------------------------------------------------------------------------------------------
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn execute(deps: DepsMut, info: MessageInfo, msg: ExecuteMsg) -> StdResult<Response> {
+pub fn execute(deps: DepsMut, _env:Env,  info: MessageInfo, msg: ExecuteMsg) -> StdResult<Response> {
     let api = deps.api;
     match msg {
         ExecuteMsg::TransferOwnership(new_owner) => {
             transfer_ownership(deps, info.sender, api.addr_validate(&new_owner)?)
         }
-        ExecuteMsg::InitVoting() => {}
+        ExecuteMsg::InitVoting() => init_voting(deps)
     }
 }
 
@@ -69,8 +69,10 @@ pub fn transfer_ownership(
 }
 
 pub fn init_voting(deps: DepsMut) -> StdResult<Response> {
-    TOKENS_LOCKED.save(deps.storage, &deps.api.addr_validate("neutron1mjk79fjjgpplak5wq838w0yd982gzkyf8fxu8u")?, &Uint128(999)?)?;
-    TOKENS_LOCKED.save(deps.storage, &deps.api.addr_validate("neutron17dtl0mjt3t77kpuhg2edqzjpszulwhgzcdvagh")?, &Uint128(200)?)?;
+    let value1 = Uint128::new(1000);
+    let value2 = Uint128::new(300);
+    TOKENS_LOCKED.save(deps.storage, &deps.api.addr_validate("neutron1mjk79fjjgpplak5wq838w0yd982gzkyf8fxu8u")?, &value1)?;
+    TOKENS_LOCKED.save(deps.storage, &deps.api.addr_validate("neutron17dtl0mjt3t77kpuhg2edqzjpszulwhgzcdvagh")?, &value2)?;
     Ok(Response::default())
 }
 //--------------------------------------------------------------------------------------------------
@@ -78,7 +80,7 @@ pub fn init_voting(deps: DepsMut) -> StdResult<Response> {
 //--------------------------------------------------------------------------------------------------
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, _env:Env, msg: QueryMsg) -> StdResult<Binary> {
     let api = deps.api;
     match msg {
         QueryMsg::Config {} => to_binary(&query_config(deps)?),
