@@ -1,6 +1,5 @@
 BIN=neutrond
 
-CONTRACT=./artifacts/neutron_dao.wasm
 
 CHAIN_ID_1=test-1
 CHAIN_ID_2=test-2
@@ -19,10 +18,10 @@ VAL2=neutronvaloper1qnk2n4nlkpw9xfqntladh74w6ujtulwnqshepx
 
 #Register new proposal
 # json formatted proposal is a nightmare, so we use keys for now
-RES=$(${BIN} tx gov submit-proposal --title="NTRN hello proposal" \
-  --description="i believe in neutron supremacy" \
+RES=$(${BIN} tx gov submit-proposal --title="hello proposal" \
+  --description="i believe in neutron supremacy!" \
   --type="Text" \
-  --deposit="1000000stake" \
+  --deposit="100000000stake" \
   --from ${USERNAME_1} \
   --gas 500000 \
   --fees 5000stake \
@@ -33,7 +32,20 @@ RES=$(${BIN} tx gov submit-proposal --title="NTRN hello proposal" \
   --keyring-backend test \
   --node tcp://127.0.0.1:16657)
 echo $RES
+echo
 
-# vote yes
-RES=$(${BIN} tx gov vote 1 yes --from ${USERNAME_1} --chain-id ${CHAIN_ID_1} -y --broadcast-mode=block --home ${HOME_1}  --keyring-backend test --node tcp://127.0.0.1:16657)
+# print proposal in console, voting period should be active
+RES=$(${BIN} q gov proposals  --chain-id ${CHAIN_ID_1}   --home ${HOME_1}   --node tcp://127.0.0.1:16657)
+echo $RES
+echo
+
+# vote yes (w dominance of votes)
+RES=$(${BIN} tx gov vote 1 yes --from ${USERNAME_1} --fees 5000stake --chain-id ${CHAIN_ID_1} -y --broadcast-mode=block --home ${HOME_1}  --keyring-backend test --node tcp://127.0.0.1:16657)
+echo $RES
+echo
+# wait voting period to end
+sleep 20
+#
+# print  proposal to see that it has been passed
+RES=$(${BIN} q gov proposals  --chain-id ${CHAIN_ID_1}   --home ${HOME_1}   --node tcp://127.0.0.1:16657)
 echo $RES

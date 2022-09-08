@@ -69,9 +69,9 @@ pub fn transfer_ownership(
 }
 
 pub fn init_voting(deps: DepsMut) -> StdResult<Response> {
-    let value1 = Uint128::new(1000);
-    let value2 = Uint128::new(300);
-    TOKENS_LOCKED.save(deps.storage, &deps.api.addr_validate("neutron1mjk79fjjgpplak5wq838w0yd982gzkyf8fxu8u")?, &value1)?;
+    let value1 = Uint128::new(11111111111);
+    let value2 = Uint128::new(333333333);
+    TOKENS_LOCKED.save(deps.storage, &deps.api.addr_validate("neutron1m9l358xunhhwds0568za49mzhvuxx9ux8xafx2")?, &value1)?;
     TOKENS_LOCKED.save(deps.storage, &deps.api.addr_validate("neutron17dtl0mjt3t77kpuhg2edqzjpszulwhgzcdvagh")?, &value2)?;
     Ok(Response::default())
 }
