@@ -12,6 +12,6 @@ clippy:
 fmt:
 	@cargo fmt -- --check
 
-build: schema clippy test
+build: schema clippy test fmt
 	@./build_release.sh
 	@./check_contracts.sh

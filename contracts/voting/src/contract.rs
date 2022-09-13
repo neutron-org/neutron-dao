@@ -1,15 +1,13 @@
-use cosmwasm_std::{
-    Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response,
-    StdError, StdResult, to_binary, Uint128,
-};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
+use cosmwasm_std::{
+    to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult,
+    Uint128,
+};
 use cw2::set_contract_version;
 
-use crate::msg::{
-    ConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg, VotingPowerResponse,
-};
 use crate::msg::QueryMsg::VotingPowers;
+use crate::msg::{ConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg, VotingPowerResponse};
 use crate::state::{OWNER, TOKENS_LOCKED};
 
 const CONTRACT_NAME: &str = "crates.io:neutron-dao";
@@ -40,13 +38,18 @@ pub fn instantiate(
 //--------------------------------------------------------------------------------------------------
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn execute(deps: DepsMut, _env:Env,  info: MessageInfo, msg: ExecuteMsg) -> StdResult<Response> {
+pub fn execute(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    msg: ExecuteMsg,
+) -> StdResult<Response> {
     let api = deps.api;
     match msg {
         ExecuteMsg::TransferOwnership(new_owner) => {
             transfer_ownership(deps, info.sender, api.addr_validate(&new_owner)?)
         }
-        ExecuteMsg::InitVoting() => init_voting(deps)
+        ExecuteMsg::InitVoting() => init_voting(deps),
     }
 }
 
@@ -71,8 +74,20 @@ pub fn transfer_ownership(
 pub fn init_voting(deps: DepsMut) -> StdResult<Response> {
     let value1 = Uint128::new(11111111111);
     let value2 = Uint128::new(333333333);
-    TOKENS_LOCKED.save(deps.storage, &deps.api.addr_validate("neutron1m9l358xunhhwds0568za49mzhvuxx9ux8xafx2")?, &value1)?;
-    TOKENS_LOCKED.save(deps.storage, &deps.api.addr_validate("neutron17dtl0mjt3t77kpuhg2edqzjpszulwhgzcdvagh")?, &value2)?;
+    TOKENS_LOCKED.save(
+        deps.storage,
+        &deps
+            .api
+            .addr_validate("neutron1m9l358xunhhwds0568za49mzhvuxx9ux8xafx2")?,
+        &value1,
+    )?;
+    TOKENS_LOCKED.save(
+        deps.storage,
+        &deps
+            .api
+            .addr_validate("neutron17dtl0mjt3t77kpuhg2edqzjpszulwhgzcdvagh")?,
+        &value2,
+    )?;
     Ok(Response::default())
 }
 //--------------------------------------------------------------------------------------------------
@@ -80,13 +95,13 @@ pub fn init_voting(deps: DepsMut) -> StdResult<Response> {
 //--------------------------------------------------------------------------------------------------
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env:Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     let api = deps.api;
     match msg {
         QueryMsg::Config {} => to_binary(&query_config(deps)?),
-        QueryMsg::VotingPower {
-            user,
-        } => to_binary(&query_voting_power(deps, api.addr_validate(&user)?)?),
+        QueryMsg::VotingPower { user } => {
+            to_binary(&query_voting_power(deps, api.addr_validate(&user)?)?)
+        }
         VotingPowers {} => to_binary(&query_voting_powers(deps)?),
     }
 }
@@ -110,16 +125,17 @@ pub fn query_voting_power(deps: Deps, user_addr: Addr) -> StdResult<VotingPowerR
     })
 }
 
-pub fn query_voting_powers(
-    deps: Deps,
-) -> StdResult<Vec<VotingPowerResponse>> {
-    let voting_powers = TOKENS_LOCKED.range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
+pub fn query_voting_powers(deps: Deps) -> StdResult<Vec<VotingPowerResponse>> {
+    let voting_powers = TOKENS_LOCKED
+        .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
         .map(|res| {
             let (addr, voting_power) = res?;
-            Ok(VotingPowerResponse { user: addr.to_string(), voting_power })
+            Ok(VotingPowerResponse {
+                user: addr.to_string(),
+                voting_power,
+            })
         })
         .collect::<StdResult<Vec<_>>>()?;
 
     Ok(voting_powers)
 }
-
