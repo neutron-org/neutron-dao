@@ -13,6 +13,7 @@ fmt:
 	@cargo fmt -- --check
 
 check_contracts:
+	@cargo install cosmwasm-check
 	 @cosmwasm-check artifacts/*.wasm
 
 compile:

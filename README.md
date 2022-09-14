@@ -9,7 +9,6 @@ Both of them currently return hardcoded values.
 
 # Testing 
 
-0. run `cargo install cosmwasm-check` 
 1. from `neutron/feat/goverance` run:
 `make init`
 2. run `./test_proposal.sh`
