@@ -12,6 +12,13 @@ clippy:
 fmt:
 	@cargo fmt -- --check
 
-build: schema clippy test fmt
+check_contracts:
+	 @cosmwasm-check artifacts/*.wasm
+
+compile:
 	@./build_release.sh
-	@./check_contracts.sh
+
+build: schema clippy test fmt compile check_contracts
+
+
+
