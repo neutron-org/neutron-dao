@@ -46,6 +46,6 @@ echo
 # wait voting period to end
 sleep 20
 #
-# print  proposal to see that it has been passed
+# print  proposal to see that it has passed
 RES=$(${BIN} q gov proposals  --chain-id ${CHAIN_ID_1}   --home ${HOME_1}   --node tcp://127.0.0.1:16657)
 echo $RES

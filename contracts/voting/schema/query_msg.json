@@ -3,7 +3,7 @@
   "title": "QueryMsg",
   "oneOf": [
     {
-      "description": "The contract's configurations; returns `ConfigResponse`",
+      "description": "The contract's configurations; returns [`ConfigResponse`]",
       "type": "object",
       "required": [
         "config"
@@ -16,7 +16,7 @@
       "additionalProperties": false
     },
     {
-      "description": "Amount of NTRN tokens of a voting recipient current locked in the contract; returns `VotingPowerResponse`",
+      "description": "Amount of NTRN tokens of a voting recipient currently locked in the contract; returns [`VotingPowerResponse`]",
       "type": "object",
       "required": [
         "voting_power"
@@ -37,7 +37,7 @@
       "additionalProperties": false
     },
     {
-      "description": "Enumerate all voting recipients and return their current voting power; returns `Vec<VotingPowerResponse>`",
+      "description": "Enumerate all voting recipients and return their current voting power; returns [`Vec`] of [`VotingPowerResponse`]'s",
       "type": "object",
       "required": [
         "voting_powers"

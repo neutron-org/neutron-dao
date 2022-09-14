@@ -6,7 +6,6 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 
-use crate::msg::QueryMsg::VotingPowers;
 use crate::msg::{ConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg, VotingPowerResponse};
 use crate::state::{OWNER, TOKENS_LOCKED};
 
@@ -102,7 +101,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::VotingPower { user } => {
             to_binary(&query_voting_power(deps, api.addr_validate(&user)?)?)
         }
-        VotingPowers {} => to_binary(&query_voting_powers(deps)?),
+        QueryMsg::VotingPowers {} => to_binary(&query_voting_powers(deps)?),
     }
 }
 

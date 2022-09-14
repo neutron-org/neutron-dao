@@ -19,11 +19,13 @@ pub enum ExecuteMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    /// The contract's configurations; returns `ConfigResponse`
+    /// The contract's configurations; returns [`ConfigResponse`]
     Config {},
-    /// Amount of NTRN tokens of a voting recipient current locked in the contract; returns `VotingPowerResponse`
+    /// Amount of NTRN tokens of a voting recipient currently locked in the contract;
+    /// returns [`VotingPowerResponse`]
     VotingPower { user: String },
-    /// Enumerate all voting recipients and return their current voting power; returns `Vec<VotingPowerResponse>`
+    /// Enumerate all voting recipients and return their current voting power;
+    /// returns [`Vec`] of [`VotingPowerResponse`]'s
     VotingPowers {},
 }
 
