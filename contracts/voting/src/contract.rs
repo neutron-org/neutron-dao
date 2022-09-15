@@ -48,7 +48,7 @@ pub fn execute(
         ExecuteMsg::TransferOwnership(new_owner) => {
             transfer_ownership(deps, info.sender, api.addr_validate(&new_owner)?)
         }
-        ExecuteMsg::InitVoting{} => init_voting(deps),
+        ExecuteMsg::InitVoting {} => init_voting(deps),
     }
 }
 
