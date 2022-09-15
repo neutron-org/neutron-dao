@@ -3,7 +3,7 @@ name = "neutron-dao"
 version = "0.1.0"
 authors = ["quasisamurai <pavel.kalinin@p2p.org>"]
 edition = "2018"
-license = "pache-2.0"
+license = "Apache-2.0"
 repository = "https://github.com/neutron/neutron-dao"
 
 [lib]

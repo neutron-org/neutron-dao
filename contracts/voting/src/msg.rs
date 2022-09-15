@@ -13,7 +13,7 @@ pub struct InstantiateMsg {
 pub enum ExecuteMsg {
     /// Transfer the contract's ownership to another account
     TransferOwnership(String),
-    InitVoting(),
+    InitVoting {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
