@@ -22,10 +22,7 @@
       ],
       "properties": {
         "init_voting": {
-          "type": "array",
-          "items": [],
-          "maxItems": 0,
-          "minItems": 0
+          "type": "object"
         }
       },
       "additionalProperties": false
