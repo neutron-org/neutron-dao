@@ -31,21 +31,25 @@ RES=$(${BIN} tx gov submit-proposal --title="hello proposal" \
   --home ${HOME_1} \
   --keyring-backend test \
   --node tcp://127.0.0.1:16657)
+echo "--- tx gov submit-proposal"
 echo $RES
 echo
 
 # print proposal in console, voting period should be active
 RES=$(${BIN} q gov proposals  --chain-id ${CHAIN_ID_1}   --home ${HOME_1}   --node tcp://127.0.0.1:16657)
+echo "--- q gov proposals"
 echo $RES
 echo
 
 # vote yes (w dominance of votes)
 RES=$(${BIN} tx gov vote 1 yes --from ${USERNAME_1} --fees 5000stake --chain-id ${CHAIN_ID_1} -y --broadcast-mode=block --home ${HOME_1}  --keyring-backend test --node tcp://127.0.0.1:16657)
+echo "--- tx gov vote 1 yes"
 echo $RES
 echo
 # wait voting period to end
-sleep 20
+sleep 60
 #
 # print  proposal to see that it has passed
+echo "--- q gov proposals"
 RES=$(${BIN} q gov proposals  --chain-id ${CHAIN_ID_1}   --home ${HOME_1}   --node tcp://127.0.0.1:16657)
 echo $RES
