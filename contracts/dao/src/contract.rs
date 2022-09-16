@@ -2,11 +2,10 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult,
-    Uint128,
 };
 use cw2::set_contract_version;
 
-use crate::msg::{ConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg, VotingPowerResponse};
+use crate::msg::{ConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::{OWNER};
 use neutron_bindings::msg::NeutronMsg;
 
@@ -64,13 +63,14 @@ pub fn transfer_ownership(
     OWNER.save(deps.storage, &new_owner_addr)?;
 
     Ok(Response::new()
-        .add_attribute("action", "neutron/voting/transfer_ownership")
+        .add_attribute("action", "neutron/dao/transfer_ownership")
         .add_attribute("previous_owner", owner_addr)
         .add_attribute("new_owner", new_owner_addr))
 }
 
-pub fn add_admin(admin: admin) -> StdResult<Response> {
-    NeutronMsg::add_admin(admin)
+pub fn add_admin(admin: String) -> StdResult<Response> {
+    NeutronMsg::add_admin(admin);
+    Ok(Response::default())
 }
 //--------------------------------------------------------------------------------------------------
 // Queries

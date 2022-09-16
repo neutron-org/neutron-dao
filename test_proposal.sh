@@ -34,7 +34,7 @@ RES=$(${BIN} tx gov submit-proposal --title="hello proposal" \
 echo $RES
 echo
 
-# print proposal in console, voting period should be active
+# print proposal in console, dao period should be active
 RES=$(${BIN} q gov proposals  --chain-id ${CHAIN_ID_1}   --home ${HOME_1}   --node tcp://127.0.0.1:16657)
 echo $RES
 echo
@@ -43,7 +43,7 @@ echo
 RES=$(${BIN} tx gov vote 1 yes --from ${USERNAME_1} --fees 5000stake --chain-id ${CHAIN_ID_1} -y --broadcast-mode=block --home ${HOME_1}  --keyring-backend test --node tcp://127.0.0.1:16657)
 echo $RES
 echo
-# wait voting period to end
+# wait dao period to end
 sleep 20
 #
 # print  proposal to see that it has passed
