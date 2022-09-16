@@ -1,3 +1,4 @@
+
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -5,9 +6,10 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 
-use crate::msg::{ConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::msg::{ConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg, MsgTextProposal};
 use crate::state::{OWNER};
 use neutron_bindings::msg::NeutronMsg;
+use neutron_bindings::ProtobufAny;
 
 const CONTRACT_NAME: &str = "crates.io:neutron-dao";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -46,7 +48,8 @@ pub fn execute(
         ExecuteMsg::TransferOwnership(new_owner) => {
             transfer_ownership(deps, info.sender, api.addr_validate(&new_owner)?)
         }
-        ExecuteMsg::AddAdmin(admin) => add_admin(admin),
+        ExecuteMsg::AddAdmin(admin) => execute_add_admin(admin),
+        ExecuteMsg::SubmitProposal(title, text) => execute_submit_proposal(title, text)
     }
 }
 
@@ -68,10 +71,35 @@ pub fn transfer_ownership(
         .add_attribute("new_owner", new_owner_addr))
 }
 
-pub fn add_admin(admin: String) -> StdResult<Response> {
+pub fn execute_add_admin(admin: String) -> StdResult<Response> {
     NeutronMsg::add_admin(admin);
     Ok(Response::default())
 }
+
+
+pub fn execute_submit_proposal(title: String, text: String) -> StdResult<Response> {
+    let proposal = MsgTextProposal{
+        title: title.into_bytes(),
+        text: text.into_bytes(),
+    };
+    let mut buf = Vec::new();
+    buf.reserve(proposal.encoded_len());
+
+    if let Err(e) = proposal.encode(&mut buf) {
+        return Err(StdError::generic_err(format!("Encode error: {}", e)));
+    }
+
+    let any_msg = ProtobufAny {
+        type_url: "УРЛ".to_string(),
+        value: Binary::from(buf),
+    };
+
+    NeutronMsg::submit_proposal(
+        any_msg,
+    );
+    Ok(Response::default())
+}
+
 //--------------------------------------------------------------------------------------------------
 // Queries
 //--------------------------------------------------------------------------------------------------

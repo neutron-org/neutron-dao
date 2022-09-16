@@ -1,6 +1,9 @@
 use cosmwasm_std::{CosmosMsg, CustomMsg};
+use schemars::gen::SchemaGenerator;
 use schemars::JsonSchema;
+use schemars::schema::Schema;
 use serde::{Deserialize, Serialize};
+use crate::ProtobufAny;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -10,7 +13,9 @@ pub enum NeutronMsg {
     AddAdmin {
         admin: String,
     },
-
+    SubmitProposal{
+        content: ProtobufAny
+    }
 }
 
 impl NeutronMsg {
@@ -22,6 +27,13 @@ impl NeutronMsg {
         }
     }
 
+    pub fn submit_proposal(
+        content: ProtobufAny,
+    ) -> Self {
+        NeutronMsg::SubmitProposal {
+            content
+        }
+    }
 }
 
 impl From<NeutronMsg> for CosmosMsg<NeutronMsg> {
