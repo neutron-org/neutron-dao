@@ -53,3 +53,8 @@ sleep 60
 echo "--- q gov proposals"
 RES=$(${BIN} q gov proposals  --chain-id ${CHAIN_ID_1}   --home ${HOME_1}   --node tcp://127.0.0.1:16657)
 echo $RES
+
+# check that voter has no delegations
+echo "--- q staking delegations"
+RES=$(${BIN} q staking delegations $ADMIN  --node tcp://127.0.0.1:16657)
+echo $RES
