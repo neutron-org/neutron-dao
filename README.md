@@ -1,11 +1,11 @@
 # neutron-dao
 
-This is very first version of neutron dao contract.  It has the simplest API, which implements 2 methods: 
-- query vote power of specific user
-- query all vote powers of all users
+This is very first version of neutron dao contract.  It has the simplest API, which implements 2 methods:
+
+* query for the voting power of specific user;
+* query all voting powers of all users.
 
 Both of them currently return hardcoded values.
-
 
 # Testing 
 
@@ -13,15 +13,19 @@ Both of them currently return hardcoded values.
 2. run `./test_proposal.sh`
 3. see that proposal has passed
 
-# Contract key functions
- ```rust
-pub fn query_voting_power(deps: Deps, user_addr: Addr) -> StdResult<VotingPowerResponse> {...}
+# Contract key handlers
+
+The DAO contract should only implement two handlers:
+
+```rust
+pub fn query_voting_power(deps: Deps, user_addr: Addr) -> StdResult<VotingPowerResponse> { ... }
 ```
 
 ```rust
-pub fn query_voting_powers(deps: Deps) -> StdResult<Vec<VotingPowerResponse>>  {...}  
+pub fn query_voting_powers(deps: Deps) -> StdResult<Vec<VotingPowerResponse>> { ... }  
 ```
-where ```VotingPowerResponse``` is
+
+where ```VotingPowerResponse``` is defined as:
 
 ```rust
 pub struct VotingPowerResponse {
@@ -31,4 +35,3 @@ pub struct VotingPowerResponse {
     pub voting_power: Uint128,
 }
 ```
-currently neutron-core uses only `query_voting_powers`, but `query_voting_power` seems to be useful in future
