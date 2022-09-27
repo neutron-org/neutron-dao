@@ -1,3 +1,4 @@
+use std::ptr::null;
 use cosmwasm_std::{CosmosMsg, CustomMsg};
 use schemars::gen::SchemaGenerator;
 use schemars::JsonSchema;
@@ -14,9 +15,26 @@ pub enum NeutronMsg {
         admin: String,
     },
     SubmitProposal{
-        content: ProtobufAny
+        proposals: Proposals
     }
 }
+
+/// MsgTextPoposal defines a SDK message for submission of text proposal
+#[derive(Clone, PartialEq)]
+pub struct TextProposal {
+    pub title: String,
+    pub description: String,
+}
+
+pub struct Proposals {
+    pub text_proposal: TextProposal,
+    // pub param_change_proposal: ParamChangeProposal
+}
+
+// pub struct ParamChangeProposal {
+//     pub title: String,
+//     pub description: String,
+// }
 
 impl NeutronMsg {
     pub fn add_admin(
@@ -27,11 +45,11 @@ impl NeutronMsg {
         }
     }
 
-    pub fn submit_proposal(
-        content: ProtobufAny,
+    pub fn submit_text_proposal(
+        proposal: TextProposal,
     ) -> Self {
         NeutronMsg::SubmitProposal {
-            content
+            proposals: Proposals {text_proposal: proposal}
         }
     }
 }

@@ -26,10 +26,8 @@ pub enum QueryMsg {
 pub type ConfigResponse = InstantiateMsg;
 
 /// MsgTextPoposal defines a SDK message for submission of text proposal
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq)]
 pub struct MsgTextProposal {
-    #[prost(bytes, tag = "1")]
-    pub title: ::prost::alloc::vec::Vec<u8>,
-    #[prost(bytes, tag = "1")]
-    pub text: ::prost::alloc::vec::Vec<u8>,
+    pub title: String,
+    pub description: String,
 }

@@ -78,24 +78,13 @@ pub fn execute_add_admin(admin: String) -> StdResult<Response> {
 
 
 pub fn execute_submit_proposal(title: String, text: String) -> StdResult<Response> {
-    let proposal = MsgTextProposal{
-        title: title.into_bytes(),
-        text: text.into_bytes(),
-    };
-    let mut buf = Vec::new();
-    buf.reserve(proposal.encoded_len());
-
-    if let Err(e) = proposal.encode(&mut buf) {
-        return Err(StdError::generic_err(format!("Encode error: {}", e)));
-    }
-
-    let any_msg = ProtobufAny {
-        type_url: "УРЛ".to_string(),
-        value: Binary::from(buf),
+    let proposal = NeutronMsg::TextProposal{
+        title,
+        description,
     };
 
-    NeutronMsg::submit_proposal(
-        any_msg,
+    NeutronMsg::submit_text_proposal(
+        proposal,
     );
     Ok(Response::default())
 }
