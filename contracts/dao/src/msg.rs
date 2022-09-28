@@ -1,5 +1,6 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use neutron_bindings::msg::ParamChange;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct InstantiateMsg {
@@ -13,7 +14,12 @@ pub enum ExecuteMsg {
     /// Transfer the contract's ownership to another account
     TransferOwnership(String),
     AddAdmin (String),
-    SubmitProposal(String, String)
+    SubmitTextProposal(String, String),
+    SubmitChangeParamProposal(String, String, Vec<ParamChange>),
+    SubmitCommunityPoolSpendProposal(String, String, String),
+    SubmitClientUpdateProposal(String, String, String, String),
+    SubmitSoftwareUpdateProposal(String, String),
+    SubmitCancelSoftwareUpdateProposal(String, String)
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
