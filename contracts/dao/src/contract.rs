@@ -6,10 +6,10 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 
-use crate::msg::{ConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg, MsgTextProposal};
+use crate::msg::{ConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::{OWNER};
 use neutron_bindings::msg::{NeutronMsg, TextProposal, ParamChangeProposal, ParamChange, SoftwareUpdateProposal, ClientUpdateSpendProposal, CommunitySpendProposal, CancelSoftwareUpdateProposal};
-use neutron_bindings::ProtobufAny;
+
 
 const CONTRACT_NAME: &str = "crates.io:neutron-dao";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -49,7 +49,7 @@ pub fn execute(
             transfer_ownership(deps, info.sender, api.addr_validate(&new_owner)?)
         }
         ExecuteMsg::AddAdmin(admin) => execute_add_admin(admin),
-        ExecuteMsg::SubmitTextProposal(title, description) => execute_submit_text_proposal(title, text),
+        ExecuteMsg::SubmitTextProposal(title, description) => execute_submit_text_proposal(title, description),
         ExecuteMsg::SubmitChangeParamProposal(title, description, params_change) => execute_submit_param_change_proposal(title, description, params_change),
         ExecuteMsg::SubmitCommunityPoolSpendProposal(title, description, recipient) => execute_submit_community_pool_spend_proposal(title,description,recipient),
         ExecuteMsg::SubmitSoftwareUpdateProposal(title, description) => execute_software_update_proposal(title, description),

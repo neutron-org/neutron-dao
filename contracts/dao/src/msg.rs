@@ -31,9 +31,3 @@ pub enum QueryMsg {
 
 pub type ConfigResponse = InstantiateMsg;
 
-/// MsgTextPoposal defines a SDK message for submission of text proposal
-#[derive(Clone, PartialEq)]
-pub struct MsgTextProposal {
-    pub title: String,
-    pub description: String,
-}

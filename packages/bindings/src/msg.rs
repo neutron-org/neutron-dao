@@ -1,14 +1,8 @@
-use std::ptr::null;
-
 use cosmwasm_std::{CosmosMsg, CustomMsg};
-use schemars::gen::SchemaGenerator;
 use schemars::JsonSchema;
-use schemars::schema::Schema;
 use serde::{Deserialize, Serialize};
 
-use crate::ProtobufAny;
-
-#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 /// A number of Custom messages that can call into the Neutron bindings
 pub enum NeutronMsg {
@@ -22,12 +16,15 @@ pub enum NeutronMsg {
 }
 
 /// MsgTextPoposal defines a SDK message for submission of text proposal
-#[derive(Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub struct TextProposal {
     pub title: String,
     pub description: String,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub struct Proposals {
     pub text_proposal: Option<TextProposal>,
     pub param_change_proposal: Option<ParamChangeProposal>,
@@ -37,28 +34,38 @@ pub struct Proposals {
     pub cancel_software_update_proposal: Option<CancelSoftwareUpdateProposal>
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub struct ParamChangeProposal {
     pub title: String,
     pub description: String,
     pub param_changes: Vec<ParamChange>,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub struct SoftwareUpdateProposal {
     pub title: String,
     pub description: String,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub struct CancelSoftwareUpdateProposal {
     pub title: String,
     pub description: String,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub struct CommunitySpendProposal {
     pub title: String,
     pub description: String,
     pub recipient: String,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub struct ClientUpdateSpendProposal {
     pub title: String,
     pub description: String,
@@ -66,6 +73,8 @@ pub struct ClientUpdateSpendProposal {
     pub substitute_client_id: String,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub struct ParamChange {
     pub subspace: String,
     pub key: String,
