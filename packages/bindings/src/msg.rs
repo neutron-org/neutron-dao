@@ -96,11 +96,16 @@ impl NeutronMsg {
         NeutronMsg::SubmitProposal {
             proposals: Proposals {
                 text_proposal: Option::from(proposal),
-                param_change_proposal: Option::from(None),
-                community_spend_proposal: Option::from(None),
-                client_update_spend_proposal: Option::from(None),
-                software_update_proposal: Option::from(None),
-                cancel_software_update_proposal: Option::from(None) }
+                param_change_proposal: None
+                ,
+                community_spend_proposal: None
+                ,
+                client_update_spend_proposal: None
+                ,
+                software_update_proposal: None
+                ,
+                cancel_software_update_proposal: None
+            }
         }
     }
     pub fn submit_param_change_proposal(
@@ -108,12 +113,17 @@ impl NeutronMsg {
     ) -> Self {
         NeutronMsg::SubmitProposal {
             proposals: Proposals {
-                text_proposal: Option::from(None),
+                text_proposal: None
+                ,
                 param_change_proposal: Option::from(proposal),
-                community_spend_proposal: Option::from(None),
-                client_update_spend_proposal: Option::from(None),
-                software_update_proposal: Option::from(None),
-                cancel_software_update_proposal: Option::from(None)}
+                community_spend_proposal: None
+                ,
+                client_update_spend_proposal: None
+                ,
+                software_update_proposal: None
+                ,
+                cancel_software_update_proposal: None
+            }
         }
     }
     pub fn submit_community_spend_proposal(
@@ -121,12 +131,17 @@ impl NeutronMsg {
     ) -> Self {
         NeutronMsg::SubmitProposal {
             proposals: Proposals {
-                text_proposal: Option::from(None),
-                param_change_proposal: Option::from(None),
+                text_proposal: None
+                ,
+                param_change_proposal: None
+                ,
                 community_spend_proposal: Option::from(proposal),
-                client_update_spend_proposal: Option::from(None),
-                software_update_proposal: Option::from(None),
-                cancel_software_update_proposal: Option::from(None) }
+                client_update_spend_proposal: None
+                ,
+                software_update_proposal: None
+                ,
+                cancel_software_update_proposal: None
+            }
         }
     }
 
@@ -135,12 +150,17 @@ impl NeutronMsg {
     ) -> Self {
         NeutronMsg::SubmitProposal {
             proposals: Proposals {
-                text_proposal: Option::from(None),
-                param_change_proposal: Option::from(None),
-                community_spend_proposal: Option::from(None),
+                text_proposal: None
+                ,
+                param_change_proposal: None
+                ,
+                community_spend_proposal: None
+                ,
                 client_update_spend_proposal: Option::from(proposal),
-                software_update_proposal: Option::from(None),
-                cancel_software_update_proposal: Option::from(None) }
+                software_update_proposal: None
+                ,
+                cancel_software_update_proposal: None
+            }
         }
     }
 
@@ -149,12 +169,17 @@ impl NeutronMsg {
     ) -> Self {
         NeutronMsg::SubmitProposal {
             proposals: Proposals {
-                text_proposal: Option::from(None),
-                param_change_proposal: Option::from(None),
-                community_spend_proposal: Option::from(None),
-                client_update_spend_proposal: Option::from(None),
+                text_proposal: None
+                ,
+                param_change_proposal: None
+                ,
+                community_spend_proposal: None
+                ,
+                client_update_spend_proposal: None
+                ,
                 software_update_proposal: Option::from(proposal),
-                cancel_software_update_proposal: Option::from(None) }
+                cancel_software_update_proposal: None
+            }
         }
     }
 
@@ -163,11 +188,16 @@ impl NeutronMsg {
     ) -> Self {
         NeutronMsg::SubmitProposal {
             proposals: Proposals {
-                text_proposal: Option::from(None),
-                param_change_proposal: Option::from(None),
-                community_spend_proposal: Option::from(None),
-                client_update_spend_proposal: Option::from(None),
-                software_update_proposal: Option::from(None),
+                text_proposal: None
+                ,
+                param_change_proposal: None
+                ,
+                community_spend_proposal: None
+                ,
+                client_update_spend_proposal: None
+                ,
+                software_update_proposal: None
+                ,
                 cancel_software_update_proposal: Option::from(proposal) }
         }
     }

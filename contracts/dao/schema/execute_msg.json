@@ -18,17 +18,182 @@
     {
       "type": "object",
       "required": [
-        "init_voting"
+        "add_admin"
       ],
       "properties": {
-        "init_voting": {
+        "add_admin": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "submit_text_proposal"
+      ],
+      "properties": {
+        "submit_text_proposal": {
           "type": "array",
-          "items": [],
-          "maxItems": 0,
-          "minItems": 0
+          "items": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "maxItems": 2,
+          "minItems": 2
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "submit_change_param_proposal"
+      ],
+      "properties": {
+        "submit_change_param_proposal": {
+          "type": "array",
+          "items": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ParamChange"
+              }
+            }
+          ],
+          "maxItems": 3,
+          "minItems": 3
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "submit_community_pool_spend_proposal"
+      ],
+      "properties": {
+        "submit_community_pool_spend_proposal": {
+          "type": "array",
+          "items": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "maxItems": 3,
+          "minItems": 3
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "submit_client_update_proposal"
+      ],
+      "properties": {
+        "submit_client_update_proposal": {
+          "type": "array",
+          "items": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "maxItems": 4,
+          "minItems": 4
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "submit_software_update_proposal"
+      ],
+      "properties": {
+        "submit_software_update_proposal": {
+          "type": "array",
+          "items": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "maxItems": 2,
+          "minItems": 2
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "submit_cancel_software_update_proposal"
+      ],
+      "properties": {
+        "submit_cancel_software_update_proposal": {
+          "type": "array",
+          "items": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "maxItems": 2,
+          "minItems": 2
         }
       },
       "additionalProperties": false
     }
-  ]
+  ],
+  "definitions": {
+    "ParamChange": {
+      "type": "object",
+      "required": [
+        "key",
+        "subspace",
+        "value"
+      ],
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "subspace": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    }
+  }
 }
