@@ -6,14 +6,21 @@ use serde::{Deserialize, Serialize};
 pub struct InstantiateMsg {
     /// The contract's owner
     pub owner: String,
+    /// Locked denom
+    pub denom: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     /// Transfer the contract's ownership to another account
-    TransferOwnership(String),
-    InitVoting {},
+    TransferOwnership {
+        new_owner: String,
+    },
+    LockFunds {},
+    UnlockFunds {
+        amount: Uint128,
+    },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]

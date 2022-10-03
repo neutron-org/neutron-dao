@@ -4,3 +4,4 @@ use cw_storage_plus::{Item, Map};
 pub const TOKENS_LOCKED: Map<&Addr, Uint128> = Map::new("positions");
 
 pub const OWNER: Item<Addr> = Item::new("owner");
+pub const DENOM: Item<String> = Item::new("denom");

@@ -14,6 +14,7 @@ KEY_2=$(neutrond keys show demowallet2 -a --keyring-backend test --home ${HOME_2
 ADMIN=$(neutrond keys show demowallet1 -a --keyring-backend test --home ${HOME_1})
 
 TARGET_ADDRESS=neutron1mjk79fjjgpplak5wq838w0yd982gzkyf8fxu8u
+CONTRACT_ADDRESS=neutron14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s5c2epq
 VAL2=neutronvaloper1qnk2n4nlkpw9xfqntladh74w6ujtulwnqshepx
 
 #Register new proposal
@@ -41,6 +42,12 @@ echo "--- q gov proposals"
 echo $RES
 echo
 
+# lock funds
+RES=$(${BIN} tx wasm execute ${CONTRACT_ADDRESS} '{"lock_funds": {}}' --from ${USERNAME_1} --amount 11111stake --fees 5000stake --chain-id ${CHAIN_ID_1} -y --broadcast-mode=block --home ${HOME_1} --keyring-backend test --node tcp://127.0.0.1:16657)
+echo "--- lock_funds"
+echo $RES
+echo
+
 # vote yes (w dominance of votes)
 RES=$(${BIN} tx gov vote 1 yes --from ${USERNAME_1} --fees 5000stake --chain-id ${CHAIN_ID_1} -y --broadcast-mode=block --home ${HOME_1}  --keyring-backend test --node tcp://127.0.0.1:16657)
 echo "--- tx gov vote 1 yes"
@@ -48,11 +55,12 @@ echo $RES
 echo
 # wait voting period to end
 sleep 60
-#
+
 # print  proposal to see that it has passed
 echo "--- q gov proposals"
 RES=$(${BIN} q gov proposals  --chain-id ${CHAIN_ID_1}   --home ${HOME_1}   --node tcp://127.0.0.1:16657)
 echo $RES
+echo
 
 # check that voter has no delegations
 echo "--- q staking delegations"

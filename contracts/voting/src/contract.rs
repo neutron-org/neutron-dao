@@ -1,13 +1,17 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
+
+use crate::{
+    msg::{ConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg, VotingPowerResponse},
+    state::{DENOM, OWNER, TOKENS_LOCKED},
+    types::{ContractError, ContractResult},
+};
 use cosmwasm_std::{
-    to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult,
-    Uint128,
+    coin, to_binary, Addr, BankMsg, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response,
+    StdResult, Uint128,
 };
 use cw2::set_contract_version;
-
-use crate::msg::{ConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg, VotingPowerResponse};
-use crate::state::{OWNER, TOKENS_LOCKED};
+use std::cmp::Ordering;
 
 const CONTRACT_NAME: &str = "crates.io:neutron-dao";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -22,12 +26,15 @@ pub fn instantiate(
     _env: Env,
     _info: MessageInfo,
     msg: InstantiateMsg,
-) -> StdResult<Response> {
+) -> ContractResult<Response> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     OWNER.save(deps.storage, &deps.api.addr_validate(&msg.owner)?)?;
 
-    init_voting(deps)?;
+    if msg.denom.is_empty() {
+        return Err(ContractError::DenomTooShort);
+    }
+    DENOM.save(deps.storage, &msg.denom)?;
 
     Ok(Response::new())
 }
@@ -39,27 +46,30 @@ pub fn instantiate(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
-) -> StdResult<Response> {
+) -> ContractResult<Response> {
     let api = deps.api;
     match msg {
-        ExecuteMsg::TransferOwnership(new_owner) => {
+        ExecuteMsg::TransferOwnership { new_owner } => {
             transfer_ownership(deps, info.sender, api.addr_validate(&new_owner)?)
         }
-        ExecuteMsg::InitVoting {} => init_voting(deps),
+        ExecuteMsg::LockFunds {} => execute_lock_funds(deps, env, info),
+        ExecuteMsg::UnlockFunds { amount } => execute_unlock_funds(deps, env, info, amount),
     }
 }
 
-pub fn transfer_ownership(
+fn transfer_ownership(
     deps: DepsMut,
     sender_addr: Addr,
     new_owner_addr: Addr,
-) -> StdResult<Response> {
+) -> ContractResult<Response> {
     let owner_addr = OWNER.load(deps.storage)?;
     if sender_addr != owner_addr {
-        return Err(StdError::generic_err("only owner can transfer ownership"));
+        return Err(ContractError::InsufficientPrivileges(
+            "only owner can transfer ownership".into(),
+        ));
     }
 
     OWNER.save(deps.storage, &new_owner_addr)?;
@@ -70,52 +80,80 @@ pub fn transfer_ownership(
         .add_attribute("new_owner", new_owner_addr))
 }
 
-pub fn init_voting(deps: DepsMut) -> StdResult<Response> {
-    let value1 = Uint128::new(11111111111);
-    let value2 = Uint128::new(333333333);
-    TOKENS_LOCKED.save(
-        deps.storage,
-        &deps
-            .api
-            .addr_validate("neutron1m9l358xunhhwds0568za49mzhvuxx9ux8xafx2")?,
-        &value1,
-    )?;
-    TOKENS_LOCKED.save(
-        deps.storage,
-        &deps
-            .api
-            .addr_validate("neutron17dtl0mjt3t77kpuhg2edqzjpszulwhgzcdvagh")?,
-        &value2,
-    )?;
-    Ok(Response::default())
+fn execute_lock_funds(deps: DepsMut, _env: Env, info: MessageInfo) -> ContractResult<Response> {
+    let denom = DENOM.load(deps.storage)?;
+    let incoming_funds = info
+        .funds
+        .into_iter()
+        .find(|fund| fund.denom == denom)
+        .unwrap_or_else(|| coin(0, &denom));
+    TOKENS_LOCKED.update::<_, ContractError>(deps.storage, &info.sender, |amount| {
+        Ok(amount.unwrap_or_default() + incoming_funds.amount)
+    })?;
+    Ok(Response::new()
+        .add_attribute("action", "lock_funds")
+        .add_attribute("user", info.sender)
+        .add_attribute("amount", format!("{}{}", incoming_funds.amount, denom)))
 }
+
+fn execute_unlock_funds(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    amount: Uint128,
+) -> ContractResult<Response> {
+    let locked = TOKENS_LOCKED.load(deps.storage, &info.sender)?;
+    match amount.cmp(&locked) {
+        Ordering::Less => {
+            TOKENS_LOCKED.save(deps.storage, &info.sender, &(locked - amount))?;
+        }
+        Ordering::Equal => {
+            TOKENS_LOCKED.remove(deps.storage, &info.sender);
+        }
+        Ordering::Greater => {
+            return Err(ContractError::NotEnoughFundsToUnlock {
+                requested: amount,
+                has: locked,
+            })
+        }
+    };
+    Ok(Response::new()
+        .add_message(CosmosMsg::Bank(BankMsg::Send {
+            to_address: info.sender.to_string(),
+            amount: vec![coin(amount.u128(), DENOM.load(deps.storage)?)],
+        }))
+        .add_attribute("action", "unlock_funds")
+        .add_attribute("user", info.sender)
+        .add_attribute("amount", format!("{}{}", amount, DENOM.load(deps.storage)?)))
+}
+
 //--------------------------------------------------------------------------------------------------
 // Queries
 //--------------------------------------------------------------------------------------------------
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> ContractResult<Binary> {
     let api = deps.api;
-    match msg {
-        QueryMsg::Config {} => to_binary(&query_config(deps)?),
+    Ok(match msg {
+        QueryMsg::Config {} => to_binary(&query_config(deps)?)?,
         QueryMsg::VotingPower { user } => {
-            to_binary(&query_voting_power(deps, api.addr_validate(&user)?)?)
+            to_binary(&query_voting_power(deps, api.addr_validate(&user)?)?)?
         }
-        QueryMsg::VotingPowers {} => to_binary(&query_voting_powers(deps)?),
-    }
-}
-
-pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
-    Ok(ConfigResponse {
-        owner: OWNER.load(deps.storage)?.into(),
+        QueryMsg::VotingPowers {} => to_binary(&query_voting_powers(deps)?)?,
     })
 }
 
-pub fn query_voting_power(deps: Deps, user_addr: Addr) -> StdResult<VotingPowerResponse> {
-    let voting_power = match TOKENS_LOCKED.may_load(deps.storage, &user_addr) {
-        Ok(Some(voting_power)) => voting_power,
-        Ok(None) => Uint128::zero(),
-        Err(err) => return Err(err),
+fn query_config(deps: Deps) -> ContractResult<ConfigResponse> {
+    Ok(ConfigResponse {
+        owner: OWNER.load(deps.storage)?.into(),
+        denom: DENOM.load(deps.storage)?,
+    })
+}
+
+fn query_voting_power(deps: Deps, user_addr: Addr) -> ContractResult<VotingPowerResponse> {
+    let voting_power = match TOKENS_LOCKED.may_load(deps.storage, &user_addr)? {
+        Some(voting_power) => voting_power,
+        None => Uint128::zero(),
     };
 
     Ok(VotingPowerResponse {
@@ -124,7 +162,7 @@ pub fn query_voting_power(deps: Deps, user_addr: Addr) -> StdResult<VotingPowerR
     })
 }
 
-pub fn query_voting_powers(deps: Deps) -> StdResult<Vec<VotingPowerResponse>> {
+fn query_voting_powers(deps: Deps) -> ContractResult<Vec<VotingPowerResponse>> {
     let voting_powers = TOKENS_LOCKED
         .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
         .map(|res| {
