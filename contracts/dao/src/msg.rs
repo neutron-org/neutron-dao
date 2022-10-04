@@ -1,3 +1,4 @@
+use cosmwasm_std::Uint64;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use neutron_bindings::msg::ParamChange;
@@ -16,7 +17,7 @@ pub enum ExecuteMsg {
     AddAdmin (String),
     SubmitTextProposal(String, String),
     SubmitChangeParamProposal(String, String, Vec<ParamChange>),
-    SubmitCommunityPoolSpendProposal(String, String, String),
+    SubmitCommunityPoolSpendProposal(String, String, String, Uint64),
     SubmitClientUpdateProposal(String, String, String, String),
     SubmitSoftwareUpdateProposal(String, String),
     SubmitCancelSoftwareUpdateProposal(String, String)

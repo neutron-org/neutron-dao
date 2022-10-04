@@ -1,9 +1,7 @@
 
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{
-    to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult,
-};
+use cosmwasm_std::{to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult, Uint64};
 use cw2::set_contract_version;
 
 use crate::msg::{ConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
@@ -51,7 +49,7 @@ pub fn execute(
         ExecuteMsg::AddAdmin(admin) => execute_add_admin(admin),
         ExecuteMsg::SubmitTextProposal(title, description) => execute_submit_text_proposal(title, description),
         ExecuteMsg::SubmitChangeParamProposal(title, description, params_change) => execute_submit_param_change_proposal(title, description, params_change),
-        ExecuteMsg::SubmitCommunityPoolSpendProposal(title, description, recipient) => execute_submit_community_pool_spend_proposal(title,description,recipient),
+        ExecuteMsg::SubmitCommunityPoolSpendProposal(title, description, recipient, amount) => execute_submit_community_pool_spend_proposal(title,description,recipient,amount),
         ExecuteMsg::SubmitSoftwareUpdateProposal(title, description) => execute_software_update_proposal(title, description),
         ExecuteMsg::SubmitCancelSoftwareUpdateProposal(title, description) => execute_cancel_software_update_proposal(title, description),
         ExecuteMsg::SubmitClientUpdateProposal(title, description, subject_client_id, substitute_client_id) => execute_client_update_proposal(title, description, subject_client_id, substitute_client_id)
@@ -108,11 +106,12 @@ pub fn execute_submit_param_change_proposal(title: String, description: String, 
     Ok(Response::default())
 }
 
-pub fn execute_submit_community_pool_spend_proposal(title: String, description: String, recipient: String) -> StdResult<Response> {
+pub fn execute_submit_community_pool_spend_proposal(title: String, description: String, recipient: String, amount: Uint64) -> StdResult<Response> {
     let proposal = CommunitySpendProposal{
         title,
         description,
-        recipient
+        recipient,
+        amount
     };
 
     NeutronMsg::submit_community_spend_proposal(

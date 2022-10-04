@@ -1,4 +1,4 @@
-use cosmwasm_std::{CosmosMsg, CustomMsg};
+use cosmwasm_std::{CosmosMsg, CustomMsg, Uint64};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -62,6 +62,7 @@ pub struct CommunitySpendProposal {
     pub title: String,
     pub description: String,
     pub recipient: String,
+    pub amount: Uint64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
