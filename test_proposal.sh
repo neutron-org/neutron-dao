@@ -22,9 +22,9 @@ RES=$(${BIN} tx wasm execute $CONTRACT_ADDRESS "{\"submit_text_proposal\": {\"ti
 echo $RES
 
 sleep 5
-# print  proposal
+# print proposal
 echo "--- q gov proposals"
-RES=$(${BIN} q gov proposals  --chain-id ${CHAIN_ID_1}   --home ${HOME_1}   --node tcp://127.0.0.1:16657)
+RES=$(${BIN} query adminmodule archivedproposals   --chain-id ${CHAIN_ID_1}   --home ${HOME_1}   --node tcp://127.0.0.1:16657)
 echo $RES
 
 
