@@ -1,7 +1,6 @@
-use cosmwasm_std::Uint64;
+use neutron_bindings::msg::ParamChange;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use neutron_bindings::msg::ParamChange;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct InstantiateMsg {
@@ -13,14 +12,21 @@ pub struct InstantiateMsg {
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     /// Transfer the contract's ownership to another account
-    TransferOwnership(String),
-    AddAdmin (String),
-    SubmitTextProposal(String, String),
-    SubmitChangeParamProposal(String, String, Vec<ParamChange>),
-    SubmitCommunityPoolSpendProposal(String, String, String, Uint64),
-    SubmitClientUpdateProposal(String, String, String, String),
-    SubmitSoftwareUpdateProposal(String, String),
-    SubmitCancelSoftwareUpdateProposal(String, String)
+    TransferOwnership {
+        new_owner: String,
+    },
+    AddAdmin {
+        new_admin: String,
+    },
+    SubmitTextProposal {
+        title: String,
+        description: String,
+    },
+    SubmitChangeParamsProposal {
+        title: String,
+        description: String,
+        params_change: Vec<ParamChange>,
+    },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
@@ -31,4 +37,3 @@ pub enum QueryMsg {
 }
 
 pub type ConfigResponse = InstantiateMsg;
-

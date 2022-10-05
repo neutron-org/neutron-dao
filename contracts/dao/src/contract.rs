@@ -1,13 +1,14 @@
-
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult, Uint64};
+use cosmwasm_std::{
+    to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult,
+};
 use cw2::set_contract_version;
 
 use crate::msg::{ConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::state::{OWNER};
-use neutron_bindings::msg::{NeutronMsg, TextProposal, ParamChangeProposal, ParamChange, SoftwareUpdateProposal, ClientUpdateSpendProposal, CommunitySpendProposal, CancelSoftwareUpdateProposal};
-
+use crate::state::OWNER;
+use neutron_bindings::errors::{NeutronResult, NeutronError};
+use neutron_bindings::msg::{NeutronMsg, ParamChange, ParamChangeProposal, TextProposal};
 
 const CONTRACT_NAME: &str = "crates.io:neutron-dao";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -40,20 +41,21 @@ pub fn execute(
     _env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
-) -> StdResult<Response> {
+) -> NeutronResult<Response<NeutronMsg>> {
     let api = deps.api;
     match msg {
-        ExecuteMsg::TransferOwnership(new_owner) => {
+        ExecuteMsg::TransferOwnership { new_owner } => {
             transfer_ownership(deps, info.sender, api.addr_validate(&new_owner)?)
         }
-        ExecuteMsg::AddAdmin(admin) => execute_add_admin(admin),
-        ExecuteMsg::SubmitTextProposal(title, description) => execute_submit_text_proposal(title, description),
-        ExecuteMsg::SubmitChangeParamProposal(title, description, params_change) => execute_submit_param_change_proposal(title, description, params_change),
-        ExecuteMsg::SubmitCommunityPoolSpendProposal(title, description, recipient, amount) => execute_submit_community_pool_spend_proposal(title,description,recipient,amount),
-        ExecuteMsg::SubmitSoftwareUpdateProposal(title, description) => execute_software_update_proposal(title, description),
-        ExecuteMsg::SubmitCancelSoftwareUpdateProposal(title, description) => execute_cancel_software_update_proposal(title, description),
-        ExecuteMsg::SubmitClientUpdateProposal(title, description, subject_client_id, substitute_client_id) => execute_client_update_proposal(title, description, subject_client_id, substitute_client_id)
-
+        ExecuteMsg::AddAdmin { new_admin } => execute_add_admin(new_admin),
+        ExecuteMsg::SubmitTextProposal { title, description } => {
+            execute_submit_text_proposal(title, description)
+        }
+        ExecuteMsg::SubmitChangeParamsProposal {
+            title,
+            description,
+            params_change,
+        } => execute_submit_param_change_proposal(title, description, params_change),
     }
 }
 
@@ -61,10 +63,10 @@ pub fn transfer_ownership(
     deps: DepsMut,
     sender_addr: Addr,
     new_owner_addr: Addr,
-) -> StdResult<Response> {
+) -> NeutronResult<Response<NeutronMsg>> {
     let owner_addr = OWNER.load(deps.storage)?;
     if sender_addr != owner_addr {
-        return Err(StdError::generic_err("only owner can transfer ownership"));
+        return Err(NeutronError::Std(StdError::generic_err("only owner can transfer ownership")));
     }
 
     OWNER.save(deps.storage, &new_owner_addr)?;
@@ -75,86 +77,34 @@ pub fn transfer_ownership(
         .add_attribute("new_owner", new_owner_addr))
 }
 
-pub fn execute_add_admin(admin: String) -> StdResult<Response> {
-    NeutronMsg::add_admin(admin);
-    Ok(Response::default())
+pub fn execute_add_admin(admin: String) -> NeutronResult<Response<NeutronMsg>> {
+    let msg = NeutronMsg::add_admin(admin);
+    Ok(Response::new().add_message(msg))
 }
 
+pub fn execute_submit_text_proposal(
+    title: String,
+    description: String,
+) -> NeutronResult<Response<NeutronMsg>> {
+    let proposal = TextProposal { title, description };
 
-pub fn execute_submit_text_proposal(title: String, description: String) -> StdResult<Response> {
-    let proposal = TextProposal{
-        title,
-        description,
-    };
-
-    NeutronMsg::submit_text_proposal(
-        proposal,
-    );
-    Ok(Response::default())
+    let msg = NeutronMsg::submit_text_proposal(proposal);
+    Ok(Response::new().add_message(msg))
 }
 
-pub fn execute_submit_param_change_proposal(title: String, description: String, param_changes: Vec<ParamChange>) -> StdResult<Response> {
-    let proposal = ParamChangeProposal{
+pub fn execute_submit_param_change_proposal(
+    title: String,
+    description: String,
+    param_changes: Vec<ParamChange>,
+) -> NeutronResult<Response<NeutronMsg>> {
+    let proposal = ParamChangeProposal {
         title,
         description,
         param_changes,
     };
 
-    NeutronMsg::submit_param_change_proposal(
-        proposal,
-    );
-    Ok(Response::default())
-}
-
-pub fn execute_submit_community_pool_spend_proposal(title: String, description: String, recipient: String, amount: Uint64) -> StdResult<Response> {
-    let proposal = CommunitySpendProposal{
-        title,
-        description,
-        recipient,
-        amount
-    };
-
-    NeutronMsg::submit_community_spend_proposal(
-        proposal,
-    );
-    Ok(Response::default())
-}
-
-pub fn execute_client_update_proposal(title: String, description: String, subject_client_id: String, substitute_client_id: String) -> StdResult<Response> {
-    let proposal = ClientUpdateSpendProposal{
-        title,
-        description,
-        subject_client_id,
-        substitute_client_id
-    };
-
-    NeutronMsg::submiit_client_update_spend_proposal(
-        proposal,
-    );
-    Ok(Response::default())
-}
-pub fn execute_software_update_proposal(title: String, description: String) -> StdResult<Response> {
-    let proposal = SoftwareUpdateProposal{
-        title,
-        description,
-    };
-
-    NeutronMsg::submit_software_update_proposal(
-        proposal,
-    );
-    Ok(Response::default())
-}
-
-pub fn execute_cancel_software_update_proposal(title: String, description: String) -> StdResult<Response> {
-    let proposal = CancelSoftwareUpdateProposal{
-        title,
-        description,
-    };
-
-    NeutronMsg::submit_cancel_software_update_proposal(
-        proposal,
-    );
-    Ok(Response::default())
+    let msg = NeutronMsg::submit_param_change_proposal(proposal);
+    Ok(Response::new().add_message(msg))
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -173,4 +123,3 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
         owner: OWNER.load(deps.storage)?.into(),
     })
 }
-

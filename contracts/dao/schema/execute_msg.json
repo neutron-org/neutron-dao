@@ -10,7 +10,15 @@
       ],
       "properties": {
         "transfer_ownership": {
-          "type": "string"
+          "type": "object",
+          "required": [
+            "new_owner"
+          ],
+          "properties": {
+            "new_owner": {
+              "type": "string"
+            }
+          }
         }
       },
       "additionalProperties": false
@@ -22,7 +30,15 @@
       ],
       "properties": {
         "add_admin": {
-          "type": "string"
+          "type": "object",
+          "required": [
+            "new_admin"
+          ],
+          "properties": {
+            "new_admin": {
+              "type": "string"
+            }
+          }
         }
       },
       "additionalProperties": false
@@ -34,17 +50,19 @@
       ],
       "properties": {
         "submit_text_proposal": {
-          "type": "array",
-          "items": [
-            {
+          "type": "object",
+          "required": [
+            "description",
+            "title"
+          ],
+          "properties": {
+            "description": {
               "type": "string"
             },
-            {
+            "title": {
               "type": "string"
             }
-          ],
-          "maxItems": 2,
-          "minItems": 2
+          }
         }
       },
       "additionalProperties": false
@@ -52,124 +70,30 @@
     {
       "type": "object",
       "required": [
-        "submit_change_param_proposal"
+        "submit_change_params_proposal"
       ],
       "properties": {
-        "submit_change_param_proposal": {
-          "type": "array",
-          "items": [
-            {
+        "submit_change_params_proposal": {
+          "type": "object",
+          "required": [
+            "description",
+            "params_change",
+            "title"
+          ],
+          "properties": {
+            "description": {
               "type": "string"
             },
-            {
-              "type": "string"
-            },
-            {
+            "params_change": {
               "type": "array",
               "items": {
                 "$ref": "#/definitions/ParamChange"
               }
-            }
-          ],
-          "maxItems": 3,
-          "minItems": 3
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "submit_community_pool_spend_proposal"
-      ],
-      "properties": {
-        "submit_community_pool_spend_proposal": {
-          "type": "array",
-          "items": [
-            {
-              "type": "string"
             },
-            {
-              "type": "string"
-            },
-            {
+            "title": {
               "type": "string"
             }
-          ],
-          "maxItems": 3,
-          "minItems": 3
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "submit_client_update_proposal"
-      ],
-      "properties": {
-        "submit_client_update_proposal": {
-          "type": "array",
-          "items": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "string"
-            },
-            {
-              "type": "string"
-            },
-            {
-              "type": "string"
-            }
-          ],
-          "maxItems": 4,
-          "minItems": 4
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "submit_software_update_proposal"
-      ],
-      "properties": {
-        "submit_software_update_proposal": {
-          "type": "array",
-          "items": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "string"
-            }
-          ],
-          "maxItems": 2,
-          "minItems": 2
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "submit_cancel_software_update_proposal"
-      ],
-      "properties": {
-        "submit_cancel_software_update_proposal": {
-          "type": "array",
-          "items": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "string"
-            }
-          ],
-          "maxItems": 2,
-          "minItems": 2
+          }
         }
       },
       "additionalProperties": false

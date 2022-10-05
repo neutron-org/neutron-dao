@@ -1,4 +1,4 @@
-use cosmwasm_std::{CosmosMsg, CustomMsg, Uint64};
+use cosmwasm_std::{CosmosMsg, CustomMsg};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -11,7 +11,7 @@ pub enum NeutronMsg {
         admin: String,
     },
     SubmitProposal {
-        proposals: Proposals
+        proposals: Proposals,
     },
 }
 
@@ -28,10 +28,6 @@ pub struct TextProposal {
 pub struct Proposals {
     pub text_proposal: Option<TextProposal>,
     pub param_change_proposal: Option<ParamChangeProposal>,
-    pub community_spend_proposal: Option<CommunitySpendProposal>,
-    pub client_update_spend_proposal: Option<ClientUpdateSpendProposal>,
-    pub software_update_proposal: Option<SoftwareUpdateProposal>,
-    pub cancel_software_update_proposal: Option<CancelSoftwareUpdateProposal>
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -40,38 +36,6 @@ pub struct ParamChangeProposal {
     pub title: String,
     pub description: String,
     pub param_changes: Vec<ParamChange>,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct SoftwareUpdateProposal {
-    pub title: String,
-    pub description: String,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct CancelSoftwareUpdateProposal {
-    pub title: String,
-    pub description: String,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct CommunitySpendProposal {
-    pub title: String,
-    pub description: String,
-    pub recipient: String,
-    pub amount: Uint64,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct ClientUpdateSpendProposal {
-    pub title: String,
-    pub description: String,
-    pub subject_client_id: String,
-    pub substitute_client_id: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
@@ -83,126 +47,26 @@ pub struct ParamChange {
 }
 
 impl NeutronMsg {
-    pub fn add_admin(
-        admin: String,
-    ) -> Self {
-        NeutronMsg::AddAdmin {
-            admin
-        }
+    pub fn add_admin(admin: String) -> Self {
+        NeutronMsg::AddAdmin { admin }
     }
 
-    pub fn submit_text_proposal(
-        proposal: TextProposal,
-    ) -> Self {
+    pub fn submit_text_proposal(proposal: TextProposal) -> Self {
         NeutronMsg::SubmitProposal {
             proposals: Proposals {
                 text_proposal: Option::from(proposal),
-                param_change_proposal: None
-                ,
-                community_spend_proposal: None
-                ,
-                client_update_spend_proposal: None
-                ,
-                software_update_proposal: None
-                ,
-                cancel_software_update_proposal: None
-            }
+                param_change_proposal: None,
+            },
         }
     }
-    pub fn submit_param_change_proposal(
-        proposal: ParamChangeProposal,
-    ) -> Self {
+    pub fn submit_param_change_proposal(proposal: ParamChangeProposal) -> Self {
         NeutronMsg::SubmitProposal {
             proposals: Proposals {
-                text_proposal: None
-                ,
+                text_proposal: None,
                 param_change_proposal: Option::from(proposal),
-                community_spend_proposal: None
-                ,
-                client_update_spend_proposal: None
-                ,
-                software_update_proposal: None
-                ,
-                cancel_software_update_proposal: None
-            }
+            },
         }
     }
-    pub fn submit_community_spend_proposal(
-        proposal: CommunitySpendProposal,
-    ) -> Self {
-        NeutronMsg::SubmitProposal {
-            proposals: Proposals {
-                text_proposal: None
-                ,
-                param_change_proposal: None
-                ,
-                community_spend_proposal: Option::from(proposal),
-                client_update_spend_proposal: None
-                ,
-                software_update_proposal: None
-                ,
-                cancel_software_update_proposal: None
-            }
-        }
-    }
-
-    pub fn submiit_client_update_spend_proposal(
-        proposal: ClientUpdateSpendProposal,
-    ) -> Self {
-        NeutronMsg::SubmitProposal {
-            proposals: Proposals {
-                text_proposal: None
-                ,
-                param_change_proposal: None
-                ,
-                community_spend_proposal: None
-                ,
-                client_update_spend_proposal: Option::from(proposal),
-                software_update_proposal: None
-                ,
-                cancel_software_update_proposal: None
-            }
-        }
-    }
-
-    pub fn submit_software_update_proposal(
-        proposal: SoftwareUpdateProposal,
-    ) -> Self {
-        NeutronMsg::SubmitProposal {
-            proposals: Proposals {
-                text_proposal: None
-                ,
-                param_change_proposal: None
-                ,
-                community_spend_proposal: None
-                ,
-                client_update_spend_proposal: None
-                ,
-                software_update_proposal: Option::from(proposal),
-                cancel_software_update_proposal: None
-            }
-        }
-    }
-
-    pub fn submit_cancel_software_update_proposal(
-        proposal: CancelSoftwareUpdateProposal,
-    ) -> Self {
-        NeutronMsg::SubmitProposal {
-            proposals: Proposals {
-                text_proposal: None
-                ,
-                param_change_proposal: None
-                ,
-                community_spend_proposal: None
-                ,
-                client_update_spend_proposal: None
-                ,
-                software_update_proposal: None
-                ,
-                cancel_software_update_proposal: Option::from(proposal) }
-        }
-    }
-
 }
 
 impl From<NeutronMsg> for CosmosMsg<NeutronMsg> {
@@ -212,4 +76,3 @@ impl From<NeutronMsg> for CosmosMsg<NeutronMsg> {
 }
 
 impl CustomMsg for NeutronMsg {}
-

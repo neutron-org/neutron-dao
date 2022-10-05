@@ -2,7 +2,7 @@
 name = "neutron_bindings"
 version = "1.0.0"
 edition = "2021"
-authors = ["Mikhail Mozhaev <misha.m@p2p.org>"]
+authors = ["Pavel Kalinin <pavel.kalinin@p2p.org>"]
 license = "Apache-2.0"
 description = "Bindings for CustomMsg and CustomQuery for the Neutron blockchain"
 
@@ -23,6 +23,8 @@ overflow-checks = true
 cosmwasm-std = { version = "1.0.0", features = ["staking"] }
 schemars = "0.8.10"
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
+thiserror = "1.0.37"
+serde-json-wasm = "0.4.1"
 
 [dev-dependencies]
 cosmwasm-schema = "1.0.0"

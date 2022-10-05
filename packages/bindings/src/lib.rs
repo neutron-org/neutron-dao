@@ -11,6 +11,7 @@
 // limitations under the License.
 
 pub use types::ProtobufAny;
+pub mod errors;
 pub mod msg;
 pub mod types;
 
