@@ -7,7 +7,7 @@ use cw2::set_contract_version;
 
 use crate::msg::{ConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::OWNER;
-use neutron_bindings::errors::{NeutronResult, NeutronError};
+use neutron_bindings::errors::{NeutronError, NeutronResult};
 use neutron_bindings::msg::{NeutronMsg, ParamChange, ParamChangeProposal, TextProposal};
 
 const CONTRACT_NAME: &str = "crates.io:neutron-dao";
@@ -66,7 +66,9 @@ pub fn transfer_ownership(
 ) -> NeutronResult<Response<NeutronMsg>> {
     let owner_addr = OWNER.load(deps.storage)?;
     if sender_addr != owner_addr {
-        return Err(NeutronError::Std(StdError::generic_err("only owner can transfer ownership")));
+        return Err(NeutronError::Std(StdError::generic_err(
+            "only owner can transfer ownership",
+        )));
     }
 
     OWNER.save(deps.storage, &new_owner_addr)?;
