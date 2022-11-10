@@ -1,0 +1,17 @@
+[package]
+name = "cw-paginate"
+version = "0.2.0"
+edition = "2021"
+authors = ["ekez ekez@withoutdoing.com"]
+repository = "https://github.com/DA0-DA0/dao-contracts"
+description = "A package for paginating cosmwasm maps."
+
+
+[dependencies]
+cosmwasm-std = { version = "1.0.0" }
+cosmwasm-storage = { version = "1.0.0" }
+cw-storage-plus = "0.13"
+serde = { version = "1.0", default-features = false }
+
+[dev-dependencies]
+cw-multi-test = "0.13"
