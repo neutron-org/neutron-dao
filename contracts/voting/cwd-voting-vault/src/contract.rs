@@ -59,11 +59,13 @@ pub fn instantiate(
         .map(|manager| deps.api.addr_validate(&manager))
         .transpose()?;
 
+    validate_duration(msg.unstaking_duration)?;
 
     let config = Config {
         owner,
         manager,
-        staking: msg.,
+        denom: msg.denom,
+        unstaking_duration: msg.unstaking_duration,
     };
 
     CONFIG.save(deps.storage, &config)?;
@@ -95,23 +97,105 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::AddStakingContract { new_staking_contract} => execute_add_staking(deps, env, info, new_staking_contract),
+        ExecuteMsg::Stake {} => execute_stake(deps, env, info),
+        ExecuteMsg::Unstake { amount } => execute_unstake(deps, env, info, amount),
         ExecuteMsg::UpdateConfig {
             owner,
             manager,
-        } => execute_update_config(deps, info, owner, manager),
+            duration,
+        } => execute_update_config(deps, info, owner, manager, duration),
+        ExecuteMsg::Claim {} => execute_claim(deps, env, info),
     }
 }
 
-pub fn execute_add_staking(
+pub fn execute_stake(
     deps: DepsMut,
-    _env: Env,
-    _info: MessageInfo,
-    _new_staking_contact: String
+    env: Env,
+    info: MessageInfo,
+) -> Result<Response, ContractError> {
+    let config = CONFIG.load(deps.storage)?;
+    let amount = must_pay(&info, &config.denom)?;
+
+    STAKED_BALANCES.update(
+        deps.storage,
+        &info.sender,
+        env.block.height,
+        |balance| -> StdResult<Uint128> { Ok(balance.unwrap_or_default().checked_add(amount)?) },
+    )?;
+    STAKED_TOTAL.update(
+        deps.storage,
+        env.block.height,
+        |total| -> StdResult<Uint128> { Ok(total.unwrap_or_default().checked_add(amount)?) },
+    )?;
+
+    Ok(Response::new()
+        .add_attribute("action", "stake")
+        .add_attribute("amount", amount.to_string())
+        .add_attribute("from", info.sender))
+}
+
+pub fn execute_unstake(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    amount: Uint128,
 ) -> Result<Response, ContractError> {
     let config = CONFIG.load(deps.storage)?;
 
-    Ok(Response::new())
+    STAKED_BALANCES.update(
+        deps.storage,
+        &info.sender,
+        env.block.height,
+        |balance| -> Result<Uint128, ContractError> {
+            balance
+                .unwrap_or_default()
+                .checked_sub(amount)
+                .map_err(|_e| ContractError::InvalidUnstakeAmount {})
+        },
+    )?;
+    STAKED_TOTAL.update(
+        deps.storage,
+        env.block.height,
+        |total| -> Result<Uint128, ContractError> {
+            total
+                .unwrap_or_default()
+                .checked_sub(amount)
+                .map_err(|_e| ContractError::InvalidUnstakeAmount {})
+        },
+    )?;
+
+    match config.unstaking_duration {
+        None => {
+            let msg = CosmosMsg::Bank(BankMsg::Send {
+                to_address: info.sender.to_string(),
+                amount: coins(amount.u128(), config.denom),
+            });
+            Ok(Response::new()
+                .add_message(msg)
+                .add_attribute("action", "unstake")
+                .add_attribute("from", info.sender)
+                .add_attribute("amount", amount)
+                .add_attribute("claim_duration", "None"))
+        }
+        Some(duration) => {
+            let outstanding_claims = CLAIMS.query_claims(deps.as_ref(), &info.sender)?.claims;
+            if outstanding_claims.len() >= MAX_CLAIMS as usize {
+                return Err(ContractError::TooManyClaims {});
+            }
+
+            CLAIMS.create_claim(
+                deps.storage,
+                &info.sender,
+                amount,
+                duration.after(&env.block),
+            )?;
+            Ok(Response::new()
+                .add_attribute("action", "unstake")
+                .add_attribute("from", info.sender)
+                .add_attribute("amount", amount)
+                .add_attribute("claim_duration", format!("{}", duration)))
+        }
+    }
 }
 
 pub fn execute_update_config(
@@ -119,6 +203,7 @@ pub fn execute_update_config(
     info: MessageInfo,
     new_owner: Option<String>,
     new_manager: Option<String>,
+    duration: Option<Duration>,
 ) -> Result<Response, ContractError> {
     let mut config: Config = CONFIG.load(deps.storage)?;
     if Some(info.sender.clone()) != config.owner && Some(info.sender.clone()) != config.manager {
@@ -132,12 +217,16 @@ pub fn execute_update_config(
         .map(|new_manager| deps.api.addr_validate(&new_manager))
         .transpose()?;
 
+    validate_duration(duration)?;
+
     if Some(info.sender) != config.owner && new_owner != config.owner {
         return Err(ContractError::OnlyOwnerCanChangeOwner {});
     };
 
     config.owner = new_owner;
     config.manager = new_manager;
+
+    config.unstaking_duration = duration;
 
     CONFIG.save(deps.storage, &config)?;
     Ok(Response::new()
@@ -158,6 +247,28 @@ pub fn execute_update_config(
         ))
 }
 
+pub fn execute_claim(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+) -> Result<Response, ContractError> {
+    let release = CLAIMS.claim_tokens(deps.storage, &info.sender, &env.block, None)?;
+    if release.is_zero() {
+        return Err(ContractError::NothingToClaim {});
+    }
+
+    let config = CONFIG.load(deps.storage)?;
+    let msg = CosmosMsg::Bank(BankMsg::Send {
+        to_address: info.sender.to_string(),
+        amount: coins(release.u128(), config.denom),
+    });
+
+    Ok(Response::new()
+        .add_message(msg)
+        .add_attribute("action", "claim")
+        .add_attribute("from", info.sender)
+        .add_attribute("amount", release))
+}
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
@@ -175,16 +286,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::ListStakers { start_after, limit } => {
             query_list_stakers(deps, start_after, limit)
         }
-        QueryMsg::Staking {} => query_staking(deps)
     }
-}
-
-pub fn query_staking(
-    deps: Deps,
-) -> StdResult<Response> {
-    let config = CONFIG.load(deps.storage)?;
-
-    Ok(Response::default().add_attribute("staking", config.staking))
 }
 
 pub fn query_voting_power_at_height(
@@ -193,8 +295,11 @@ pub fn query_voting_power_at_height(
     address: String,
     height: Option<u64>,
 ) -> StdResult<VotingPowerAtHeightResponse> {
-    // TODO QUERY STAKING CONTRACT
-
+    let height = height.unwrap_or(env.block.height);
+    let address = deps.api.addr_validate(&address)?;
+    let power = STAKED_BALANCES
+        .may_load_at_height(deps.storage, &address, height)?
+        .unwrap_or_default();
     Ok(VotingPowerAtHeightResponse { power, height })
 }
 
@@ -203,8 +308,10 @@ pub fn query_total_power_at_height(
     env: Env,
     height: Option<u64>,
 ) -> StdResult<TotalPowerAtHeightResponse> {
-    // TODO QUERY STAKING CONTRACT
-
+    let height = height.unwrap_or(env.block.height);
+    let power = STAKED_TOTAL
+        .may_load_at_height(deps.storage, height)?
+        .unwrap_or_default();
     Ok(TotalPowerAtHeightResponse { power, height })
 }
 
@@ -219,7 +326,6 @@ pub fn query_dao(deps: Deps) -> StdResult<Binary> {
 }
 
 pub fn query_claims(deps: Deps, address: String) -> StdResult<ClaimsResponse> {
-    // TODO QUERY STAKING CONTRACT
     CLAIMS.query_claims(deps, &deps.api.addr_validate(&address)?)
 }
 
@@ -228,7 +334,25 @@ pub fn query_list_stakers(
     start_after: Option<String>,
     limit: Option<u32>,
 ) -> StdResult<Binary> {
-    //TODO QUERY STAKING CONTRACT
+    let start_at = start_after
+        .map(|addr| deps.api.addr_validate(&addr))
+        .transpose()?;
+
+    let stakers = cw_paginate::paginate_snapshot_map(
+        deps,
+        &STAKED_BALANCES,
+        start_at.as_ref(),
+        limit,
+        cosmwasm_std::Order::Ascending,
+    )?;
+
+    let stakers = stakers
+        .into_iter()
+        .map(|(address, balance)| StakerBalanceResponse {
+            address: address.into_string(),
+            balance,
+        })
+        .collect();
 
     to_binary(&ListStakersResponse { stakers })
 }
