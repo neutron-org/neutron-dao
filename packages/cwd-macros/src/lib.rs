@@ -69,8 +69,24 @@ pub fn voting_query(metadata: TokenStream, input: TokenStream) -> TokenStream {
             } })
             .unwrap();
 
+
+            // This is example how possible we can implement such methods,
+            // but there is requirement to modify core contract (so for now it makes nno sense)
+            // let claims: Variant = syn::parse2(quote! { Claims {
+            //     address: ::std::string::String,
+            // } })
+            //     .unwrap();
+            //
+            // let list_stakers: Variant = syn::parse2(quote! { ListStakers {
+            //     address: ::std::option::Option<::std::string::String>,
+            //     height: ::std::option::Option<::std::primitive::u32>
+            // } })
+            //     .unwrap();
+
             variants.push(voting_power);
             variants.push(total_power);
+            // variants.push(claims);
+            // variants.push(list_stakers);
         }
         _ => {
             return syn::Error::new(

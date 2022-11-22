@@ -1,4 +1,4 @@
-use cosmwasm_std::{Uint128, Addr};
+use cosmwasm_std::Uint128;
 use cw_utils::Duration;
 use cwd_interface::Admin;
 use cwd_macros::{info_query, voting_query};
@@ -11,21 +11,25 @@ pub struct InstantiateMsg {
     pub owner: Option<Admin>,
     // Manager can update all configs except changing the owner. This will generally be an operations multisig for a DAO.
     pub manager: Option<String>,
-    // Address of staking contract
-    pub staking: String,
-
+    // Token denom e.g. ujuno, or some ibc denom
+    pub denom: String,
+    // How long until the tokens become liquid again
+    pub unstaking_duration: Option<Duration>,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    AddStakingContract {
-        new_staking_contract: String
+    Stake {},
+    Unstake {
+        amount: Uint128,
     },
     UpdateConfig {
         owner: Option<String>,
         manager: Option<String>,
+        duration: Option<Duration>,
     },
+    Claim {},
 }
 
 #[voting_query]
@@ -42,7 +46,6 @@ pub enum QueryMsg {
         start_after: Option<String>,
         limit: Option<u32>,
     },
-    Staking {}
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
