@@ -7,10 +7,10 @@ use cw_controllers::ClaimsResponse;
 use cwd_interface::voting::{
     InfoResponse, IsActiveResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
-use cwd_voting_native_staked::msg::{
+use cwd_voting_vault::msg::{
     ExecuteMsg, InstantiateMsg, ListStakersResponse, MigrateMsg, QueryMsg,
 };
-use cwd_voting_native_staked::state::Config;
+use cwd_voting_vault::state::Config;
 
 fn main() {
     let mut out_dir = current_dir().unwrap();

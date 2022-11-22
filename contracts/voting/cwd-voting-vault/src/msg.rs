@@ -12,14 +12,13 @@ pub struct InstantiateMsg {
     pub manager: Option<String>,
     // Address of staking contract
     pub staking: String,
-
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     AddStakingContract {
-        new_staking_contract: String
+        new_staking_contract: String,
     },
     UpdateConfig {
         owner: Option<String>,
@@ -41,7 +40,7 @@ pub enum QueryMsg {
     //     start_after: Option<String>,
     //     limit: Option<u32>,
     // },
-    Staking {}
+    Staking {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]

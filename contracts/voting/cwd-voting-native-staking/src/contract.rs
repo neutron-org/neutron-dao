@@ -283,9 +283,11 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::Dao {} => query_dao(deps),
         QueryMsg::Claims { address } => to_binary(&query_claims(deps, address)?),
         QueryMsg::GetConfig {} => to_binary(&CONFIG.load(deps.storage)?),
-        QueryMsg::ListStakers { start_after, limit } => { query_list_stakers(deps, start_after, limit)}
+        QueryMsg::ListStakers { start_after, limit } => {
+            query_list_stakers(deps, start_after, limit)
         }
     }
+}
 
 pub fn query_voting_power_at_height(
     deps: Deps,

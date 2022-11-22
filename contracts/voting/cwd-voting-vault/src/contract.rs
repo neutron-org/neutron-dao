@@ -1,23 +1,17 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{
-    to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response,
-    StdResult,
-};
+use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 use cw2::set_contract_version;
 // use cw_controllers::ClaimsResponse;
-use cwd_interface::voting::{TotalPowerAtHeightResponse, VotingPowerAtHeightResponse, };
-use cwd_interface::{Admin, voting};
+use cwd_interface::voting::{TotalPowerAtHeightResponse, VotingPowerAtHeightResponse};
+use cwd_interface::{voting, Admin};
 
 use crate::error::ContractError;
-use crate::msg::{
-    ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg,
-};
+use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::state::{Config, CONFIG, DAO, STAKED_TOTAL};
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:cwd-voting-vault";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
-
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -78,11 +72,12 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::AddStakingContract { new_staking_contract} => execute_add_staking(deps, env, info, new_staking_contract),
-        ExecuteMsg::UpdateConfig {
-            owner,
-            manager,
-        } => execute_update_config(deps, info, owner, manager),
+        ExecuteMsg::AddStakingContract {
+            new_staking_contract,
+        } => execute_add_staking(deps, env, info, new_staking_contract),
+        ExecuteMsg::UpdateConfig { owner, manager } => {
+            execute_update_config(deps, info, owner, manager)
+        }
     }
 }
 
@@ -90,7 +85,7 @@ pub fn execute_add_staking(
     _deps: DepsMut,
     _env: Env,
     _info: MessageInfo,
-    _new_staking_contact: String
+    _new_staking_contact: String,
 ) -> Result<Response, ContractError> {
     //TODO fill this
     // let config = CONFIG.load(deps.storage)?;
@@ -142,7 +137,6 @@ pub fn execute_update_config(
         ))
 }
 
-
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
@@ -159,13 +153,11 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         // QueryMsg::ListStakers { start_after, limit } => {
         //     query_list_stakers(deps, start_after, limit)
         // }
-        QueryMsg::Staking {} => query_staking(deps)
+        QueryMsg::Staking {} => query_staking(deps),
     }
 }
 
-pub fn query_staking(
-    deps: Deps,
-) -> StdResult<Binary> {
+pub fn query_staking(deps: Deps) -> StdResult<Binary> {
     let config = CONFIG.load(deps.storage)?;
 
     to_binary(&config.staking)
@@ -178,9 +170,10 @@ pub fn query_voting_power_at_height(
     height: Option<u64>,
 ) -> StdResult<Binary> {
     let staking = CONFIG.load(deps.storage)?.staking;
-    let total_power: VotingPowerAtHeightResponse = deps
-        .querier
-        .query_wasm_smart(staking, &voting::Query::VotingPowerAtHeight { height, address})?;
+    let total_power: VotingPowerAtHeightResponse = deps.querier.query_wasm_smart(
+        staking,
+        &voting::Query::VotingPowerAtHeight { height, address },
+    )?;
     to_binary(&total_power)
 }
 

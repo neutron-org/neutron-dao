@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 pub struct Config {
     pub owner: Option<Addr>,
     pub manager: Option<Addr>,
-    pub staking: Addr
+    pub staking: Addr,
 }
 
 pub const CONFIG: Item<Config> = Item::new("config");

@@ -69,7 +69,6 @@ pub fn voting_query(metadata: TokenStream, input: TokenStream) -> TokenStream {
             } })
             .unwrap();
 
-
             // This is example how possible we can implement such methods,
             // but there is requirement to modify core contract (so for now it makes nno sense)
             // let claims: Variant = syn::parse2(quote! { Claims {

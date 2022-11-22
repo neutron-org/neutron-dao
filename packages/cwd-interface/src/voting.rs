@@ -31,7 +31,6 @@ pub struct ClaimsResponse {
     pub height: u64,
 }
 
-
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InfoResponse {
     pub info: ContractVersion,
@@ -65,7 +64,6 @@ mod tests {
             Query::TokenContract {} => (),
             Query::VotingPowerAtHeight { .. } => (),
             Query::TotalPowerAtHeight { .. } => (),
-            Query::Claims { .. } => (),
             Query::IsActive {} => (),
             Query::Info {} => (),
         }

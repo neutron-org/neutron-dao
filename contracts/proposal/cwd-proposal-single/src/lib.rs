@@ -48,9 +48,6 @@ pub mod msg;
 pub mod proposal;
 pub mod query;
 
-#[cfg(test)]
-mod testing;
-
 pub mod state;
 mod v1_state;
 
