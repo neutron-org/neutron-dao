@@ -13,48 +13,24 @@ USERNAME_2=demowallet2
 KEY_2=$(neutrond keys show demowallet2 -a --keyring-backend test --home ${HOME_2})
 ADMIN=$(neutrond keys show demowallet1 -a --keyring-backend test --home ${HOME_1})
 
+
+STAKING_ADDRESS=neutron14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s5c2epq
+
+ST_ADRES=14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s4hmalr
+
+PROPOSE_ADDRESS=neutron18cszlvm6pze0x9sz32qnjq4vtd45xehqs8dq7cwy8yhq35wfnn3q795n8y
+
+
+
+
 TARGET_ADDRESS=neutron1mjk79fjjgpplak5wq838w0yd982gzkyf8fxu8u
 VAL2=neutronvaloper1qnk2n4nlkpw9xfqntladh74w6ujtulwnqshepx
 
-#Register new proposal
-# json formatted proposal is a nightmare, so we use keys for now
-RES=$(${BIN} tx gov submit-proposal --title="hello proposal" \
-  --description="i believe in neutron supremacy!" \
-  --type="Text" \
-  --deposit="100000000stake" \
-  --from ${USERNAME_1} \
-  --gas 500000 \
-  --fees 5000stake \
-  -y \
-  --chain-id ${CHAIN_ID_1} \
-  --broadcast-mode=block \
-  --home ${HOME_1} \
-  --keyring-backend test \
-  --node tcp://127.0.0.1:16657)
-echo "--- tx gov submit-proposal"
+# stake funds
+RES=$(${BIN} tx wasm execute $ST_ST_ADRES "{\"stake\": {}}" --amount 1000stake --from ${USERNAME_1} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
+echo "staking:"
 echo $RES
-echo
-
-# print proposal in console, voting period should be active
-RES=$(${BIN} q gov proposals  --chain-id ${CHAIN_ID_1}   --home ${HOME_1}   --node tcp://127.0.0.1:16657)
-echo "--- q gov proposals"
-echo $RES
-echo
-
-# vote yes (w dominance of votes)
-RES=$(${BIN} tx gov vote 1 yes --from ${USERNAME_1} --fees 5000stake --chain-id ${CHAIN_ID_1} -y --broadcast-mode=block --home ${HOME_1}  --keyring-backend test --node tcp://127.0.0.1:16657)
-echo "--- tx gov vote 1 yes"
-echo $RES
-echo
-# wait voting period to end
-sleep 60
-#
-# print  proposal to see that it has passed
-echo "--- q gov proposals"
-RES=$(${BIN} q gov proposals  --chain-id ${CHAIN_ID_1}   --home ${HOME_1}   --node tcp://127.0.0.1:16657)
-echo $RES
-
-# check that voter has no delegations
-echo "--- q staking delegations"
-RES=$(${BIN} q staking delegations $ADMIN  --node tcp://127.0.0.1:16657)
+# propose text proposal
+RES=$(${BIN} tx wasm execute $PROPOSE_ADDRESS "{\"propose\": {\"title\": \"TEST\", \"description\": \"BOTTOMTTEXT\", [{\"custom\": {\"submit_proposal\": {\"text_proposal\": {\"title\": \"title\",\"description\": \"description\"}}}}]}}" --from ${USERNAME_1} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
+echo "propose:"
 echo $RES
