@@ -8,7 +8,7 @@ use cwd_interface::{voting, Admin};
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
-use crate::state::{Config, CONFIG, DAO, STAKED_TOTAL};
+use crate::state::{Config, CONFIG, DAO};
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:cwd-voting-vault";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -168,25 +168,25 @@ pub fn query_voting_power_at_height(
     _env: Env,
     address: String,
     height: Option<u64>,
-) -> StdResult<Binary> {
+) -> StdResult<VotingPowerAtHeightResponse> {
     let staking = CONFIG.load(deps.storage)?.staking;
     let total_power: VotingPowerAtHeightResponse = deps.querier.query_wasm_smart(
         staking,
         &voting::Query::VotingPowerAtHeight { height, address },
     )?;
-    to_binary(&total_power)
+    Ok(total_power)
 }
 
 pub fn query_total_power_at_height(
     deps: Deps,
-    env: Env,
+    _env: Env,
     height: Option<u64>,
 ) -> StdResult<TotalPowerAtHeightResponse> {
-    let height = height.unwrap_or(env.block.height);
-    let power = STAKED_TOTAL
-        .may_load_at_height(deps.storage, height)?
-        .unwrap_or_default();
-    Ok(TotalPowerAtHeightResponse { power, height })
+    let staking = CONFIG.load(deps.storage)?.staking;
+    let total_power: voting::TotalPowerAtHeightResponse = deps
+        .querier
+        .query_wasm_smart(staking, &voting::Query::TotalPowerAtHeight { height })?;
+    Ok(total_power)
 }
 
 pub fn query_info(deps: Deps) -> StdResult<Binary> {

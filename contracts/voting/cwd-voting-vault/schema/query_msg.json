@@ -29,47 +29,11 @@
     {
       "type": "object",
       "required": [
-        "claims"
+        "staking"
       ],
       "properties": {
-        "claims": {
-          "type": "object",
-          "required": [
-            "address"
-          ],
-          "properties": {
-            "address": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "list_stakers"
-      ],
-      "properties": {
-        "list_stakers": {
-          "type": "object",
-          "properties": {
-            "limit": {
-              "type": [
-                "integer",
-                "null"
-              ],
-              "format": "uint32",
-              "minimum": 0.0
-            },
-            "start_after": {
-              "type": [
-                "string",
-                "null"
-              ]
-            }
-          }
+        "staking": {
+          "type": "object"
         }
       },
       "additionalProperties": false
