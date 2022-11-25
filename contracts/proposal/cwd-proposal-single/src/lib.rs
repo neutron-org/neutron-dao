@@ -49,6 +49,5 @@ pub mod proposal;
 pub mod query;
 
 pub mod state;
-mod v1_state;
 
 pub use crate::error::ContractError;

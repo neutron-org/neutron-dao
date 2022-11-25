@@ -1,5 +1,6 @@
-use cosmwasm_std::{CosmosMsg, Empty};
+use cosmwasm_std::CosmosMsg;
 use cw_utils::Duration;
+use neutron_bindings::msg::NeutronMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -51,7 +52,7 @@ pub enum ExecuteMsg {
         description: String,
         /// The messages that should be executed in response to this
         /// proposal passing.
-        msgs: Vec<CosmosMsg<Empty>>,
+        msgs: Vec<CosmosMsg<NeutronMsg>>,
         /// The address creating the proposal. If no pre-propose
         /// module is attached to this module this must always be None
         /// as the proposer is the sender of the propose message. If a

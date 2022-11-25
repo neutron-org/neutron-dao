@@ -10,6 +10,7 @@ use cw_utils::{parse_reply_instantiate_data, Duration};
 
 use cw_paginate::{paginate_map, paginate_map_keys, paginate_map_values};
 use cwd_interface::{voting, ModuleInstantiateInfo};
+use neutron_bindings::msg::NeutronMsg;
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InitialItem, InstantiateMsg, MigrateMsg, QueryMsg};
@@ -93,7 +94,7 @@ pub fn execute(
     env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
-) -> Result<Response, ContractError> {
+) -> Result<Response<NeutronMsg>, ContractError> {
     // No actions can be performed while the DAO is paused.
     if let Some(expiration) = PAUSED.may_load(deps.storage)? {
         if !expiration.is_expired(&env.block) {
@@ -146,7 +147,7 @@ pub fn execute_pause(
     env: Env,
     sender: Addr,
     pause_duration: Duration,
-) -> Result<Response, ContractError> {
+) -> Result<Response<NeutronMsg>, ContractError> {
     // Only the core contract may call this method.
     if sender != env.contract.address {
         return Err(ContractError::Unauthorized {});
@@ -165,8 +166,8 @@ pub fn execute_pause(
 pub fn execute_admin_msgs(
     deps: Deps,
     sender: Addr,
-    msgs: Vec<CosmosMsg<Empty>>,
-) -> Result<Response, ContractError> {
+    msgs: Vec<CosmosMsg<NeutronMsg>>,
+) -> Result<Response<NeutronMsg>, ContractError> {
     let admin = ADMIN.load(deps.storage)?;
 
     // Check if the sender is the DAO Admin
@@ -182,8 +183,8 @@ pub fn execute_admin_msgs(
 pub fn execute_proposal_hook(
     deps: Deps,
     sender: Addr,
-    msgs: Vec<CosmosMsg<Empty>>,
-) -> Result<Response, ContractError> {
+    msgs: Vec<CosmosMsg<NeutronMsg>>,
+) -> Result<Response<NeutronMsg>, ContractError> {
     let module = PROPOSAL_MODULES
         .may_load(deps.storage, sender.clone())?
         .ok_or(ContractError::Unauthorized {})?;
@@ -203,7 +204,7 @@ pub fn execute_nominate_admin(
     env: Env,
     sender: Addr,
     nomination: Option<String>,
-) -> Result<Response, ContractError> {
+) -> Result<Response<NeutronMsg>, ContractError> {
     let nomination = nomination.map(|h| deps.api.addr_validate(&h)).transpose()?;
 
     let current_admin = ADMIN.load(deps.storage)?;
@@ -236,7 +237,7 @@ pub fn execute_nominate_admin(
 pub fn execute_accept_admin_nomination(
     deps: DepsMut,
     sender: Addr,
-) -> Result<Response, ContractError> {
+) -> Result<Response<NeutronMsg>, ContractError> {
     let nomination = NOMINATED_ADMIN
         .may_load(deps.storage)?
         .ok_or(ContractError::NoAdminNomination {})?;
@@ -254,7 +255,7 @@ pub fn execute_accept_admin_nomination(
 pub fn execute_withdraw_admin_nomination(
     deps: DepsMut,
     sender: Addr,
-) -> Result<Response, ContractError> {
+) -> Result<Response<NeutronMsg>, ContractError> {
     let admin = ADMIN.load(deps.storage)?;
     if admin != sender {
         return Err(ContractError::Unauthorized {});
@@ -278,7 +279,7 @@ pub fn execute_update_config(
     env: Env,
     sender: Addr,
     config: Config,
-) -> Result<Response, ContractError> {
+) -> Result<Response<NeutronMsg>, ContractError> {
     if sender != env.contract.address {
         return Err(ContractError::Unauthorized {});
     }
@@ -303,7 +304,7 @@ pub fn execute_update_voting_module(
     env: Env,
     sender: Addr,
     module: ModuleInstantiateInfo,
-) -> Result<Response, ContractError> {
+) -> Result<Response<NeutronMsg>, ContractError> {
     if env.contract.address != sender {
         return Err(ContractError::Unauthorized {});
     }
@@ -322,7 +323,7 @@ pub fn execute_update_proposal_modules(
     sender: Addr,
     to_add: Vec<ModuleInstantiateInfo>,
     to_disable: Vec<String>,
-) -> Result<Response, ContractError> {
+) -> Result<Response<NeutronMsg>, ContractError> {
     if env.contract.address != sender {
         return Err(ContractError::Unauthorized {});
     }
@@ -356,7 +357,7 @@ pub fn execute_update_proposal_modules(
         Ok(count - disable_count)
     })?;
 
-    let to_add: Vec<SubMsg<Empty>> = to_add
+    let to_add: Vec<SubMsg<NeutronMsg>> = to_add
         .into_iter()
         .map(|info| info.into_wasm_msg(env.contract.address.clone()))
         .map(|wasm| SubMsg::reply_on_success(wasm, PROPOSAL_MODULE_REPLY_ID))
@@ -403,7 +404,7 @@ pub fn execute_update_cw20_list(
     sender: Addr,
     to_add: Vec<String>,
     to_remove: Vec<String>,
-) -> Result<Response, ContractError> {
+) -> Result<Response<NeutronMsg>, ContractError> {
     if env.contract.address != sender {
         return Err(ContractError::Unauthorized {});
     }
@@ -427,7 +428,7 @@ pub fn execute_update_cw721_list(
     sender: Addr,
     to_add: Vec<String>,
     to_remove: Vec<String>,
-) -> Result<Response, ContractError> {
+) -> Result<Response<NeutronMsg>, ContractError> {
     if env.contract.address != sender {
         return Err(ContractError::Unauthorized {});
     }
@@ -446,7 +447,7 @@ pub fn execute_set_item(
     sender: Addr,
     key: String,
     value: String,
-) -> Result<Response, ContractError> {
+) -> Result<Response<NeutronMsg>, ContractError> {
     if env.contract.address != sender {
         return Err(ContractError::Unauthorized {});
     }
@@ -463,7 +464,7 @@ pub fn execute_remove_item(
     env: Env,
     sender: Addr,
     key: String,
-) -> Result<Response, ContractError> {
+) -> Result<Response<NeutronMsg>, ContractError> {
     if env.contract.address != sender {
         return Err(ContractError::Unauthorized {});
     }
@@ -484,7 +485,7 @@ pub fn execute_update_sub_daos_list(
     sender: Addr,
     to_add: Vec<SubDao>,
     to_remove: Vec<String>,
-) -> Result<Response, ContractError> {
+) -> Result<Response<NeutronMsg>, ContractError> {
     if env.contract.address != sender {
         return Err(ContractError::Unauthorized {});
     }
@@ -504,7 +505,10 @@ pub fn execute_update_sub_daos_list(
         .add_attribute("sender", sender))
 }
 
-pub fn execute_receive_cw20(deps: DepsMut, sender: Addr) -> Result<Response, ContractError> {
+pub fn execute_receive_cw20(
+    deps: DepsMut,
+    sender: Addr,
+) -> Result<Response<NeutronMsg>, ContractError> {
     let config = CONFIG.load(deps.storage)?;
     if !config.automatically_add_cw20s {
         Ok(Response::new())
@@ -516,7 +520,10 @@ pub fn execute_receive_cw20(deps: DepsMut, sender: Addr) -> Result<Response, Con
     }
 }
 
-pub fn execute_receive_cw721(deps: DepsMut, sender: Addr) -> Result<Response, ContractError> {
+pub fn execute_receive_cw721(
+    deps: DepsMut,
+    sender: Addr,
+) -> Result<Response<NeutronMsg>, ContractError> {
     let config = CONFIG.load(deps.storage)?;
     if !config.automatically_add_cw721s {
         Ok(Response::new())

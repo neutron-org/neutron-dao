@@ -1,11 +1,10 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, Order, Reply,
-    Response, StdResult, Storage, SubMsg, WasmMsg,
+    to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply, Response,
+    StdResult, Storage, SubMsg, WasmMsg,
 };
 use cw2::set_contract_version;
-use cw_proposal_single_v1 as v1;
 use cw_storage_plus::Bound;
 use cw_utils::{parse_reply_instantiate_data, Duration};
 use cwd_hooks::Hooks;
@@ -21,12 +20,12 @@ use cwd_voting::reply::{
 use cwd_voting::status::Status;
 use cwd_voting::threshold::Threshold;
 use cwd_voting::voting::{get_total_power, get_voting_power, validate_voting_period, Vote, Votes};
+use neutron_bindings::msg::NeutronMsg;
 
 use crate::msg::MigrateMsg;
 use crate::proposal::SingleChoiceProposal;
 use crate::state::{Config, CREATION_POLICY};
 
-use crate::v1_state::{v1_status_to_v2, v1_threshold_to_v2, v1_votes_to_v2};
 use crate::{
     error::ContractError,
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
@@ -139,7 +138,7 @@ pub fn execute_propose(
     sender: Addr,
     title: String,
     description: String,
-    msgs: Vec<CosmosMsg<Empty>>,
+    msgs: Vec<CosmosMsg<NeutronMsg>>,
     proposer: Option<String>,
 ) -> Result<Response, ContractError> {
     let config = CONFIG.load(deps.storage)?;
@@ -806,90 +805,91 @@ pub fn query_info(deps: Deps) -> StdResult<Binary> {
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     // Set contract to version to latest
-    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-
-    match msg {
-        MigrateMsg::FromV1 {
-            close_proposal_on_execution_failure,
-            pre_propose_info,
-        } => {
-            // Update the stored config to have the new
-            // `close_proposal_on_execution_falure` field.
-            let current_config = v1::state::CONFIG.load(deps.storage)?;
-            CONFIG.save(
-                deps.storage,
-                &Config {
-                    threshold: v1_threshold_to_v2(current_config.threshold),
-                    max_voting_period: current_config.max_voting_period,
-                    min_voting_period: current_config.min_voting_period,
-                    only_members_execute: current_config.only_members_execute,
-                    allow_revoting: current_config.allow_revoting,
-                    dao: current_config.dao.clone(),
-                    // Loads of text, but we're only updating this field.
-                    close_proposal_on_execution_failure,
-                },
-            )?;
-
-            let (initial_policy, pre_propose_messages) =
-                pre_propose_info.into_initial_policy_and_messages(current_config.dao)?;
-            CREATION_POLICY.save(deps.storage, &initial_policy)?;
-
-            // Update the module's proposals to v2.
-
-            let current_proposals = v1::state::PROPOSALS
-                .range(deps.storage, None, None, Order::Ascending)
-                .collect::<StdResult<Vec<(u64, v1::proposal::Proposal)>>>()?;
-
-            // Based on gas usage testing, we estimate that we will be
-            // able to migrate ~4200 proposals at a time before
-            // reaching the block max_gas limit.
-            current_proposals
-                .into_iter()
-                .try_for_each::<_, Result<_, ContractError>>(|(id, prop)| {
-                    if prop
-                        .deposit_info
-                        .map(|info| !info.deposit.is_zero())
-                        .unwrap_or(false)
-                        && prop.status != voting_v1::Status::Closed
-                        && prop.status != voting_v1::Status::Executed
-                    {
-                        // No migration path for outstanding
-                        // deposits.
-                        return Err(ContractError::PendingProposals {});
-                    }
-
-                    let migrated_proposal = SingleChoiceProposal {
-                        title: prop.title,
-                        description: prop.description,
-                        proposer: prop.proposer,
-                        start_height: prop.start_height,
-                        min_voting_period: prop.min_voting_period,
-                        expiration: prop.expiration,
-                        threshold: v1_threshold_to_v2(prop.threshold),
-                        total_power: prop.total_power,
-                        msgs: prop.msgs,
-                        status: v1_status_to_v2(prop.status),
-                        votes: v1_votes_to_v2(prop.votes),
-                        allow_revoting: prop.allow_revoting,
-                    };
-
-                    PROPOSALS
-                        .save(deps.storage, id, &migrated_proposal)
-                        .map_err(|e| e.into())
-                })?;
-
-            Ok(Response::default()
-                .add_attribute("action", "migrate")
-                .add_attribute("from", "v1")
-                .add_submessages(pre_propose_messages))
-        }
-
-        MigrateMsg::FromCompatible {} => Ok(Response::default()
-            .add_attribute("action", "migrate")
-            .add_attribute("from", "compatible")),
-    }
+    // set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    //
+    // match msg {
+    //     MigrateMsg::FromV1 {
+    //         close_proposal_on_execution_failure,
+    //         pre_propose_info,
+    //     } => {
+    //         // Update the stored config to have the new
+    //         // `close_proposal_on_execution_falure` field.
+    //         let current_config = CONFIG.load(deps.storage)?;
+    //         CONFIG.save(
+    //             deps.storage,
+    //             &Config {
+    //                 threshold: v1_threshold_to_v2(current_config.threshold),
+    //                 max_voting_period: current_config.max_voting_period,
+    //                 min_voting_period: current_config.min_voting_period,
+    //                 only_members_execute: current_config.only_members_execute,
+    //                 allow_revoting: current_config.allow_revoting,
+    //                 dao: current_config.dao.clone(),
+    //                 // Loads of text, but we're only updating this field.
+    //                 close_proposal_on_execution_failure,
+    //             },
+    //         )?;
+    //
+    //         let (initial_policy, pre_propose_messages) =
+    //             pre_propose_info.into_initial_policy_and_messages(current_config.dao)?;
+    //         CREATION_POLICY.save(deps.storage, &initial_policy)?;
+    //
+    //         // Update the module's proposals to v2.
+    //
+    //         let current_proposals = PROPOSALS
+    //             .range(deps.storage, None, None, Order::Ascending)
+    //             .collect::<StdResult<Vec<(u64, v1::proposal::Proposal)>>>()?;
+    //
+    //         // Based on gas usage testing, we estimate that we will be
+    //         // able to migrate ~4200 proposals at a time before
+    //         // reaching the block max_gas limit.
+    //         current_proposals
+    //             .into_iter()
+    //             .try_for_each::<_, Result<_, ContractError>>(|(id, prop)| {
+    //                 if prop
+    //                     .deposit_info
+    //                     .map(|info| !info.deposit.is_zero())
+    //                     .unwrap_or(false)
+    //                     && prop.status != Status::Closed
+    //                     && prop.status != Status::Executed
+    //                 {
+    //                     // No migration path for outstanding
+    //                     // deposits.
+    //                     return Err(ContractError::PendingProposals {});
+    //                 }
+    //
+    //                 let migrated_proposal = SingleChoiceProposal {
+    //                     title: prop.title,
+    //                     description: prop.description,
+    //                     proposer: prop.proposer,
+    //                     start_height: prop.start_height,
+    //                     min_voting_period: prop.min_voting_period,
+    //                     expiration: prop.expiration,
+    //                     threshold: v1_threshold_to_v2(prop.threshold),
+    //                     total_power: prop.total_power,
+    //                     msgs: prop.msgs,
+    //                     status: v1_status_to_v2(prop.status),
+    //                     votes: v1_votes_to_v2(prop.votes),
+    //                     allow_revoting: prop.allow_revoting,
+    //                 };
+    //
+    //                 PROPOSALS
+    //                     .save(deps.storage, id, &migrated_proposal)
+    //                     .map_err(|e| e.into())
+    //             })?;
+    //
+    //         Ok(Response::default()
+    //             .add_attribute("action", "migrate")
+    //             .add_attribute("from", "v1")
+    //             .add_submessages(pre_propose_messages))
+    //     }
+    //
+    //     MigrateMsg::FromCompatible {} => Ok(Response::default()
+    //         .add_attribute("action", "migrate")
+    //         .add_attribute("from", "compatible")),
+    // }
+    Ok(Response::default())
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

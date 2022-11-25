@@ -39,7 +39,7 @@ echo $RES
 
 # PROPOSAL 1 (to pass)
 #propose proposal we're going to pass
-RES=$(${BIN} tx wasm execute $PROPOSE_ADDRESS "{\"propose\": {\"title\": \"TEST\", \"description\": \"BOTTOMTTEXT\", \"msgs\":[]}}" --from ${USERNAME_1} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
+RES=$(${BIN} tx wasm execute $PROPOSE_ADDRESS "{\"propose\": {\"title\": \"TEST\", \"description\": \"BOTTOMTTEXT\", \"msgs\":[{\"custom\":{\"submit_proposal\":{\"proposals\":{\"text_proposal\":{\"title\":\"title\",\"description\":\"description\"},\"param_change_proposal\":null}}}}]}}" --from ${USERNAME_1} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
 echo "propose proposal to be passed:"
 echo $RES
 
@@ -103,4 +103,9 @@ echo $RES
 
 RES=$(${BIN} q wasm contract-state smart  $PROPOSE_ADDRESS "{\"proposal\": {\"proposal_id\": 2}}"  --chain-id ${CHAIN_ID_1} --output json  --home ${HOME_1} --node tcp://127.0.0.1:16657)
 echo "should be status:rejected"
+echo $RES
+
+sleep 5
+
+RES=$(${BIN} q adminmodule archivedproposals   --chain-id ${CHAIN_ID_1}   --home ${HOME_1}   --node tcp://127.0.0.1:16657)
 echo $RES

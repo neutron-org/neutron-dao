@@ -99,7 +99,7 @@
         }
       }
     },
-    "CosmosMsg_for_Empty": {
+    "CosmosMsg_for_NeutronMsg": {
       "oneOf": [
         {
           "type": "object",
@@ -120,7 +120,7 @@
           ],
           "properties": {
             "custom": {
-              "$ref": "#/definitions/Empty"
+              "$ref": "#/definitions/NeutronMsg"
             }
           },
           "additionalProperties": false
@@ -264,10 +264,6 @@
           "additionalProperties": false
         }
       ]
-    },
-    "Empty": {
-      "description": "An empty struct that serves as a placeholder in different places, such as contracts that don't set a custom message.\n\nIt is designed to be expressable in correct JSON and JSON Schema but contains no meaningful data. Previously we used enums without cases, but those cannot represented as valid JSON Schema (https://github.com/CosmWasm/cosmwasm/issues/451)",
-      "type": "object"
     },
     "Expiration": {
       "description": "Expiration represents a point in time when some event happens. It can compare with a BlockInfo and will return is_expired() == true once the condition is hit (and for every block in the future)",
@@ -499,6 +495,93 @@
         }
       }
     },
+    "NeutronMsg": {
+      "description": "A number of Custom messages that can call into the Neutron bindings",
+      "oneOf": [
+        {
+          "description": "AddAdmin registers an interchain account on remote chain",
+          "type": "object",
+          "required": [
+            "add_admin"
+          ],
+          "properties": {
+            "add_admin": {
+              "type": "object",
+              "required": [
+                "admin"
+              ],
+              "properties": {
+                "admin": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "submit_proposal"
+          ],
+          "properties": {
+            "submit_proposal": {
+              "type": "object",
+              "required": [
+                "proposals"
+              ],
+              "properties": {
+                "proposals": {
+                  "$ref": "#/definitions/Proposals"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ParamChange": {
+      "type": "object",
+      "required": [
+        "key",
+        "subspace",
+        "value"
+      ],
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "subspace": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "ParamChangeProposal": {
+      "type": "object",
+      "required": [
+        "description",
+        "param_changes",
+        "title"
+      ],
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "param_changes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ParamChange"
+          }
+        },
+        "title": {
+          "type": "string"
+        }
+      }
+    },
     "PercentageThreshold": {
       "description": "A percentage of voting power that must vote yes for a proposal to pass. An example of why this is needed:\n\nIf a user specifies a 60% passing threshold, and there are 10 voters they likely expect that proposal to pass when there are 6 yes votes. This implies that the condition for passing should be `yes_votes >= total_votes * threshold`.\n\nWith this in mind, how should a user specify that they would like proposals to pass if the majority of voters choose yes? Selecting a 50% passing threshold with those rules doesn't properly cover that case as 5 voters voting yes out of 10 would pass the proposal. Selecting 50.0001% or or some variation of that also does not work as a very small yes vote which technically makes the majority yes may not reach that threshold.\n\nTo handle these cases we provide both a majority and percent option for all percentages. If majority is selected passing will be determined by `yes > total_votes * 0.5`. If percent is selected passing is determined by `yes >= total_votes * percent`.\n\nIn both of these cases a proposal with only abstain votes must fail. This requires a special case passing logic.",
       "oneOf": [
@@ -529,6 +612,31 @@
           "additionalProperties": false
         }
       ]
+    },
+    "Proposals": {
+      "type": "object",
+      "properties": {
+        "param_change_proposal": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ParamChangeProposal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "text_proposal": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/TextProposal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
     },
     "SingleChoiceProposal": {
       "type": "object",
@@ -575,7 +683,7 @@
           "description": "The messages that will be executed should this proposal pass.",
           "type": "array",
           "items": {
-            "$ref": "#/definitions/CosmosMsg_for_Empty"
+            "$ref": "#/definitions/CosmosMsg_for_NeutronMsg"
           }
         },
         "proposer": {
@@ -748,6 +856,22 @@
           ]
         }
       ]
+    },
+    "TextProposal": {
+      "description": "MsgTextPoposal defines a SDK message for submission of text proposal",
+      "type": "object",
+      "required": [
+        "description",
+        "title"
+      ],
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      }
     },
     "Threshold": {
       "description": "The ways a proposal may reach its passing / failing threshold.",

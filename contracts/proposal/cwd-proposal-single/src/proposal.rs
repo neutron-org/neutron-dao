@@ -1,10 +1,11 @@
 use crate::query::ProposalResponse;
 use crate::state::PROPOSAL_COUNT;
-use cosmwasm_std::{Addr, BlockInfo, CosmosMsg, Decimal, Empty, StdResult, Storage, Uint128};
+use cosmwasm_std::{Addr, BlockInfo, CosmosMsg, Decimal, StdResult, Storage, Uint128};
 use cw_utils::Expiration;
 use cwd_voting::status::Status;
 use cwd_voting::threshold::{PercentageThreshold, Threshold};
 use cwd_voting::voting::{does_vote_count_fail, does_vote_count_pass, Votes};
+use neutron_bindings::msg::NeutronMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -31,7 +32,7 @@ pub struct SingleChoiceProposal {
     /// proposal's creation.
     pub total_power: Uint128,
     /// The messages that will be executed should this proposal pass.
-    pub msgs: Vec<CosmosMsg<Empty>>,
+    pub msgs: Vec<CosmosMsg<NeutronMsg>>,
     pub status: Status,
     pub votes: Votes,
     pub allow_revoting: bool,

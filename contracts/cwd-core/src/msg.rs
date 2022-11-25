@@ -1,6 +1,7 @@
-use cosmwasm_std::{CosmosMsg, Empty};
+use cosmwasm_std::CosmosMsg;
 use cw_utils::Duration;
 use cwd_interface::ModuleInstantiateInfo;
+use neutron_bindings::msg::NeutronMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -62,10 +63,10 @@ pub struct InstantiateMsg {
 pub enum ExecuteMsg {
     /// Callable by the Admin, if one is configured.
     /// Executes messages in order.
-    ExecuteAdminMsgs { msgs: Vec<CosmosMsg<Empty>> },
+    ExecuteAdminMsgs { msgs: Vec<CosmosMsg<NeutronMsg>> },
     /// Callable by proposal modules. The DAO will execute the
     /// messages in the hook in order.
-    ExecuteProposalHook { msgs: Vec<CosmosMsg<Empty>> },
+    ExecuteProposalHook { msgs: Vec<CosmosMsg<NeutronMsg>> },
     /// Pauses the DAO for a set duration.
     /// When paused the DAO is unable to execute proposals
     Pause { duration: Duration },
