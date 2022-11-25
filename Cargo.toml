@@ -6,7 +6,6 @@ members = [
 	"contracts/voting/*",
 	"packages/*",
 	]
-exclude = ["ci/configs/"]
 
 [profile.release]
 codegen-units = 1
