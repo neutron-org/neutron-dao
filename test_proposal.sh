@@ -167,6 +167,5 @@ echo $RES
 sleep 5
 
 echo "list archived proposals"
-"
 RES=$(${BIN} q adminmodule archivedproposals   --chain-id ${CHAIN_ID_1}   --home ${HOME_1}   --node tcp://127.0.0.1:16657)
 echo $RES
