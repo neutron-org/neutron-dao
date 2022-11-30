@@ -14,7 +14,7 @@ fmt:
 
 check_contracts:
 	@cargo install cosmwasm-check
-	@cosmwasm-check artifacts/*.wasm
+	@cosmwasm-check --available-capabilities iterator,staking,stargate,neutron artifacts/*.wasm
 
 compile:
 	@./build_release.sh
