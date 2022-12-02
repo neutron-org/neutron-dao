@@ -16,7 +16,7 @@ use crate::msg::{
 };
 use crate::state::{Config, CLAIMS, CONFIG, DAO, MAX_CLAIMS, STAKED_BALANCES, STAKED_TOTAL};
 
-pub(crate) const CONTRACT_NAME: &str = "crates.io:cwd-voting-vault";
+pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-voting-registry";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 fn validate_duration(duration: Option<Duration>) -> Result<(), ContractError> {

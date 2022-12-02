@@ -64,7 +64,7 @@ pub struct InterchainQueryResult {
     pub revision: u64,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 /// Describes value in the Cosmos-SDK KV-storage on remote chain
 pub struct StorageValue {

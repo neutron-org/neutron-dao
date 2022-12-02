@@ -719,7 +719,7 @@
 //
 //     let msg = QueryMsg::Info {};
 //     let resp: InfoResponse = app.wrap().query_wasm_smart(addr, &msg).unwrap();
-//     assert_eq!(resp.info.contract, "crates.io:cwd-voting-vault");
+//     assert_eq!(resp.info.contract, "crates.io:neutron-voting-registry");
 // }
 //
 // #[test]

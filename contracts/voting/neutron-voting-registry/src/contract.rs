@@ -10,7 +10,7 @@ use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::state::{Config, CONFIG, DAO};
 
-pub(crate) const CONTRACT_NAME: &str = "crates.io:cwd-voting-vault";
+pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-voting-registry";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg_attr(not(feature = "library"), entry_point)]

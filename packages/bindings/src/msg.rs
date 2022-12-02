@@ -16,7 +16,7 @@ pub enum NeutronMsg {
 }
 
 /// MsgTextPoposal defines a SDK message for submission of text proposal
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct TextProposal {
     pub title: String,
@@ -38,7 +38,7 @@ pub struct ParamChangeProposal {
     pub param_changes: Vec<ParamChange>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct ParamChange {
     pub subspace: String,

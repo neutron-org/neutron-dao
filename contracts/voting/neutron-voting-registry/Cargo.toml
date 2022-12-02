@@ -1,5 +1,5 @@
 [package]
-name = "cwd-voting-native-staked"
+name = "neutron-voting-registry"
 version = "0.2.0"
 authors = ["Callum Anderson <callumanderson745@gmail.com>"]
 edition = "2021"

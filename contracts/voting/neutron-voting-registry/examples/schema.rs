@@ -7,10 +7,10 @@ use cw_controllers::ClaimsResponse;
 use cwd_interface::voting::{
     InfoResponse, IsActiveResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
-use cwd_voting_vault::msg::{
+use neutron_voting_registry::msg::{
     ExecuteMsg, InstantiateMsg, ListStakersResponse, MigrateMsg, QueryMsg,
 };
-use cwd_voting_vault::state::Config;
+use neutron_voting_registry::state::Config;
 
 fn main() {
     let mut out_dir = current_dir().unwrap();
