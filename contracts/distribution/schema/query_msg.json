@@ -26,6 +26,18 @@
         }
       },
       "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "shares"
+      ],
+      "properties": {
+        "shares": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
     }
   ]
 }

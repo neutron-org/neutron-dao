@@ -16,13 +16,62 @@
       "additionalProperties": false
     },
     {
+      "type": "object",
+      "required": [
+        "set_shares"
+      ],
+      "properties": {
+        "set_shares": {
+          "type": "object",
+          "required": [
+            "shares"
+          ],
+          "properties": {
+            "shares": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "$ref": "#/definitions/Uint128"
+                  }
+                ],
+                "maxItems": 2,
+                "minItems": 2
+              }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Distribute funds to the and distribution accounts according to their shares",
+      "type": "object",
+      "required": [
+        "distribute"
+      ],
+      "properties": {
+        "distribute": {
+          "type": "array",
+          "items": [],
+          "maxItems": 0,
+          "minItems": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    {
       "description": "Distribute pending funds between Bank and Distribution accounts",
       "type": "object",
       "required": [
-        "collect"
+        "grab"
       ],
       "properties": {
-        "collect": {
+        "grab": {
           "type": "array",
           "items": [],
           "maxItems": 0,

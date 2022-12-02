@@ -9,8 +9,8 @@ pub struct InstantiateMsg {
     pub dao: String,
     pub denom: String,
     pub distribution_rate: u8,
-    pub min_period: u64,
-    pub distribution_contract: String,
+    pub min_time_elapsed_between_distributions: u64,
+    pub min_time_elapsed_between_grabs: u64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
@@ -19,8 +19,15 @@ pub enum ExecuteMsg {
     /// Transfer the contract's ownership to another account
     TransferOwnership(String),
 
+    SetShares {
+        shares: Vec<(String, Uint128)>,
+    },
+
+    /// Distribute funds to the and distribution accounts according to their shares
+    Distribute(),
+
     /// Distribute pending funds between Bank and Distribution accounts
-    Collect(),
+    Grab(),
 
     // Payout funds at DAO decision
     Payout {
@@ -35,6 +42,7 @@ pub enum QueryMsg {
     /// The contract's configurations; returns [`ConfigResponse`]
     Config {},
     Stats {},
+    Shares {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
@@ -44,6 +52,7 @@ pub struct StatsResponse {
     pub total_bank_spent: Uint128,
     pub total_distributed: Uint128,
     pub bank_balance: Uint128,
+    pub distribution_balance: Uint128,
     pub last_balance: Uint128,
 }
 
@@ -52,10 +61,4 @@ pub struct StatsResponse {
 pub struct ShareResponse {
     address: Addr,
     shares: Uint128,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum DistributionMsg {
-    Distribute { period: u64 },
 }
