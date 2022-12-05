@@ -57,7 +57,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
             exec_transfer_ownership(deps, info.sender, api.addr_validate(&new_owner)?)
         }
         // permissionless
-        ExecuteMsg::Collect {} => exec_collect(deps, env),
+        ExecuteMsg::Distribute {} => exec_distribute(deps, env),
         // permissioned - dao
         ExecuteMsg::Payout { amount, recipient } => exec_payout(deps, info, env, amount, recipient),
     }
@@ -85,7 +85,7 @@ pub fn exec_transfer_ownership(
         .add_attribute("new_owner", new_owner_addr))
 }
 
-pub fn exec_collect(deps: DepsMut, env: Env) -> StdResult<Response> {
+pub fn exec_distribute(deps: DepsMut, env: Env) -> StdResult<Response> {
     let config: Config = CONFIG.load(deps.storage)?;
     let denom = config.denom;
     let current_time = env.block.time.seconds();
@@ -128,9 +128,7 @@ pub fn exec_collect(deps: DepsMut, env: Env) -> StdResult<Response> {
     let msg = CosmosMsg::Wasm(WasmMsg::Execute {
         contract_addr: config.distribution_contract.to_string(),
         funds: coins(to_distribution.u128(), denom),
-        msg: to_binary(&DistributionMsg::Distribute {
-            period: config.min_period,
-        })?,
+        msg: to_binary(&DistributionMsg::Fund {})?,
     });
 
     Ok(Response::default()

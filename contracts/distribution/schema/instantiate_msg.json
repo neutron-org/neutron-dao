@@ -5,9 +5,6 @@
   "required": [
     "dao",
     "denom",
-    "distribution_rate",
-    "min_time_elapsed_between_distributions",
-    "min_time_elapsed_between_grabs",
     "owner"
   ],
   "properties": {
@@ -16,21 +13,6 @@
     },
     "denom": {
       "type": "string"
-    },
-    "distribution_rate": {
-      "type": "integer",
-      "format": "uint8",
-      "minimum": 0.0
-    },
-    "min_time_elapsed_between_distributions": {
-      "type": "integer",
-      "format": "uint64",
-      "minimum": 0.0
-    },
-    "min_time_elapsed_between_grabs": {
-      "type": "integer",
-      "format": "uint64",
-      "minimum": 0.0
     },
     "owner": {
       "description": "The contract's owner",

@@ -52,10 +52,10 @@
       "description": "Distribute funds to the and distribution accounts according to their shares",
       "type": "object",
       "required": [
-        "distribute"
+        "fund"
       ],
       "properties": {
-        "distribute": {
+        "fund": {
           "type": "array",
           "items": [],
           "maxItems": 0,
@@ -65,41 +65,17 @@
       "additionalProperties": false
     },
     {
-      "description": "Distribute pending funds between Bank and Distribution accounts",
+      "description": "Claim the funds that have been distributed to the contract's account",
       "type": "object",
       "required": [
-        "grab"
+        "claim"
       ],
       "properties": {
-        "grab": {
+        "claim": {
           "type": "array",
           "items": [],
           "maxItems": 0,
           "minItems": 0
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "payout"
-      ],
-      "properties": {
-        "payout": {
-          "type": "object",
-          "required": [
-            "amount",
-            "recipient"
-          ],
-          "properties": {
-            "amount": {
-              "$ref": "#/definitions/Uint128"
-            },
-            "recipient": {
-              "type": "string"
-            }
-          }
         }
       },
       "additionalProperties": false

@@ -41,7 +41,7 @@ fn test_transfer_ownership() {
 fn test_collect_with_no_money() {
     let mut deps = mock_dependencies(&[]);
     init_base_contract(deps.as_mut());
-    let msg = ExecuteMsg::Collect {};
+    let msg = ExecuteMsg::Distribute {};
     let res = execute(deps.as_mut(), mock_env(), mock_info("anyone", &[]), msg);
     assert!(res.is_err());
     assert_eq!(
@@ -52,22 +52,22 @@ fn test_collect_with_no_money() {
 
 #[test]
 fn test_collect_with() {
-    let mut deps = mock_dependencies(&[coin(1000000, "denom")]);
+    let mut deps = mock_dependencies(&[coin(1000000, DENOM)]);
     init_base_contract(deps.as_mut());
-    let msg = ExecuteMsg::Collect {};
+    let msg = ExecuteMsg::Distribute {};
     let res = execute(deps.as_mut(), mock_env(), mock_info("anyone", &[]), msg);
     assert!(res.is_ok());
-    let messages = res.unwrap().clone().messages;
+    let messages = res.unwrap().messages;
     assert_eq!(messages.len(), 1);
     assert_eq!(
         messages[0].msg,
         CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: "distribution_contract".to_string(),
             funds: vec![Coin {
-                denom: "denom".to_string(),
+                denom: DENOM.to_string(),
                 amount: Uint128::from(230000u128)
             }],
-            msg: to_binary(&DistributionMsg::Distribute { period: 1000 }).unwrap(),
+            msg: to_binary(&DistributionMsg::Fund {}).unwrap(),
         })
     );
     let bank_balance = BANK_BALANCE.load(deps.as_ref().storage).unwrap();
@@ -112,7 +112,7 @@ fn test_payout_not_dao() {
 
 #[test]
 fn test_payout_success() {
-    let mut deps = mock_dependencies(&[coin(1000000, "denom")]);
+    let mut deps = mock_dependencies(&[coin(1000000, DENOM)]);
     init_base_contract(deps.as_mut());
     BANK_BALANCE
         .save(deps.as_mut().storage, &Uint128::from(1000000u128))
@@ -123,14 +123,14 @@ fn test_payout_success() {
     };
     let res = execute(deps.as_mut(), mock_env(), mock_info("dao", &[]), msg);
     assert!(res.is_ok());
-    let messages = res.unwrap().clone().messages;
+    let messages = res.unwrap().messages;
     assert_eq!(messages.len(), 1);
     assert_eq!(
         messages[0].msg,
         CosmosMsg::Bank(BankMsg::Send {
             to_address: "some".to_string(),
             amount: vec![Coin {
-                denom: "denom".to_string(),
+                denom: DENOM.to_string(),
                 amount: Uint128::from(400000u128)
             }],
         })

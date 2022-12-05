@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, Uint128};
+use cosmwasm_std::Uint128;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -20,7 +20,7 @@ pub enum ExecuteMsg {
     TransferOwnership(String),
 
     /// Distribute pending funds between Bank and Distribution accounts
-    Collect(),
+    Distribute(),
 
     // Payout funds at DAO decision
     Payout {
@@ -49,13 +49,6 @@ pub struct StatsResponse {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub struct ShareResponse {
-    address: Addr,
-    shares: Uint128,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
 pub enum DistributionMsg {
-    Distribute { period: u64 },
+    Fund {},
 }
