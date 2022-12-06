@@ -11,14 +11,17 @@ pub struct InstantiateMsg {
     // Manager can update all configs except changing the owner. This will generally be an operations multisig for a DAO.
     pub manager: Option<String>,
     // Address of staking contract
-    pub staking: String,
+    pub voting_vault: String,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    AddStakingContract {
-        new_staking_contract: String,
+    AddVotingVault {
+        new_voting_vault_contract: String,
+    },
+    RemoveVotingVault {
+        old_voting_vault_contract: String,
     },
     UpdateConfig {
         owner: Option<String>,
@@ -33,14 +36,7 @@ pub enum ExecuteMsg {
 pub enum QueryMsg {
     Dao {},
     GetConfig {},
-    // Claims {
-    //     address: String,
-    // },
-    // ListStakers {
-    //     start_after: Option<String>,
-    //     limit: Option<u32>,
-    // },
-    Staking {},
+    VotingVaults {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]

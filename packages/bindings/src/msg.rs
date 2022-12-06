@@ -9,9 +9,7 @@ pub enum NeutronMsg {
     /// TODO: add anotation
     /// TODO: move this to neutron sdk; bring neutron-sdk instead to this project
     /// This message can be sent only by neutron dao (cuz only neutron dao has admin rights)
-    SubmitProposal {
-        proposals: Proposals,
-    },
+    SubmitProposal { proposals: Proposals },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

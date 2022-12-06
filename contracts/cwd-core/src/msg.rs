@@ -42,7 +42,7 @@ pub struct InstantiateMsg {
 
     /// Instantiate information for the core contract's voting
     /// power module.
-    pub voting_module_instantiate_info: ModuleInstantiateInfo,
+    pub voting_registry_module_instantiate_info: ModuleInstantiateInfo,
     /// Instantiate information for the core contract's
     /// proposal modules.
     // NOTE: the pre-propose-base package depends on it being the case

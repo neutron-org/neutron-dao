@@ -5,16 +5,36 @@
     {
       "type": "object",
       "required": [
-        "add_staking_contract"
+        "add_voting_vault"
       ],
       "properties": {
-        "add_staking_contract": {
+        "add_voting_vault": {
           "type": "object",
           "required": [
-            "new_staking_contract"
+            "new_voting_vault_contract"
           ],
           "properties": {
-            "new_staking_contract": {
+            "new_voting_vault_contract": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "remove_voting_vault"
+      ],
+      "properties": {
+        "remove_voting_vault": {
+          "type": "object",
+          "required": [
+            "old_voting_vault_contract"
+          ],
+          "properties": {
+            "old_voting_vault_contract": {
               "type": "string"
             }
           }

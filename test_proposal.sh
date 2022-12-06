@@ -30,7 +30,7 @@ echo $RES
 
 # STAKING
 # stake funds from wallet 1
-RES=$(${BIN} tx wasm execute $STAKING_ADDRESS "{\"stake\": {}}" --amount 1000stake --from ${USERNAME_1} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
+RES=$(${BIN} tx wasm execute $STAKING_ADDRESS "{\"bond\": {}}" --amount 1000stake --from ${USERNAME_1} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
 echo "
 
 
@@ -39,7 +39,7 @@ staking from wallet 1:
 echo $RES
 
 #stake funds from wallet 2
-RES=$(${BIN} tx wasm execute $STAKING_ADDRESS "{\"stake\": {}}" --amount 1000stake --from ${USERNAME_2} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
+RES=$(${BIN} tx wasm execute $STAKING_ADDRESS "{\"bond\": {}}" --amount 1000stake --from ${USERNAME_2} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
 echo "
 
 
@@ -48,7 +48,7 @@ staking from wallet 2:
 echo $RES
 
 #stake funds from wallet 3
-RES=$(${BIN} tx wasm execute $STAKING_ADDRESS "{\"stake\": {}}" --amount 1000stake --from ${USERNAME_3} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
+RES=$(${BIN} tx wasm execute $STAKING_ADDRESS "{\"bond\": {}}" --amount 1000stake --from ${USERNAME_3} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
 echo "
 
 

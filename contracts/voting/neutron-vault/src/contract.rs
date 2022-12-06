@@ -6,7 +6,7 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 use cw_controllers::ClaimsResponse;
-use cw_utils::{must_pay, Duration};
+use cw_utils::must_pay;
 use cwd_interface::voting::{TotalPowerAtHeightResponse, VotingPowerAtHeightResponse};
 use cwd_interface::Admin;
 
@@ -14,28 +14,10 @@ use crate::error::ContractError;
 use crate::msg::{
     ExecuteMsg, InstantiateMsg, ListStakersResponse, MigrateMsg, QueryMsg, StakerBalanceResponse,
 };
-use crate::state::{Config, CLAIMS, CONFIG, DAO, MAX_CLAIMS, STAKED_BALANCES, STAKED_TOTAL};
+use crate::state::{Config, CLAIMS, CONFIG, DAO, STAKED_BALANCES, STAKED_TOTAL};
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-voting-registry";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
-
-fn validate_duration(duration: Option<Duration>) -> Result<(), ContractError> {
-    if let Some(unstaking_duration) = duration {
-        match unstaking_duration {
-            Duration::Height(height) => {
-                if height == 0 {
-                    return Err(ContractError::InvalidUnstakingDuration {});
-                }
-            }
-            Duration::Time(time) => {
-                if time == 0 {
-                    return Err(ContractError::InvalidUnstakingDuration {});
-                }
-            }
-        }
-    }
-    Ok(())
-}
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -58,8 +40,6 @@ pub fn instantiate(
         .manager
         .map(|manager| deps.api.addr_validate(&manager))
         .transpose()?;
-
-    validate_duration(msg.unstaking_duration)?;
 
     let config = Config {
         owner,
@@ -98,19 +78,13 @@ pub fn execute(
     match msg {
         ExecuteMsg::Bond {} => execute_bond(deps, env, info),
         ExecuteMsg::Unbond { amount } => execute_unbond(deps, env, info, amount),
-        ExecuteMsg::UpdateConfig {
-            owner,
-            manager,
-            duration,
-        } => execute_update_config(deps, info, owner, manager, duration),
+        ExecuteMsg::UpdateConfig { owner, manager } => {
+            execute_update_config(deps, info, owner, manager)
+        }
     }
 }
 // would be renamed to bond
-pub fn execute_bond(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-) -> Result<Response, ContractError> {
+pub fn execute_bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
     let config = CONFIG.load(deps.storage)?;
     let amount = must_pay(&info, &config.denom)?;
 
@@ -179,7 +153,6 @@ pub fn execute_update_config(
     info: MessageInfo,
     new_owner: Option<String>,
     new_manager: Option<String>,
-    duration: Option<Duration>,
 ) -> Result<Response, ContractError> {
     let mut config: Config = CONFIG.load(deps.storage)?;
     if Some(info.sender.clone()) != config.owner && Some(info.sender.clone()) != config.manager {
@@ -193,16 +166,12 @@ pub fn execute_update_config(
         .map(|new_manager| deps.api.addr_validate(&new_manager))
         .transpose()?;
 
-    validate_duration(duration)?;
-
     if Some(info.sender) != config.owner && new_owner != config.owner {
         return Err(ContractError::OnlyOwnerCanChangeOwner {});
     };
 
     config.owner = new_owner;
     config.manager = new_manager;
-
-    config.unstaking_duration = duration;
 
     CONFIG.save(deps.storage, &config)?;
     Ok(Response::new()

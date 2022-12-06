@@ -27,4 +27,10 @@ pub enum ContractError {
 
     #[error("Can only unstake less than or equal to the amount you have staked")]
     InvalidUnstakeAmount {},
+
+    #[error("Voting vault already exists")]
+    VotingVaultAlreadyExists {},
+
+    #[error("Removing last vault is forbidden")]
+    RemoveLastVault {},
 }

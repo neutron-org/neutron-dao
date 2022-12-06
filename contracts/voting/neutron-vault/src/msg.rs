@@ -1,5 +1,4 @@
 use cosmwasm_std::Uint128;
-use cw_utils::Duration;
 use cwd_interface::Admin;
 use cwd_macros::{info_query, voting_query};
 use schemars::JsonSchema;
@@ -25,7 +24,6 @@ pub enum ExecuteMsg {
     UpdateConfig {
         owner: Option<String>,
         manager: Option<String>,
-        duration: Option<Duration>,
     },
 }
 

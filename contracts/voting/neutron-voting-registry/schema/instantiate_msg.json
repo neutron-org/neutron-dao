@@ -3,7 +3,7 @@
   "title": "InstantiateMsg",
   "type": "object",
   "required": [
-    "staking"
+    "voting_vault"
   ],
   "properties": {
     "manager": {
@@ -22,7 +22,7 @@
         }
       ]
     },
-    "staking": {
+    "voting_vault": {
       "type": "string"
     }
   },

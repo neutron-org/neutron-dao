@@ -8,7 +8,7 @@
     "description",
     "name",
     "proposal_modules_instantiate_info",
-    "voting_module_instantiate_info"
+    "voting_registry_module_instantiate_info"
   ],
   "properties": {
     "admin": {
@@ -65,7 +65,7 @@
         "$ref": "#/definitions/ModuleInstantiateInfo"
       }
     },
-    "voting_module_instantiate_info": {
+    "voting_registry_module_instantiate_info": {
       "description": "Instantiate information for the core contract's voting power module.",
       "allOf": [
         {

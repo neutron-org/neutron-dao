@@ -3,7 +3,7 @@
   "title": "GetConfigResponse",
   "type": "object",
   "required": [
-    "staking"
+    "voting_vaults"
   ],
   "properties": {
     "manager": {
@@ -26,8 +26,11 @@
         }
       ]
     },
-    "staking": {
-      "$ref": "#/definitions/Addr"
+    "voting_vaults": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Addr"
+      }
     }
   },
   "definitions": {

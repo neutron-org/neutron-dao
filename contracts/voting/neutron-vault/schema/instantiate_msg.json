@@ -24,16 +24,6 @@
           "type": "null"
         }
       ]
-    },
-    "unstaking_duration": {
-      "anyOf": [
-        {
-          "$ref": "#/definitions/Duration"
-        },
-        {
-          "type": "null"
-        }
-      ]
     }
   },
   "definitions": {
@@ -70,40 +60,6 @@
           "properties": {
             "core_module": {
               "type": "object"
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
-    "Duration": {
-      "description": "Duration is a delta of time. You can add it to a BlockInfo or Expiration to move that further in the future. Note that an height-based Duration and a time-based Expiration cannot be combined",
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "height"
-          ],
-          "properties": {
-            "height": {
-              "type": "integer",
-              "format": "uint64",
-              "minimum": 0.0
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "description": "Time in seconds",
-          "type": "object",
-          "required": [
-            "time"
-          ],
-          "properties": {
-            "time": {
-              "type": "integer",
-              "format": "uint64",
-              "minimum": 0.0
             }
           },
           "additionalProperties": false

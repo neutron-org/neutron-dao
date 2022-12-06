@@ -35,12 +35,12 @@ pub fn instantiate(
         .map(|manager| deps.api.addr_validate(&manager))
         .transpose()?;
 
-    let staking = deps.api.addr_validate(&msg.staking)?;
+    let voting_vault = deps.api.addr_validate(&msg.voting_vault)?;
 
     let config = Config {
         owner,
         manager,
-        staking,
+        voting_vaults: vec![voting_vault],
     };
 
     CONFIG.save(deps.storage, &config)?;
@@ -72,23 +72,55 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::AddStakingContract {
-            new_staking_contract,
-        } => execute_add_staking(deps, env, info, new_staking_contract),
+        ExecuteMsg::AddVotingVault {
+            new_voting_vault_contract,
+        } => execute_add_voting_vault(deps, env, info, new_voting_vault_contract),
+        ExecuteMsg::RemoveVotingVault {
+            old_voting_vault_contract,
+        } => execute_remove_voting_vault(deps, env, info, old_voting_vault_contract),
         ExecuteMsg::UpdateConfig { owner, manager } => {
             execute_update_config(deps, info, owner, manager)
         }
     }
 }
 
-pub fn execute_add_staking(
-    _deps: DepsMut,
+pub fn execute_add_voting_vault(
+    deps: DepsMut,
     _env: Env,
     _info: MessageInfo,
-    _new_staking_contact: String,
+    new_voting_vault_contact: String,
 ) -> Result<Response, ContractError> {
-    //TODO fill this
-    // let config = CONFIG.load(deps.storage)?;
+    let mut config: Config = CONFIG.load(deps.storage)?;
+
+    let new_voting_vault = deps.api.addr_validate(&new_voting_vault_contact)?;
+    if !config.voting_vaults.contains(&new_voting_vault) {
+        config.voting_vaults.push(new_voting_vault);
+        CONFIG.save(deps.storage, &config)?;
+    } else {
+        return Err(ContractError::VotingVaultAlreadyExists {});
+    }
+
+    Ok(Response::new())
+}
+
+pub fn execute_remove_voting_vault(
+    deps: DepsMut,
+    _env: Env,
+    _info: MessageInfo,
+    old_voting_vault_contact: String,
+) -> Result<Response, ContractError> {
+    let mut config: Config = CONFIG.load(deps.storage)?;
+    if config.voting_vaults.len() == 1 {
+        Err(ContractError::RemoveLastVault {})
+    }
+
+    let new_voting_vault = deps.api.addr_validate(&old_voting_vault_contact)?;
+    if config.voting_vaults.contains(&new_voting_vault) {
+        config
+            .voting_vaults
+            .retain(|value| *value != old_voting_vault_contact);
+        CONFIG.save(deps.storage, &config)?;
+    }
 
     Ok(Response::new())
 }
@@ -148,19 +180,15 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         }
         QueryMsg::Info {} => query_info(deps),
         QueryMsg::Dao {} => query_dao(deps),
-        // QueryMsg::Claims { address } => to_binary(&query_claims(deps, address)?),
         QueryMsg::GetConfig {} => to_binary(&CONFIG.load(deps.storage)?),
-        // QueryMsg::ListStakers { start_after, limit } => {
-        //     query_list_stakers(deps, start_after, limit)
-        // }
-        QueryMsg::Staking {} => query_staking(deps),
+        QueryMsg::VotingVaults {} => query_voting_vaults(deps),
     }
 }
 
-pub fn query_staking(deps: Deps) -> StdResult<Binary> {
+pub fn query_voting_vaults(deps: Deps) -> StdResult<Binary> {
     let config = CONFIG.load(deps.storage)?;
 
-    to_binary(&config.staking)
+    to_binary(&config.voting_vaults)
 }
 
 pub fn query_voting_power_at_height(
@@ -169,11 +197,24 @@ pub fn query_voting_power_at_height(
     address: String,
     height: Option<u64>,
 ) -> StdResult<VotingPowerAtHeightResponse> {
-    let staking = CONFIG.load(deps.storage)?.staking;
-    let total_power: VotingPowerAtHeightResponse = deps.querier.query_wasm_smart(
-        staking,
-        &voting::Query::VotingPowerAtHeight { height, address },
-    )?;
+    let voting_vaults = CONFIG.load(deps.storage)?.voting_vaults;
+    // let addr = deps.api.addr_validate(&address)?;
+    let mut total_power = VotingPowerAtHeightResponse {
+        power: Default::default(),
+        height: Default::default(),
+    };
+    for vault in voting_vaults.iter() {
+        let total_power_single_vault: VotingPowerAtHeightResponse = deps.querier.query_wasm_smart(
+            vault,
+            &voting::Query::VotingPowerAtHeight {
+                height,
+                address: address.clone(),
+            },
+        )?;
+        total_power.power += total_power_single_vault.power;
+        total_power.height = total_power_single_vault.height;
+    }
+
     Ok(total_power)
 }
 
@@ -182,10 +223,20 @@ pub fn query_total_power_at_height(
     _env: Env,
     height: Option<u64>,
 ) -> StdResult<TotalPowerAtHeightResponse> {
-    let staking = CONFIG.load(deps.storage)?.staking;
-    let total_power: voting::TotalPowerAtHeightResponse = deps
-        .querier
-        .query_wasm_smart(staking, &voting::Query::TotalPowerAtHeight { height })?;
+    let voting_vaults = CONFIG.load(deps.storage)?.voting_vaults;
+
+    let mut total_power: TotalPowerAtHeightResponse = TotalPowerAtHeightResponse {
+        power: Default::default(),
+        height: Default::default(),
+    };
+    for vault in voting_vaults.iter() {
+        let total_power_single_vault: TotalPowerAtHeightResponse = deps
+            .querier
+            .query_wasm_smart(vault, &voting::Query::TotalPowerAtHeight { height })?;
+        total_power.power += total_power_single_vault.power;
+        total_power.height = total_power_single_vault.height;
+    }
+
     Ok(total_power)
 }
 
@@ -198,27 +249,6 @@ pub fn query_dao(deps: Deps) -> StdResult<Binary> {
     let dao = DAO.load(deps.storage)?;
     to_binary(&dao)
 }
-
-// pub fn query_claims(deps: Deps, address: String) -> StdResult<Binary> {
-//     let staking = CONFIG.load(deps.storage)?.staking;
-//     let claims: ClaimsResponse = deps
-//         .querier
-//         .query_wasm_smart(staking, &voting::Query::Claims { address })?;
-//     to_binary(&claims)
-// }
-//
-// pub fn query_list_stakers(
-//     deps: Deps,
-//     start_after: Option<String>,
-//     limit: Option<u32>,
-// ) -> StdResult<Binary> {
-//     let staking = CONFIG.load(deps.storage)?.staking;
-//     let stakers = deps
-//         .querier
-//         .query_wasm_smart(staking, &voting::Query::ListStakers { start_after, limit })?;
-//     to_binary(&stakers)
-//
-// }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
