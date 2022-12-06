@@ -11,17 +11,15 @@ pub struct InstantiateMsg {
     pub owner: Option<Admin>,
     // Manager can update all configs except changing the owner. This will generally be an operations multisig for a DAO.
     pub manager: Option<String>,
-    // Token denom e.g. ujuno, or some ibc denom
+    // Token denom e.g. untrn, or some ibc denom
     pub denom: String,
-    // How long until the tokens become liquid again
-    pub unstaking_duration: Option<Duration>,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    Stake {},
-    Unstake {
+    Bond {},
+    Unbond {
         amount: Uint128,
     },
     UpdateConfig {
@@ -29,7 +27,6 @@ pub enum ExecuteMsg {
         manager: Option<String>,
         duration: Option<Duration>,
     },
-    Claim {},
 }
 
 #[voting_query]

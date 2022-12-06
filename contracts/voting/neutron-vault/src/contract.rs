@@ -65,7 +65,6 @@ pub fn instantiate(
         owner,
         manager,
         denom: msg.denom,
-        unstaking_duration: msg.unstaking_duration,
     };
 
     CONFIG.save(deps.storage, &config)?;
@@ -97,18 +96,17 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Stake {} => execute_stake(deps, env, info),
-        ExecuteMsg::Unstake { amount } => execute_unstake(deps, env, info, amount),
+        ExecuteMsg::Bond {} => execute_bond(deps, env, info),
+        ExecuteMsg::Unbond { amount } => execute_unbond(deps, env, info, amount),
         ExecuteMsg::UpdateConfig {
             owner,
             manager,
             duration,
         } => execute_update_config(deps, info, owner, manager, duration),
-        ExecuteMsg::Claim {} => execute_claim(deps, env, info),
     }
 }
-
-pub fn execute_stake(
+// would be renamed to bond
+pub fn execute_bond(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
@@ -134,7 +132,7 @@ pub fn execute_stake(
         .add_attribute("from", info.sender))
 }
 
-pub fn execute_unstake(
+pub fn execute_unbond(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
@@ -164,38 +162,16 @@ pub fn execute_unstake(
         },
     )?;
 
-    match config.unstaking_duration {
-        None => {
-            let msg = CosmosMsg::Bank(BankMsg::Send {
-                to_address: info.sender.to_string(),
-                amount: coins(amount.u128(), config.denom),
-            });
-            Ok(Response::new()
-                .add_message(msg)
-                .add_attribute("action", "unstake")
-                .add_attribute("from", info.sender)
-                .add_attribute("amount", amount)
-                .add_attribute("claim_duration", "None"))
-        }
-        Some(duration) => {
-            let outstanding_claims = CLAIMS.query_claims(deps.as_ref(), &info.sender)?.claims;
-            if outstanding_claims.len() >= MAX_CLAIMS as usize {
-                return Err(ContractError::TooManyClaims {});
-            }
-
-            CLAIMS.create_claim(
-                deps.storage,
-                &info.sender,
-                amount,
-                duration.after(&env.block),
-            )?;
-            Ok(Response::new()
-                .add_attribute("action", "unstake")
-                .add_attribute("from", info.sender)
-                .add_attribute("amount", amount)
-                .add_attribute("claim_duration", format!("{}", duration)))
-        }
-    }
+    let msg = CosmosMsg::Bank(BankMsg::Send {
+        to_address: info.sender.to_string(),
+        amount: coins(amount.u128(), config.denom),
+    });
+    Ok(Response::new()
+        .add_message(msg)
+        .add_attribute("action", "unstake")
+        .add_attribute("from", info.sender)
+        .add_attribute("amount", amount)
+        .add_attribute("claim_duration", "None"))
 }
 
 pub fn execute_update_config(

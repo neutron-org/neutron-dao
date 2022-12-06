@@ -979,27 +979,7 @@
       "description": "A number of Custom messages that can call into the Neutron bindings",
       "oneOf": [
         {
-          "description": "AddAdmin registers an interchain account on remote chain",
-          "type": "object",
-          "required": [
-            "add_admin"
-          ],
-          "properties": {
-            "add_admin": {
-              "type": "object",
-              "required": [
-                "admin"
-              ],
-              "properties": {
-                "admin": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "additionalProperties": false
-        },
-        {
+          "description": "TODO: add anotation TODO: move this to neutron sdk; bring neutron-sdk instead to this project This message can be sent only by neutron dao (cuz only neutron dao has admin rights)",
           "type": "object",
           "required": [
             "submit_proposal"
@@ -1069,16 +1049,6 @@
           "anyOf": [
             {
               "$ref": "#/definitions/ParamChangeProposal"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "text_proposal": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/TextProposal"
             },
             {
               "type": "null"
@@ -1187,22 +1157,6 @@
             "string",
             "null"
           ]
-        }
-      }
-    },
-    "TextProposal": {
-      "description": "MsgTextPoposal defines a SDK message for submission of text proposal",
-      "type": "object",
-      "required": [
-        "description",
-        "title"
-      ],
-      "properties": {
-        "description": {
-          "type": "string"
-        },
-        "title": {
-          "type": "string"
         }
       }
     },

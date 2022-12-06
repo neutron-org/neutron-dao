@@ -105,7 +105,7 @@ fn stake_tokens(
     app.execute_contract(
         Addr::unchecked(sender),
         staking_addr,
-        &ExecuteMsg::Stake {},
+        &ExecuteMsg::Bond {},
         &coins(amount, denom),
     )
 }
@@ -119,7 +119,7 @@ fn unstake_tokens(
     app.execute_contract(
         Addr::unchecked(sender),
         staking_addr,
-        &ExecuteMsg::Unstake {
+        &ExecuteMsg::Unbond {
             amount: Uint128::new(amount),
         },
         &[],
