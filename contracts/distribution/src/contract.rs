@@ -56,7 +56,7 @@ pub fn execute(
         // permissionless
         ExecuteMsg::Fund {} => exec_fund(deps, info),
 
-        // permissioned - owner
+        // permissioned - owner of the share
         ExecuteMsg::Claim {} => exec_claim(deps, info),
     }
 }
