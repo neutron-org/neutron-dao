@@ -11,9 +11,6 @@ use crate::state::{
     TOTAL_DISTRIBUTED, TOTAL_RECEIVED,
 };
 
-// const CONTRACT_NAME: &str = "crates.io:neutron-treasury";
-// const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
-
 //--------------------------------------------------------------------------------------------------
 // Instantiation
 //--------------------------------------------------------------------------------------------------

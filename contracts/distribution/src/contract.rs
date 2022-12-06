@@ -9,9 +9,6 @@ use cw_storage_plus::KeyDeserialize;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::{Config, CONFIG, PENDING_DISTRIBUTION, SHARES};
 
-// const CONTRACT_NAME: &str = "crates.io:neutron-treasury";
-// const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
-
 //--------------------------------------------------------------------------------------------------
 // Instantiation
 //--------------------------------------------------------------------------------------------------
