@@ -5,7 +5,7 @@ use cosmwasm_std::{
     Response, StdError, StdResult, Uint128, WasmMsg,
 };
 
-use crate::msg::{DistributionMsg, ExecuteMsg, InstantiateMsg, QueryMsg, StatsResponse};
+use crate::msg::{DistributeMsg, ExecuteMsg, InstantiateMsg, QueryMsg, StatsResponse};
 use crate::state::{
     Config, BANK_BALANCE, CONFIG, LAST_BALANCE, LAST_GRAB_TIME, TOTAL_BANK_SPENT,
     TOTAL_DISTRIBUTED, TOTAL_RECEIVED,
@@ -57,6 +57,20 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
         ExecuteMsg::Distribute {} => exec_distribute(deps, env),
         // permissioned - dao
         ExecuteMsg::Payout { amount, recipient } => exec_payout(deps, info, env, amount, recipient),
+        // permissioned - dao
+        ExecuteMsg::UpdateConfig {
+            distribution_rate,
+            min_period,
+            dao,
+            distribution_contract,
+        } => exec_update_config(
+            deps,
+            info,
+            distribution_rate,
+            min_period,
+            dao,
+            distribution_contract,
+        ),
     }
 }
 
@@ -82,6 +96,44 @@ pub fn exec_transfer_ownership(
         .add_attribute("new_owner", new_owner_addr))
 }
 
+pub fn exec_update_config(
+    deps: DepsMut,
+    info: MessageInfo,
+    distribution_rate: Option<u8>,
+    min_period: Option<u64>,
+    dao: Option<String>,
+    distribution_contract: Option<String>,
+) -> StdResult<Response> {
+    let mut config: Config = CONFIG.load(deps.storage)?;
+    if info.sender != config.dao {
+        return Err(StdError::generic_err("only dao can update config"));
+    }
+
+    if let Some(min_period) = min_period {
+        config.min_period = min_period;
+    }
+    if let Some(distribution_contract) = distribution_contract {
+        config.distribution_contract = deps.api.addr_validate(distribution_contract.as_str())?;
+    }
+    if let Some(distribution_rate) = distribution_rate {
+        config.distribution_rate = distribution_rate;
+    }
+    if let Some(dao) = dao {
+        config.dao = deps.api.addr_validate(dao.as_str())?;
+    }
+
+    CONFIG.save(deps.storage, &config)?;
+
+    Ok(Response::new()
+        .add_attribute("action", "neutron/treasury/update_config")
+        .add_attribute("denom", config.denom)
+        .add_attribute("min_period", config.min_period.to_string())
+        .add_attribute("distribution_contract", config.distribution_contract)
+        .add_attribute("distribution_rate", config.distribution_rate.to_string())
+        .add_attribute("owner", config.owner)
+        .add_attribute("dao", config.dao))
+}
+
 pub fn exec_distribute(deps: DepsMut, env: Env) -> StdResult<Response> {
     let config: Config = CONFIG.load(deps.storage)?;
     let denom = config.denom;
@@ -90,10 +142,6 @@ pub fn exec_distribute(deps: DepsMut, env: Env) -> StdResult<Response> {
         return Err(StdError::generic_err("too soon to collect"));
     }
     LAST_GRAB_TIME.save(deps.storage, &current_time)?;
-    // TODO: do we need it?
-    // if config.distribution_rate == 0 {
-    //     return Err(StdError::generic_err("distribution rate is zero"));
-    // }
     let last_balance = LAST_BALANCE.load(deps.storage)?;
     let current_balance = deps
         .querier
@@ -122,15 +170,19 @@ pub fn exec_distribute(deps: DepsMut, env: Env) -> StdResult<Response> {
         deps.storage,
         &current_balance.amount.checked_sub(to_distribution)?,
     )?;
-    let msg = CosmosMsg::Wasm(WasmMsg::Execute {
-        contract_addr: config.distribution_contract.to_string(),
-        funds: coins(to_distribution.u128(), denom),
-        msg: to_binary(&DistributionMsg::Fund {})?,
-    });
-
-    Ok(Response::default()
-        .add_message(msg)
-        .add_attribute("action", "neutron/treasury/grab")
+    let mut resp = Response::default();
+    if !to_distribution.is_zero() {
+        deps.api.debug("WASMDEBUG: zero");
+        let msg = CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr: config.distribution_contract.to_string(),
+            funds: coins(to_distribution.u128(), denom),
+            msg: to_binary(&DistributeMsg::Fund {})?,
+        });
+        deps.api.debug(format!("WASMDEBUG: {:?}", msg).as_str());
+        resp = resp.add_message(msg)
+    }
+    Ok(resp
+        .add_attribute("action", "neutron/treasury/distribute")
         .add_attribute("bank_balance", bank_balance)
         .add_attribute("distributed", to_distribution))
 }

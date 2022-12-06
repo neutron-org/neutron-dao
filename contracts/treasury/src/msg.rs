@@ -20,12 +20,19 @@ pub enum ExecuteMsg {
     TransferOwnership(String),
 
     /// Distribute pending funds between Bank and Distribution accounts
-    Distribute(),
+    Distribute {},
 
     // Payout funds at DAO decision
     Payout {
         amount: Uint128,
         recipient: String,
+    },
+    // //Update config
+    UpdateConfig {
+        distribution_rate: Option<u8>,
+        min_period: Option<u64>,
+        dao: Option<String>,
+        distribution_contract: Option<String>,
     },
 }
 
@@ -49,6 +56,6 @@ pub struct StatsResponse {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub enum DistributionMsg {
+pub enum DistributeMsg {
     Fund {},
 }

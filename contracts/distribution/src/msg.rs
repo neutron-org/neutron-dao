@@ -21,10 +21,15 @@ pub enum ExecuteMsg {
     },
 
     /// Distribute funds to the and distribution accounts according to their shares
-    Fund(),
+    Fund {},
 
     /// Claim the funds that have been distributed to the contract's account
-    Claim(),
+    Claim {},
+
+    //obviously Update config
+    UpdateConfig {
+        dao: String,
+    },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]

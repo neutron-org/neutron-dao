@@ -201,3 +201,33 @@ fn test_set_shares() {
         None
     );
 }
+
+#[test]
+fn test_update_config_unauthorized() {
+    let mut deps = mock_dependencies(&[]);
+    init_base_contract(deps.as_mut());
+    let msg = ExecuteMsg::UpdateConfig {
+        dao: "new_dao".to_string(),
+    };
+    let res = execute(deps.as_mut(), mock_env(), mock_info("someone", &[]), msg);
+    assert!(res.is_err());
+    assert_eq!(
+        res.unwrap_err().to_string(),
+        "Generic error: only dao can update config"
+    );
+}
+
+#[test]
+fn test_update_config_success() {
+    let mut deps = mock_dependencies(&[]);
+    init_base_contract(deps.as_mut());
+    let msg = ExecuteMsg::UpdateConfig {
+        dao: "new_dao".to_string(),
+    };
+    let res = execute(deps.as_mut(), mock_env(), mock_info("dao", &[]), msg);
+    assert!(res.is_ok());
+    assert_eq!(
+        CONFIG.load(deps.as_ref().storage).unwrap().dao,
+        "new_dao".to_string()
+    );
+}

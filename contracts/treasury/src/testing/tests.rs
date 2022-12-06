@@ -6,7 +6,7 @@ use cosmwasm_std::{
 
 use crate::{
     contract::{execute, instantiate},
-    msg::{DistributionMsg, ExecuteMsg, InstantiateMsg},
+    msg::{DistributeMsg, ExecuteMsg, InstantiateMsg},
     state::{BANK_BALANCE, CONFIG, LAST_BALANCE, TOTAL_BANK_SPENT, TOTAL_RECEIVED},
     testing::mock_querier::mock_dependencies,
 };
@@ -67,7 +67,7 @@ fn test_collect_with() {
                 denom: DENOM.to_string(),
                 amount: Uint128::from(230000u128)
             }],
-            msg: to_binary(&DistributionMsg::Fund {}).unwrap(),
+            msg: to_binary(&DistributeMsg::Fund {}).unwrap(),
         })
     );
     let bank_balance = BANK_BALANCE.load(deps.as_ref().storage).unwrap();
@@ -141,4 +141,41 @@ fn test_payout_success() {
     assert_eq!(total_payout, Uint128::from(400000u128));
     let last_balance = LAST_BALANCE.load(deps.as_ref().storage).unwrap();
     assert_eq!(last_balance, Uint128::from(600000u128));
+}
+
+#[test]
+fn test_update_config_unauthorized() {
+    let mut deps = mock_dependencies(&[]);
+    init_base_contract(deps.as_mut());
+    let msg = ExecuteMsg::UpdateConfig {
+        distribution_contract: None,
+        distribution_rate: None,
+        min_period: None,
+        dao: Some("dao1".to_string()),
+    };
+    let res = execute(deps.as_mut(), mock_env(), mock_info("not_owner", &[]), msg);
+    assert!(res.is_err());
+    assert_eq!(
+        res.unwrap_err().to_string(),
+        "Generic error: only dao can update config"
+    );
+}
+
+#[test]
+fn test_update_config_success() {
+    let mut deps = mock_dependencies(&[]);
+    init_base_contract(deps.as_mut());
+    let msg = ExecuteMsg::UpdateConfig {
+        distribution_contract: Some("new_contract".to_string()),
+        distribution_rate: Some(11),
+        min_period: Some(3000),
+        dao: Some("dao1".to_string()),
+    };
+    let res = execute(deps.as_mut(), mock_env(), mock_info("dao", &[]), msg);
+    assert!(res.is_ok());
+    let config = CONFIG.load(deps.as_ref().storage).unwrap();
+    assert_eq!(config.distribution_contract, "new_contract");
+    assert_eq!(config.distribution_rate, 11);
+    assert_eq!(config.min_period, 3000);
+    assert_eq!(config.dao, "dao1");
 }

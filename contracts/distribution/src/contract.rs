@@ -55,7 +55,20 @@ pub fn execute(
 
         // permissioned - owner of the share
         ExecuteMsg::Claim {} => exec_claim(deps, info),
+
+        // permissioned - dao
+        ExecuteMsg::UpdateConfig { dao } => exec_update_config(deps, info, dao),
     }
+}
+
+pub fn exec_update_config(deps: DepsMut, info: MessageInfo, dao: String) -> StdResult<Response> {
+    let mut config: Config = CONFIG.load(deps.storage)?;
+    if info.sender != config.dao {
+        return Err(StdError::generic_err("only dao can update config"));
+    }
+    config.dao = deps.api.addr_validate(&dao)?;
+    CONFIG.save(deps.storage, &config)?;
+    Ok(Response::new().add_attribute("action", "neutron/distribution/update_config"))
 }
 
 pub fn exec_transfer_ownership(
@@ -138,7 +151,7 @@ pub fn exec_set_shares(
         SHARES.save(deps.storage, &addr, &shares)?;
     }
     Ok(Response::new()
-        .add_attribute("action", "neutron/treasury/set_shares")
+        .add_attribute("action", "neutron/distribution/set_shares")
         .add_attribute("shares", format!("{:?}", new_shares)))
 }
 
