@@ -6,7 +6,6 @@ use serde::{Deserialize, Serialize};
 pub struct InstantiateMsg {
     /// The contract's owner
     pub owner: String,
-    pub dao: String,
     pub denom: String,
 }
 
@@ -25,11 +24,6 @@ pub enum ExecuteMsg {
 
     /// Claim the funds that have been distributed to the contract's account
     Claim {},
-
-    //obviously Update config
-    UpdateConfig {
-        dao: String,
-    },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]

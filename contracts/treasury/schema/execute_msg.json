@@ -61,12 +61,6 @@
         "update_config": {
           "type": "object",
           "properties": {
-            "dao": {
-              "type": [
-                "string",
-                "null"
-              ]
-            },
             "distribution_contract": {
               "type": [
                 "string",

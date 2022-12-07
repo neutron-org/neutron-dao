@@ -17,7 +17,6 @@ pub fn init_base_contract(deps: DepsMut<Empty>) {
     let msg = InstantiateMsg {
         denom: DENOM.to_string(),
         owner: "owner".to_string(),
-        dao: "dao".to_string(),
     };
     let info = mock_info("creator", &coins(2, DENOM));
     instantiate(deps, mock_env(), info, msg).unwrap();
@@ -143,10 +142,7 @@ fn test_set_shares_unauthorized() {
     };
     let res = execute(deps.as_mut(), mock_env(), mock_info("someone", &[]), msg);
     assert!(res.is_err());
-    assert_eq!(
-        res.unwrap_err().to_string(),
-        "Generic error: only dao can set shares"
-    );
+    assert_eq!(res.unwrap_err().to_string(), "Generic error: unauthorized");
 }
 
 #[test]
@@ -180,7 +176,7 @@ fn test_set_shares() {
             ("addr2".to_string(), Uint128::from(2u128)),
         ],
     };
-    let res = execute(deps.as_mut(), mock_env(), mock_info("dao", &[]), msg);
+    let res = execute(deps.as_mut(), mock_env(), mock_info("owner", &[]), msg);
     assert!(res.is_ok());
     assert_eq!(
         SHARES
@@ -199,35 +195,5 @@ fn test_set_shares() {
             .may_load(deps.as_ref().storage, "addr3".as_bytes())
             .unwrap(),
         None
-    );
-}
-
-#[test]
-fn test_update_config_unauthorized() {
-    let mut deps = mock_dependencies(&[]);
-    init_base_contract(deps.as_mut());
-    let msg = ExecuteMsg::UpdateConfig {
-        dao: "new_dao".to_string(),
-    };
-    let res = execute(deps.as_mut(), mock_env(), mock_info("someone", &[]), msg);
-    assert!(res.is_err());
-    assert_eq!(
-        res.unwrap_err().to_string(),
-        "Generic error: only dao can update config"
-    );
-}
-
-#[test]
-fn test_update_config_success() {
-    let mut deps = mock_dependencies(&[]);
-    init_base_contract(deps.as_mut());
-    let msg = ExecuteMsg::UpdateConfig {
-        dao: "new_dao".to_string(),
-    };
-    let res = execute(deps.as_mut(), mock_env(), mock_info("dao", &[]), msg);
-    assert!(res.is_ok());
-    assert_eq!(
-        CONFIG.load(deps.as_ref().storage).unwrap().dao,
-        "new_dao".to_string()
     );
 }

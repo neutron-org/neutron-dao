@@ -20,7 +20,6 @@ pub fn init_base_contract(deps: DepsMut<Empty>) {
         distribution_contract: "distribution_contract".to_string(),
         distribution_rate: 23,
         owner: "owner".to_string(),
-        dao: "dao".to_string(),
     };
     let info = mock_info("creator", &coins(2, DENOM));
     instantiate(deps, mock_env(), info, msg).unwrap();
@@ -86,7 +85,7 @@ fn test_payout_no_money() {
         amount: Uint128::from(500000u128),
         recipient: "some".to_string(),
     };
-    let res = execute(deps.as_mut(), mock_env(), mock_info("dao", &[]), msg);
+    let res = execute(deps.as_mut(), mock_env(), mock_info("owner", &[]), msg);
     assert!(res.is_err());
     assert_eq!(
         res.unwrap_err().to_string(),
@@ -95,19 +94,16 @@ fn test_payout_no_money() {
 }
 
 #[test]
-fn test_payout_not_dao() {
+fn test_payout_not_owner() {
     let mut deps = mock_dependencies(&[]);
     init_base_contract(deps.as_mut());
     let msg = ExecuteMsg::Payout {
         amount: Uint128::from(500000u128),
         recipient: "some".to_string(),
     };
-    let res = execute(deps.as_mut(), mock_env(), mock_info("not_dao", &[]), msg);
+    let res = execute(deps.as_mut(), mock_env(), mock_info("not_owner", &[]), msg);
     assert!(res.is_err());
-    assert_eq!(
-        res.unwrap_err().to_string(),
-        "Generic error: only dao can payout"
-    );
+    assert_eq!(res.unwrap_err().to_string(), "Generic error: unauthorized");
 }
 
 #[test]
@@ -121,7 +117,7 @@ fn test_payout_success() {
         amount: Uint128::from(400000u128),
         recipient: "some".to_string(),
     };
-    let res = execute(deps.as_mut(), mock_env(), mock_info("dao", &[]), msg);
+    let res = execute(deps.as_mut(), mock_env(), mock_info("owner", &[]), msg);
     assert!(res.is_ok());
     let messages = res.unwrap().messages;
     assert_eq!(messages.len(), 1);
@@ -151,14 +147,10 @@ fn test_update_config_unauthorized() {
         distribution_contract: None,
         distribution_rate: None,
         min_period: None,
-        dao: Some("dao1".to_string()),
     };
     let res = execute(deps.as_mut(), mock_env(), mock_info("not_owner", &[]), msg);
     assert!(res.is_err());
-    assert_eq!(
-        res.unwrap_err().to_string(),
-        "Generic error: only dao can update config"
-    );
+    assert_eq!(res.unwrap_err().to_string(), "Generic error: unauthorized");
 }
 
 #[test]
@@ -169,13 +161,11 @@ fn test_update_config_success() {
         distribution_contract: Some("new_contract".to_string()),
         distribution_rate: Some(11),
         min_period: Some(3000),
-        dao: Some("dao1".to_string()),
     };
-    let res = execute(deps.as_mut(), mock_env(), mock_info("dao", &[]), msg);
+    let res = execute(deps.as_mut(), mock_env(), mock_info("owner", &[]), msg);
     assert!(res.is_ok());
     let config = CONFIG.load(deps.as_ref().storage).unwrap();
     assert_eq!(config.distribution_contract, "new_contract");
     assert_eq!(config.distribution_rate, 11);
     assert_eq!(config.min_period, 3000);
-    assert_eq!(config.dao, "dao1");
 }

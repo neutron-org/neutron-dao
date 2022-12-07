@@ -3,7 +3,6 @@
   "title": "InstantiateMsg",
   "type": "object",
   "required": [
-    "dao",
     "denom",
     "distribution_contract",
     "distribution_rate",
@@ -11,9 +10,6 @@
     "owner"
   ],
   "properties": {
-    "dao": {
-      "type": "string"
-    },
     "denom": {
       "type": "string"
     },
@@ -31,7 +27,6 @@
       "minimum": 0.0
     },
     "owner": {
-      "description": "The contract's owner",
       "type": "string"
     }
   }

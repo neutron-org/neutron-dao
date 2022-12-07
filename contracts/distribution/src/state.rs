@@ -7,7 +7,6 @@ use serde::{Deserialize, Serialize};
 pub struct Config {
     pub denom: String,
     pub owner: Addr,
-    pub dao: Addr,
 }
 
 pub const PENDING_DISTRIBUTION: Map<&[u8], Uint128> = Map::new("pending_distribution");

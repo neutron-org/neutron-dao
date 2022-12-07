@@ -4,9 +4,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct InstantiateMsg {
-    /// The contract's owner
     pub owner: String,
-    pub dao: String,
     pub denom: String,
     pub distribution_rate: u8,
     pub min_period: u64,
@@ -31,7 +29,6 @@ pub enum ExecuteMsg {
     UpdateConfig {
         distribution_rate: Option<u8>,
         min_period: Option<u64>,
-        dao: Option<String>,
         distribution_contract: Option<String>,
     },
 }

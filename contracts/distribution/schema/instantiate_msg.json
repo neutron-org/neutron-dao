@@ -3,14 +3,10 @@
   "title": "InstantiateMsg",
   "type": "object",
   "required": [
-    "dao",
     "denom",
     "owner"
   ],
   "properties": {
-    "dao": {
-      "type": "string"
-    },
     "denom": {
       "type": "string"
     },

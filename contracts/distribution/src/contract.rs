@@ -23,7 +23,6 @@ pub fn instantiate(
     let config = Config {
         denom: msg.denom,
         owner: deps.api.addr_validate(&msg.owner)?,
-        dao: deps.api.addr_validate(&msg.dao)?,
     };
     CONFIG.save(deps.storage, &config)?;
     Ok(Response::new())
@@ -47,7 +46,7 @@ pub fn execute(
             exec_transfer_ownership(deps, info.sender, api.addr_validate(&new_owner)?)
         }
 
-        // permissioned - dao
+        // permissioned - owner
         ExecuteMsg::SetShares { shares } => exec_set_shares(deps, info, shares),
 
         // permissionless
@@ -55,20 +54,7 @@ pub fn execute(
 
         // permissioned - owner of the share
         ExecuteMsg::Claim {} => exec_claim(deps, info),
-
-        // permissioned - dao
-        ExecuteMsg::UpdateConfig { dao } => exec_update_config(deps, info, dao),
     }
-}
-
-pub fn exec_update_config(deps: DepsMut, info: MessageInfo, dao: String) -> StdResult<Response> {
-    let mut config: Config = CONFIG.load(deps.storage)?;
-    if info.sender != config.dao {
-        return Err(StdError::generic_err("only dao can update config"));
-    }
-    config.dao = deps.api.addr_validate(&dao)?;
-    CONFIG.save(deps.storage, &config)?;
-    Ok(Response::new().add_attribute("action", "neutron/distribution/update_config"))
 }
 
 pub fn exec_transfer_ownership(
@@ -79,7 +65,7 @@ pub fn exec_transfer_ownership(
     let config = CONFIG.load(deps.storage)?;
     let old_owner = config.owner;
     if sender_addr != old_owner {
-        return Err(StdError::generic_err("only owner can transfer ownership"));
+        return Err(StdError::generic_err("unauthorized"));
     }
 
     CONFIG.update(deps.storage, |mut config| -> StdResult<_> {
@@ -135,9 +121,9 @@ pub fn exec_set_shares(
     info: MessageInfo,
     shares: Vec<(String, Uint128)>,
 ) -> StdResult<Response> {
-    let config = CONFIG.load(deps.storage)?;
-    if info.sender != config.dao {
-        return Err(StdError::generic_err("only dao can set shares"));
+    let config: Config = CONFIG.load(deps.storage)?;
+    if info.sender != config.owner {
+        return Err(StdError::generic_err("unauthorized"));
     }
     let mut new_shares = vec![];
     for (addr, share) in shares {

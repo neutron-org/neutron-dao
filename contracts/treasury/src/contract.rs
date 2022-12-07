@@ -28,7 +28,6 @@ pub fn instantiate(
         distribution_contract: deps.api.addr_validate(msg.distribution_contract.as_str())?,
         distribution_rate: msg.distribution_rate,
         owner: deps.api.addr_validate(&msg.owner)?,
-        dao: deps.api.addr_validate(&msg.dao)?,
     };
     CONFIG.save(deps.storage, &config)?;
     TOTAL_RECEIVED.save(deps.storage, &Uint128::zero())?;
@@ -55,20 +54,18 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
         }
         // permissionless
         ExecuteMsg::Distribute {} => exec_distribute(deps, env),
-        // permissioned - dao
+        // permissioned - owner
         ExecuteMsg::Payout { amount, recipient } => exec_payout(deps, info, env, amount, recipient),
-        // permissioned - dao
+        // permissioned - owner
         ExecuteMsg::UpdateConfig {
             distribution_rate,
             min_period,
-            dao,
             distribution_contract,
         } => exec_update_config(
             deps,
             info,
             distribution_rate,
             min_period,
-            dao,
             distribution_contract,
         ),
     }
@@ -82,7 +79,7 @@ pub fn exec_transfer_ownership(
     let config = CONFIG.load(deps.storage)?;
     let old_owner = config.owner;
     if sender_addr != old_owner {
-        return Err(StdError::generic_err("only owner can transfer ownership"));
+        return Err(StdError::generic_err("unathorized"));
     }
 
     CONFIG.update(deps.storage, |mut config| -> StdResult<_> {
@@ -101,12 +98,11 @@ pub fn exec_update_config(
     info: MessageInfo,
     distribution_rate: Option<u8>,
     min_period: Option<u64>,
-    dao: Option<String>,
     distribution_contract: Option<String>,
 ) -> StdResult<Response> {
     let mut config: Config = CONFIG.load(deps.storage)?;
-    if info.sender != config.dao {
-        return Err(StdError::generic_err("only dao can update config"));
+    if info.sender != config.owner {
+        return Err(StdError::generic_err("unauthorized"));
     }
 
     if let Some(min_period) = min_period {
@@ -118,9 +114,6 @@ pub fn exec_update_config(
     if let Some(distribution_rate) = distribution_rate {
         config.distribution_rate = distribution_rate;
     }
-    if let Some(dao) = dao {
-        config.dao = deps.api.addr_validate(dao.as_str())?;
-    }
 
     CONFIG.save(deps.storage, &config)?;
 
@@ -130,8 +123,7 @@ pub fn exec_update_config(
         .add_attribute("min_period", config.min_period.to_string())
         .add_attribute("distribution_contract", config.distribution_contract)
         .add_attribute("distribution_rate", config.distribution_rate.to_string())
-        .add_attribute("owner", config.owner)
-        .add_attribute("dao", config.dao))
+        .add_attribute("owner", config.owner))
 }
 
 pub fn exec_distribute(deps: DepsMut, env: Env) -> StdResult<Response> {
@@ -196,8 +188,8 @@ pub fn exec_payout(
 ) -> StdResult<Response> {
     let config: Config = CONFIG.load(deps.storage)?;
     let denom = config.denom;
-    if info.sender != config.dao {
-        return Err(StdError::generic_err("only dao can payout"));
+    if info.sender != config.owner {
+        return Err(StdError::generic_err("unauthorized"));
     }
     let bank_balance = BANK_BALANCE.load(deps.storage)?;
     if amount.gt(&bank_balance) {

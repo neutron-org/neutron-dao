@@ -10,7 +10,6 @@ pub struct Config {
     pub min_period: u64,
     pub denom: String,
     pub owner: Addr,
-    pub dao: Addr,
 }
 
 pub const TOTAL_RECEIVED: Item<Uint128> = Item::new("total_received");
