@@ -1,27 +1,22 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, Order, Reply,
-    Response, StdError, StdResult, SubMsg,
+    to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, Reply, Response,
+    StdError, StdResult, SubMsg,
 };
 use cw2::{get_contract_version, set_contract_version};
-use cw_storage_plus::Map;
 use cw_utils::{parse_reply_instantiate_data, Duration};
 
-use cw_paginate::{paginate_map, paginate_map_keys, paginate_map_values};
+use cw_paginate::{paginate_map, paginate_map_values};
 use cwd_interface::{voting, ModuleInstantiateInfo};
 use neutron_bindings::msg::NeutronMsg;
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InitialItem, InstantiateMsg, MigrateMsg, QueryMsg};
-use crate::query::{
-    AdminNominationResponse, Cw20BalanceResponse, DumpStateResponse, GetItemResponse,
-    PauseInfoResponse, SubDao,
-};
+use crate::query::{DumpStateResponse, GetItemResponse, PauseInfoResponse, SubDao};
 use crate::state::{
-    Config, ProposalModule, ProposalModuleStatus, ACTIVE_PROPOSAL_MODULE_COUNT, ADMIN, CONFIG,
-    CW20_LIST, CW721_LIST, ITEMS, NOMINATED_ADMIN, PAUSED, PROPOSAL_MODULES, SUBDAO_LIST,
-    TOTAL_PROPOSAL_MODULE_COUNT, VOTING_REGISTRY_MODULE,
+    Config, ProposalModule, ProposalModuleStatus, ACTIVE_PROPOSAL_MODULE_COUNT, CONFIG, ITEMS,
+    PAUSED, PROPOSAL_MODULES, SUBDAO_LIST, TOTAL_PROPOSAL_MODULE_COUNT, VOTING_REGISTRY_MODULE,
 };
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:cwd-core";
@@ -43,20 +38,9 @@ pub fn instantiate(
     let config = Config {
         name: msg.name,
         description: msg.description,
-        image_url: msg.image_url,
-        automatically_add_cw20s: msg.automatically_add_cw20s,
-        automatically_add_cw721s: msg.automatically_add_cw721s,
         dao_uri: msg.dao_uri,
     };
     CONFIG.save(deps.storage, &config)?;
-
-    let admin = msg
-        .admin
-        .map(|human| deps.api.addr_validate(&human))
-        .transpose()?
-        // If no admin is specified, the contract is its own admin.
-        .unwrap_or_else(|| env.contract.address.clone());
-    ADMIN.save(deps.storage, &admin)?;
 
     let vote_module_msg = msg
         .voting_registry_module_instantiate_info
@@ -103,38 +87,20 @@ pub fn execute(
     }
 
     match msg {
-        ExecuteMsg::ExecuteAdminMsgs { msgs } => {
-            execute_admin_msgs(deps.as_ref(), info.sender, msgs)
-        }
         ExecuteMsg::ExecuteProposalHook { msgs } => {
             execute_proposal_hook(deps.as_ref(), info.sender, msgs)
         }
         ExecuteMsg::Pause { duration } => execute_pause(deps, env, info.sender, duration),
-        ExecuteMsg::Receive(_) => execute_receive_cw20(deps, info.sender),
-        ExecuteMsg::ReceiveNft(_) => execute_receive_cw721(deps, info.sender),
         ExecuteMsg::RemoveItem { key } => execute_remove_item(deps, env, info.sender, key),
         ExecuteMsg::SetItem { key, addr } => execute_set_item(deps, env, info.sender, key, addr),
         ExecuteMsg::UpdateConfig { config } => {
             execute_update_config(deps, env, info.sender, config)
-        }
-        ExecuteMsg::UpdateCw20List { to_add, to_remove } => {
-            execute_update_cw20_list(deps, env, info.sender, to_add, to_remove)
-        }
-        ExecuteMsg::UpdateCw721List { to_add, to_remove } => {
-            execute_update_cw721_list(deps, env, info.sender, to_add, to_remove)
         }
         ExecuteMsg::UpdateVotingModule { module } => {
             execute_update_voting_module(env, info.sender, module)
         }
         ExecuteMsg::UpdateProposalModules { to_add, to_disable } => {
             execute_update_proposal_modules(deps, env, info.sender, to_add, to_disable)
-        }
-        ExecuteMsg::NominateAdmin { admin } => {
-            execute_nominate_admin(deps, env, info.sender, admin)
-        }
-        ExecuteMsg::AcceptAdminNomination {} => execute_accept_admin_nomination(deps, info.sender),
-        ExecuteMsg::WithdrawAdminNomination {} => {
-            execute_withdraw_admin_nomination(deps, info.sender)
         }
         ExecuteMsg::UpdateSubDaos { to_add, to_remove } => {
             execute_update_sub_daos_list(deps, env, info.sender, to_add, to_remove)
@@ -148,7 +114,6 @@ pub fn execute_pause(
     sender: Addr,
     pause_duration: Duration,
 ) -> Result<Response<NeutronMsg>, ContractError> {
-    // Only the core contract may call this method.
     if sender != env.contract.address {
         return Err(ContractError::Unauthorized {});
     }
@@ -161,23 +126,6 @@ pub fn execute_pause(
         .add_attribute("action", "execute_pause")
         .add_attribute("sender", sender)
         .add_attribute("until", until.to_string()))
-}
-
-pub fn execute_admin_msgs(
-    deps: Deps,
-    sender: Addr,
-    msgs: Vec<CosmosMsg<NeutronMsg>>,
-) -> Result<Response<NeutronMsg>, ContractError> {
-    let admin = ADMIN.load(deps.storage)?;
-
-    // Check if the sender is the DAO Admin
-    if sender != admin {
-        return Err(ContractError::Unauthorized {});
-    }
-
-    Ok(Response::default()
-        .add_attribute("action", "execute_admin_msgs")
-        .add_messages(msgs))
 }
 
 pub fn execute_proposal_hook(
@@ -199,88 +147,13 @@ pub fn execute_proposal_hook(
         .add_messages(msgs))
 }
 
-pub fn execute_nominate_admin(
-    deps: DepsMut,
-    env: Env,
-    sender: Addr,
-    nomination: Option<String>,
-) -> Result<Response<NeutronMsg>, ContractError> {
-    let nomination = nomination.map(|h| deps.api.addr_validate(&h)).transpose()?;
-
-    let current_admin = ADMIN.load(deps.storage)?;
-    if current_admin != sender {
-        return Err(ContractError::Unauthorized {});
-    }
-
-    let current_nomination = NOMINATED_ADMIN.may_load(deps.storage)?;
-    if current_nomination.is_some() {
-        return Err(ContractError::PendingNomination {});
-    }
-
-    match &nomination {
-        Some(nomination) => NOMINATED_ADMIN.save(deps.storage, nomination)?,
-        // If no admin set to default of the contract. This allows the
-        // contract to later set a new admin via governance.
-        None => ADMIN.save(deps.storage, &env.contract.address)?,
-    }
-
-    Ok(Response::default()
-        .add_attribute("action", "execute_nominate_admin")
-        .add_attribute(
-            "nomination",
-            nomination
-                .map(|n| n.to_string())
-                .unwrap_or_else(|| "None".to_string()),
-        ))
-}
-
-pub fn execute_accept_admin_nomination(
-    deps: DepsMut,
-    sender: Addr,
-) -> Result<Response<NeutronMsg>, ContractError> {
-    let nomination = NOMINATED_ADMIN
-        .may_load(deps.storage)?
-        .ok_or(ContractError::NoAdminNomination {})?;
-    if sender != nomination {
-        return Err(ContractError::Unauthorized {});
-    }
-    NOMINATED_ADMIN.remove(deps.storage);
-    ADMIN.save(deps.storage, &nomination)?;
-
-    Ok(Response::default()
-        .add_attribute("action", "execute_accept_admin_nomination")
-        .add_attribute("new_admin", sender))
-}
-
-pub fn execute_withdraw_admin_nomination(
-    deps: DepsMut,
-    sender: Addr,
-) -> Result<Response<NeutronMsg>, ContractError> {
-    let admin = ADMIN.load(deps.storage)?;
-    if admin != sender {
-        return Err(ContractError::Unauthorized {});
-    }
-
-    // Check that there is indeed a nomination to withdraw.
-    let current_nomination = NOMINATED_ADMIN.may_load(deps.storage)?;
-    if current_nomination.is_none() {
-        return Err(ContractError::NoAdminNomination {});
-    }
-
-    NOMINATED_ADMIN.remove(deps.storage);
-
-    Ok(Response::default()
-        .add_attribute("action", "execute_withdraw_admin_nomination")
-        .add_attribute("sender", sender))
-}
-
 pub fn execute_update_config(
     deps: DepsMut,
     env: Env,
     sender: Addr,
     config: Config,
 ) -> Result<Response<NeutronMsg>, ContractError> {
-    if sender != env.contract.address {
+    if env.contract.address != sender {
         return Err(ContractError::Unauthorized {});
     }
 
@@ -293,11 +166,7 @@ pub fn execute_update_config(
     Ok(Response::default()
         .add_attribute("action", "execute_update_config")
         .add_attribute("name", config.name)
-        .add_attribute("description", config.description)
-        .add_attribute(
-            "image_url",
-            config.image_url.unwrap_or_else(|| "None".to_string()),
-        ))
+        .add_attribute("description", config.description))
 }
 
 pub fn execute_update_voting_module(
@@ -368,79 +237,6 @@ pub fn execute_update_proposal_modules(
         .add_submessages(to_add))
 }
 
-/// Updates a set of addresses in state applying VERIFY to each item
-/// that will be added.
-fn do_update_addr_list(
-    deps: DepsMut,
-    map: Map<Addr, Empty>,
-    to_add: Vec<String>,
-    to_remove: Vec<String>,
-    verify: impl Fn(&Addr, Deps) -> StdResult<()>,
-) -> Result<(), ContractError> {
-    let to_add = to_add
-        .into_iter()
-        .map(|a| deps.api.addr_validate(&a))
-        .collect::<Result<Vec<_>, _>>()?;
-
-    let to_remove = to_remove
-        .into_iter()
-        .map(|a| deps.api.addr_validate(&a))
-        .collect::<Result<Vec<_>, _>>()?;
-
-    for addr in to_add {
-        verify(&addr, deps.as_ref())?;
-        map.save(deps.storage, addr, &Empty {})?;
-    }
-    for addr in to_remove {
-        map.remove(deps.storage, addr);
-    }
-
-    Ok(())
-}
-
-pub fn execute_update_cw20_list(
-    deps: DepsMut,
-    env: Env,
-    sender: Addr,
-    to_add: Vec<String>,
-    to_remove: Vec<String>,
-) -> Result<Response<NeutronMsg>, ContractError> {
-    if env.contract.address != sender {
-        return Err(ContractError::Unauthorized {});
-    }
-    do_update_addr_list(deps, CW20_LIST, to_add, to_remove, |addr, deps| {
-        // Perform a balance query here as this is the query performed
-        // by the `Cw20Balances` query.
-        let _info: cw20::BalanceResponse = deps.querier.query_wasm_smart(
-            addr,
-            &cw20::Cw20QueryMsg::Balance {
-                address: env.contract.address.to_string(),
-            },
-        )?;
-        Ok(())
-    })?;
-    Ok(Response::default().add_attribute("action", "update_cw20_list"))
-}
-
-pub fn execute_update_cw721_list(
-    deps: DepsMut,
-    env: Env,
-    sender: Addr,
-    to_add: Vec<String>,
-    to_remove: Vec<String>,
-) -> Result<Response<NeutronMsg>, ContractError> {
-    if env.contract.address != sender {
-        return Err(ContractError::Unauthorized {});
-    }
-    do_update_addr_list(deps, CW721_LIST, to_add, to_remove, |addr, deps| {
-        let _info: cw721::ContractInfoResponse = deps
-            .querier
-            .query_wasm_smart(addr, &cw721::Cw721QueryMsg::ContractInfo {})?;
-        Ok(())
-    })?;
-    Ok(Response::default().add_attribute("action", "update_cw721_list"))
-}
-
 pub fn execute_set_item(
     deps: DepsMut,
     env: Env,
@@ -505,49 +301,10 @@ pub fn execute_update_sub_daos_list(
         .add_attribute("sender", sender))
 }
 
-pub fn execute_receive_cw20(
-    deps: DepsMut,
-    sender: Addr,
-) -> Result<Response<NeutronMsg>, ContractError> {
-    let config = CONFIG.load(deps.storage)?;
-    if !config.automatically_add_cw20s {
-        Ok(Response::new())
-    } else {
-        CW20_LIST.save(deps.storage, sender.clone(), &Empty {})?;
-        Ok(Response::new()
-            .add_attribute("action", "receive_cw20")
-            .add_attribute("token", sender))
-    }
-}
-
-pub fn execute_receive_cw721(
-    deps: DepsMut,
-    sender: Addr,
-) -> Result<Response<NeutronMsg>, ContractError> {
-    let config = CONFIG.load(deps.storage)?;
-    if !config.automatically_add_cw721s {
-        Ok(Response::new())
-    } else {
-        CW721_LIST.save(deps.storage, sender.clone(), &Empty {})?;
-        Ok(Response::new()
-            .add_attribute("action", "receive_cw721")
-            .add_attribute("token", sender))
-    }
-}
-
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::Admin {} => query_admin(deps),
-        QueryMsg::AdminNomination {} => query_admin_nomination(deps),
         QueryMsg::Config {} => query_config(deps),
-        QueryMsg::Cw20TokenList { start_after, limit } => query_cw20_list(deps, start_after, limit),
-        QueryMsg::Cw20Balances { start_after, limit } => {
-            query_cw20_balances(deps, env, start_after, limit)
-        }
-        QueryMsg::Cw721TokenList { start_after, limit } => {
-            query_cw721_list(deps, start_after, limit)
-        }
         QueryMsg::DumpState {} => query_dump_state(deps, env),
         QueryMsg::GetItem { key } => query_get_item(deps, key),
         QueryMsg::Info {} => query_info(deps),
@@ -569,16 +326,6 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         }
         QueryMsg::DaoURI {} => query_dao_uri(deps),
     }
-}
-
-pub fn query_admin(deps: Deps) -> StdResult<Binary> {
-    let admin = ADMIN.load(deps.storage)?;
-    to_binary(&admin)
-}
-
-pub fn query_admin_nomination(deps: Deps) -> StdResult<Binary> {
-    let nomination = NOMINATED_ADMIN.may_load(deps.storage)?;
-    to_binary(&AdminNominationResponse { nomination })
 }
 
 pub fn query_config(deps: Deps) -> StdResult<Binary> {
@@ -666,7 +413,6 @@ pub fn query_paused(deps: Deps, env: Env) -> StdResult<Binary> {
 }
 
 pub fn query_dump_state(deps: Deps, env: Env) -> StdResult<Binary> {
-    let admin = ADMIN.load(deps.storage)?;
     let config = CONFIG.load(deps.storage)?;
     let voting_registry_module = VOTING_REGISTRY_MODULE.load(deps.storage)?;
     let proposal_modules = PROPOSAL_MODULES
@@ -678,7 +424,6 @@ pub fn query_dump_state(deps: Deps, env: Env) -> StdResult<Binary> {
     let active_proposal_module_count = ACTIVE_PROPOSAL_MODULE_COUNT.load(deps.storage)?;
     let total_proposal_module_count = TOTAL_PROPOSAL_MODULE_COUNT.load(deps.storage)?;
     to_binary(&DumpStateResponse {
-        admin,
         config,
         version,
         pause_info,
@@ -735,71 +480,6 @@ pub fn query_list_items(
     )?)
 }
 
-pub fn query_cw20_list(
-    deps: Deps,
-    start_after: Option<String>,
-    limit: Option<u32>,
-) -> StdResult<Binary> {
-    to_binary(&paginate_map_keys(
-        deps,
-        &CW20_LIST,
-        start_after
-            .map(|s| deps.api.addr_validate(&s))
-            .transpose()?,
-        limit,
-        cosmwasm_std::Order::Descending,
-    )?)
-}
-
-pub fn query_cw721_list(
-    deps: Deps,
-    start_after: Option<String>,
-    limit: Option<u32>,
-) -> StdResult<Binary> {
-    to_binary(&paginate_map_keys(
-        deps,
-        &CW721_LIST,
-        start_after
-            .map(|s| deps.api.addr_validate(&s))
-            .transpose()?,
-        limit,
-        cosmwasm_std::Order::Descending,
-    )?)
-}
-
-pub fn query_cw20_balances(
-    deps: Deps,
-    env: Env,
-    start_after: Option<String>,
-    limit: Option<u32>,
-) -> StdResult<Binary> {
-    let addrs = paginate_map_keys(
-        deps,
-        &CW20_LIST,
-        start_after
-            .map(|a| deps.api.addr_validate(&a))
-            .transpose()?,
-        limit,
-        cosmwasm_std::Order::Descending,
-    )?;
-    let balances = addrs
-        .into_iter()
-        .map(|addr| {
-            let balance: cw20::BalanceResponse = deps.querier.query_wasm_smart(
-                addr.clone(),
-                &cw20::Cw20QueryMsg::Balance {
-                    address: env.contract.address.to_string(),
-                },
-            )?;
-            Ok(Cw20BalanceResponse {
-                addr,
-                balance: balance.balance,
-            })
-        })
-        .collect::<StdResult<Vec<_>>>()?;
-    to_binary(&balances)
-}
-
 pub fn query_list_sub_daos(
     deps: Deps,
     start_after: Option<String>,
@@ -834,54 +514,8 @@ pub fn query_dao_uri(deps: Deps) -> StdResult<Binary> {
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
-    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-    match msg {
-        MigrateMsg::FromV1 { dao_uri } => {
-            use cw_core_v1 as v1;
-
-            let current_keys = v1::state::PROPOSAL_MODULES
-                .keys(deps.storage, None, None, Order::Ascending)
-                .collect::<StdResult<Vec<Addr>>>()?;
-
-            // All proposal modules are considered active in v1.
-            let module_count = &(current_keys.len() as u32);
-            TOTAL_PROPOSAL_MODULE_COUNT.save(deps.storage, module_count)?;
-            ACTIVE_PROPOSAL_MODULE_COUNT.save(deps.storage, module_count)?;
-
-            // Update proposal modules to v2.
-            current_keys
-                .into_iter()
-                .enumerate()
-                .try_for_each::<_, StdResult<()>>(|(idx, address)| {
-                    let prefix = derive_proposal_module_prefix(idx)?;
-                    let proposal_module = &ProposalModule {
-                        address: address.clone(),
-                        status: ProposalModuleStatus::Enabled {},
-                        prefix,
-                    };
-                    PROPOSAL_MODULES.save(deps.storage, address, proposal_module)?;
-                    Ok(())
-                })?;
-
-            // Update config to have the V2 "dao_uri" field.
-            let v1_config = v1::state::CONFIG.load(deps.storage)?;
-            CONFIG.save(
-                deps.storage,
-                &Config {
-                    name: v1_config.name,
-                    description: v1_config.description,
-                    image_url: v1_config.image_url,
-                    automatically_add_cw20s: v1_config.automatically_add_cw20s,
-                    automatically_add_cw721s: v1_config.automatically_add_cw721s,
-                    dao_uri,
-                },
-            )?;
-
-            Ok(Response::default())
-        }
-        MigrateMsg::FromCompatible {} => Ok(Response::default()),
-    }
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    Ok(Response::default())
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

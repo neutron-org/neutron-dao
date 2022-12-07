@@ -16,9 +16,6 @@ pub enum ContractError {
     #[error("The contract is paused.")]
     Paused {},
 
-    #[error("No voting module provided.")]
-    NoVotingModule {},
-
     #[error("Execution would result in no proposal modules being active.")]
     NoActiveProposalModules {},
 
@@ -28,19 +25,8 @@ pub enum ContractError {
     #[error("Multiple voting modules during instantiation.")]
     MultipleVotingModules {},
 
-    #[error("Unsigned integer overflow.")]
-    Overflow {},
-
     #[error("Key is missing from storage")]
     KeyMissing {},
-
-    #[error("No pending admin nomination.")]
-    NoAdminNomination {},
-
-    #[error(
-        "The pending admin nomination must be withdrawn before a new nomination can be created."
-    )]
-    PendingNomination {},
 
     #[error("Proposal module with address ({address}) does not exist.")]
     ProposalModuleDoesNotExist { address: Addr },
