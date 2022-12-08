@@ -6,7 +6,6 @@
     "allow_revoting",
     "close_proposal_on_execution_failure",
     "max_voting_period",
-    "only_members_execute",
     "pre_propose_info",
     "threshold"
   ],
@@ -37,10 +36,6 @@
           "type": "null"
         }
       ]
-    },
-    "only_members_execute": {
-      "description": "If set to true only members may execute passed proposals. Otherwise, any address may execute a passed proposal.",
-      "type": "boolean"
     },
     "pre_propose_info": {
       "description": "Information about what addresses may create proposals.",

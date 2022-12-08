@@ -20,10 +20,6 @@ pub struct InstantiateMsg {
     /// preventing governance attacks wherein an attacker aquires a
     /// large number of tokens and forces a proposal through.
     pub min_voting_period: Option<Duration>,
-    /// If set to true only members may execute passed
-    /// proposals. Otherwise, any address may execute a passed
-    /// proposal.
-    pub only_members_execute: bool,
     /// Allows changing votes before the proposal expires. If this is
     /// enabled proposals will not be able to complete early as final
     /// vote information is not known until the time of proposal
@@ -96,10 +92,6 @@ pub enum ExecuteMsg {
         /// preventing governance attacks wherein an attacker aquires a
         /// large number of tokens and forces a proposal through.
         min_voting_period: Option<Duration>,
-        /// If set to true only members may execute passed
-        /// proposals. Otherwise, any address may execute a passed
-        /// proposal. Applies to all outstanding and future proposals.
-        only_members_execute: bool,
         /// Allows changing votes before the proposal expires. If this is
         /// enabled proposals will not be able to complete early as final
         /// vote information is not known until the time of proposal
@@ -202,27 +194,4 @@ pub enum QueryMsg {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub enum MigrateMsg {
-    FromV1 {
-        /// This field was not present in DAO DAO v1. To migrate, a
-        /// value must be specified.
-        ///
-        /// If set to true proposals will be closed if their execution
-        /// fails. Otherwise, proposals will remain open after execution
-        /// failure. For example, with this enabled a proposal to send 5
-        /// tokens out of a DAO's treasury with 4 tokens would be closed when
-        /// it is executed. With this disabled, that same proposal would
-        /// remain open until the DAO's treasury was large enough for it to be
-        /// executed.
-        close_proposal_on_execution_failure: bool,
-        /// This field was not present in DAO DAO v1. To migrate, a
-        /// value must be specified.
-        ///
-        /// This contains information about how a pre-propose module may be configured.
-        /// If set to "AnyoneMayPropose", there will be no pre-propose module and consequently,
-        /// no deposit or membership checks when submitting a proposal. The "ModuleMayPropose"
-        /// option allows for instantiating a prepropose module which will handle deposit verification and return logic.
-        pre_propose_info: PreProposeInfo,
-    },
-    FromCompatible {},
-}
+pub enum MigrateMsg {}

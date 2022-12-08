@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "ExecuteMsg_for_ProposeMessage_and_Empty",
+  "title": "ExecuteMsg_for_ProposeMessage",
   "oneOf": [
     {
       "description": "Creates a new proposal in the pre-propose module. MSG will be serialized and used as the proposal creation message.",
@@ -74,27 +74,6 @@
                   "type": "null"
                 }
               ]
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "description": "Extension message. Contracts that extend this one should put their custom execute logic here. The default implementation will do nothing if this variant is executed.",
-      "type": "object",
-      "required": [
-        "extension"
-      ],
-      "properties": {
-        "extension": {
-          "type": "object",
-          "required": [
-            "msg"
-          ],
-          "properties": {
-            "msg": {
-              "$ref": "#/definitions/Empty"
             }
           }
         }

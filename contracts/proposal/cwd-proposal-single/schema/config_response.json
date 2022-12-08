@@ -8,7 +8,6 @@
     "close_proposal_on_execution_failure",
     "dao",
     "max_voting_period",
-    "only_members_execute",
     "threshold"
   ],
   "properties": {
@@ -46,10 +45,6 @@
           "type": "null"
         }
       ]
-    },
-    "only_members_execute": {
-      "description": "If set to true only members may execute passed proposals. Otherwise, any address may execute a passed proposal.",
-      "type": "boolean"
     },
     "threshold": {
       "description": "The threshold a proposal must reach to complete.",

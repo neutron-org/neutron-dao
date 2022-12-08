@@ -44,15 +44,7 @@ cw-proposal-single-v1 = { package = "cw-proposal-single", version = "0.1.0", git
 [dev-dependencies]
 cosmwasm-schema = { version = "1.0.0" }
 cw-multi-test = "0.13"
-#cwd-voting-cw4 = { path = "../../voting/cwd-voting-cw4" }
-#cwd-voting-cw20-balance = { path = "../../../test-contracts/cwd-voting-cw20-balance" }
-#cwd-voting-cw20-staked = { path = "../../voting/cwd-voting-cw20-staked" }
-#neutron-voting-registry = { path = "../../voting/neutron-voting-registry" }
-#cwd-voting-cw721-staked = { path = "../../voting/cwd-voting-cw721-staked" }
-#cwd-pre-propose-single = { path = "../../pre-propose/cwd-pre-propose-single" }
 cw-denom = { path = "../../../packages/cw-denom" }
-#cwd-testing = { path = "../../../packages/cwd-testing" }
-#cw20-stake = { path= "../../staking/cw20-stake" }
 cw20-base = "0.13"
 cw721-base = "0.13"
 cw4 = "0.13"
