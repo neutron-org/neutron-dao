@@ -1,20 +1,20 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "ListStakersResponse",
+  "title": "ListBondersResponse",
   "type": "object",
   "required": [
-    "stakers"
+    "bonders"
   ],
   "properties": {
-    "stakers": {
+    "bonders": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/StakerBalanceResponse"
+        "$ref": "#/definitions/BonderBalanceResponse"
       }
     }
   },
   "definitions": {
-    "StakerBalanceResponse": {
+    "BonderBalanceResponse": {
       "type": "object",
       "required": [
         "address",

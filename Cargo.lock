@@ -899,6 +899,7 @@ dependencies = [
  "cw2",
  "cwd-interface",
  "cwd-macros",
+ "neutron-vault",
  "schemars",
  "serde",
  "thiserror",

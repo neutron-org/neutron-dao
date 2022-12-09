@@ -13,20 +13,8 @@ pub enum ContractError {
     #[error("Unauthorized")]
     Unauthorized {},
 
-    #[error("Invalid unstaking duration, unstaking duration cannot be 0")]
-    InvalidUnstakingDuration {},
-
-    #[error("Nothing to claim")]
-    NothingToClaim {},
-
-    #[error("Too many outstanding claims. Claim some tokens before unstaking more.")]
-    TooManyClaims {},
-
     #[error("Only owner can change owner")]
     OnlyOwnerCanChangeOwner {},
-
-    #[error("Can only unstake less than or equal to the amount you have staked")]
-    InvalidUnstakeAmount {},
 
     #[error("Voting vault already exists")]
     VotingVaultAlreadyExists {},

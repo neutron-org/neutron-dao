@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 pub struct InstantiateMsg {
+    // Description contains information that characterizes the vault.
+    pub description: String,
     // Owner can update all configs including changing the owner. This will generally be a DAO.
     pub owner: Option<Admin>,
     // Manager can update all configs except changing the owner. This will generally be an operations multisig for a DAO.
@@ -24,6 +26,7 @@ pub enum ExecuteMsg {
     UpdateConfig {
         owner: Option<String>,
         manager: Option<String>,
+        description: Option<String>,
     },
 }
 
@@ -33,11 +36,9 @@ pub enum ExecuteMsg {
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
     Dao {},
+    Description {},
     GetConfig {},
-    Claims {
-        address: String,
-    },
-    ListStakers {
+    ListBonders {
         start_after: Option<String>,
         limit: Option<u32>,
     },
@@ -48,13 +49,13 @@ pub struct MigrateMsg {}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub struct ListStakersResponse {
-    pub stakers: Vec<StakerBalanceResponse>,
+pub struct ListBondersResponse {
+    pub bonders: Vec<BonderBalanceResponse>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub struct StakerBalanceResponse {
+pub struct BonderBalanceResponse {
     pub address: String,
     pub balance: Uint128,
 }
