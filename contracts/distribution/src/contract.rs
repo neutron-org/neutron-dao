@@ -125,7 +125,6 @@ pub fn execute_set_shares(
     for (addr, share) in shares {
         let addr = deps.api.addr_validate(&addr)?;
         let addr_raw = addr.as_bytes();
-        SHARES.save(deps.storage, addr_raw, &share)?;
         new_shares.push((addr_raw.to_vec(), share));
     }
     remove_all_shares(deps.storage)?;
