@@ -186,20 +186,18 @@ pub fn query_config(deps: Deps) -> StdResult<Config> {
 
 pub fn query_shares(deps: Deps) -> StdResult<Vec<(String, Uint128)>> {
     let shares = SHARES
-        .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
-        .into_iter()
+        .range(deps.storage, None, None, Order::Ascending)
         .collect::<StdResult<Vec<_>>>()?;
     let mut res: Vec<(String, Uint128)> = vec![];
-    for (addr, shares) in shares.iter() {
-        res.push((Addr::from_slice(addr)?.to_string(), *shares));
+    for (addr, shares) in shares {
+        res.push((Addr::from_slice(&addr)?.to_string(), shares));
     }
     Ok(res)
 }
 
 pub fn query_pending(deps: Deps) -> StdResult<Vec<(String, Uint128)>> {
     let pending = PENDING_DISTRIBUTION
-        .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
-        .into_iter()
+        .range(deps.storage, None, None, Order::Ascending)
         .collect::<StdResult<Vec<_>>>()?;
     let mut res: Vec<(String, Uint128)> = vec![];
     for (addr, pending) in pending.iter() {
