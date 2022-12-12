@@ -139,7 +139,7 @@ pub fn execute_distribute(deps: DepsMut, env: Env) -> StdResult<Response> {
         .querier
         .query_balance(env.contract.address, denom.clone())?;
     if current_balance.amount.eq(&last_balance) {
-        return Err(StdError::generic_err("no new funds to grab"));
+        return Err(StdError::generic_err("no new funds to distribute"));
     }
     let balance_delta = current_balance.amount.checked_sub(last_balance)?;
     let to_distribution = balance_delta

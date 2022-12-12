@@ -45,7 +45,7 @@ fn test_collect_with_no_money() {
     assert!(res.is_err());
     assert_eq!(
         res.unwrap_err().to_string(),
-        "Generic error: no new funds to grab"
+        "Generic error: no new funds to distribute"
     );
 }
 
