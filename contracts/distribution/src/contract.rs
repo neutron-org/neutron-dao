@@ -43,21 +43,21 @@ pub fn execute(
     match msg {
         // permissioned - owner
         ExecuteMsg::TransferOwnership(new_owner) => {
-            exec_transfer_ownership(deps, info.sender, api.addr_validate(&new_owner)?)
+            execute_transfer_ownership(deps, info.sender, api.addr_validate(&new_owner)?)
         }
 
         // permissioned - owner
-        ExecuteMsg::SetShares { shares } => exec_set_shares(deps, info, shares),
+        ExecuteMsg::SetShares { shares } => execute_set_shares(deps, info, shares),
 
         // permissionless
-        ExecuteMsg::Fund {} => exec_fund(deps, info),
+        ExecuteMsg::Fund {} => execute_fund(deps, info),
 
         // permissioned - owner of the share
-        ExecuteMsg::Claim {} => exec_claim(deps, info),
+        ExecuteMsg::Claim {} => execute_claim(deps, info),
     }
 }
 
-pub fn exec_transfer_ownership(
+pub fn execute_transfer_ownership(
     deps: DepsMut,
     sender_addr: Addr,
     new_owner_addr: Addr,
@@ -86,7 +86,7 @@ fn get_denom_amount(coins: Vec<Coin>, denom: String) -> Option<Uint128> {
         .map(|c| c.amount)
 }
 
-pub fn exec_fund(deps: DepsMut, info: MessageInfo) -> StdResult<Response> {
+pub fn execute_fund(deps: DepsMut, info: MessageInfo) -> StdResult<Response> {
     let config: Config = CONFIG.load(deps.storage)?;
     let denom = config.denom;
     let funds = get_denom_amount(info.funds, denom).unwrap_or(Uint128::zero());
@@ -116,7 +116,7 @@ pub fn exec_fund(deps: DepsMut, info: MessageInfo) -> StdResult<Response> {
     Ok(Response::new().add_attribute("action", "neutron/distribution/fund"))
 }
 
-pub fn exec_set_shares(
+pub fn execute_set_shares(
     deps: DepsMut,
     info: MessageInfo,
     shares: Vec<(String, Uint128)>,
@@ -152,7 +152,7 @@ pub fn remove_all_shares(storage: &mut dyn Storage) -> StdResult<()> {
     Ok(())
 }
 
-pub fn exec_claim(deps: DepsMut, info: MessageInfo) -> StdResult<Response> {
+pub fn execute_claim(deps: DepsMut, info: MessageInfo) -> StdResult<Response> {
     let config = CONFIG.load(deps.storage)?;
     let denom = config.denom;
     let sender = info.sender.as_bytes();

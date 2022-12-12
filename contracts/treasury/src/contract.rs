@@ -50,18 +50,18 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
     match msg {
         // permissioned - owner
         ExecuteMsg::TransferOwnership(new_owner) => {
-            exec_transfer_ownership(deps, info.sender, api.addr_validate(&new_owner)?)
+            execute_transfer_ownership(deps, info.sender, api.addr_validate(&new_owner)?)
         }
         // permissionless
-        ExecuteMsg::Distribute {} => exec_distribute(deps, env),
+        ExecuteMsg::Distribute {} => execute_distribute(deps, env),
         // permissioned - owner
-        ExecuteMsg::Payout { amount, recipient } => exec_payout(deps, info, env, amount, recipient),
+        ExecuteMsg::Payout { amount, recipient } => execute_payout(deps, info, env, amount, recipient),
         // permissioned - owner
         ExecuteMsg::UpdateConfig {
             distribution_rate,
             min_period,
             distribution_contract,
-        } => exec_update_config(
+        } => execute_update_config(
             deps,
             info,
             distribution_rate,
@@ -71,7 +71,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
     }
 }
 
-pub fn exec_transfer_ownership(
+pub fn execute_transfer_ownership(
     deps: DepsMut,
     sender_addr: Addr,
     new_owner_addr: Addr,
@@ -93,7 +93,7 @@ pub fn exec_transfer_ownership(
         .add_attribute("new_owner", new_owner_addr))
 }
 
-pub fn exec_update_config(
+pub fn execute_update_config(
     deps: DepsMut,
     info: MessageInfo,
     distribution_rate: Option<u8>,
@@ -126,7 +126,7 @@ pub fn exec_update_config(
         .add_attribute("owner", config.owner))
 }
 
-pub fn exec_distribute(deps: DepsMut, env: Env) -> StdResult<Response> {
+pub fn execute_distribute(deps: DepsMut, env: Env) -> StdResult<Response> {
     let config: Config = CONFIG.load(deps.storage)?;
     let denom = config.denom;
     let current_time = env.block.time.seconds();
@@ -179,7 +179,7 @@ pub fn exec_distribute(deps: DepsMut, env: Env) -> StdResult<Response> {
         .add_attribute("distributed", to_distribution))
 }
 
-pub fn exec_payout(
+pub fn execute_payout(
     deps: DepsMut,
     info: MessageInfo,
     env: Env,
