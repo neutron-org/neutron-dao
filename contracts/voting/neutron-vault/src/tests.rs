@@ -335,7 +335,7 @@ fn test_unbond() {
     assert_eq!(get_balance(&mut app, ADDR1, DENOM), Uint128::new(9975));
 
     // Unbond the rest
-    unbond_tokens(&mut app, addr.clone(), ADDR1, 25).unwrap();
+    unbond_tokens(&mut app, addr, ADDR1, 25).unwrap();
     assert_eq!(get_balance(&mut app, ADDR1, DENOM), INIT_BALANCE);
 }
 
