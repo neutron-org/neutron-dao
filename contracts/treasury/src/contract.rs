@@ -79,7 +79,7 @@ pub fn exec_transfer_ownership(
     let config = CONFIG.load(deps.storage)?;
     let old_owner = config.owner;
     if sender_addr != old_owner {
-        return Err(StdError::generic_err("unathorized"));
+        return Err(StdError::generic_err("unauthorized"));
     }
 
     CONFIG.update(deps.storage, |mut config| -> StdResult<_> {
