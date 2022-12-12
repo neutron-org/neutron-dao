@@ -164,7 +164,6 @@ pub fn execute_distribute(deps: DepsMut, env: Env) -> StdResult<Response> {
     )?;
     let mut resp = Response::default();
     if !to_distribution.is_zero() {
-        deps.api.debug("WASMDEBUG: zero");
         let msg = CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: config.distribution_contract.to_string(),
             funds: coins(to_distribution.u128(), denom),
