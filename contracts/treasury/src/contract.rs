@@ -7,7 +7,7 @@ use cosmwasm_std::{
 
 use crate::msg::{DistributeMsg, ExecuteMsg, InstantiateMsg, QueryMsg, StatsResponse};
 use crate::state::{
-    Config, BANK_BALANCE, CONFIG, LAST_BALANCE, LAST_GRAB_TIME, TOTAL_BANK_SPENT,
+    Config, BANK_BALANCE, CONFIG, LAST_BALANCE, LAST_DISTRIBUTION_TIME, TOTAL_BANK_SPENT,
     TOTAL_DISTRIBUTED, TOTAL_RECEIVED,
 };
 
@@ -33,7 +33,7 @@ pub fn instantiate(
     TOTAL_RECEIVED.save(deps.storage, &Uint128::zero())?;
     TOTAL_BANK_SPENT.save(deps.storage, &Uint128::zero())?;
     TOTAL_DISTRIBUTED.save(deps.storage, &Uint128::zero())?;
-    LAST_GRAB_TIME.save(deps.storage, &0)?;
+    LAST_DISTRIBUTION_TIME.save(deps.storage, &0)?;
     LAST_BALANCE.save(deps.storage, &Uint128::zero())?;
     BANK_BALANCE.save(deps.storage, &Uint128::zero())?;
 
@@ -130,10 +130,10 @@ pub fn execute_distribute(deps: DepsMut, env: Env) -> StdResult<Response> {
     let config: Config = CONFIG.load(deps.storage)?;
     let denom = config.denom;
     let current_time = env.block.time.seconds();
-    if current_time - LAST_GRAB_TIME.load(deps.storage)? < config.min_period {
+    if current_time - LAST_DISTRIBUTION_TIME.load(deps.storage)? < config.min_period {
         return Err(StdError::generic_err("too soon to collect"));
     }
-    LAST_GRAB_TIME.save(deps.storage, &current_time)?;
+    LAST_DISTRIBUTION_TIME.save(deps.storage, &current_time)?;
     let last_balance = LAST_BALANCE.load(deps.storage)?;
     let current_balance = deps
         .querier
