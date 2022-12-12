@@ -200,8 +200,8 @@ pub fn query_pending(deps: Deps) -> StdResult<Vec<(String, Uint128)>> {
         .range(deps.storage, None, None, Order::Ascending)
         .collect::<StdResult<Vec<_>>>()?;
     let mut res: Vec<(String, Uint128)> = vec![];
-    for (addr, pending) in pending.iter() {
-        res.push((Addr::from_slice(addr)?.to_string(), *pending));
+    for (addr, pending) in pending {
+        res.push((Addr::from_slice(&addr)?.to_string(), pending));
     }
     Ok(res)
 }
