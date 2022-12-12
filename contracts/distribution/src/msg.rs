@@ -19,7 +19,7 @@ pub enum ExecuteMsg {
         shares: Vec<(String, Uint128)>,
     },
 
-    /// Distribute funds to the and distribution accounts according to their shares
+    /// Distribute funds between share holders
     Fund {},
 
     /// Claim the funds that have been distributed to the contract's account
