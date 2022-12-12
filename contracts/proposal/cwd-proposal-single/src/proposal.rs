@@ -5,7 +5,7 @@ use cw_utils::Expiration;
 use cwd_voting::status::Status;
 use cwd_voting::threshold::{PercentageThreshold, Threshold};
 use cwd_voting::voting::{does_vote_count_fail, does_vote_count_pass, Votes};
-use neutron_bindings::msg::NeutronMsg;
+use neutron_bindings::bindings::msg::NeutronMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 

@@ -1,7 +1,7 @@
 use cosmwasm_std::CosmosMsg;
 use cw_utils::Duration;
 use cwd_interface::ModuleInstantiateInfo;
-use neutron_bindings::msg::NeutronMsg;
+use neutron_bindings::bindings::msg::NeutronMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
