@@ -131,7 +131,7 @@ pub fn execute_distribute(deps: DepsMut, env: Env) -> StdResult<Response> {
     let denom = config.denom;
     let current_time = env.block.time.seconds();
     if current_time - LAST_DISTRIBUTION_TIME.load(deps.storage)? < config.min_period {
-        return Err(StdError::generic_err("too soon to collect"));
+        return Err(StdError::generic_err("too soon to distribute"));
     }
     LAST_DISTRIBUTION_TIME.save(deps.storage, &current_time)?;
     let last_balance = LAST_BALANCE.load(deps.storage)?;
