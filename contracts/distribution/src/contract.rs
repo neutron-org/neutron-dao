@@ -101,9 +101,7 @@ pub fn execute_fund(deps: DepsMut, info: MessageInfo) -> StdResult<Response> {
         return Err(StdError::generic_err("no shares set"));
     }
     let mut spent = Uint128::zero();
-    let total_shares = shares
-        .clone()
-        .into_iter()
+    let total_shares = shares.iter()
         .fold(Uint128::zero(), |acc, (_, s)| acc + s);
     for (addr, share) in shares {
         let amount = funds.checked_mul(share)?.checked_div(total_shares)?;
