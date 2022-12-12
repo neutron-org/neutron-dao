@@ -138,10 +138,9 @@ pub fn execute_set_shares(
 
 pub fn remove_all_shares(storage: &mut dyn Storage) -> StdResult<()> {
     let shares = SHARES
-        .range(storage, None, None, Order::Ascending)
-        .into_iter()
+        .keys(storage, None, None, Order::Ascending)
         .collect::<StdResult<Vec<_>>>()?;
-    for (addr, _) in shares {
+    for addr in shares {
         SHARES.remove(storage, &addr);
     }
     Ok(())
