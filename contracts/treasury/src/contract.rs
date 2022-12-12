@@ -142,10 +142,10 @@ pub fn execute_distribute(deps: DepsMut, env: Env) -> StdResult<Response> {
         return Err(StdError::generic_err("no new funds to distribute"));
     }
     let balance_delta = current_balance.amount.checked_sub(last_balance)?;
-    let to_distribution = balance_delta
+    let to_distribute = balance_delta
         .checked_mul(config.distribution_rate.into())?
         .checked_div(100u128.into())?;
-    let to_bank = balance_delta.checked_sub(to_distribution)?;
+    let to_bank = balance_delta.checked_sub(to_distribute)?;
     // update total received
     let total_received = TOTAL_RECEIVED.load(deps.storage)?;
     TOTAL_RECEIVED.save(deps.storage, &(total_received.checked_add(balance_delta)?))?;
@@ -155,18 +155,18 @@ pub fn execute_distribute(deps: DepsMut, env: Env) -> StdResult<Response> {
     let total_distributed = TOTAL_DISTRIBUTED.load(deps.storage)?;
     TOTAL_DISTRIBUTED.save(
         deps.storage,
-        &(total_distributed.checked_add(to_distribution)?),
+        &(total_distributed.checked_add(to_distribute)?),
     )?;
 
     LAST_BALANCE.save(
         deps.storage,
-        &current_balance.amount.checked_sub(to_distribution)?,
+        &current_balance.amount.checked_sub(to_distribute)?,
     )?;
     let mut resp = Response::default();
-    if !to_distribution.is_zero() {
+    if !to_distribute.is_zero() {
         let msg = CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: config.distribution_contract.to_string(),
-            funds: coins(to_distribution.u128(), denom),
+            funds: coins(to_distribute.u128(), denom),
             msg: to_binary(&DistributeMsg::Fund {})?,
         });
         deps.api.debug(format!("WASMDEBUG: {:?}", msg).as_str());
@@ -175,7 +175,7 @@ pub fn execute_distribute(deps: DepsMut, env: Env) -> StdResult<Response> {
     Ok(resp
         .add_attribute("action", "neutron/treasury/distribute")
         .add_attribute("bank_balance", bank_balance)
-        .add_attribute("distributed", to_distribution))
+        .add_attribute("distributed", to_distribute))
 }
 
 pub fn execute_payout(
