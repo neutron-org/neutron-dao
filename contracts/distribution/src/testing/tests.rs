@@ -1,7 +1,7 @@
 use cosmwasm_std::{
     coin, coins,
     testing::{mock_env, mock_info},
-    DepsMut, Empty, Uint128,
+    DepsMut, Empty, Uint128, BankMsg, CosmosMsg,
 };
 
 use crate::{
@@ -125,6 +125,16 @@ fn test_withdraw_success() {
     let msg = ExecuteMsg::Claim {};
     let res = execute(deps.as_mut(), mock_env(), mock_info("addr1", &[]), msg);
     assert!(res.is_ok());
+    // check message
+    let messages = res.unwrap().messages;
+    assert_eq!(messages.len(), 1);
+    assert_eq!(
+        messages[0].msg,
+        CosmosMsg::Bank(BankMsg::Send {
+            to_address: "addr1".to_string(),
+            amount: vec![coin(1000u128, DENOM)],
+        })
+    );
     assert_eq!(
         PENDING_DISTRIBUTION
             .may_load(deps.as_ref().storage, "addr1".as_bytes())
