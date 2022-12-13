@@ -9,9 +9,9 @@ pub struct Config {
     pub owner: Addr,
 }
 
-pub const PENDING_DISTRIBUTION: Map<&[u8], Uint128> = Map::new("pending_distribution");
+pub const PENDING_DISTRIBUTION: Map<Addr, Uint128> = Map::new("pending_distribution");
 
-pub const SHARES: Map<&[u8], Uint128> = Map::new("shares");
+pub const SHARES: Map<Addr, Uint128> = Map::new("shares");
 
 pub const CONFIG: Item<Config> = Item::new("config");
 

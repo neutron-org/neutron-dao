@@ -4,7 +4,6 @@ use cosmwasm_std::{
     to_binary, Addr, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Order,
     Response, StdError, StdResult, Storage, Uint128,
 };
-use cw_storage_plus::KeyDeserialize;
 
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::{Config, CONFIG, FUND_COUNTER, PENDING_DISTRIBUTION, SHARES};
@@ -109,12 +108,12 @@ pub fn execute_fund(deps: DepsMut, info: MessageInfo) -> StdResult<Response> {
     for (addr, share) in shares.iter() {
         let amount = funds.checked_mul(*share)?.checked_div(total_shares)?;
         let pending = PENDING_DISTRIBUTION
-            .may_load(deps.storage, addr)?
+            .may_load(deps.storage, addr.clone())?
             .unwrap_or(Uint128::zero());
-        PENDING_DISTRIBUTION.save(deps.storage, addr, &(pending.checked_add(amount)?))?;
+        PENDING_DISTRIBUTION.save(deps.storage, addr.clone(), &(pending.checked_add(amount)?))?;
         spent = spent.checked_add(amount)?;
         resp = resp
-            .add_attribute("address", Addr::from_slice(addr)?)
+            .add_attribute("address", addr)
             .add_attribute("amount", amount);
     }
     let remaining = funds.checked_sub(spent)?;
@@ -122,11 +121,15 @@ pub fn execute_fund(deps: DepsMut, info: MessageInfo) -> StdResult<Response> {
         let index = fund_counter % shares.len() as u64;
         let key = &shares.get(index as usize).unwrap().0;
         let pending = PENDING_DISTRIBUTION
-            .may_load(deps.storage, key)?
+            .may_load(deps.storage, key.clone())?
             .unwrap_or(Uint128::zero());
-        PENDING_DISTRIBUTION.save(deps.storage, key, &(pending.checked_add(remaining)?))?;
+        PENDING_DISTRIBUTION.save(
+            deps.storage,
+            key.clone(),
+            &(pending.checked_add(remaining)?),
+        )?;
         resp = resp
-            .add_attribute("remainder_address", Addr::from_slice(key)?)
+            .add_attribute("remainder_address", key)
             .add_attribute("remainder_amount", remaining);
     }
     FUND_COUNTER.save(deps.storage, &(fund_counter + 1))?;
@@ -145,12 +148,11 @@ pub fn execute_set_shares(
     let mut new_shares = vec![];
     for (addr, share) in shares {
         let addr = deps.api.addr_validate(&addr)?;
-        let addr_raw = addr.as_bytes();
-        new_shares.push((addr_raw.to_vec(), share));
+        new_shares.push((addr, share));
     }
     remove_all_shares(deps.storage)?;
     for (addr, shares) in new_shares.iter() {
-        SHARES.save(deps.storage, addr, shares)?;
+        SHARES.save(deps.storage, addr.clone(), shares)?;
     }
     Ok(Response::new()
         .add_attribute("action", "neutron/distribution/set_shares")
@@ -162,7 +164,7 @@ pub fn remove_all_shares(storage: &mut dyn Storage) -> StdResult<()> {
         .keys(storage, None, None, Order::Ascending)
         .collect::<StdResult<Vec<_>>>()?;
     for addr in shares {
-        SHARES.remove(storage, &addr);
+        SHARES.remove(storage, addr);
     }
     Ok(())
 }
@@ -170,16 +172,16 @@ pub fn remove_all_shares(storage: &mut dyn Storage) -> StdResult<()> {
 pub fn execute_claim(deps: DepsMut, info: MessageInfo) -> StdResult<Response> {
     let config = CONFIG.load(deps.storage)?;
     let denom = config.denom;
-    let sender = info.sender.as_bytes();
+    let sender = info.sender;
     let pending = PENDING_DISTRIBUTION
-        .may_load(deps.storage, sender)?
+        .may_load(deps.storage, sender.clone())?
         .unwrap_or(Uint128::zero());
     if pending.is_zero() {
         return Err(StdError::generic_err("no pending distribution"));
     }
-    PENDING_DISTRIBUTION.remove(deps.storage, sender);
+    PENDING_DISTRIBUTION.remove(deps.storage, sender.clone());
     Ok(Response::new().add_message(CosmosMsg::Bank(BankMsg::Send {
-        to_address: info.sender.to_string(),
+        to_address: sender.to_string(),
         amount: vec![Coin {
             denom,
             amount: pending,
@@ -211,7 +213,7 @@ pub fn query_shares(deps: Deps) -> StdResult<Vec<(String, Uint128)>> {
         .collect::<StdResult<Vec<_>>>()?;
     let mut res: Vec<(String, Uint128)> = vec![];
     for (addr, shares) in shares {
-        res.push((Addr::from_slice(&addr)?.to_string(), shares));
+        res.push((addr.to_string(), shares));
     }
     Ok(res)
 }
@@ -222,7 +224,7 @@ pub fn query_pending(deps: Deps) -> StdResult<Vec<(String, Uint128)>> {
         .collect::<StdResult<Vec<_>>>()?;
     let mut res: Vec<(String, Uint128)> = vec![];
     for (addr, pending) in pending {
-        res.push((Addr::from_slice(&addr)?.to_string(), pending));
+        res.push((addr.to_string(), pending));
     }
     Ok(res)
 }

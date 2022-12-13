@@ -1,7 +1,7 @@
 use cosmwasm_std::{
     coin, coins,
     testing::{mock_env, mock_info},
-    BankMsg, CosmosMsg, DepsMut, Empty, Uint128,
+    Addr, BankMsg, CosmosMsg, DepsMut, Empty, Uint128,
 };
 
 use crate::{
@@ -65,14 +65,14 @@ fn test_fund_success() {
     SHARES
         .save(
             deps.as_mut().storage,
-            "addr1".as_bytes(),
+            Addr::unchecked("addr1"),
             &Uint128::from(1u128),
         )
         .unwrap();
     SHARES
         .save(
             deps.as_mut().storage,
-            "addr2".as_bytes(),
+            Addr::unchecked("addr2"),
             &Uint128::from(3u128),
         )
         .unwrap();
@@ -86,13 +86,13 @@ fn test_fund_success() {
     assert!(res.is_ok());
     assert_eq!(
         PENDING_DISTRIBUTION
-            .load(deps.as_ref().storage, "addr1".as_bytes())
+            .load(deps.as_ref().storage, Addr::unchecked("addr1"))
             .unwrap(),
         Uint128::from(2500u128)
     );
     assert_eq!(
         PENDING_DISTRIBUTION
-            .load(deps.as_ref().storage, "addr2".as_bytes())
+            .load(deps.as_ref().storage, Addr::unchecked("addr2"))
             .unwrap(),
         Uint128::from(7500u128)
     );
@@ -107,14 +107,14 @@ fn test_fund_success_with_dust() {
     SHARES
         .save(
             deps.as_mut().storage,
-            "addr1".as_bytes(),
+            Addr::unchecked("addr1"),
             &Uint128::from(1u128),
         )
         .unwrap();
     SHARES
         .save(
             deps.as_mut().storage,
-            "addr2".as_bytes(),
+            Addr::unchecked("addr2"),
             &Uint128::from(3u128),
         )
         .unwrap();
@@ -129,13 +129,13 @@ fn test_fund_success_with_dust() {
     println!("{:?}", res.unwrap().attributes);
     assert_eq!(
         PENDING_DISTRIBUTION
-            .load(deps.as_ref().storage, "addr1".as_bytes())
+            .load(deps.as_ref().storage, Addr::unchecked("addr1"))
             .unwrap(),
         Uint128::from(2501u128)
     );
     assert_eq!(
         PENDING_DISTRIBUTION
-            .load(deps.as_ref().storage, "addr2".as_bytes())
+            .load(deps.as_ref().storage, Addr::unchecked("addr2"))
             .unwrap(),
         Uint128::from(7500u128)
     );
@@ -163,7 +163,7 @@ fn test_withdraw_success() {
     PENDING_DISTRIBUTION
         .save(
             deps.as_mut().storage,
-            "addr1".as_bytes(),
+            Addr::unchecked("addr1"),
             &Uint128::from(1000u128),
         )
         .unwrap();
@@ -182,7 +182,7 @@ fn test_withdraw_success() {
     );
     assert_eq!(
         PENDING_DISTRIBUTION
-            .may_load(deps.as_ref().storage, "addr1".as_bytes())
+            .may_load(deps.as_ref().storage, Addr::unchecked("addr1"))
             .unwrap(),
         None
     );
@@ -207,21 +207,21 @@ fn test_set_shares() {
     SHARES
         .save(
             deps.as_mut().storage,
-            "addr1".as_bytes(),
+            Addr::unchecked("addr1"),
             &Uint128::from(1u128),
         )
         .unwrap();
     SHARES
         .save(
             deps.as_mut().storage,
-            "addr2".as_bytes(),
+            Addr::unchecked("addr2"),
             &Uint128::from(3u128),
         )
         .unwrap();
     SHARES
         .save(
             deps.as_mut().storage,
-            "addr3".as_bytes(),
+            Addr::unchecked("addr3"),
             &Uint128::from(3u128),
         )
         .unwrap();
@@ -235,19 +235,19 @@ fn test_set_shares() {
     assert!(res.is_ok());
     assert_eq!(
         SHARES
-            .load(deps.as_ref().storage, "addr1".as_bytes())
+            .load(deps.as_ref().storage, Addr::unchecked("addr1"))
             .unwrap(),
         Uint128::from(1u128)
     );
     assert_eq!(
         SHARES
-            .load(deps.as_ref().storage, "addr2".as_bytes())
+            .load(deps.as_ref().storage, Addr::unchecked("addr2"))
             .unwrap(),
         Uint128::from(2u128)
     );
     assert_eq!(
         SHARES
-            .may_load(deps.as_ref().storage, "addr3".as_bytes())
+            .may_load(deps.as_ref().storage, Addr::unchecked("addr3"))
             .unwrap(),
         None
     );
