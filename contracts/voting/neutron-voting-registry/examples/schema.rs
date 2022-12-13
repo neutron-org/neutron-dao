@@ -7,9 +7,7 @@ use cw_controllers::ClaimsResponse;
 use cwd_interface::voting::{
     InfoResponse, IsActiveResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
-use neutron_voting_registry::msg::{
-    ExecuteMsg, InstantiateMsg, ListStakersResponse, MigrateMsg, QueryMsg,
-};
+use neutron_voting_registry::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use neutron_voting_registry::state::Config;
 
 fn main() {
@@ -28,7 +26,6 @@ fn main() {
     export_schema(&schema_for!(VotingPowerAtHeightResponse), &out_dir);
     export_schema(&schema_for!(IsActiveResponse), &out_dir);
     export_schema(&schema_for!(ClaimsResponse), &out_dir);
-    export_schema(&schema_for!(ListStakersResponse), &out_dir);
 
     // Auto TS code generation expects the query return type as QueryNameResponse
     // Here we map query resonses to the correct name

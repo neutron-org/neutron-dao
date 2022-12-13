@@ -5,16 +5,15 @@ use cosmwasm_std::{
     StdResult, Uint128,
 };
 use cw2::set_contract_version;
-use cw_controllers::ClaimsResponse;
 use cw_utils::must_pay;
 use cwd_interface::voting::{TotalPowerAtHeightResponse, VotingPowerAtHeightResponse};
 use cwd_interface::Admin;
 
 use crate::error::ContractError;
 use crate::msg::{
-    ExecuteMsg, InstantiateMsg, ListStakersResponse, MigrateMsg, QueryMsg, StakerBalanceResponse,
+    BonderBalanceResponse, ExecuteMsg, InstantiateMsg, ListBondersResponse, MigrateMsg, QueryMsg,
 };
-use crate::state::{Config, CLAIMS, CONFIG, DAO, STAKED_BALANCES, STAKED_TOTAL};
+use crate::state::{Config, BONDED_BALANCES, BONDED_TOTAL, CONFIG, DAO, DESCRIPTION};
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-voting-registry";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -42,6 +41,7 @@ pub fn instantiate(
         .transpose()?;
 
     let config = Config {
+        description: msg.description,
         owner,
         manager,
         denom: msg.denom,
@@ -52,6 +52,7 @@ pub fn instantiate(
 
     Ok(Response::new()
         .add_attribute("action", "instantiate")
+        .add_attribute("description", config.description)
         .add_attribute(
             "owner",
             config
@@ -78,30 +79,32 @@ pub fn execute(
     match msg {
         ExecuteMsg::Bond {} => execute_bond(deps, env, info),
         ExecuteMsg::Unbond { amount } => execute_unbond(deps, env, info, amount),
-        ExecuteMsg::UpdateConfig { owner, manager } => {
-            execute_update_config(deps, info, owner, manager)
-        }
+        ExecuteMsg::UpdateConfig {
+            owner,
+            manager,
+            description,
+        } => execute_update_config(deps, info, owner, manager, description),
     }
 }
-// would be renamed to bond
+
 pub fn execute_bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
     let config = CONFIG.load(deps.storage)?;
     let amount = must_pay(&info, &config.denom)?;
 
-    STAKED_BALANCES.update(
+    BONDED_BALANCES.update(
         deps.storage,
         &info.sender,
         env.block.height,
         |balance| -> StdResult<Uint128> { Ok(balance.unwrap_or_default().checked_add(amount)?) },
     )?;
-    STAKED_TOTAL.update(
+    BONDED_TOTAL.update(
         deps.storage,
         env.block.height,
         |total| -> StdResult<Uint128> { Ok(total.unwrap_or_default().checked_add(amount)?) },
     )?;
 
     Ok(Response::new()
-        .add_attribute("action", "stake")
+        .add_attribute("action", "bond")
         .add_attribute("amount", amount.to_string())
         .add_attribute("from", info.sender))
 }
@@ -114,7 +117,7 @@ pub fn execute_unbond(
 ) -> Result<Response, ContractError> {
     let config = CONFIG.load(deps.storage)?;
 
-    STAKED_BALANCES.update(
+    BONDED_BALANCES.update(
         deps.storage,
         &info.sender,
         env.block.height,
@@ -122,17 +125,17 @@ pub fn execute_unbond(
             balance
                 .unwrap_or_default()
                 .checked_sub(amount)
-                .map_err(|_e| ContractError::InvalidUnstakeAmount {})
+                .map_err(|_e| ContractError::InvalidUnbondAmount {})
         },
     )?;
-    STAKED_TOTAL.update(
+    BONDED_TOTAL.update(
         deps.storage,
         env.block.height,
         |total| -> Result<Uint128, ContractError> {
             total
                 .unwrap_or_default()
                 .checked_sub(amount)
-                .map_err(|_e| ContractError::InvalidUnstakeAmount {})
+                .map_err(|_e| ContractError::InvalidUnbondAmount {})
         },
     )?;
 
@@ -142,7 +145,7 @@ pub fn execute_unbond(
     });
     Ok(Response::new()
         .add_message(msg)
-        .add_attribute("action", "unstake")
+        .add_attribute("action", "unbond")
         .add_attribute("from", info.sender)
         .add_attribute("amount", amount)
         .add_attribute("claim_duration", "None"))
@@ -153,6 +156,7 @@ pub fn execute_update_config(
     info: MessageInfo,
     new_owner: Option<String>,
     new_manager: Option<String>,
+    new_description: Option<String>,
 ) -> Result<Response, ContractError> {
     let mut config: Config = CONFIG.load(deps.storage)?;
     if Some(info.sender.clone()) != config.owner && Some(info.sender.clone()) != config.manager {
@@ -172,10 +176,14 @@ pub fn execute_update_config(
 
     config.owner = new_owner;
     config.manager = new_manager;
+    if let Some(description) = new_description {
+        config.description = description;
+    }
 
     CONFIG.save(deps.storage, &config)?;
     Ok(Response::new()
         .add_attribute("action", "update_config")
+        .add_attribute("description", config.description)
         .add_attribute(
             "owner",
             config
@@ -192,29 +200,6 @@ pub fn execute_update_config(
         ))
 }
 
-pub fn execute_claim(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-) -> Result<Response, ContractError> {
-    let release = CLAIMS.claim_tokens(deps.storage, &info.sender, &env.block, None)?;
-    if release.is_zero() {
-        return Err(ContractError::NothingToClaim {});
-    }
-
-    let config = CONFIG.load(deps.storage)?;
-    let msg = CosmosMsg::Bank(BankMsg::Send {
-        to_address: info.sender.to_string(),
-        amount: coins(release.u128(), config.denom),
-    });
-
-    Ok(Response::new()
-        .add_message(msg)
-        .add_attribute("action", "claim")
-        .add_attribute("from", info.sender)
-        .add_attribute("amount", release))
-}
-
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
@@ -226,10 +211,10 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         }
         QueryMsg::Info {} => query_info(deps),
         QueryMsg::Dao {} => query_dao(deps),
-        QueryMsg::Claims { address } => to_binary(&query_claims(deps, address)?),
+        QueryMsg::Description {} => query_description(deps),
         QueryMsg::GetConfig {} => to_binary(&CONFIG.load(deps.storage)?),
-        QueryMsg::ListStakers { start_after, limit } => {
-            query_list_stakers(deps, start_after, limit)
+        QueryMsg::ListBonders { start_after, limit } => {
+            query_list_bonders(deps, start_after, limit)
         }
     }
 }
@@ -242,7 +227,7 @@ pub fn query_voting_power_at_height(
 ) -> StdResult<VotingPowerAtHeightResponse> {
     let height = height.unwrap_or(env.block.height);
     let address = deps.api.addr_validate(&address)?;
-    let power = STAKED_BALANCES
+    let power = BONDED_BALANCES
         .may_load_at_height(deps.storage, &address, height)?
         .unwrap_or_default();
     Ok(VotingPowerAtHeightResponse { power, height })
@@ -254,7 +239,7 @@ pub fn query_total_power_at_height(
     height: Option<u64>,
 ) -> StdResult<TotalPowerAtHeightResponse> {
     let height = height.unwrap_or(env.block.height);
-    let power = STAKED_TOTAL
+    let power = BONDED_TOTAL
         .may_load_at_height(deps.storage, height)?
         .unwrap_or_default();
     Ok(TotalPowerAtHeightResponse { power, height })
@@ -270,11 +255,12 @@ pub fn query_dao(deps: Deps) -> StdResult<Binary> {
     to_binary(&dao)
 }
 
-pub fn query_claims(deps: Deps, address: String) -> StdResult<ClaimsResponse> {
-    CLAIMS.query_claims(deps, &deps.api.addr_validate(&address)?)
+pub fn query_description(deps: Deps) -> StdResult<Binary> {
+    let description = DESCRIPTION.load(deps.storage)?;
+    to_binary(&description)
 }
 
-pub fn query_list_stakers(
+pub fn query_list_bonders(
     deps: Deps,
     start_after: Option<String>,
     limit: Option<u32>,
@@ -283,23 +269,23 @@ pub fn query_list_stakers(
         .map(|addr| deps.api.addr_validate(&addr))
         .transpose()?;
 
-    let stakers = cw_paginate::paginate_snapshot_map(
+    let bonders = cw_paginate::paginate_snapshot_map(
         deps,
-        &STAKED_BALANCES,
+        &BONDED_BALANCES,
         start_at.as_ref(),
         limit,
         cosmwasm_std::Order::Ascending,
     )?;
 
-    let stakers = stakers
+    let bonders = bonders
         .into_iter()
-        .map(|(address, balance)| StakerBalanceResponse {
+        .map(|(address, balance)| BonderBalanceResponse {
             address: address.into_string(),
             balance,
         })
         .collect();
 
-    to_binary(&ListStakersResponse { stakers })
+    to_binary(&ListBondersResponse { bonders })
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

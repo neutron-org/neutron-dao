@@ -1,4 +1,3 @@
-use cosmwasm_std::Uint128;
 use cwd_interface::Admin;
 use cwd_macros::{info_query, voting_query};
 use schemars::JsonSchema;
@@ -10,7 +9,7 @@ pub struct InstantiateMsg {
     pub owner: Option<Admin>,
     // Manager can update all configs except changing the owner. This will generally be an operations multisig for a DAO.
     pub manager: Option<String>,
-    // Address of staking contract
+    // Address of voting vault contract
     pub voting_vault: String,
 }
 
@@ -41,16 +40,3 @@ pub enum QueryMsg {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct MigrateMsg {}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct ListStakersResponse {
-    pub stakers: Vec<StakerBalanceResponse>,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct StakerBalanceResponse {
-    pub address: String,
-    pub balance: Uint128,
-}

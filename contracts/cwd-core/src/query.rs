@@ -10,8 +10,6 @@ use crate::state::{Config, ProposalModule};
 /// `DumpState` query.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct DumpStateResponse {
-    /// Optional DAO Admin
-    pub admin: Addr,
     /// The governance contract's config.
     pub config: Config,
     // True if the contract is currently paused.

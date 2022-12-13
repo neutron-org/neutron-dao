@@ -3,10 +3,14 @@
   "title": "GetConfigResponse",
   "type": "object",
   "required": [
-    "denom"
+    "denom",
+    "description"
   ],
   "properties": {
     "denom": {
+      "type": "string"
+    },
+    "description": {
       "type": "string"
     },
     "manager": {

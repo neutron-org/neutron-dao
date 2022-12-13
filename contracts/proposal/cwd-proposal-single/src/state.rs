@@ -32,10 +32,6 @@ pub struct Config {
     /// preventing governance attacks wherein an attacker aquires a
     /// large number of tokens and forces a proposal through.
     pub min_voting_period: Option<Duration>,
-    /// If set to true only members may execute passed
-    /// proposals. Otherwise, any address may execute a passed
-    /// proposal.
-    pub only_members_execute: bool,
     /// Allows changing votes before the proposal expires. If this is
     /// enabled proposals will not be able to complete early as final
     /// vote information is not known until the time of proposal

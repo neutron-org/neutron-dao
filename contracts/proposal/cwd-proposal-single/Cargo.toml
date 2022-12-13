@@ -16,7 +16,7 @@ backtraces = ["cosmwasm-std/backtraces"]
 library = []
 
 [dependencies]
-neutron_bindings = {path = "../../../packages/bindings"}
+neutron_bindings = { package = "neutron-sdk", git = "https://github.com/neutron-org/neutron-contracts.git" }
 cosmwasm-std = { version = "1.0.0", features = ["ibc3"] }
 cosmwasm-storage = { version = "1.0.0" }
 cw-storage-plus = "0.13"
@@ -25,7 +25,7 @@ cw2 = "0.13"
 cw20 = "0.13"
 cw3 = "0.13"
 schemars = "0.8"
-serde = { version = "1.0", default-features = false, features = ["derive"] }
+serde = { version = "1.0.147", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0" }
 
 cwd-core = { path = "../../cwd-core", features = ["library"] }
@@ -44,15 +44,7 @@ cw-proposal-single-v1 = { package = "cw-proposal-single", version = "0.1.0", git
 [dev-dependencies]
 cosmwasm-schema = { version = "1.0.0" }
 cw-multi-test = "0.13"
-#cwd-voting-cw4 = { path = "../../voting/cwd-voting-cw4" }
-#cwd-voting-cw20-balance = { path = "../../../test-contracts/cwd-voting-cw20-balance" }
-#cwd-voting-cw20-staked = { path = "../../voting/cwd-voting-cw20-staked" }
-#neutron-voting-registry = { path = "../../voting/neutron-voting-registry" }
-#cwd-voting-cw721-staked = { path = "../../voting/cwd-voting-cw721-staked" }
-#cwd-pre-propose-single = { path = "../../pre-propose/cwd-pre-propose-single" }
 cw-denom = { path = "../../../packages/cw-denom" }
-#cwd-testing = { path = "../../../packages/cwd-testing" }
-#cw20-stake = { path= "../../staking/cw20-stake" }
 cw20-base = "0.13"
 cw721-base = "0.13"
 cw4 = "0.13"

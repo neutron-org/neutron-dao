@@ -8,7 +8,6 @@ use cw2::set_contract_version;
 use cw_storage_plus::Bound;
 use cw_utils::{parse_reply_instantiate_data, Duration};
 use cwd_hooks::Hooks;
-use cwd_interface::voting::IsActiveResponse;
 use cwd_pre_propose_single::contract::ExecuteMsg as PreProposeMsg;
 use cwd_proposal_hooks::{new_proposal_hooks, proposal_status_changed_hooks};
 use cwd_vote_hooks::new_vote_hooks;
@@ -20,7 +19,7 @@ use cwd_voting::reply::{
 use cwd_voting::status::Status;
 use cwd_voting::threshold::Threshold;
 use cwd_voting::voting::{get_total_power, get_voting_power, validate_voting_period, Vote, Votes};
-use neutron_bindings::msg::NeutronMsg;
+use neutron_bindings::bindings::msg::NeutronMsg;
 
 use crate::msg::MigrateMsg;
 use crate::proposal::SingleChoiceProposal;
@@ -62,7 +61,6 @@ pub fn instantiate(
         threshold: msg.threshold,
         max_voting_period,
         min_voting_period,
-        only_members_execute: msg.only_members_execute,
         dao: dao.clone(),
         allow_revoting: msg.allow_revoting,
         close_proposal_on_execution_failure: msg.close_proposal_on_execution_failure,
@@ -101,7 +99,6 @@ pub fn execute(
             threshold,
             max_voting_period,
             min_voting_period,
-            only_members_execute,
             allow_revoting,
             dao,
             close_proposal_on_execution_failure,
@@ -111,7 +108,6 @@ pub fn execute(
             threshold,
             max_voting_period,
             min_voting_period,
-            only_members_execute,
             allow_revoting,
             dao,
             close_proposal_on_execution_failure,
@@ -162,22 +158,6 @@ pub fn execute_propose(
         _ => return Err(ContractError::InvalidProposer {}),
     };
 
-    let voting_module: Addr = deps.querier.query_wasm_smart(
-        config.dao.clone(),
-        &cwd_core::msg::QueryMsg::VotingModule {},
-    )?;
-
-    // Voting modules are not required to implement this
-    // query. Lacking an implementation they are active by default.
-    let active_resp: IsActiveResponse = deps
-        .querier
-        .query_wasm_smart(voting_module, &cwd_interface::voting::Query::IsActive {})
-        .unwrap_or(IsActiveResponse { active: true });
-
-    if !active_resp.active {
-        return Err(ContractError::InactiveDao {});
-    }
-
     let expiration = config.max_voting_period.after(&env.block);
 
     let total_power = get_total_power(deps.as_ref(), config.dao, Some(env.block.height))?;
@@ -205,6 +185,8 @@ pub fn execute_propose(
     };
     let id = advance_proposal_id(deps.storage)?;
 
+    // TODO: discuss and probably adapt to Neutron reality.
+    //
     // Limit the size of proposals.
     //
     // The Juno mainnet has a larger limit for data that can be
@@ -269,12 +251,6 @@ pub fn execute_execute(
     proposal_id: u64,
 ) -> Result<Response, ContractError> {
     let config = CONFIG.load(deps.storage)?;
-    if config.only_members_execute {
-        let power = get_voting_power(deps.as_ref(), info.sender.clone(), config.dao.clone(), None)?;
-        if power.is_zero() {
-            return Err(ContractError::Unauthorized {});
-        }
-    }
 
     let mut prop = PROPOSALS
         .may_load(deps.storage, proposal_id)?
@@ -507,7 +483,6 @@ pub fn execute_update_config(
     threshold: Threshold,
     max_voting_period: Duration,
     min_voting_period: Option<Duration>,
-    only_members_execute: bool,
     allow_revoting: bool,
     dao: String,
     close_proposal_on_execution_failure: bool,
@@ -531,7 +506,6 @@ pub fn execute_update_config(
             threshold,
             max_voting_period,
             min_voting_period,
-            only_members_execute,
             allow_revoting,
             dao,
             close_proposal_on_execution_failure,

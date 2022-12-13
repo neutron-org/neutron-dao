@@ -1,9 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{
-    Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, Response, StdResult,
-};
+use cosmwasm_std::{Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 use cw2::set_contract_version;
+use neutron_bindings::bindings::msg::NeutronMsg;
 
 use cwd_pre_propose_base::{
     error::PreProposeError,
@@ -22,13 +21,13 @@ pub enum ProposeMessage {
     Propose {
         title: String,
         description: String,
-        msgs: Vec<CosmosMsg<Empty>>,
+        msgs: Vec<CosmosMsg<NeutronMsg>>,
     },
 }
 
-pub type InstantiateMsg = InstantiateBase<Empty>;
-pub type ExecuteMsg = ExecuteBase<ProposeMessage, Empty>;
-pub type QueryMsg = QueryBase<Empty>;
+pub type InstantiateMsg = InstantiateBase;
+pub type ExecuteMsg = ExecuteBase<ProposeMessage>;
+pub type QueryMsg = QueryBase;
 
 /// Internal version of the propose message that includes the
 /// `proposer` field. The module will fill this in based on the sender
@@ -39,12 +38,12 @@ enum ProposeMessageInternal {
     Propose {
         title: String,
         description: String,
-        msgs: Vec<CosmosMsg<Empty>>,
+        msgs: Vec<CosmosMsg<NeutronMsg>>,
         proposer: Option<String>,
     },
 }
 
-type PrePropose = PreProposeContract<Empty, Empty, Empty, ProposeMessageInternal>;
+type PrePropose = PreProposeContract<ProposeMessageInternal>;
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -69,7 +68,7 @@ pub fn execute(
     // message externally as that is to be set by this module. Here,
     // we transform an external message which omits that field into an
     // internal message which sets it.
-    type ExecuteInternal = ExecuteBase<ProposeMessageInternal, Empty>;
+    type ExecuteInternal = ExecuteBase<ProposeMessageInternal>;
     let internalized = match msg {
         ExecuteMsg::Propose {
             msg:
@@ -87,7 +86,6 @@ pub fn execute(
                 msgs,
             },
         },
-        ExecuteMsg::Extension { msg } => ExecuteInternal::Extension { msg },
         ExecuteMsg::Withdraw { denom } => ExecuteInternal::Withdraw { denom },
         ExecuteMsg::UpdateConfig {
             deposit_info,

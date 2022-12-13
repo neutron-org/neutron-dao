@@ -21,8 +21,7 @@ use crate::{
 const CONTRACT_NAME: &str = "crates.io::cwd-pre-propose-base";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-impl<InstantiateExt, ExecuteExt, QueryExt, ProposalMessage>
-    PreProposeContract<InstantiateExt, ExecuteExt, QueryExt, ProposalMessage>
+impl<ProposalMessage> PreProposeContract<ProposalMessage>
 where
     ProposalMessage: Serialize,
 {
@@ -31,7 +30,7 @@ where
         deps: DepsMut,
         _env: Env,
         info: MessageInfo,
-        msg: InstantiateMsg<InstantiateExt>,
+        msg: InstantiateMsg,
     ) -> Result<Response, PreProposeError> {
         set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
@@ -76,7 +75,7 @@ where
         deps: DepsMut,
         env: Env,
         info: MessageInfo,
-        msg: ExecuteMsg<ProposalMessage, ExecuteExt>,
+        msg: ExecuteMsg<ProposalMessage>,
     ) -> Result<Response, PreProposeError> {
         match msg {
             ExecuteMsg::Propose { msg } => self.execute_propose(deps.as_ref(), env, info, msg),
@@ -87,7 +86,6 @@ where
             ExecuteMsg::Withdraw { denom } => {
                 self.execute_withdraw(deps.as_ref(), env, info, denom)
             }
-            ExecuteMsg::Extension { .. } => Ok(Response::default()),
             ExecuteMsg::ProposalCreatedHook {
                 proposal_id,
                 proposer,
@@ -99,7 +97,7 @@ where
         }
     }
 
-    pub fn query(&self, deps: Deps, _env: Env, msg: QueryMsg<QueryExt>) -> StdResult<Binary> {
+    pub fn query(&self, deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         match msg {
             QueryMsg::ProposalModule {} => to_binary(&self.proposal_module.load(deps.storage)?),
             QueryMsg::Dao {} => to_binary(&self.dao.load(deps.storage)?),
@@ -111,7 +109,6 @@ where
                     proposer,
                 })
             }
-            QueryMsg::Extension { .. } => Ok(Binary::default()),
         }
     }
 

@@ -5,7 +5,6 @@
   "type": "object",
   "required": [
     "active_proposal_module_count",
-    "admin",
     "config",
     "pause_info",
     "proposal_modules",
@@ -19,14 +18,6 @@
       "type": "integer",
       "format": "uint32",
       "minimum": 0.0
-    },
-    "admin": {
-      "description": "Optional DAO Admin",
-      "allOf": [
-        {
-          "$ref": "#/definitions/Addr"
-        }
-      ]
     },
     "config": {
       "description": "The governance contract's config.",
@@ -78,20 +69,10 @@
       "description": "Top level config type for core module.",
       "type": "object",
       "required": [
-        "automatically_add_cw20s",
-        "automatically_add_cw721s",
         "description",
         "name"
       ],
       "properties": {
-        "automatically_add_cw20s": {
-          "description": "If true the contract will automatically add received cw20 tokens to its treasury.",
-          "type": "boolean"
-        },
-        "automatically_add_cw721s": {
-          "description": "If true the contract will automatically add received cw721 tokens to its treasury.",
-          "type": "boolean"
-        },
         "dao_uri": {
           "description": "The URI for the DAO as defined by the DAOstar standard https://daostar.one/EIP",
           "type": [
@@ -102,13 +83,6 @@
         "description": {
           "description": "A description of the contract.",
           "type": "string"
-        },
-        "image_url": {
-          "description": "An optional image URL for displaying alongside the contract.",
-          "type": [
-            "string",
-            "null"
-          ]
         },
         "name": {
           "description": "The name of the contract.",

@@ -3,29 +3,12 @@
   "title": "InstantiateMsg",
   "type": "object",
   "required": [
-    "automatically_add_cw20s",
-    "automatically_add_cw721s",
     "description",
     "name",
     "proposal_modules_instantiate_info",
     "voting_registry_module_instantiate_info"
   ],
   "properties": {
-    "admin": {
-      "description": "Optional Admin with the ability to execute DAO messages directly. Useful for building SubDAOs controlled by a parent DAO. If no admin is specified the contract is set as its own admin so that the admin may be updated later by governance.",
-      "type": [
-        "string",
-        "null"
-      ]
-    },
-    "automatically_add_cw20s": {
-      "description": "If true the contract will automatically add received cw20 tokens to its treasury.",
-      "type": "boolean"
-    },
-    "automatically_add_cw721s": {
-      "description": "If true the contract will automatically add received cw721 tokens to its treasury.",
-      "type": "boolean"
-    },
     "dao_uri": {
       "description": "Implements the DAO Star standard: https://daostar.one/EIP",
       "type": [
@@ -36,13 +19,6 @@
     "description": {
       "description": "A description of the core contract.",
       "type": "string"
-    },
-    "image_url": {
-      "description": "An image URL to describe the core module contract.",
-      "type": [
-        "string",
-        "null"
-      ]
     },
     "initial_items": {
       "description": "Initial information for arbitrary contract addresses to be added to the items map. The key is the name of the item in the items map. The value is an enum that either uses an existing address or instantiates a new contract.",

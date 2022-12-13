@@ -1,17 +1,8 @@
-use cosmwasm_std::{Addr, Binary, CosmosMsg, Empty, WasmMsg};
+use cosmwasm_std::{Addr, Binary, WasmMsg};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 pub mod voting;
-
-/// The cw-core interface.
-#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum ExecuteMsg {
-    /// Causes the core module to execute all of MSGS in order. Only
-    /// callabale by a proposal module.1
-    ExecuteProposalHook { msgs: Vec<CosmosMsg<Empty>> },
-}
 
 /// Information about the CosmWasm level admin of a contract. Used in
 /// conjunction with `ModuleInstantiateInfo` to instantiate modules.

@@ -9,7 +9,7 @@ use cwd_voting::{
 
 #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub struct InstantiateMsg<InstantiateExt> {
+pub struct InstantiateMsg {
     /// Information about the deposit requirements for this
     /// module. None if no deposit.
     pub deposit_info: Option<UncheckedDepositInfo>,
@@ -17,14 +17,11 @@ pub struct InstantiateMsg<InstantiateExt> {
     /// proposals in the DAO. Otherwise, any address may create a
     /// proposal so long as they pay the deposit.
     pub open_proposal_submission: bool,
-    /// Extension for instantiation. The default implementation will
-    /// do nothing with this data.
-    pub extension: InstantiateExt,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub enum ExecuteMsg<ProposalMessage, ExecuteExt> {
+pub enum ExecuteMsg<ProposalMessage> {
     /// Creates a new proposal in the pre-propose module. MSG will be
     /// serialized and used as the proposal creation message.
     Propose { msg: ProposalMessage },
@@ -69,11 +66,6 @@ pub enum ExecuteMsg<ProposalMessage, ExecuteExt> {
         denom: Option<UncheckedDenom>,
     },
 
-    /// Extension message. Contracts that extend this one should put
-    /// their custom execute logic here. The default implementation
-    /// will do nothing if this variant is executed.
-    Extension { msg: ExecuteExt },
-
     /// Handles proposal hook fired by the associated proposal
     /// module when a proposal is created. By default, the base contract will return deposits
     /// proposals, when they are closed.
@@ -93,7 +85,7 @@ pub enum ExecuteMsg<ProposalMessage, ExecuteExt> {
 
 #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub enum QueryMsg<QueryExt> {
+pub enum QueryMsg {
     /// Gets the proposal module that this pre propose module is
     /// associated with. Returns `Addr`.
     ProposalModule {},
@@ -105,9 +97,6 @@ pub enum QueryMsg<QueryExt> {
     /// Gets the deposit info for the proposal identified by
     /// PROPOSAL_ID. Returns `DepositInfoResponse`.
     DepositInfo { proposal_id: u64 },
-    /// Extension for queries. The default implementation will do
-    /// nothing if queried for will return `Binary::default()`.
-    Extension { msg: QueryExt },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]

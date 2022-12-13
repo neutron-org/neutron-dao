@@ -43,6 +43,12 @@
         "update_config": {
           "type": "object",
           "properties": {
+            "description": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
             "manager": {
               "type": [
                 "string",

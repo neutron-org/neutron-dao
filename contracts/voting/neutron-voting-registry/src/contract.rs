@@ -1,10 +1,12 @@
 #[cfg(not(feature = "library"))]
-use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
+use cosmwasm_std::{
+    entry_point, to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
+};
 use cw2::set_contract_version;
 // use cw_controllers::ClaimsResponse;
 use cwd_interface::voting::{TotalPowerAtHeightResponse, VotingPowerAtHeightResponse};
 use cwd_interface::{voting, Admin};
+use neutron_vault::msg::QueryMsg as VaultQueryMsg;
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
@@ -111,7 +113,7 @@ pub fn execute_remove_voting_vault(
 ) -> Result<Response, ContractError> {
     let mut config: Config = CONFIG.load(deps.storage)?;
     if config.voting_vaults.len() == 1 {
-        Err(ContractError::RemoveLastVault {})
+        return Err(ContractError::RemoveLastVault {});
     }
 
     let new_voting_vault = deps.api.addr_validate(&old_voting_vault_contact)?;
@@ -186,9 +188,15 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 pub fn query_voting_vaults(deps: Deps) -> StdResult<Binary> {
-    let config = CONFIG.load(deps.storage)?;
+    let mut voting_vaults: Vec<(Addr, String)> = vec![];
+    for vault in CONFIG.load(deps.storage)?.voting_vaults.iter() {
+        let vault_description: String = deps
+            .querier
+            .query_wasm_smart(vault, &VaultQueryMsg::Description {})?;
+        voting_vaults.push((vault.clone(), vault_description));
+    }
 
-    to_binary(&config.voting_vaults)
+    to_binary(&voting_vaults)
 }
 
 pub fn query_voting_power_at_height(
@@ -198,7 +206,6 @@ pub fn query_voting_power_at_height(
     height: Option<u64>,
 ) -> StdResult<VotingPowerAtHeightResponse> {
     let voting_vaults = CONFIG.load(deps.storage)?.voting_vaults;
-    // let addr = deps.api.addr_validate(&address)?;
     let mut total_power = VotingPowerAtHeightResponse {
         power: Default::default(),
         height: Default::default(),

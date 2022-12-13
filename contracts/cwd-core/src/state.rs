@@ -2,7 +2,7 @@ use cw_utils::Expiration;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_std::{Addr, Empty};
+use cosmwasm_std::Addr;
 use cw_storage_plus::{Item, Map};
 
 /// Top level config type for core module.
@@ -12,14 +12,6 @@ pub struct Config {
     pub name: String,
     /// A description of the contract.
     pub description: String,
-    /// An optional image URL for displaying alongside the contract.
-    pub image_url: Option<String>,
-    /// If true the contract will automatically add received cw20
-    /// tokens to its treasury.
-    pub automatically_add_cw20s: bool,
-    /// If true the contract will automatically add received cw721
-    /// tokens to its treasury.
-    pub automatically_add_cw721s: bool,
     /// The URI for the DAO as defined by the DAOstar standard
     /// https://daostar.one/EIP
     pub dao_uri: Option<String>,
@@ -44,23 +36,6 @@ pub enum ProposalModuleStatus {
     Disabled,
 }
 
-/// The admin of the contract. Typically a DAO. The contract admin may
-/// unilaterally execute messages on this contract.
-///
-/// In cases where no admin is wanted the admin should be set to the
-/// contract itself. This will happen by default if no admin is
-/// specified in `NominateAdmin` and instantiate messages.
-pub const ADMIN: Item<Addr> = Item::new("admin");
-
-/// A new admin that has been nominated by the current admin. The
-/// nominated admin must accept the proposal before becoming the admin
-/// themselves.
-///
-/// NOTE: If no admin is currently nominated this will not have a
-/// value set. To load this value, use
-/// `NOMINATED_ADMIN.may_load(deps.storage)`.
-pub const NOMINATED_ADMIN: Item<Addr> = Item::new("nominated_admin");
-
 /// The current configuration of the module.
 pub const CONFIG: Item<Config> = Item::new("config_v2");
 
@@ -84,13 +59,6 @@ pub const TOTAL_PROPOSAL_MODULE_COUNT: Item<u32> = Item::new("total_proposal_mod
 
 // General purpose KV store for DAO associated state.
 pub const ITEMS: Map<String, String> = Map::new("items");
-
-/// Set of cw20 tokens that have been registered with this contract's
-/// treasury.
-pub const CW20_LIST: Map<Addr, Empty> = Map::new("cw20s");
-/// Set of cw721 tokens that have been registered with this contract's
-/// treasury.
-pub const CW721_LIST: Map<Addr, Empty> = Map::new("cw721s");
 
 /// List of SubDAOs associated to this DAO. Each SubDAO has an optional charter.
 pub const SUBDAO_LIST: Map<&Addr, Option<String>> = Map::new("sub_daos");

@@ -3,30 +3,6 @@
   "title": "ExecuteMsg",
   "oneOf": [
     {
-      "description": "Callable by the Admin, if one is configured. Executes messages in order.",
-      "type": "object",
-      "required": [
-        "execute_admin_msgs"
-      ],
-      "properties": {
-        "execute_admin_msgs": {
-          "type": "object",
-          "required": [
-            "msgs"
-          ],
-          "properties": {
-            "msgs": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/CosmosMsg_for_NeutronMsg"
-              }
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
       "description": "Callable by proposal modules. The DAO will execute the messages in the hook in order.",
       "type": "object",
       "required": [
@@ -67,32 +43,6 @@
               "$ref": "#/definitions/Duration"
             }
           }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "description": "Executed when the contract receives a cw20 token. Depending on the contract's configuration the contract will automatically add the token to its treasury.",
-      "type": "object",
-      "required": [
-        "receive"
-      ],
-      "properties": {
-        "receive": {
-          "$ref": "#/definitions/Cw20ReceiveMsg"
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "description": "Executed when the contract receives a cw721 token. Depending on the contract's configuration the contract will automatically add the token to its treasury.",
-      "type": "object",
-      "required": [
-        "receive_nft"
-      ],
-      "properties": {
-        "receive_nft": {
-          "$ref": "#/definitions/Cw721ReceiveMsg"
         }
       },
       "additionalProperties": false
@@ -144,53 +94,6 @@
       "additionalProperties": false
     },
     {
-      "description": "Callable by the admin of the contract. If ADMIN is None the admin is set as the contract itself so that it may be updated later by vote. If ADMIN is Some a new admin is proposed and that new admin may become the admin by executing the `AcceptAdminNomination` message.\n\nIf there is already a pending admin nomination the `WithdrawAdminNomination` message must be executed before a new admin may be nominated.",
-      "type": "object",
-      "required": [
-        "nominate_admin"
-      ],
-      "properties": {
-        "nominate_admin": {
-          "type": "object",
-          "properties": {
-            "admin": {
-              "type": [
-                "string",
-                "null"
-              ]
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "description": "Callable by a nominated admin. Admins are nominated via the `NominateAdmin` message. Accepting a nomination will make the nominated address the new admin.\n\nRequiring that the new admin accepts the nomination before becoming the admin protects against a typo causing the admin to change to an invalid address.",
-      "type": "object",
-      "required": [
-        "accept_admin_nomination"
-      ],
-      "properties": {
-        "accept_admin_nomination": {
-          "type": "object"
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "description": "Callable by the current admin. Withdraws the current admin nomination.",
-      "type": "object",
-      "required": [
-        "withdraw_admin_nomination"
-      ],
-      "properties": {
-        "withdraw_admin_nomination": {
-          "type": "object"
-        }
-      },
-      "additionalProperties": false
-    },
-    {
       "description": "Callable by the core contract. Replaces the current governance contract config with the provided config.",
       "type": "object",
       "required": [
@@ -205,68 +108,6 @@
           "properties": {
             "config": {
               "$ref": "#/definitions/Config"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "description": "Updates the list of cw20 tokens this contract has registered.",
-      "type": "object",
-      "required": [
-        "update_cw20_list"
-      ],
-      "properties": {
-        "update_cw20_list": {
-          "type": "object",
-          "required": [
-            "to_add",
-            "to_remove"
-          ],
-          "properties": {
-            "to_add": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            },
-            "to_remove": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "description": "Updates the list of cw721 tokens this contract has registered.",
-      "type": "object",
-      "required": [
-        "update_cw721_list"
-      ],
-      "properties": {
-        "update_cw721_list": {
-          "type": "object",
-          "required": [
-            "to_add",
-            "to_remove"
-          ],
-          "properties": {
-            "to_add": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            },
-            "to_remove": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
             }
           }
         }
@@ -397,6 +238,23 @@
         }
       ]
     },
+    "AdminProposal": {
+      "description": "AdminProposal defines the struct for various proposals which Neutron's Admin Module may accept. Currently only parameter change proposals are implemented, new types of admin proposals may be implemented in future.",
+      "type": "object",
+      "properties": {
+        "param_change_proposal": {
+          "description": "*param_change_proposal** is a parameter change proposal field.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ParamChangeProposal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
     "BankMsg": {
       "description": "The message types of the bank module.\n\nSee https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/bank/v1beta1/tx.proto",
       "oneOf": [
@@ -477,20 +335,10 @@
       "description": "Top level config type for core module.",
       "type": "object",
       "required": [
-        "automatically_add_cw20s",
-        "automatically_add_cw721s",
         "description",
         "name"
       ],
       "properties": {
-        "automatically_add_cw20s": {
-          "description": "If true the contract will automatically add received cw20 tokens to its treasury.",
-          "type": "boolean"
-        },
-        "automatically_add_cw721s": {
-          "description": "If true the contract will automatically add received cw721 tokens to its treasury.",
-          "type": "boolean"
-        },
         "dao_uri": {
           "description": "The URI for the DAO as defined by the DAOstar standard https://daostar.one/EIP",
           "type": [
@@ -501,13 +349,6 @@
         "description": {
           "description": "A description of the contract.",
           "type": "string"
-        },
-        "image_url": {
-          "description": "An optional image URL for displaying alongside the contract.",
-          "type": [
-            "string",
-            "null"
-          ]
         },
         "name": {
           "description": "The name of the contract.",
@@ -628,46 +469,6 @@
         }
       ]
     },
-    "Cw20ReceiveMsg": {
-      "description": "Cw20ReceiveMsg should be de/serialized under `Receive()` variant in a ExecuteMsg",
-      "type": "object",
-      "required": [
-        "amount",
-        "msg",
-        "sender"
-      ],
-      "properties": {
-        "amount": {
-          "$ref": "#/definitions/Uint128"
-        },
-        "msg": {
-          "$ref": "#/definitions/Binary"
-        },
-        "sender": {
-          "type": "string"
-        }
-      }
-    },
-    "Cw721ReceiveMsg": {
-      "description": "Cw721ReceiveMsg should be de/serialized under `Receive()` variant in a ExecuteMsg",
-      "type": "object",
-      "required": [
-        "msg",
-        "sender",
-        "token_id"
-      ],
-      "properties": {
-        "msg": {
-          "$ref": "#/definitions/Binary"
-        },
-        "sender": {
-          "type": "string"
-        },
-        "token_id": {
-          "type": "string"
-        }
-      }
-    },
     "DistributionMsg": {
       "description": "The message types of the distribution module.\n\nSee https://github.com/cosmos/cosmos-sdk/blob/v0.42.4/proto/cosmos/distribution/v1beta1/tx.proto",
       "oneOf": [
@@ -781,6 +582,34 @@
           "additionalProperties": false
         }
       ]
+    },
+    "IbcFee": {
+      "type": "object",
+      "required": [
+        "ack_fee",
+        "recv_fee",
+        "timeout_fee"
+      ],
+      "properties": {
+        "ack_fee": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Coin"
+          }
+        },
+        "recv_fee": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Coin"
+          }
+        },
+        "timeout_fee": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Coin"
+          }
+        }
+      }
     },
     "IbcMsg": {
       "description": "These are messages in the IBC lifecycle. Only usable by IBC-enabled contracts (contracts that directly speak the IBC protocol via 6 entry points)",
@@ -935,6 +764,28 @@
         }
       }
     },
+    "KVKey": {
+      "description": "Describes a KV key for which you want to get value from the storage on remote chain",
+      "type": "object",
+      "required": [
+        "key",
+        "path"
+      ],
+      "properties": {
+        "key": {
+          "description": "*key** is a key you want to read from the storage",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Binary"
+            }
+          ]
+        },
+        "path": {
+          "description": "*path** is a path to the storage (storage prefix) where you want to read value by key (usually name of cosmos-sdk module: 'staking', 'bank', etc.)",
+          "type": "string"
+        }
+      }
+    },
     "ModuleInstantiateInfo": {
       "description": "Information needed to instantiate a module.",
       "type": "object",
@@ -976,23 +827,278 @@
       }
     },
     "NeutronMsg": {
-      "description": "A number of Custom messages that can call into the Neutron bindings",
+      "description": "A number of Custom messages that can call into the Neutron bindings.",
       "oneOf": [
         {
-          "description": "TODO: add anotation TODO: move this to neutron sdk; bring neutron-sdk instead to this project This message can be sent only by neutron dao (cuz only neutron dao has admin rights)",
+          "description": "RegisterInterchainAccount registers an interchain account on remote chain.",
           "type": "object",
           "required": [
-            "submit_proposal"
+            "register_interchain_account"
           ],
           "properties": {
-            "submit_proposal": {
+            "register_interchain_account": {
               "type": "object",
               "required": [
-                "proposals"
+                "connection_id",
+                "interchain_account_id"
               ],
               "properties": {
-                "proposals": {
-                  "$ref": "#/definitions/Proposals"
+                "connection_id": {
+                  "description": "*connection_id** is an IBC connection identifier between Neutron and remote chain.",
+                  "type": "string"
+                },
+                "interchain_account_id": {
+                  "description": "**interchain_account_id** is an identifier of your new interchain account. Can be any string. This identifier allows contracts to have multiple interchain accounts on remote chains.",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "SubmitTx starts the process of executing any Cosmos-SDK *msgs* on remote chain.",
+          "type": "object",
+          "required": [
+            "submit_tx"
+          ],
+          "properties": {
+            "submit_tx": {
+              "type": "object",
+              "required": [
+                "connection_id",
+                "fee",
+                "interchain_account_id",
+                "memo",
+                "msgs",
+                "timeout"
+              ],
+              "properties": {
+                "connection_id": {
+                  "description": "*connection_id** is an IBC connection identifier between Neutron and remote chain.",
+                  "type": "string"
+                },
+                "fee": {
+                  "description": "**fee** is an ibc fee for the transaction.",
+                  "allOf": [
+                    {
+                      "$ref": "#/definitions/IbcFee"
+                    }
+                  ]
+                },
+                "interchain_account_id": {
+                  "description": "*interchain_account_id** is an identifier of your interchain account from which you want to execute msgs.",
+                  "type": "string"
+                },
+                "memo": {
+                  "description": "*memo** is a memo you want to attach to your interchain transaction.It behaves like a memo in usual Cosmos transaction.",
+                  "type": "string"
+                },
+                "msgs": {
+                  "description": "*msgs** is a list of protobuf encoded Cosmos-SDK messages you want to execute on remote chain.",
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/ProtobufAny"
+                  }
+                },
+                "timeout": {
+                  "description": "*timeout** is a timeout in seconds after which the packet times out.",
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "RegisterInterchainQuery registers an interchain query.",
+          "type": "object",
+          "required": [
+            "register_interchain_query"
+          ],
+          "properties": {
+            "register_interchain_query": {
+              "type": "object",
+              "required": [
+                "connection_id",
+                "keys",
+                "query_type",
+                "transactions_filter",
+                "update_period"
+              ],
+              "properties": {
+                "connection_id": {
+                  "description": "*connection_id** is an IBC connection identifier between Neutron and remote chain.",
+                  "type": "string"
+                },
+                "keys": {
+                  "description": "*keys** is the KV-storage keys for which we want to get values from remote chain.",
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/KVKey"
+                  }
+                },
+                "query_type": {
+                  "description": "*query_type** is a query type identifier ('tx' or 'kv' for now).",
+                  "type": "string"
+                },
+                "transactions_filter": {
+                  "description": "*transactions_filter** is the filter for transaction search ICQ.",
+                  "type": "string"
+                },
+                "update_period": {
+                  "description": "*update_period** is used to say how often the query must be updated.",
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "RegisterInterchainQuery updates an interchain query.",
+          "type": "object",
+          "required": [
+            "update_interchain_query"
+          ],
+          "properties": {
+            "update_interchain_query": {
+              "type": "object",
+              "required": [
+                "query_id"
+              ],
+              "properties": {
+                "new_keys": {
+                  "description": "*new_keys** is the new query keys to retrive.",
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "$ref": "#/definitions/KVKey"
+                  }
+                },
+                "new_transactions_filter": {
+                  "description": "*new_transactions_filter** is a new transactions filter of the query.",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "new_update_period": {
+                  "description": "*new_update_period** is a new update period of the query.",
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "query_id": {
+                  "description": "*query_id** is the ID of the query we want to update.",
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "RemoveInterchainQuery removes as interchain query.",
+          "type": "object",
+          "required": [
+            "remove_interchain_query"
+          ],
+          "properties": {
+            "remove_interchain_query": {
+              "type": "object",
+              "required": [
+                "query_id"
+              ],
+              "properties": {
+                "query_id": {
+                  "description": "*query_id** is ID of the query we want to remove.",
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "IbcTransfer sends a fungible token packet over IBC.",
+          "type": "object",
+          "required": [
+            "ibc_transfer"
+          ],
+          "properties": {
+            "ibc_transfer": {
+              "type": "object",
+              "required": [
+                "fee",
+                "receiver",
+                "sender",
+                "source_channel",
+                "source_port",
+                "timeout_height",
+                "timeout_timestamp",
+                "token"
+              ],
+              "properties": {
+                "fee": {
+                  "$ref": "#/definitions/IbcFee"
+                },
+                "receiver": {
+                  "type": "string"
+                },
+                "sender": {
+                  "type": "string"
+                },
+                "source_channel": {
+                  "type": "string"
+                },
+                "source_port": {
+                  "type": "string"
+                },
+                "timeout_height": {
+                  "$ref": "#/definitions/RequestPacketTimeoutHeight"
+                },
+                "timeout_timestamp": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "token": {
+                  "$ref": "#/definitions/Coin"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "SubmitAdminProposal sends a proposal to neutron's Admin module. This type of messages can be only executed by Neutron DAO.",
+          "type": "object",
+          "required": [
+            "submit_admin_proposal"
+          ],
+          "properties": {
+            "submit_admin_proposal": {
+              "type": "object",
+              "required": [
+                "admin_proposal"
+              ],
+              "properties": {
+                "admin_proposal": {
+                  "$ref": "#/definitions/AdminProposal"
                 }
               }
             }
@@ -1002,6 +1108,7 @@
       ]
     },
     "ParamChange": {
+      "description": "ParamChange defines the struct for parameter change request.",
       "type": "object",
       "required": [
         "key",
@@ -1010,17 +1117,21 @@
       ],
       "properties": {
         "key": {
+          "description": "*key** is a name of parameter. Unique for subspace.",
           "type": "string"
         },
         "subspace": {
+          "description": "*subspace** is a key of module to which the parameter to change belongs. Unique for each module.",
           "type": "string"
         },
         "value": {
+          "description": "*value** is a new value for given parameter. Non unique.",
           "type": "string"
         }
       }
     },
     "ParamChangeProposal": {
+      "description": "ParamChangeProposal defines the struct for single parameter change proposal.",
       "type": "object",
       "required": [
         "description",
@@ -1029,31 +1140,62 @@
       ],
       "properties": {
         "description": {
+          "description": "*descriptionr** is a text description of proposal. Non unique.",
           "type": "string"
         },
         "param_changes": {
+          "description": "*param_changes** is a vector of params to be changed. Non unique.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/ParamChange"
           }
         },
         "title": {
+          "description": "*title** is a text title of proposal. Non unique.",
           "type": "string"
         }
       }
     },
-    "Proposals": {
+    "ProtobufAny": {
+      "description": "Type for wrapping any protobuf message",
       "type": "object",
+      "required": [
+        "type_url",
+        "value"
+      ],
       "properties": {
-        "param_change_proposal": {
-          "anyOf": [
+        "type_url": {
+          "description": "*type_url** describes the type of the serialized message",
+          "type": "string"
+        },
+        "value": {
+          "description": "*value** must be a valid serialized protocol buffer of the above specified type",
+          "allOf": [
             {
-              "$ref": "#/definitions/ParamChangeProposal"
-            },
-            {
-              "type": "null"
+              "$ref": "#/definitions/Binary"
             }
           ]
+        }
+      }
+    },
+    "RequestPacketTimeoutHeight": {
+      "type": "object",
+      "properties": {
+        "revision_height": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0.0
+        },
+        "revision_number": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0.0
         }
       }
     },
