@@ -16,6 +16,8 @@ STAKING_ADDRESS=neutron14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s5c2e
 PROPOSE_ADDRESS=neutron1unyuj8qnmygvzuex3dwmg9yzt9alhvyeat0uu0jedg2wj33efl5qmysp02
 VOTE_ADDRESS=neutron1zwv6feuzhy6a9wekh96cd57lsarmqlwxdypdsplw6zhfncqw6ftqqgmq2a
 CORE_ADDRESS=neutron1nc5tatafv6eyq7llkr2gv50ff9e22mnf70qgjlv737ktmt4eswrqcd0mrx
+PRE_PROPOSE_ADDRESS=neutron1eyfccmjm6732k7wp4p6gdjwhxjwsvje44j0hfx8nkgrm8fs7vqfs8hrpdj
+
 
 #
 # send funds to contract to send them back
@@ -58,10 +60,10 @@ echo $RES
 
 
 
-
+PROP="{\"propose\":  { \"msg\": { \"propose\": {\"title\": \"TEST\", \"description\": \"BOTTOMTTEXT\", \"msgs\":[{\"custom\":{\"submit_admin_proposal\":{\"admin_proposal\":{\"param_change_proposal\":{\"title\":\"title\",\"description\":\"description\",\"param_changes\":[{\"subspace\":\"icahost\",\"key\":\"HostEnabled\",\"value\":\"false\"}]}}}}}]}}}}"
 # PROPOSAL 1 (to pass)
 #propose proposal we're going to pass
-RES=$(${BIN} tx wasm execute $PROPOSE_ADDRESS "{\"propose\": {\"title\": \"TEST\", \"description\": \"BOTTOMTTEXT\", \"msgs\":[{\"custom\":{\"submit_proposal\":{\"proposals\":{\"text_proposal\":null,\"param_change_proposal\":{\"title\":\"title\",\"description\":\"description\",\"param_changes\":[{\"subspace\":\"icahost\",\"key\":\"HostEnabled\",\"value\":\"false\"}]}}}}}]}}" --from ${USERNAME_1} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
+RES=$(${BIN} tx wasm execute $PRE_PROPOSE_ADDRESS "$PROP" --amount 1000stake --from ${USERNAME_1} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
 echo "
 
 
@@ -108,11 +110,11 @@ echo $RES
 
 # PROPOSAL 2 (to decline)
 #propose proposal we're going to pass
-RES=$(${BIN} tx wasm execute $PROPOSE_ADDRESS "{\"propose\": {\"title\": \"TEST\", \"description\": \"BOTTOMTTEXT\", \"msgs\":[]}}" --from ${USERNAME_1} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
+RES=$(${BIN} tx wasm execute $PRE_PROPOSE_ADDRESS "{\"propose\":  { \"msg\": { \"propose\": {\"title\": \"TEST\", \"description\": \"BOTTOMTTEXT\", \"msgs\":[{\"custom\":{\"submit_admin_proposal\":{\"admin_proposal\":{\"param_change_proposal\":{\"title\":\"title\",\"description\":\"description\",\"param_changes\":[{\"subspace\":\"icahost\",\"key\":\"HostEnabled\",\"value\":\"false\"}]}}}}}]}}}}" --amount 1000stake --from ${USERNAME_1} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
 echo ".
 .
 .
-propose proposal to be passed:
+propose proposal to be decline:
 
 "
 echo $RES
@@ -155,13 +157,13 @@ echo $RES
 
 
 
-# PROPOSAL 1 (to pass)
+# PROPOSAL 3 (to pass)
 #propose proposal we're going to pass
-RES=$(${BIN} tx wasm execute $PROPOSE_ADDRESS "{\"propose\": {\"title\": \"TEST\", \"description\": \"BOTTOMTTEXT\", \"msgs\":[{\"bank\":{\"send\":{\"to_address\":\"neutron1m9l358xunhhwds0568za49mzhvuxx9ux8xafx2\",\"amount\":[{\"denom\":\"stake\",\"amount\":\"1000\"}]}}}]}}" --from ${USERNAME_1} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
+RES=$(${BIN} tx wasm execute $PRE_PROPOSE_ADDRESS "{\"propose\":  { \"msg\": {\"propose\": {\"title\": \"TEST\", \"description\": \"BOTTOMTTEXT\", \"msgs\":[{\"bank\":{\"send\":{\"to_address\":\"neutron1m9l358xunhhwds0568za49mzhvuxx9ux8xafx2\",\"amount\":[{\"denom\":\"stake\",\"amount\":\"1000\"}]}}}]}}}}" --amount 1000stake --from ${USERNAME_1} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
 echo "
 
 
-propose proposal to be passed:
+propose proposal # 3 to be passed:
 "
 echo $RES
 
