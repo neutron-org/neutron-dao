@@ -43,7 +43,7 @@ pub fn execute(
     match msg {
         // permissioned - owner
         ExecuteMsg::TransferOwnership(new_owner) => {
-            execute_transfer_ownership(deps, info.sender, api.addr_validate(&new_owner)?)
+            execute_transfer_ownership(deps, info, api.addr_validate(&new_owner)?)
         }
 
         // permissioned - owner
@@ -59,11 +59,12 @@ pub fn execute(
 
 pub fn execute_transfer_ownership(
     deps: DepsMut,
-    sender_addr: Addr,
+    info: MessageInfo,
     new_owner_addr: Addr,
 ) -> StdResult<Response> {
     let config = CONFIG.load(deps.storage)?;
     let old_owner = config.owner;
+    let sender_addr = info.sender;
     if sender_addr != old_owner {
         return Err(StdError::generic_err("unauthorized"));
     }
