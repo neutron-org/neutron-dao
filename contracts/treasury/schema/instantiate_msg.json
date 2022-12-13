@@ -14,14 +14,17 @@
       "type": "string"
     },
     "distribution_contract": {
+      "description": "Address of distribution contract",
       "type": "string"
     },
     "distribution_rate": {
+      "description": "Distribution rate in percent (0-100) which goes to distribution contract",
       "type": "integer",
       "format": "uint8",
       "minimum": 0.0
     },
     "min_period": {
+      "description": "Minimum period between distribution calls",
       "type": "integer",
       "format": "uint64",
       "minimum": 0.0

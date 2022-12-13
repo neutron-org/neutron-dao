@@ -14,3 +14,5 @@ pub const PENDING_DISTRIBUTION: Map<&[u8], Uint128> = Map::new("pending_distribu
 pub const SHARES: Map<&[u8], Uint128> = Map::new("shares");
 
 pub const CONFIG: Item<Config> = Item::new("config");
+
+pub const FUND_COUNTER: Item<u64> = Item::new("fund_counter");

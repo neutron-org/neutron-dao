@@ -7,7 +7,7 @@ use cosmwasm_std::{
 use crate::{
     contract::{execute, instantiate},
     msg::{ExecuteMsg, InstantiateMsg},
-    state::{CONFIG, PENDING_DISTRIBUTION, SHARES},
+    state::{CONFIG, FUND_COUNTER, PENDING_DISTRIBUTION, SHARES},
     testing::mock_querier::mock_dependencies,
 };
 
@@ -96,6 +96,51 @@ fn test_fund_success() {
             .unwrap(),
         Uint128::from(7500u128)
     );
+    let fund_counter = FUND_COUNTER.load(deps.as_ref().storage).unwrap();
+    assert_eq!(fund_counter, 1u64);
+}
+
+#[test]
+fn test_fund_success_with_dust() {
+    let mut deps = mock_dependencies(&[]);
+    init_base_contract(deps.as_mut());
+    SHARES
+        .save(
+            deps.as_mut().storage,
+            "addr1".as_bytes(),
+            &Uint128::from(1u128),
+        )
+        .unwrap();
+    SHARES
+        .save(
+            deps.as_mut().storage,
+            "addr2".as_bytes(),
+            &Uint128::from(3u128),
+        )
+        .unwrap();
+    let msg = ExecuteMsg::Fund {};
+    let res = execute(
+        deps.as_mut(),
+        mock_env(),
+        mock_info("someone", &[coin(10001u128, DENOM)]),
+        msg,
+    );
+    assert!(res.is_ok());
+    println!("{:?}", res.unwrap().attributes);
+    assert_eq!(
+        PENDING_DISTRIBUTION
+            .load(deps.as_ref().storage, "addr1".as_bytes())
+            .unwrap(),
+        Uint128::from(2501u128)
+    );
+    assert_eq!(
+        PENDING_DISTRIBUTION
+            .load(deps.as_ref().storage, "addr2".as_bytes())
+            .unwrap(),
+        Uint128::from(7500u128)
+    );
+    let fund_counter = FUND_COUNTER.load(deps.as_ref().storage).unwrap();
+    assert_eq!(fund_counter, 1u64);
 }
 
 #[test]

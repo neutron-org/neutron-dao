@@ -7,7 +7,7 @@ use cosmwasm_std::{
 use cw_storage_plus::KeyDeserialize;
 
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::state::{Config, CONFIG, PENDING_DISTRIBUTION, SHARES};
+use crate::state::{Config, CONFIG, FUND_COUNTER, PENDING_DISTRIBUTION, SHARES};
 
 //--------------------------------------------------------------------------------------------------
 // Instantiation
@@ -89,6 +89,7 @@ fn get_denom_amount(coins: Vec<Coin>, denom: String) -> Option<Uint128> {
 pub fn execute_fund(deps: DepsMut, info: MessageInfo) -> StdResult<Response> {
     let config: Config = CONFIG.load(deps.storage)?;
     let denom = config.denom;
+    let fund_counter = FUND_COUNTER.may_load(deps.storage)?.unwrap_or(0);
     let funds = get_denom_amount(info.funds, denom).unwrap_or(Uint128::zero());
     if funds.is_zero() {
         return Err(StdError::generic_err("no funds sent"));
@@ -101,14 +102,34 @@ pub fn execute_fund(deps: DepsMut, info: MessageInfo) -> StdResult<Response> {
         return Err(StdError::generic_err("no shares set"));
     }
     let total_shares = shares.iter().fold(Uint128::zero(), |acc, (_, s)| acc + s);
-    for (addr, share) in shares {
-        let amount = funds.checked_mul(share)?.checked_div(total_shares)?;
+    let mut spent = Uint128::zero();
+    let mut resp = Response::new().add_attribute("action", "neutron/distribution/fund");
+
+    for (addr, share) in shares.iter() {
+        let amount = funds.checked_mul(*share)?.checked_div(total_shares)?;
         let pending = PENDING_DISTRIBUTION
-            .may_load(deps.storage, &addr)?
+            .may_load(deps.storage, addr)?
             .unwrap_or(Uint128::zero());
-        PENDING_DISTRIBUTION.save(deps.storage, &addr, &(pending.checked_add(amount)?))?;
+        PENDING_DISTRIBUTION.save(deps.storage, addr, &(pending.checked_add(amount)?))?;
+        spent = spent.checked_add(amount)?;
+        resp = resp
+            .add_attribute("address", Addr::from_slice(addr)?)
+            .add_attribute("amount", amount);
     }
-    Ok(Response::new().add_attribute("action", "neutron/distribution/fund"))
+    let remaining = funds.checked_sub(spent)?;
+    if !remaining.is_zero() {
+        let index = fund_counter % shares.len() as u64;
+        let key = &shares.get(index as usize).unwrap().0;
+        let pending = PENDING_DISTRIBUTION
+            .may_load(deps.storage, key)?
+            .unwrap_or(Uint128::zero());
+        PENDING_DISTRIBUTION.save(deps.storage, key, &(pending.checked_add(remaining)?))?;
+        resp = resp
+            .add_attribute("remainder_address", Addr::from_slice(key)?)
+            .add_attribute("remainder_amount", remaining);
+    }
+    FUND_COUNTER.save(deps.storage, &(fund_counter + 1))?;
+    Ok(resp)
 }
 
 pub fn execute_set_shares(
