@@ -1,9 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{
-    Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, Response, StdResult,
-};
+use cosmwasm_std::{Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 use cw2::set_contract_version;
+use neutron_bindings::bindings::msg::NeutronMsg;
 
 use cwd_pre_propose_base::{
     error::PreProposeError,
@@ -22,7 +21,7 @@ pub enum ProposeMessage {
     Propose {
         title: String,
         description: String,
-        msgs: Vec<CosmosMsg<Empty>>,
+        msgs: Vec<CosmosMsg<NeutronMsg>>,
     },
 }
 
@@ -39,7 +38,7 @@ enum ProposeMessageInternal {
     Propose {
         title: String,
         description: String,
-        msgs: Vec<CosmosMsg<Empty>>,
+        msgs: Vec<CosmosMsg<NeutronMsg>>,
         proposer: Option<String>,
     },
 }
