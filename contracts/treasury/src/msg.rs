@@ -6,8 +6,11 @@ use serde::{Deserialize, Serialize};
 pub struct InstantiateMsg {
     pub owner: String,
     pub denom: String,
+    /// Distribution rate in percent (0-100) which goes to distribution contract
     pub distribution_rate: u8,
+    /// Minimum period between distribution calls
     pub min_period: u64,
+    /// Address of distribution contract
     pub distribution_contract: String,
 }
 
