@@ -49,7 +49,7 @@
       "additionalProperties": false
     },
     {
-      "description": "Distribute funds to the and distribution accounts according to their shares",
+      "description": "Distribute funds between share holders",
       "type": "object",
       "required": [
         "fund"

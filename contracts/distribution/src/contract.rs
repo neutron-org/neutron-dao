@@ -100,10 +100,9 @@ pub fn execute_fund(deps: DepsMut, info: MessageInfo) -> StdResult<Response> {
     if shares.is_empty() {
         return Err(StdError::generic_err("no shares set"));
     }
-    let total_shares = shares.iter()
-        .fold(Uint128::zero(), |acc, (_, s)| acc + s);
+    let total_shares = shares.iter().fold(Uint128::zero(), |acc, (_, s)| acc + s);
     for (addr, share) in shares {
-        let amount = funds.checked_mul(share)?.checked_div(total_shares)?;   
+        let amount = funds.checked_mul(share)?.checked_div(total_shares)?;
         let pending = PENDING_DISTRIBUTION
             .may_load(deps.storage, &addr)?
             .unwrap_or(Uint128::zero());
@@ -129,7 +128,7 @@ pub fn execute_set_shares(
     }
     remove_all_shares(deps.storage)?;
     for (addr, shares) in new_shares.iter() {
-        SHARES.save(deps.storage, &addr, &shares)?;
+        SHARES.save(deps.storage, addr, shares)?;
     }
     Ok(Response::new()
         .add_attribute("action", "neutron/distribution/set_shares")

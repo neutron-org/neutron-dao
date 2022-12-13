@@ -55,7 +55,9 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
         // permissionless
         ExecuteMsg::Distribute {} => execute_distribute(deps, env),
         // permissioned - owner
-        ExecuteMsg::Payout { amount, recipient } => execute_payout(deps, info, env, amount, recipient),
+        ExecuteMsg::Payout { amount, recipient } => {
+            execute_payout(deps, info, env, amount, recipient)
+        }
         // permissioned - owner
         ExecuteMsg::UpdateConfig {
             distribution_rate,

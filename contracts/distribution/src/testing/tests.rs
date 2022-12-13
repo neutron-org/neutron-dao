@@ -1,7 +1,7 @@
 use cosmwasm_std::{
     coin, coins,
     testing::{mock_env, mock_info},
-    DepsMut, Empty, Uint128, BankMsg, CosmosMsg,
+    BankMsg, CosmosMsg, DepsMut, Empty, Uint128,
 };
 
 use crate::{
