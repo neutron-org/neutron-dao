@@ -1,12 +1,12 @@
 use cosmwasm_std::{
-    coin, coins,
+    coin, coins, from_binary,
     testing::{mock_env, mock_info},
     Addr, BankMsg, CosmosMsg, DepsMut, Empty, Uint128,
 };
 
 use crate::{
-    contract::{execute, instantiate},
-    msg::{ExecuteMsg, InstantiateMsg},
+    contract::{execute, instantiate, query},
+    msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
     state::{CONFIG, FUND_COUNTER, PENDING_DISTRIBUTION, SHARES},
     testing::mock_querier::mock_dependencies,
 };
@@ -250,5 +250,67 @@ fn test_set_shares() {
             .may_load(deps.as_ref().storage, Addr::unchecked("addr3"))
             .unwrap(),
         None
+    );
+}
+
+#[test]
+fn test_query_shares() {
+    let mut deps = mock_dependencies(&[]);
+    init_base_contract(deps.as_mut());
+    SHARES
+        .save(
+            deps.as_mut().storage,
+            Addr::unchecked("addr1"),
+            &Uint128::from(1u128),
+        )
+        .unwrap();
+    SHARES
+        .save(
+            deps.as_mut().storage,
+            Addr::unchecked("addr2"),
+            &Uint128::from(3u128),
+        )
+        .unwrap();
+    let msg = QueryMsg::Shares {};
+    let res = query(deps.as_ref(), mock_env(), msg);
+    assert!(res.is_ok());
+    let value: Vec<(String, Uint128)> = from_binary(&res.unwrap()).unwrap();
+    assert_eq!(
+        value,
+        vec![
+            ("addr1".to_string(), Uint128::from(1u128)),
+            ("addr2".to_string(), Uint128::from(3u128))
+        ]
+    );
+}
+
+#[test]
+fn test_query_pending() {
+    let mut deps = mock_dependencies(&[]);
+    init_base_contract(deps.as_mut());
+    PENDING_DISTRIBUTION
+        .save(
+            deps.as_mut().storage,
+            Addr::unchecked("addr1"),
+            &Uint128::from(1u128),
+        )
+        .unwrap();
+    PENDING_DISTRIBUTION
+        .save(
+            deps.as_mut().storage,
+            Addr::unchecked("addr2"),
+            &Uint128::from(3u128),
+        )
+        .unwrap();
+    let msg = QueryMsg::Pending {};
+    let res = query(deps.as_ref(), mock_env(), msg);
+    assert!(res.is_ok());
+    let value: Vec<(String, Uint128)> = from_binary(&res.unwrap()).unwrap();
+    assert_eq!(
+        value,
+        vec![
+            ("addr1".to_string(), Uint128::from(1u128)),
+            ("addr2".to_string(), Uint128::from(3u128))
+        ]
     );
 }

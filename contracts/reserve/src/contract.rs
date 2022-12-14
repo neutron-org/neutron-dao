@@ -84,7 +84,7 @@ pub fn execute_payout(
     // verify that the contract has enough funds
     let bank_balance = deps
         .querier
-        .query_balance(env.contract.address, denom.clone())?
+        .query_balance(env.contract.address, &denom)?
         .amount;
 
     if amount.gt(&bank_balance) {

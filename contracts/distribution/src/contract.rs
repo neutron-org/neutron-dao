@@ -145,7 +145,7 @@ pub fn execute_set_shares(
     if info.sender != config.owner {
         return Err(StdError::generic_err("unauthorized"));
     }
-    let mut new_shares = vec![];
+    let mut new_shares = Vec::with_capacity(shares.len());
     for (addr, share) in shares {
         let addr = deps.api.addr_validate(&addr)?;
         new_shares.push((addr, share));
@@ -207,24 +207,16 @@ pub fn query_config(deps: Deps) -> StdResult<Config> {
     Ok(config)
 }
 
-pub fn query_shares(deps: Deps) -> StdResult<Vec<(String, Uint128)>> {
+pub fn query_shares(deps: Deps) -> StdResult<Vec<(Addr, Uint128)>> {
     let shares = SHARES
         .range(deps.storage, None, None, Order::Ascending)
-        .collect::<StdResult<Vec<_>>>()?;
-    let mut res: Vec<(String, Uint128)> = vec![];
-    for (addr, shares) in shares {
-        res.push((addr.to_string(), shares));
-    }
-    Ok(res)
+        .collect::<StdResult<Vec<(Addr, Uint128)>>>()?;
+    Ok(shares)
 }
 
-pub fn query_pending(deps: Deps) -> StdResult<Vec<(String, Uint128)>> {
+pub fn query_pending(deps: Deps) -> StdResult<Vec<(Addr, Uint128)>> {
     let pending = PENDING_DISTRIBUTION
         .range(deps.storage, None, None, Order::Ascending)
-        .collect::<StdResult<Vec<_>>>()?;
-    let mut res: Vec<(String, Uint128)> = vec![];
-    for (addr, pending) in pending {
-        res.push((addr.to_string(), pending));
-    }
-    Ok(res)
+        .collect::<StdResult<Vec<(Addr, Uint128)>>>()?;
+    Ok(pending)
 }

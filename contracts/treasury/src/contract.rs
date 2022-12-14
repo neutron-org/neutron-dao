@@ -140,7 +140,7 @@ pub fn execute_distribute(deps: DepsMut, env: Env) -> StdResult<Response> {
     LAST_DISTRIBUTION_TIME.save(deps.storage, &current_time)?;
     let current_balance = deps
         .querier
-        .query_balance(env.contract.address, denom.clone())?
+        .query_balance(env.contract.address, &denom)?
         .amount;
 
     if current_balance.is_zero() {
