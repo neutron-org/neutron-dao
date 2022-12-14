@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    coins, to_binary, Addr, BankMsg, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response,
-    StdError, StdResult, Uint128, WasmMsg,
+    coins, to_binary, Addr, BankMsg, Binary, CosmosMsg, Decimal, Deps, DepsMut, Env, MessageInfo,
+    Response, StdError, StdResult, Uint128, WasmMsg,
 };
 
 use crate::msg::{DistributeMsg, ExecuteMsg, InstantiateMsg, QueryMsg, StatsResponse};
@@ -96,7 +96,7 @@ pub fn execute_transfer_ownership(
 pub fn execute_update_config(
     deps: DepsMut,
     info: MessageInfo,
-    distribution_rate: Option<u8>,
+    distribution_rate: Option<Decimal>,
     min_period: Option<u64>,
     distribution_contract: Option<String>,
     reserve_contract: Option<String>,
@@ -149,9 +149,7 @@ pub fn execute_distribute(deps: DepsMut, env: Env) -> StdResult<Response> {
         });
     }
 
-    let to_distribute = current_balance
-        .checked_mul(config.distribution_rate.into())?
-        .checked_div(100u128.into())?;
+    let to_distribute = current_balance * config.distribution_rate;
     let to_reserve = current_balance.checked_sub(to_distribute)?;
     // update stats
     let total_received = TOTAL_RECEIVED.load(deps.storage)?;

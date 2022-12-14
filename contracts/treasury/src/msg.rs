@@ -1,4 +1,4 @@
-use cosmwasm_std::Uint128;
+use cosmwasm_std::{Decimal, Uint128};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -6,8 +6,8 @@ use serde::{Deserialize, Serialize};
 pub struct InstantiateMsg {
     pub owner: String,
     pub denom: String,
-    /// Distribution rate in percent (0-100) which goes to distribution contract
-    pub distribution_rate: u8,
+    /// Distribution rate (0-1) which goes to distribution contract
+    pub distribution_rate: Decimal,
     /// Minimum period between distribution calls
     pub min_period: u64,
     /// Address of distribution contract
@@ -27,7 +27,7 @@ pub enum ExecuteMsg {
 
     // //Update config
     UpdateConfig {
-        distribution_rate: Option<u8>,
+        distribution_rate: Option<Decimal>,
         min_period: Option<u64>,
         distribution_contract: Option<String>,
         reserve_contract: Option<String>,

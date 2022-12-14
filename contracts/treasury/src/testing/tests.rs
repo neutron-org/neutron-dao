@@ -1,7 +1,9 @@
+use std::str::FromStr;
+
 use cosmwasm_std::{
     coin, coins,
     testing::{mock_env, mock_info},
-    to_binary, BankMsg, Coin, CosmosMsg, DepsMut, Empty, Uint128, WasmMsg,
+    to_binary, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, Empty, Uint128, WasmMsg,
 };
 
 use crate::{
@@ -19,7 +21,7 @@ pub fn init_base_contract(deps: DepsMut<Empty>) {
         min_period: 1000,
         distribution_contract: "distribution_contract".to_string(),
         reserve_contract: "reserve_contract".to_string(),
-        distribution_rate: 23,
+        distribution_rate: Decimal::from_str("0.23").unwrap(),
         owner: "owner".to_string(),
     };
     let info = mock_info("creator", &coins(2, DENOM));
@@ -110,7 +112,7 @@ fn test_update_config_success() {
     let msg = ExecuteMsg::UpdateConfig {
         distribution_contract: Some("new_contract".to_string()),
         reserve_contract: Some("new_reserve_contract".to_string()),
-        distribution_rate: Some(11),
+        distribution_rate: Some(Decimal::from_str("0.11").unwrap()),
         min_period: Some(3000),
     };
     let res = execute(deps.as_mut(), mock_env(), mock_info("owner", &[]), msg);
@@ -118,6 +120,6 @@ fn test_update_config_success() {
     let config = CONFIG.load(deps.as_ref().storage).unwrap();
     assert_eq!(config.distribution_contract, "new_contract");
     assert_eq!(config.reserve_contract, "new_reserve_contract");
-    assert_eq!(config.distribution_rate, 11);
+    assert_eq!(config.distribution_rate, Decimal::from_str("0.11").unwrap());
     assert_eq!(config.min_period, 3000);
 }
