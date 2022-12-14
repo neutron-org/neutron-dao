@@ -1,9 +1,13 @@
 [workspace]
 members = [
-	"contracts/cwd-core",
-	"contracts/proposal/*",
-	"contracts/pre-propose/*",
-	"contracts/voting/*",
+	"contracts/dao/cwd-core",
+	"contracts/dao/proposal/*",
+    "contracts/dao/pre-propose/*",
+	"contracts/dao/voting/*",
+	"contracts/subdao/multisig/subdao-core",
+	"contracts/subdao/multisig/proposal/*",
+	"contracts/subdao/multisig/pre-propose/*",
+	"contracts/subdao/multisig/voting/*",
 	"packages/*",
 	]
 

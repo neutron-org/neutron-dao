@@ -1,0 +1,38 @@
+[package]
+name = "subdao-pre-propose-single"
+version = "0.2.0"
+authors = ["ekez <zekemedley@gmail.com>"]
+edition = "2021"
+repository = "https://github.com/DA0-DA0/dao-contracts"
+description = "A DAO DAO pre-propose module for cwd-proposal-single for native and cw20 deposits."
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+# for more explicit tests, cargo test --features=backtraces
+backtraces = ["cosmwasm-std/backtraces"]
+# use library feature to disable all instantiate/execute/query exports
+library = []
+
+[dependencies]
+cosmwasm-std = "1.0.0"
+cw2 = "0.13.2"
+serde = { version = "1.0.147", default-features = false, features = ["derive"] }
+cwd-pre-propose-base = { version = "*", path = "../../../../../packages/cwd-pre-propose-base" }
+neutron_bindings = { package = "neutron-sdk", version = "0.1.0", git = "https://github.com/neutron-org/neutron-contracts.git" }
+schemars = "0.8.8"
+
+[dev-dependencies]
+cosmwasm-schema = "1.0.0"
+cw-multi-test = "0.13.2"
+cw-utils = "0.13.2"
+cw4-group = "0.13.2"
+cw20 = "0.13.2"
+cw20-base = "0.13.2"
+subdao-proposal-single = { path = "../../proposal/subdao-proposal-single" }
+subdao-core = { path = "../../subdao-core" }
+cwd-voting = { path = "../../../../../packages/cwd-voting" }
+cw-denom = { path = "../../../../../packages/cw-denom" }
+cwd-interface = { path = "../../../../../packages/cwd-interface" }
+cwd-proposal-hooks = { path = "../../../../../packages/cwd-proposal-hooks" }

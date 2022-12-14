@@ -6,6 +6,6 @@ modules. It is modeled after the
 contract for implementing NFT contracts.
 
 See the
-[pre-propose-single](../../contracts/pre-propose/cwd-pre-propose-single)
+[pre-propose-single](../../contracts/dao/pre-propose/cwd-pre-propose-single)
 contract for an example of using this package to implement a proposal
 module with deposits.

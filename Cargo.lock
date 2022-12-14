@@ -477,6 +477,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "cw4-voting"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cosmwasm-storage",
+ "cw-multi-test",
+ "cw-storage-plus 0.13.4",
+ "cw-utils",
+ "cw2",
+ "cw4",
+ "cw4-group",
+ "cwd-interface",
+ "cwd-macros",
+ "schemars",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "cw721"
 version = "0.13.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1320,6 +1340,87 @@ name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
+
+[[package]]
+name = "subdao-core"
+version = "0.2.0"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cosmwasm-storage",
+ "cw-core",
+ "cw-paginate 0.2.0",
+ "cw-storage-plus 0.13.4",
+ "cw-utils",
+ "cw2",
+ "cw20",
+ "cw721",
+ "cwd-interface",
+ "cwd-macros",
+ "neutron-sdk",
+ "schemars",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "subdao-pre-propose-single"
+version = "0.2.0"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-denom",
+ "cw-multi-test",
+ "cw-utils",
+ "cw2",
+ "cw20",
+ "cw20-base",
+ "cw4-group",
+ "cwd-interface",
+ "cwd-pre-propose-base",
+ "cwd-proposal-hooks",
+ "cwd-voting",
+ "neutron-sdk",
+ "schemars",
+ "serde",
+ "subdao-core",
+ "subdao-proposal-single",
+]
+
+[[package]]
+name = "subdao-proposal-single"
+version = "0.2.0"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cosmwasm-storage",
+ "cw-denom",
+ "cw-multi-test",
+ "cw-proposal-single",
+ "cw-storage-plus 0.13.4",
+ "cw-utils",
+ "cw2",
+ "cw20",
+ "cw20-base",
+ "cw3",
+ "cw4",
+ "cw4-group",
+ "cw721-base",
+ "cwd-hooks",
+ "cwd-interface",
+ "cwd-macros",
+ "cwd-pre-propose-base",
+ "cwd-proposal-hooks",
+ "cwd-vote-hooks",
+ "cwd-voting",
+ "neutron-sdk",
+ "schemars",
+ "serde",
+ "subdao-core",
+ "subdao-pre-propose-single",
+ "thiserror",
+ "voting",
+]
 
 [[package]]
 name = "subtle"
