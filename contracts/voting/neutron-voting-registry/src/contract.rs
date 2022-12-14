@@ -89,10 +89,14 @@ pub fn execute(
 pub fn execute_add_voting_vault(
     deps: DepsMut,
     _env: Env,
-    _info: MessageInfo,
+    info: MessageInfo,
     new_voting_vault_contact: String,
 ) -> Result<Response, ContractError> {
     let mut config: Config = CONFIG.load(deps.storage)?;
+
+    if Some(info.sender.clone()) != config.owner {
+        return Err(ContractError::Unauthorized {});
+    }
 
     let new_voting_vault = deps.api.addr_validate(&new_voting_vault_contact)?;
     if !config.voting_vaults.contains(&new_voting_vault) {
@@ -108,10 +112,15 @@ pub fn execute_add_voting_vault(
 pub fn execute_remove_voting_vault(
     deps: DepsMut,
     _env: Env,
-    _info: MessageInfo,
+    info: MessageInfo,
     old_voting_vault_contact: String,
 ) -> Result<Response, ContractError> {
     let mut config: Config = CONFIG.load(deps.storage)?;
+
+    if Some(info.sender.clone()) != config.owner {
+        return Err(ContractError::Unauthorized {});
+    }
+
     if config.voting_vaults.len() == 1 {
         return Err(ContractError::RemoveLastVault {});
     }
