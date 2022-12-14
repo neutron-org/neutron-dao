@@ -12,8 +12,8 @@ use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::state::{DAO, GROUP_CONTRACT, TOTAL_WEIGHT, USER_WEIGHTS};
 
-const CONTRACT_NAME: &str = "crates.io:cw4-voting";
-const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
+pub(crate) const CONTRACT_NAME: &str = "crates.io:cw4-voting";
+pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 const INSTANTIATE_GROUP_REPLY_ID: u64 = 0;
 

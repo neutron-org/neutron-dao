@@ -1,4 +1,4 @@
-use cwd_macros::{voting_query, info_query};
+use cwd_macros::{info_query, voting_query};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 

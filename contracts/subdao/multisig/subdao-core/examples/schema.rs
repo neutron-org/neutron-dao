@@ -3,16 +3,16 @@ use std::fs::create_dir_all;
 
 use cosmwasm_schema::{export_schema, export_schema_with_title, remove_schemas, schema_for};
 use cosmwasm_std::Addr;
-use cwd_core::{
+use cwd_interface::voting::{
+    InfoResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
+};
+use subdao_core::{
     msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg},
     query::{
         AdminNominationResponse, Cw20BalanceResponse, DumpStateResponse, GetItemResponse,
         PauseInfoResponse, SubDao,
     },
     state::{Config, ProposalModule},
-};
-use cwd_interface::voting::{
-    InfoResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
 
 fn main() {

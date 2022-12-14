@@ -4,7 +4,8 @@ use cosmwasm_std::{
 };
 use cw2::ContractVersion;
 use cw_multi_test::{next_block, App, Contract, ContractWrapper, Executor};
-use dao_interface::voting::{
+
+use cwd_interface::voting::{
     InfoResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
 
