@@ -1,7 +1,7 @@
 .PHONY: schema test clippy proto-gen build fmt
 
 schema:
-	@find contracts/* -maxdepth 0 -type d \( ! -name . \) -exec bash -c "cd '{}' && cargo schema" \;
+	@find contracts/* -maxdepth 1 -type d \( ! -name . \) -exec bash -c "cd '{}' && cargo schema" \;
 
 test:
 	@cargo test
@@ -14,12 +14,12 @@ fmt:
 
 check_contracts:
 	@cargo install cosmwasm-check
-	@cosmwasm-check artifacts/*.wasm
+	@cosmwasm-check --available-capabilities iterator,staking,stargate,neutron artifacts/*.wasm
 
 compile:
 	@./build_release.sh
 
-build: schema clippy test fmt compile check_contracts
+build: schema clippy fmt compile check_contracts
 
 
 

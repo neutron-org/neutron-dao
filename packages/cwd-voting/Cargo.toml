@@ -1,0 +1,21 @@
+[package]
+name = "cwd-voting"
+version = "0.2.0"
+edition = "2021"
+authors = ["ekez ekez@withoutdoing.com"]
+repository = "https://github.com/DA0-DA0/dao-contracts"
+description = "Types and methods for CosmWasm DAO voting."
+
+[dependencies]
+neutron_bindings = { package = "neutron-sdk", version = "0.1.0", git = "https://github.com/neutron-org/neutron-contracts.git" }
+cosmwasm-std = { version = "1.0.0" }
+schemars = "0.8"
+serde = { version = "1.0.147", default-features = false, features = ["derive"] }
+thiserror = { version = "1.0" }
+cw20 = "0.13"
+cwd-interface = { path = "../cwd-interface" }
+cwd-macros = { path = "../cwd-macros" }
+cwd-core = { path = "../../contracts/cwd-core" }
+cw-denom = { path = "../cw-denom" }
+cw-utils = "0.13"
+cw-storage-plus = "0.13"
