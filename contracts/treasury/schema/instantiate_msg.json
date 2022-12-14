@@ -7,7 +7,8 @@
     "distribution_contract",
     "distribution_rate",
     "min_period",
-    "owner"
+    "owner",
+    "reserve_contract"
   ],
   "properties": {
     "denom": {
@@ -30,6 +31,10 @@
       "minimum": 0.0
     },
     "owner": {
+      "type": "string"
+    },
+    "reserve_contract": {
+      "description": "Address of reserve contract",
       "type": "string"
     }
   }

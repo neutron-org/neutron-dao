@@ -12,6 +12,8 @@ pub struct InstantiateMsg {
     pub min_period: u64,
     /// Address of distribution contract
     pub distribution_contract: String,
+    /// Address of reserve contract
+    pub reserve_contract: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
@@ -23,16 +25,12 @@ pub enum ExecuteMsg {
     /// Distribute pending funds between Bank and Distribution accounts
     Distribute {},
 
-    // Payout funds at DAO decision
-    Payout {
-        amount: Uint128,
-        recipient: String,
-    },
     // //Update config
     UpdateConfig {
         distribution_rate: Option<u8>,
         min_period: Option<u64>,
         distribution_contract: Option<String>,
+        reserve_contract: Option<String>,
     },
 }
 
@@ -48,10 +46,8 @@ pub enum QueryMsg {
 #[serde(rename_all = "snake_case")]
 pub struct StatsResponse {
     pub total_received: Uint128,
-    pub total_bank_spent: Uint128,
     pub total_distributed: Uint128,
-    pub bank_balance: Uint128,
-    pub last_balance: Uint128,
+    pub total_reserved: Uint128,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
