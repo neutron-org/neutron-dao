@@ -36,6 +36,7 @@ pub struct SingleChoiceProposal {
     pub status: Status,
     pub votes: Votes,
     pub allow_revoting: bool,
+    pub last_voted_time: Option<u64>,
 }
 
 pub fn advance_proposal_id(store: &mut dyn Storage) -> StdResult<u64> {
@@ -272,6 +273,7 @@ mod test {
             threshold,
             total_power,
             votes,
+            last_voted_time: None,
         };
         (prop, block)
     }
