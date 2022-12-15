@@ -48,6 +48,9 @@ pub struct Config {
     /// remain open until the DAO's treasury was large enough for it to be
     /// executed.
     pub close_proposal_on_execution_failure: bool,
+    /// The amount of time in seconds a proposal must be open after decisive vote before it can be executed
+    /// If this is set to None, the proposal can be executed immediately after the decisive vote
+    pub timelock_period: Option<u64>,
 }
 
 /// The current top level config for the module.  The "config" key was

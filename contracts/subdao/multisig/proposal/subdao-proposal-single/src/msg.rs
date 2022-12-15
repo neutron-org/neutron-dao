@@ -35,6 +35,9 @@ pub struct InstantiateMsg {
     /// remain open until the DAO's treasury was large enough for it to be
     /// executed.
     pub close_proposal_on_execution_failure: bool,
+    /// The amount of time in seconds a proposal must be open after decisive vote before it can be executed
+    /// If this is set to None, the proposal will be executed immediately after the decisive vote
+    pub timelock_period: Option<u64>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -108,6 +111,9 @@ pub enum ExecuteMsg {
         /// remain open until the DAO's treasury was large enough for it to be
         /// executed.
         close_proposal_on_execution_failure: bool,
+        /// The amount of time in seconds a proposal must be open after decisive vote before it can be executed
+        /// If this is set to None, the proposal will be executed immediately after the decisive vote
+        timelock_period: Option<u64>,
     },
     /// Update's the proposal creation policy used for this
     /// module. Only the DAO may call this method.

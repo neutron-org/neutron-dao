@@ -64,6 +64,7 @@ pub fn instantiate(
         dao: dao.clone(),
         allow_revoting: msg.allow_revoting,
         close_proposal_on_execution_failure: msg.close_proposal_on_execution_failure,
+        timelock_period: msg.timelock_period,
     };
 
     // Initialize proposal count to zero so that queries return zero
@@ -102,6 +103,7 @@ pub fn execute(
             allow_revoting,
             dao,
             close_proposal_on_execution_failure,
+            timelock_period,
         } => execute_update_config(
             deps,
             info,
@@ -111,6 +113,7 @@ pub fn execute(
             allow_revoting,
             dao,
             close_proposal_on_execution_failure,
+            timelock_period,
         ),
         ExecuteMsg::UpdatePreProposeInfo { info: new_info } => {
             execute_update_proposal_creation_policy(deps, info, new_info)
@@ -177,6 +180,7 @@ pub fn execute_propose(
             status: Status::Open,
             votes: Votes::zero(),
             allow_revoting: config.allow_revoting,
+            last_voted_time: None,
         };
         // Update the proposal's status. Addresses case where proposal
         // expires on the same block as it is created.
@@ -389,7 +393,7 @@ pub fn execute_vote(
 
     prop.votes.add_vote(vote, vote_power);
     prop.update_status(&env.block);
-
+    prop.last_voted_time = Some(env.block.time.seconds());
     PROPOSALS.save(deps.storage, proposal_id, &prop)?;
 
     let new_status = prop.status;
@@ -486,6 +490,7 @@ pub fn execute_update_config(
     allow_revoting: bool,
     dao: String,
     close_proposal_on_execution_failure: bool,
+    timelock_period: Option<u64>,
 ) -> Result<Response, ContractError> {
     let config = CONFIG.load(deps.storage)?;
 
@@ -509,6 +514,7 @@ pub fn execute_update_config(
             allow_revoting,
             dao,
             close_proposal_on_execution_failure,
+            timelock_period,
         },
     )?;
 
