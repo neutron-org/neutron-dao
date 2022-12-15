@@ -116,6 +116,11 @@ pub fn execute_update_config(
         config.reserve_contract = deps.api.addr_validate(reserve_contract.as_str())?;
     }
     if let Some(distribution_rate) = distribution_rate {
+        if (distribution_rate > Decimal::one()) || (distribution_rate < Decimal::zero()) {
+            return Err(StdError::generic_err(
+                "distribution_rate must be between 0 and 1",
+            ));
+        }
         config.distribution_rate = distribution_rate;
     }
 
@@ -175,11 +180,13 @@ pub fn execute_distribute(deps: DepsMut, env: Env) -> StdResult<Response> {
         resp = resp.add_message(msg)
     }
 
-    let msg = CosmosMsg::Bank(BankMsg::Send {
-        to_address: config.reserve_contract.to_string(),
-        amount: coins(to_reserve.u128(), denom),
-    });
-    resp = resp.add_message(msg);
+    if !to_reserve.is_zero() {
+        let msg = CosmosMsg::Bank(BankMsg::Send {
+            to_address: config.reserve_contract.to_string(),
+            amount: coins(to_reserve.u128(), denom),
+        });
+        resp = resp.add_message(msg);
+    }
 
     Ok(resp
         .add_attribute("action", "neutron/treasury/distribute")
