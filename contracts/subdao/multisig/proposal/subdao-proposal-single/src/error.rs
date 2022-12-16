@@ -47,6 +47,9 @@ pub enum ContractError {
     #[error("proposal is not in 'passed' state")]
     NotPassed {},
 
+    #[error("proposal is time locked, cannot be executed yet")]
+    TimeLocked {},
+
     #[error("only rejected proposals may be closed")]
     WrongCloseStatus {},
 

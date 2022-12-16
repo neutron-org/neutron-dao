@@ -180,7 +180,7 @@ pub fn execute_propose(
             status: Status::Open,
             votes: Votes::zero(),
             allow_revoting: config.allow_revoting,
-            last_voted_time: None,
+            last_voted_time: 0,
         };
         // Update the proposal's status. Addresses case where proposal
         // expires on the same block as it is created.
@@ -267,6 +267,12 @@ pub fn execute_execute(
     prop.update_status(&env.block);
     if prop.status != Status::Passed {
         return Err(ContractError::NotPassed {});
+    }
+
+    if let Some(timelock_period) = config.timelock_period {
+        if env.block.time.seconds() < prop.last_voted_time + timelock_period {
+            return Err(ContractError::TimeLocked {});
+        }
     }
 
     prop.status = Status::Executed;
@@ -393,7 +399,7 @@ pub fn execute_vote(
 
     prop.votes.add_vote(vote, vote_power);
     prop.update_status(&env.block);
-    prop.last_voted_time = Some(env.block.time.seconds());
+    prop.last_voted_time = env.block.time.seconds();
     PROPOSALS.save(deps.storage, proposal_id, &prop)?;
 
     let new_status = prop.status;
