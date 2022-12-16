@@ -15,7 +15,7 @@ thiserror = { version = "1.0" }
 cw20 = "0.13"
 cwd-interface = { path = "../cwd-interface" }
 cwd-macros = { path = "../cwd-macros" }
-cwd-core = { path = "../../contracts/dao/cwd-core" }
+cwd-core-base = { path = "../cwd-core-base" }
 cw-denom = { path = "../cw-denom" }
 cw-utils = "0.13"
 cw-storage-plus = "0.13"
