@@ -8,10 +8,10 @@ members = [
     "contracts/subdaos/cwd-core",
     "contracts/subdaos/proposal/*",
     "contracts/subdaos/pre-propose/*",
-
+    "contracts/subdaos/voting/*",
     "contracts/tokenomics/treasury",
     "contracts/tokenomics/distribution",
-    "contracts/tokenomics/reserve",
+#    "contracts/tokenomics/reserve",
     "packages/*",
 ]
 
