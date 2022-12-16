@@ -1,11 +1,14 @@
 [workspace]
 members = [
-	"contracts/cwd-core",
-	"contracts/proposal/*",
-	"contracts/pre-propose/*",
-	"contracts/voting/*",
-	"packages/*",
-	]
+    "contracts/cwd-core",
+    "contracts/proposal/*",
+    "contracts/pre-propose/*",
+    "contracts/voting/*",
+    "contracts/tokenomics/treasury",
+    "contracts/tokenomics/distribution",
+    "contracts/tokenomics/reserve",
+    "packages/*",
+]
 
 [profile.release]
 codegen-units = 1
