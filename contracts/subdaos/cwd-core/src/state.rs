@@ -1,4 +1,3 @@
-use cw_utils::Expiration;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -15,6 +14,10 @@ pub struct Config {
     /// The URI for the DAO as defined by the DAOstar standard
     /// https://daostar.one/EIP
     pub dao_uri: Option<String>,
+    /// The address of the DAO admin.
+    pub admin: Addr,
+    /// The address of the DAO guardian. The guardian is capable of pausing/unpausing the DAO.
+    pub guardian: Option<Addr>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
@@ -39,9 +42,8 @@ pub enum ProposalModuleStatus {
 /// The current configuration of the module.
 pub const CONFIG: Item<Config> = Item::new("config_v2");
 
-/// The time the DAO will unpause. Here be dragons: this is not set if
-/// the DAO has never been paused.
-pub const PAUSED: Item<Expiration> = Item::new("paused");
+/// The height the subDAO is paused until. If it's None, the subDAO is not paused.
+pub const PAUSED_UNTIL: Item<Option<u64>> = Item::new("paused_until");
 
 /// The voting module associated with this contract.
 pub const VOTING_REGISTRY_MODULE: Item<Addr> = Item::new("voting_module");

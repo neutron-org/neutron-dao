@@ -1,3 +1,4 @@
+use control::pause::{validate_duration, validate_sender};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -5,7 +6,7 @@ use cosmwasm_std::{
     StdError, StdResult, SubMsg,
 };
 use cw2::{get_contract_version, set_contract_version};
-use cw_utils::{parse_reply_instantiate_data, Duration};
+use cw_utils::parse_reply_instantiate_data;
 
 use cw_paginate::{paginate_map, paginate_map_values};
 use cwd_interface::{voting, ModuleInstantiateInfo};
@@ -16,7 +17,8 @@ use crate::msg::{ExecuteMsg, InitialItem, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::query::{DumpStateResponse, GetItemResponse, PauseInfoResponse, SubDao};
 use crate::state::{
     Config, ProposalModule, ProposalModuleStatus, ACTIVE_PROPOSAL_MODULE_COUNT, CONFIG, ITEMS,
-    PAUSED, PROPOSAL_MODULES, SUBDAO_LIST, TOTAL_PROPOSAL_MODULE_COUNT, VOTING_REGISTRY_MODULE,
+    PAUSED_UNTIL, PROPOSAL_MODULES, SUBDAO_LIST, TOTAL_PROPOSAL_MODULE_COUNT,
+    VOTING_REGISTRY_MODULE,
 };
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:cwd-core";
@@ -39,6 +41,8 @@ pub fn instantiate(
         name: msg.name,
         description: msg.description,
         dao_uri: msg.dao_uri,
+        admin: info.sender.clone(),
+        guardian: msg.guardian,
     };
     CONFIG.save(deps.storage, &config)?;
 
@@ -79,11 +83,17 @@ pub fn execute(
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response<NeutronMsg>, ContractError> {
-    // No actions can be performed while the DAO is paused.
-    if let Some(expiration) = PAUSED.may_load(deps.storage)? {
-        if !expiration.is_expired(&env.block) {
-            return Err(ContractError::Paused {});
+    match get_pause_info(deps.as_ref(), env.clone())? {
+        PauseInfoResponse::Paused { .. } => {
+            match msg {
+                ExecuteMsg::Pause { duration } => {
+                    return execute_pause(deps, env, info.sender, duration)
+                }
+                ExecuteMsg::Unpause {} => return execute_unpause(deps, info.sender),
+                _ => return Err(ContractError::Paused {}),
+            };
         }
+        PauseInfoResponse::Unpaused {} => (),
     }
 
     match msg {
@@ -91,6 +101,7 @@ pub fn execute(
             execute_proposal_hook(deps.as_ref(), info.sender, msgs)
         }
         ExecuteMsg::Pause { duration } => execute_pause(deps, env, info.sender, duration),
+        ExecuteMsg::Unpause {} => execute_unpause(deps, info.sender),
         ExecuteMsg::RemoveItem { key } => execute_remove_item(deps, env, info.sender, key),
         ExecuteMsg::SetItem { key, addr } => execute_set_item(deps, env, info.sender, key, addr),
         ExecuteMsg::UpdateConfig { config } => {
@@ -112,20 +123,30 @@ pub fn execute_pause(
     deps: DepsMut,
     env: Env,
     sender: Addr,
-    pause_duration: Duration,
+    duration: u64,
 ) -> Result<Response<NeutronMsg>, ContractError> {
-    if sender != env.contract.address {
-        return Err(ContractError::Unauthorized {});
-    }
+    let config: Config = CONFIG.load(deps.storage)?;
+    validate_sender(sender.clone(), config.admin, config.guardian)?;
+    validate_duration(duration)?;
 
-    let until = pause_duration.after(&env.block);
-
-    PAUSED.save(deps.storage, &until)?;
+    let paused_until_height: u64 = env.block.height + duration;
+    PAUSED_UNTIL.save(deps.storage, &Some(paused_until_height))?;
 
     Ok(Response::new()
         .add_attribute("action", "execute_pause")
         .add_attribute("sender", sender)
-        .add_attribute("until", until.to_string()))
+        .add_attribute("paused_until_height", paused_until_height.to_string()))
+}
+
+pub fn execute_unpause(deps: DepsMut, sender: Addr) -> Result<Response<NeutronMsg>, ContractError> {
+    let config: Config = CONFIG.load(deps.storage)?;
+    validate_sender(sender.clone(), config.admin, config.guardian)?;
+
+    PAUSED_UNTIL.save(deps.storage, &None)?;
+
+    Ok(Response::new()
+        .add_attribute("action", "execute_unpause")
+        .add_attribute("sender", sender))
 }
 
 pub fn execute_proposal_hook(
@@ -396,12 +417,14 @@ pub fn query_active_proposal_modules(
 }
 
 fn get_pause_info(deps: Deps, env: Env) -> StdResult<PauseInfoResponse> {
-    Ok(match PAUSED.may_load(deps.storage)? {
-        Some(expiration) => {
-            if expiration.is_expired(&env.block) {
+    Ok(match PAUSED_UNTIL.may_load(deps.storage)?.unwrap_or(None) {
+        Some(paused_until_height) => {
+            if env.block.height.ge(&paused_until_height) {
                 PauseInfoResponse::Unpaused {}
             } else {
-                PauseInfoResponse::Paused { expiration }
+                PauseInfoResponse::Paused {
+                    until_height: paused_until_height,
+                }
             }
         }
         None => PauseInfoResponse::Unpaused {},

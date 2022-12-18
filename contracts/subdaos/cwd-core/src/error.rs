@@ -1,3 +1,4 @@
+use control::pause::PauseError;
 use cosmwasm_std::{Addr, StdError};
 use cw_utils::ParseReplyError;
 use thiserror::Error;
@@ -9,6 +10,9 @@ pub enum ContractError {
 
     #[error(transparent)]
     ParseReplyError(#[from] ParseReplyError),
+
+    #[error(transparent)]
+    PauseError(#[from] PauseError),
 
     #[error("Unauthorized.")]
     Unauthorized {},
