@@ -19,7 +19,7 @@ check_contracts:
 compile:
 	@./build_release.sh
 
-build: schema clippy fmt compile check_contracts
+build: schema clippy fmt test compile check_contracts
 
 
 

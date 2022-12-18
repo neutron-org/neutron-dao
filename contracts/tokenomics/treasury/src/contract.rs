@@ -8,11 +8,15 @@ use cosmwasm_std::{
 use exec_control::pause::{
     can_pause, can_unpause, validate_duration, PauseError, PauseInfoResponse,
 };
+use neutron_bindings::bindings::query::InterchainQueries;
 
 use crate::msg::{DistributeMsg, ExecuteMsg, InstantiateMsg, QueryMsg, StatsResponse};
 use crate::state::{
-    Config, CONFIG, LAST_DISTRIBUTION_TIME, PAUSED_UNTIL, TOTAL_DISTRIBUTED, TOTAL_RECEIVED,
-    TOTAL_RESERVED,
+    Config, CONFIG, LAST_BURNED_COINS_AMOUNT, LAST_DISTRIBUTION_TIME, PAUSED_UNTIL,
+    TOTAL_DISTRIBUTED, TOTAL_RESERVED,
+};
+use crate::vesting::{
+    get_burned_coins, safe_burned_coins_for_period, update_distribution_stats, vesting_function,
 };
 
 //--------------------------------------------------------------------------------------------------
@@ -21,7 +25,7 @@ use crate::state::{
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
-    deps: DepsMut,
+    deps: DepsMut<InterchainQueries>,
     _env: Env,
     _info: MessageInfo,
     msg: InstantiateMsg,
@@ -34,13 +38,15 @@ pub fn instantiate(
         distribution_rate: msg.distribution_rate,
         main_dao_address: deps.api.addr_validate(&msg.main_dao_address)?,
         security_dao_address: deps.api.addr_validate(&msg.security_dao_address)?,
+        vesting_denominator: msg.vesting_denominator,
+        owner: deps.api.addr_validate(&msg.owner)?,
     };
     CONFIG.save(deps.storage, &config)?;
-    TOTAL_RECEIVED.save(deps.storage, &Uint128::zero())?;
     TOTAL_DISTRIBUTED.save(deps.storage, &Uint128::zero())?;
     TOTAL_RESERVED.save(deps.storage, &Uint128::zero())?;
     LAST_DISTRIBUTION_TIME.save(deps.storage, &0)?;
     PAUSED_UNTIL.save(deps.storage, &None)?;
+    LAST_BURNED_COINS_AMOUNT.save(deps.storage, &Uint128::zero())?;
 
     Ok(Response::new())
 }
@@ -110,7 +116,7 @@ fn get_pause_info(deps: Deps, env: &Env) -> StdResult<PauseInfoResponse> {
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
-    deps: DepsMut,
+    deps: DepsMut<InterchainQueries>,
     env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
@@ -143,6 +149,7 @@ pub fn execute(
             distribution_contract,
             reserve_contract,
             security_dao_address,
+            vesting_denominator,
         } => execute_update_config(
             deps,
             info,
@@ -151,6 +158,7 @@ pub fn execute(
             distribution_contract,
             reserve_contract,
             security_dao_address,
+            vesting_denominator,
         ),
         ExecuteMsg::Pause { duration } => execute_pause(deps, env, info.sender, duration),
         ExecuteMsg::Unpause {} => execute_unpause(deps, info.sender),
@@ -158,7 +166,7 @@ pub fn execute(
 }
 
 pub fn execute_transfer_ownership(
-    deps: DepsMut,
+    deps: DepsMut<InterchainQueries>,
     info: MessageInfo,
     new_owner_addr: Addr,
 ) -> Result<Response, ContractError> {
@@ -181,13 +189,14 @@ pub fn execute_transfer_ownership(
 }
 
 pub fn execute_update_config(
-    deps: DepsMut,
+    deps: DepsMut<InterchainQueries>,
     info: MessageInfo,
     distribution_rate: Option<Decimal>,
     min_period: Option<u64>,
     distribution_contract: Option<String>,
     reserve_contract: Option<String>,
     security_dao_address: Option<String>,
+    vesting_denominator: Option<u128>,
 ) -> Result<Response, ContractError> {
     let mut config: Config = CONFIG.load(deps.storage)?;
     if info.sender != config.main_dao_address {
@@ -214,6 +223,9 @@ pub fn execute_update_config(
         }
         config.distribution_rate = distribution_rate;
     }
+    if let Some(vesting_denominator) = vesting_denominator {
+        config.vesting_denominator = vesting_denominator;
+    }
 
     CONFIG.save(deps.storage, &config)?;
 
@@ -223,12 +235,16 @@ pub fn execute_update_config(
         .add_attribute("min_period", config.min_period.to_string())
         .add_attribute("distribution_contract", config.distribution_contract)
         .add_attribute("distribution_rate", config.distribution_rate.to_string())
+        .add_attribute(
+            "vesting_denominator",
+            config.vesting_denominator.to_string(),
+        )
         .add_attribute("owner", config.main_dao_address))
 }
 
-pub fn execute_distribute(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
+pub fn execute_distribute(deps: DepsMut<InterchainQueries>, env: Env) -> StdResult<Response> {
     let config: Config = CONFIG.load(deps.storage)?;
-    let denom = config.denom;
+    let denom = config.denom.clone();
     let current_time = env.block.time.seconds();
     if current_time - LAST_DISTRIBUTION_TIME.load(deps.storage)? < config.min_period {
         return Err(ContractError::TooSoonToDistribute {});
@@ -243,39 +259,34 @@ pub fn execute_distribute(deps: DepsMut, env: Env) -> Result<Response, ContractE
         return Err(ContractError::NoFundsToDistribute {});
     }
 
-    let to_distribute = current_balance * config.distribution_rate;
-    let to_reserve = current_balance.checked_sub(to_distribute)?;
-    // update stats
-    let total_received = TOTAL_RECEIVED.load(deps.storage)?;
-    TOTAL_RECEIVED.save(
-        deps.storage,
-        &(total_received.checked_add(current_balance)?),
-    )?;
-    let total_distributed = TOTAL_DISTRIBUTED.load(deps.storage)?;
-    TOTAL_DISTRIBUTED.save(
-        deps.storage,
-        &(total_distributed.checked_add(to_distribute)?),
-    )?;
-    let total_reserved = TOTAL_RESERVED.load(deps.storage)?;
-    TOTAL_RESERVED.save(deps.storage, &(total_reserved.checked_add(to_reserve)?))?;
+    let last_burned_coins = LAST_BURNED_COINS_AMOUNT.load(deps.storage)?;
+    let burned_coins = get_burned_coins(deps.as_ref(), &denom)?;
 
-    let mut resp = Response::default();
-    if !to_distribute.is_zero() {
-        let msg = CosmosMsg::Wasm(WasmMsg::Execute {
-            contract_addr: config.distribution_contract.to_string(),
-            funds: coins(to_distribute.u128(), denom.clone()),
-            msg: to_binary(&DistributeMsg::Fund {})?,
+    let burned_coins_for_period = safe_burned_coins_for_period(burned_coins, last_burned_coins)?;
+
+    if burned_coins_for_period == 0 {
+        return Err(StdError::GenericErr {
+            msg: "no coins were burned, nothing to distribute".to_string(),
         });
-        resp = resp.add_message(msg)
     }
 
-    if !to_reserve.is_zero() {
-        let msg = CosmosMsg::Bank(BankMsg::Send {
-            to_address: config.reserve_contract.to_string(),
-            amount: coins(to_reserve.u128(), denom),
-        });
-        resp = resp.add_message(msg);
-    }
+    let balance_to_distribute = vesting_function(
+        current_balance,
+        burned_coins_for_period,
+        config.vesting_denominator,
+    )?;
+
+    let to_distribute = balance_to_distribute * config.distribution_rate;
+
+    let to_reserve = balance_to_distribute.checked_sub(to_distribute)?;
+
+    update_distribution_stats(
+        deps,
+        to_distribute,
+        to_reserve,
+        last_burned_coins.checked_add(Uint128::from(burned_coins_for_period))?,
+    )?;
+    let resp = create_distribution_response(config, to_distribute, to_reserve, denom)?;
 
     Ok(resp
         .add_attribute("action", "neutron/treasury/distribute")
@@ -306,13 +317,44 @@ pub fn query_config(deps: Deps) -> StdResult<Config> {
 }
 
 pub fn query_stats(deps: Deps) -> StdResult<StatsResponse> {
-    let total_received = TOTAL_RECEIVED.load(deps.storage)?;
     let total_distributed = TOTAL_DISTRIBUTED.load(deps.storage)?;
     let total_reserved = TOTAL_RESERVED.load(deps.storage)?;
+    let total_processed_burned_coins = LAST_BURNED_COINS_AMOUNT.load(deps.storage)?;
 
     Ok(StatsResponse {
-        total_received,
         total_distributed,
         total_reserved,
+        total_processed_burned_coins,
     })
+}
+
+//--------------------------------------------------------------------------------------------------
+// Helpers
+//--------------------------------------------------------------------------------------------------
+
+pub fn create_distribution_response(
+    config: Config,
+    to_distribute: Uint128,
+    to_reserve: Uint128,
+    denom: String,
+) -> StdResult<Response> {
+    let mut resp = Response::default();
+    if !to_distribute.is_zero() {
+        let msg = CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr: config.distribution_contract.to_string(),
+            funds: coins(to_distribute.u128(), denom.clone()),
+            msg: to_binary(&DistributeMsg::Fund {})?,
+        });
+        resp = resp.add_message(msg)
+    }
+
+    if !to_reserve.is_zero() {
+        let msg = CosmosMsg::Bank(BankMsg::Send {
+            to_address: config.reserve_contract.to_string(),
+            amount: coins(to_reserve.u128(), denom),
+        });
+        resp = resp.add_message(msg);
+    }
+
+    Ok(resp)
 }

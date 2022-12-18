@@ -17,6 +17,8 @@ pub struct InstantiateMsg {
     pub reserve_contract: String,
     /// Address of security DAO contract
     pub security_dao_address: String,
+    /// Vesting release equation denominator
+    pub vesting_denominator: u128,
 }
 
 #[pausable]
@@ -36,6 +38,7 @@ pub enum ExecuteMsg {
         distribution_contract: Option<String>,
         reserve_contract: Option<String>,
         security_dao_address: Option<String>,
+        vesting_denominator: Option<u128>,
     },
 }
 
@@ -51,9 +54,9 @@ pub enum QueryMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct StatsResponse {
-    pub total_received: Uint128,
     pub total_distributed: Uint128,
     pub total_reserved: Uint128,
+    pub total_processed_burned_coins: Uint128,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]

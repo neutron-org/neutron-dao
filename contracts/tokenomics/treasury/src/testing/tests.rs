@@ -3,9 +3,10 @@ use std::str::FromStr;
 use cosmwasm_std::{
     coin, coins, from_binary,
     testing::{mock_env, mock_info},
-    to_binary, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, Empty, Uint128, WasmMsg,
+    to_binary, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, Uint128, WasmMsg,
 };
 use exec_control::pause::{PauseError, PauseInfoResponse};
+use neutron_bindings::bindings::query::InterchainQueries;
 
 use crate::contract::query;
 use crate::error::ContractError;
@@ -13,13 +14,15 @@ use crate::msg::QueryMsg;
 use crate::{
     contract::{execute, instantiate},
     msg::{DistributeMsg, ExecuteMsg, InstantiateMsg},
-    state::{CONFIG, TOTAL_DISTRIBUTED, TOTAL_RECEIVED, TOTAL_RESERVED},
+    state::{
+        CONFIG, LAST_BURNED_COINS_AMOUNT, LAST_DISTRIBUTION_TIME, TOTAL_DISTRIBUTED, TOTAL_RESERVED,
+    },
     testing::mock_querier::mock_dependencies,
 };
 
 const DENOM: &str = "denom";
 
-pub fn init_base_contract(deps: DepsMut<Empty>, distribution_rate: &str) {
+pub fn init_base_contract(deps: DepsMut<InterchainQueries>, distribution_rate: &str) {
     let msg = InstantiateMsg {
         denom: DENOM.to_string(),
         min_period: 1000,
@@ -28,6 +31,8 @@ pub fn init_base_contract(deps: DepsMut<Empty>, distribution_rate: &str) {
         distribution_rate: Decimal::from_str(distribution_rate).unwrap(),
         main_dao_address: "main_dao".to_string(),
         security_dao_address: "security_dao_address".to_string(),
+        vesting_denominator: 100_000_000_000u128,
+        owner: "owner".to_string(),
     };
     let info = mock_info("creator", &coins(2, DENOM));
     instantiate(deps, mock_env(), info, msg).unwrap();
@@ -134,6 +139,8 @@ fn test_collect_with_no_money() {
 fn test_distribute_success() {
     let mut deps = mock_dependencies(&[coin(1000000, DENOM)]);
     init_base_contract(deps.as_mut(), "0.23");
+    deps.querier
+        .set_total_burned_neutrons(vec![coin(10000000, DENOM)]);
     let msg = ExecuteMsg::Distribute {};
     let res = execute(deps.as_mut(), mock_env(), mock_info("anyone", &[]), msg);
     assert!(res.is_ok());
@@ -145,7 +152,7 @@ fn test_distribute_success() {
             contract_addr: "distribution_contract".to_string(),
             funds: vec![Coin {
                 denom: DENOM.to_string(),
-                amount: Uint128::from(230000u128)
+                amount: Uint128::from(23u128)
             }],
             msg: to_binary(&DistributeMsg::Fund {}).unwrap(),
         })
@@ -156,22 +163,128 @@ fn test_distribute_success() {
             to_address: "reserve_contract".to_string(),
             amount: vec![Coin {
                 denom: DENOM.to_string(),
-                amount: Uint128::from(770000u128)
+                amount: Uint128::from(77u128)
             }]
         })
     );
-    let total_received = TOTAL_RECEIVED.load(deps.as_ref().storage).unwrap();
-    assert_eq!(total_received, Uint128::from(1000000u128));
     let total_reserved = TOTAL_RESERVED.load(deps.as_ref().storage).unwrap();
-    assert_eq!(total_reserved, Uint128::from(770000u128));
+    assert_eq!(total_reserved, Uint128::from(77u128));
     let total_distributed = TOTAL_DISTRIBUTED.load(deps.as_ref().storage).unwrap();
-    assert_eq!(total_distributed, Uint128::from(230000u128));
+    assert_eq!(total_distributed, Uint128::from(23u128));
+}
+
+#[test]
+fn test_burned_maximim_limit() {
+    let mut deps = mock_dependencies(&[coin(1000000, DENOM)]);
+    init_base_contract(deps.as_mut(), "0.23");
+    deps.querier
+        .set_total_burned_neutrons(vec![coin(u32::MAX.into(), DENOM)]);
+    let msg = ExecuteMsg::Distribute {};
+    execute(deps.as_mut(), mock_env(), mock_info("anyone", &[]), msg).unwrap();
+
+    let total_reserved = TOTAL_RESERVED.load(deps.as_ref().storage).unwrap();
+    assert_eq!(total_reserved, Uint128::from(32372u128));
+    let total_distributed = TOTAL_DISTRIBUTED.load(deps.as_ref().storage).unwrap();
+    assert_eq!(total_distributed, Uint128::from(9669u128));
+    let total_processed_burned_coins = LAST_BURNED_COINS_AMOUNT
+        .load(deps.as_ref().storage)
+        .unwrap();
+    assert_eq!(total_processed_burned_coins, Uint128::from(u32::MAX));
+}
+
+#[test]
+fn test_burned_maximim_limit_overflow() {
+    let mut deps = mock_dependencies(&[coin(1000000, DENOM)]);
+    init_base_contract(deps.as_mut(), "0.23");
+
+    let total_burned_neutrons = u128::from(u32::MAX) + 10000u128;
+
+    deps.querier
+        .set_total_burned_neutrons(vec![coin(total_burned_neutrons, DENOM)]);
+    let msg = ExecuteMsg::Distribute {};
+    execute(
+        deps.as_mut(),
+        mock_env(),
+        mock_info("anyone", &[]),
+        msg.clone(),
+    )
+    .unwrap();
+
+    let total_reserved = TOTAL_RESERVED.load(deps.as_ref().storage).unwrap();
+    assert_eq!(total_reserved, Uint128::from(32372u128));
+    let total_distributed = TOTAL_DISTRIBUTED.load(deps.as_ref().storage).unwrap();
+    assert_eq!(total_distributed, Uint128::from(9669u128));
+    let total_processed_burned_coins = LAST_BURNED_COINS_AMOUNT
+        .load(deps.as_ref().storage)
+        .unwrap();
+
+    // Should process only u32::MAX coins to protect from overflow
+    assert_eq!(total_processed_burned_coins, Uint128::from(u32::MAX));
+
+    LAST_DISTRIBUTION_TIME
+        .save(deps.as_mut().storage, &0)
+        .unwrap();
+
+    // On second call should process rest of the coins
+    execute(deps.as_mut(), mock_env(), mock_info("anyone", &[]), msg).unwrap();
+    let total_processed_burned_coins = LAST_BURNED_COINS_AMOUNT
+        .load(deps.as_ref().storage)
+        .unwrap();
+    assert_eq!(
+        total_processed_burned_coins,
+        Uint128::from(total_burned_neutrons)
+    );
+}
+
+#[test]
+fn test_zero_treasury_balance_error() {
+    let mut deps = mock_dependencies(&[]);
+    init_base_contract(deps.as_mut(), "0.0");
+    deps.querier
+        .set_total_burned_neutrons(vec![coin(123, DENOM)]);
+    let msg = ExecuteMsg::Distribute {};
+    let res = execute(deps.as_mut(), mock_env(), mock_info("anyone", &[]), msg);
+
+    assert!(res.is_err());
+    assert_eq!(
+        res.unwrap_err().to_string(),
+        "Generic error: no new funds to distribute"
+    );
+}
+
+#[test]
+fn test_no_burned_coins_with_denom_error() {
+    let mut deps = mock_dependencies(&[coin(1000000, DENOM)]);
+    init_base_contract(deps.as_mut(), "0.0");
+    deps.querier.set_total_burned_neutrons(vec![]);
+    let msg = ExecuteMsg::Distribute {};
+    let res = execute(deps.as_mut(), mock_env(), mock_info("anyone", &[]), msg);
+
+    assert!(res.is_err());
+    assert_eq!(res.unwrap_err().to_string(), "Burned coins not found");
+}
+
+#[test]
+fn test_no_burned_coins_for_period_error() {
+    let mut deps = mock_dependencies(&[coin(1000000, DENOM)]);
+    init_base_contract(deps.as_mut(), "0.0");
+    deps.querier.set_total_burned_neutrons(vec![coin(0, DENOM)]);
+    let msg = ExecuteMsg::Distribute {};
+    let res = execute(deps.as_mut(), mock_env(), mock_info("anyone", &[]), msg);
+
+    assert!(res.is_err());
+    assert_eq!(
+        res.unwrap_err().to_string(),
+        "Generic error: no coins were burned, nothing to distribute"
+    );
 }
 
 #[test]
 fn test_distribute_zero_to_reserve() {
     let mut deps = mock_dependencies(&[coin(1000000, DENOM)]);
     init_base_contract(deps.as_mut(), "1");
+    deps.querier
+        .set_total_burned_neutrons(vec![coin(10000000, DENOM)]);
     let msg = ExecuteMsg::Distribute {};
     let res = execute(deps.as_mut(), mock_env(), mock_info("anyone", &[]), msg);
     assert!(res.is_ok());
@@ -183,24 +296,24 @@ fn test_distribute_zero_to_reserve() {
             contract_addr: "distribution_contract".to_string(),
             funds: vec![Coin {
                 denom: DENOM.to_string(),
-                amount: Uint128::from(1000000u128)
+                amount: Uint128::from(100u128)
             }],
             msg: to_binary(&DistributeMsg::Fund {}).unwrap(),
         })
     );
 
-    let total_received = TOTAL_RECEIVED.load(deps.as_ref().storage).unwrap();
-    assert_eq!(total_received, Uint128::from(1000000u128));
     let total_reserved = TOTAL_RESERVED.load(deps.as_ref().storage).unwrap();
     assert_eq!(total_reserved, Uint128::from(0u128));
     let total_distributed = TOTAL_DISTRIBUTED.load(deps.as_ref().storage).unwrap();
-    assert_eq!(total_distributed, Uint128::from(1000000u128));
+    assert_eq!(total_distributed, Uint128::from(100u128));
 }
 
 #[test]
 fn test_distribute_zero_to_distribution_contract() {
     let mut deps = mock_dependencies(&[coin(1000000, DENOM)]);
     init_base_contract(deps.as_mut(), "0");
+    deps.querier
+        .set_total_burned_neutrons(vec![coin(10000000, DENOM)]);
     let msg = ExecuteMsg::Distribute {};
     let res = execute(deps.as_mut(), mock_env(), mock_info("anyone", &[]), msg);
     assert!(res.is_ok());
@@ -212,14 +325,12 @@ fn test_distribute_zero_to_distribution_contract() {
             to_address: "reserve_contract".to_string(),
             amount: vec![Coin {
                 denom: DENOM.to_string(),
-                amount: Uint128::from(1000000u128)
+                amount: Uint128::from(100u128)
             }]
         })
     );
-    let total_received = TOTAL_RECEIVED.load(deps.as_ref().storage).unwrap();
-    assert_eq!(total_received, Uint128::from(1000000u128));
     let total_reserved = TOTAL_RESERVED.load(deps.as_ref().storage).unwrap();
-    assert_eq!(total_reserved, Uint128::from(1000000u128));
+    assert_eq!(total_reserved, Uint128::from(100u128));
     let total_distributed = TOTAL_DISTRIBUTED.load(deps.as_ref().storage).unwrap();
     assert_eq!(total_distributed, Uint128::from(0u128));
 }
@@ -232,6 +343,7 @@ fn test_update_config_unauthorized() {
         distribution_contract: None,
         reserve_contract: None,
         distribution_rate: None,
+        vesting_denominator: None,
         min_period: None,
         security_dao_address: None,
     };
@@ -248,6 +360,7 @@ fn test_update_config_success() {
         distribution_contract: Some("new_contract".to_string()),
         reserve_contract: Some("new_reserve_contract".to_string()),
         distribution_rate: Some(Decimal::from_str("0.11").unwrap()),
+        vesting_denominator: Some(1000u128),
         min_period: Some(3000),
         security_dao_address: Some("security_dao_address_contract".to_string()),
     };
@@ -257,6 +370,7 @@ fn test_update_config_success() {
     assert_eq!(config.distribution_contract, "new_contract");
     assert_eq!(config.reserve_contract, "new_reserve_contract");
     assert_eq!(config.distribution_rate, Decimal::from_str("0.11").unwrap());
+    assert_eq!(config.vesting_denominator, 1000u128);
     assert_eq!(config.min_period, 3000);
     assert_eq!(config.security_dao_address, "security_dao_address_contract")
 }
@@ -269,6 +383,7 @@ fn test_update_distribution_rate_below_the_limit() {
         distribution_contract: None,
         reserve_contract: None,
         distribution_rate: Some(Decimal::from_str("2").unwrap()),
+        vesting_denominator: None,
         min_period: None,
         security_dao_address: None,
     };

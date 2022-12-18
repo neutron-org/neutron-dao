@@ -44,7 +44,6 @@ pub enum QueryMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct StatsResponse {
-    pub total_received: Uint128,
     pub total_distributed: Uint128,
     pub last_balance: Uint128,
 }

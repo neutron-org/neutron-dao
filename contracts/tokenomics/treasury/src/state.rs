@@ -20,12 +20,14 @@ pub struct Config {
 
     /// Address of the security DAO contract
     pub security_dao_address: Addr,
+    pub owner: Addr,
+    pub vesting_denominator: u128,
 }
 
-pub const TOTAL_RECEIVED: Item<Uint128> = Item::new("total_received");
 pub const TOTAL_DISTRIBUTED: Item<Uint128> = Item::new("total_distributed");
 pub const TOTAL_RESERVED: Item<Uint128> = Item::new("total_reserved");
 
+pub const LAST_BURNED_COINS_AMOUNT: Item<Uint128> = Item::new("last_burned_coins_amount");
 pub const LAST_DISTRIBUTION_TIME: Item<u64> = Item::new("last_grab_time");
 
 pub const CONFIG: Item<Config> = Item::new("config");
