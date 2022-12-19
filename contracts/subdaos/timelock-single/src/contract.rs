@@ -63,7 +63,7 @@ pub fn execute(
     env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
-) -> Result<Response, ContractError> {
+) -> Result<Response<NeutronMsg>, ContractError> {
     match msg {
         ExecuteMsg::TimelockProposal { proposal_id, msgs } =>
             execute_timelock_proposal(deps, env, info, proposal_id, msgs),
@@ -82,9 +82,9 @@ pub fn execute_timelock_proposal(
     info: MessageInfo,
     proposal_id: u64,
     msgs: Vec<CosmosMsg<NeutronMsg>>,
-) -> Result<Response, ContractError> {
+) -> Result<Response<NeutronMsg>, ContractError> {
     let config = CONFIG.load(deps.storage)?;
-    if config.owner != Some(info.sender) {
+    if config.owner != Some(info.sender.clone()) {
         return Err(ContractError::Unauthorized {});
     }
 
@@ -109,7 +109,7 @@ pub fn execute_execute_proposal(
     env: Env,
     info: MessageInfo,
     proposal_id: u64,
-) -> Result<Response, ContractError> {
+) -> Result<Response<NeutronMsg>, ContractError> {
     let config = CONFIG.load(deps.storage)?;
 
     let mut proposal = PROPOSALS.load(deps.storage, proposal_id)?;
@@ -148,11 +148,11 @@ pub fn execute_overrule_proposal(
     deps: DepsMut,
     info: MessageInfo,
     proposal_id: u64,
-) -> Result<Response, ContractError> {
+) -> Result<Response<NeutronMsg>, ContractError> {
     let config = CONFIG.load(deps.storage)?;
 
     // Check if sender is owner; the owner is supposed to be the main Neutron DAO.
-    if config.owner != Some(info.sender) {
+    if config.owner != Some(info.sender.clone()) {
         return Err(ContractError::Unauthorized {});
     }
 
@@ -178,7 +178,7 @@ pub fn execute_update_config(
     info: MessageInfo,
     new_owner: Option<String>,
     new_timelock_duration: Option<u64>,
-) -> Result<Response, ContractError> {
+) -> Result<Response<NeutronMsg>, ContractError> {
     let mut config: Config = CONFIG.load(deps.storage)?;
     if Some(info.sender.clone()) != config.owner {
         return Err(ContractError::Unauthorized {});
@@ -218,22 +218,21 @@ pub fn execute_update_config(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config {} => to_binary(&CONFIG.load(deps.storage)?),
-        QueryMsg::Proposal { proposal_id } => to_binary(&query_proposal(deps, env, proposal_id)?),
-        QueryMsg::ListProposals { start_after, limit } => to_binary(&query_list_proposals(deps, env, start_after, limit)?),
+        QueryMsg::Proposal { proposal_id } => to_binary(&query_proposal(deps, proposal_id)?),
+        QueryMsg::ListProposals { start_after, limit } => to_binary(&query_list_proposals(deps, start_after, limit)?),
     }
 }
 
-pub fn query_proposal(deps: Deps, env: Env, id: u64) -> StdResult<Binary> {
+pub fn query_proposal(deps: Deps, id: u64) -> StdResult<Binary> {
     let proposal = PROPOSALS.load(deps.storage, id)?;
     to_binary(&proposal)
 }
 
 pub fn query_list_proposals(
     deps: Deps,
-    env: Env,
     start_after: Option<u64>,
     limit: Option<u64>,
 ) -> StdResult<Binary> {
@@ -244,7 +243,7 @@ pub fn query_list_proposals(
         .take(limit as usize)
         .collect::<Result<Vec<(u64, SingleChoiceProposal)>, _>>()?
         .into_iter()
-        .map(|(id, proposal)| proposal)
+        .map(|(_, proposal)| proposal)
         .collect();
 
     to_binary(&ProposalListResponse { proposals: props })
