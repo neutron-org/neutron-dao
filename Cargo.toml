@@ -9,9 +9,12 @@ members = [
     "contracts/subdaos/proposal/*",
     "contracts/subdaos/pre-propose/*",
     "contracts/subdaos/voting/*",
+    "contracts/subdaos/timelock-single",
+
     "contracts/tokenomics/treasury",
     "contracts/tokenomics/distribution",
-#    "contracts/tokenomics/reserve",
+    "contracts/tokenomics/reserve",
+
     "packages/*",
 ]
 
