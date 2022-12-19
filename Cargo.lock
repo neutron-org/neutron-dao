@@ -92,14 +92,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cec318a675afcb6a1ea1d4340e2d377e56e47c266f28043ceccbf4412ddfdd3b"
 
 [[package]]
-name = "control"
-version = "0.1.0"
-dependencies = [
- "cosmwasm-std",
- "thiserror",
-]
-
-[[package]]
 name = "cosmos-sdk-proto"
 version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -704,7 +696,6 @@ dependencies = [
 name = "cwd-subdao-core"
 version = "0.2.0"
 dependencies = [
- "control",
  "cosmwasm-schema",
  "cosmwasm-std",
  "cosmwasm-storage",
@@ -717,6 +708,7 @@ dependencies = [
  "cw721",
  "cwd-interface",
  "cwd-macros",
+ "exec-control",
  "neutron-sdk",
  "schemars",
  "serde",
@@ -909,6 +901,14 @@ dependencies = [
  "sec1",
  "subtle",
  "zeroize",
+]
+
+[[package]]
+name = "exec-control"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-std",
+ "thiserror",
 ]
 
 [[package]]

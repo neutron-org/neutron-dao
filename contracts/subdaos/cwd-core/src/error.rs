@@ -1,6 +1,6 @@
-use control::pause::PauseError;
 use cosmwasm_std::{Addr, StdError};
 use cw_utils::ParseReplyError;
+use exec_control::pause::PauseError;
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]

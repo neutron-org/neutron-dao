@@ -1,4 +1,3 @@
-use control::pause::{validate_duration, validate_sender, PauseError};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -7,6 +6,7 @@ use cosmwasm_std::{
 };
 use cw2::{get_contract_version, set_contract_version};
 use cw_utils::parse_reply_instantiate_data;
+use exec_control::pause::{validate_duration, validate_sender, PauseError};
 
 use cw_paginate::{paginate_map, paginate_map_values};
 use cwd_interface::{voting, ModuleInstantiateInfo};

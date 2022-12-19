@@ -1,5 +1,5 @@
 [package]
-name = "control"
+name = "exec-control"
 version = "0.1.0"
 authors = ["Sergei Sotnikov <sergei.s@p2p.org>"]
 edition = "2021"
