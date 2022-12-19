@@ -1,4 +1,4 @@
-use control::pause::{validate_duration, validate_sender};
+use control::pause::{validate_duration, validate_sender, PauseError};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -90,7 +90,7 @@ pub fn execute(
                     return execute_pause(deps, env, info.sender, duration)
                 }
                 ExecuteMsg::Unpause {} => return execute_unpause(deps, info.sender),
-                _ => return Err(ContractError::Paused {}),
+                _ => return Err(ContractError::PauseError(PauseError::Paused {})),
             };
         }
         PauseInfoResponse::Unpaused {} => (),

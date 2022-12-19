@@ -17,9 +17,6 @@ pub enum ContractError {
     #[error("Unauthorized.")]
     Unauthorized {},
 
-    #[error("The contract is paused.")]
-    Paused {},
-
     #[error("Execution would result in no proposal modules being active.")]
     NoActiveProposalModules {},
 

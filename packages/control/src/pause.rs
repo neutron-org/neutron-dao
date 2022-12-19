@@ -40,5 +40,5 @@ pub enum PauseError {
     PauseDurationTooBig {},
 
     #[error("Contract execution is paused.")]
-    Oaused {},
+    Paused {},
 }
