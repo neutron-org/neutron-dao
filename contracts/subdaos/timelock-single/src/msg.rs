@@ -1,29 +1,33 @@
-use cosmwasm_std::{CosmosMsg};
-use cwd_interface::Admin;
+use cosmwasm_std::CosmosMsg;
+use neutron_bindings::bindings::msg::NeutronMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use neutron_bindings::bindings::msg::NeutronMsg;
+
+use cwd_interface::Admin;
+use crate::proposal::SingleChoiceProposal;
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 pub struct InstantiateMsg {
-    // Description contains information that characterizes the vault.
-    pub description: String,
     // Owner can update all configs including changing the owner. This will generally be a DAO.
     pub owner: Option<Admin>,
-    // Manager can update all configs except changing the owner. This will generally be an operations multisig for a DAO.
-    pub manager: Option<String>,
+
+    // Timelock duration for all proposals (starts when TimelockProposal message handler is executed).
+    // In seconds.
+    pub timelock_duration: u64,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    TimelockProposal {},
-    ExecuteProposal {},
-    OverruleProposal {},
+    TimelockProposal {
+        proposal_id: u64,
+        msgs: Vec<CosmosMsg<NeutronMsg>>,
+    },
+    ExecuteProposal { proposal_id: u64 },
+    OverruleProposal { proposal_id: u64 },
     UpdateConfig {
         owner: Option<String>,
-        manager: Option<String>,
-        description: Option<String>,
+        timelock_duration: Option<u64>,
     },
 }
 
@@ -54,26 +58,8 @@ pub enum QueryMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct MigrateMsg {}
 
-/// Information about a proposal returned by proposal queries.
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
-pub struct ProposalResponse {
-    /// The ID of the proposal being returned.
-    pub id: u64,
-    pub proposal: SingleChoiceProposal,
-}
-
-/// A list of proposals returned by `ListProposals` and
-/// `ReverseProposals`.
+/// A list of proposals returned by `ListProposals`.
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 pub struct ProposalListResponse {
-    pub proposals: Vec<ProposalResponse>,
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
-pub struct SingleChoiceProposal {
-    /// The ID of the proposal being returned.
-    pub id: u64,
-
-    /// The messages that will be executed should this proposal pass.
-    pub msgs: Vec<CosmosMsg<NeutronMsg>>,
+    pub proposals: Vec<SingleChoiceProposal>,
 }

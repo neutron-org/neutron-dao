@@ -11,4 +11,13 @@ pub enum ContractError {
 
     #[error("Only owner can change owner")]
     OnlyOwnerCanChangeOwner {},
+
+    #[error("Proposal is timelocked")]
+    TimeLocked {},
+
+    #[error("Wrong proposal status ({status})")]
+    WrongStatus { status: String },
+
+    #[error("no such proposal ({id})")]
+    NoSuchProposal { id: u64 },
 }
