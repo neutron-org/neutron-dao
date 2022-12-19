@@ -1,5 +1,6 @@
 use cosmwasm_std::{Addr, Uint128};
 use cw2::ContractVersion;
+use exec_control::types::PauseInfoResponse;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -24,13 +25,6 @@ pub struct DumpStateResponse {
     pub active_proposal_module_count: u32,
     /// The total number of proposal modules.
     pub total_proposal_module_count: u32,
-}
-
-/// Information about if the contract is currently paused.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub enum PauseInfoResponse {
-    Paused { until_height: u64 },
-    Unpaused {},
 }
 
 /// Returned by the `GetItem` query.
