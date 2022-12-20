@@ -722,6 +722,7 @@ dependencies = [
  "cosmwasm-std",
  "cw-denom",
  "cw-multi-test",
+ "cw-storage-plus 0.13.4",
  "cw-utils",
  "cw2",
  "cw20",
