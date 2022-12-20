@@ -9,9 +9,10 @@ use cw_storage_plus::Bound;
 use neutron_bindings::bindings::msg::NeutronMsg;
 
 use cwd_interface::Admin;
+use neutron_timelock::single::ExecuteMsg;
 
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, ProposalListResponse, QueryMsg};
+use crate::msg::{InstantiateMsg, MigrateMsg, ProposalListResponse, QueryMsg};
 use crate::proposal::{ProposalStatus, SingleChoiceProposal};
 use crate::state::{Config, CONFIG, DEFAULT_LIMIT, PROPOSALS};
 

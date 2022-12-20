@@ -28,6 +28,7 @@ serde = { version = "1.0.147", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0" }
 cwd-interface = { path = "../../../packages/cwd-interface" }
 cwd-macros = { path = "../../../packages/cwd-macros" }
+neutron-timelock = { path = "../../../packages/neutron-timelock" }
 
 [dev-dependencies]
 cosmwasm-schema = { version = "1.0.0" }

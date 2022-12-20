@@ -17,7 +17,7 @@ wiki page.
 ## Proposal deposits
 
 Proposal deposits for this module are handled by the
-[`cwd-pre-propose-single`](../../pre-propose/cwd-pre-propose-single)
+[`cwd-pre-propose-single`](../../pre-propose/cwd-pre-propose-single-timelocked)
 contract.
 
 ## Hooks

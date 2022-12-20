@@ -1,18 +1,21 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
+use cosmwasm_std::{
+    to_binary, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response, StdResult, WasmMsg,
+};
 use cw2::set_contract_version;
 use neutron_bindings::bindings::msg::NeutronMsg;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 
 use cwd_pre_propose_base::{
     error::PreProposeError,
     msg::{ExecuteMsg as ExecuteBase, InstantiateMsg as InstantiateBase, QueryMsg as QueryBase},
     state::PreProposeContract,
 };
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use neutron_timelock::single::{ExecuteMsg as TimelockExecuteMsg, ProposalQueryMsg};
 
-pub(crate) const CONTRACT_NAME: &str = "crates.io:cwd-pre-propose-single";
+pub(crate) const CONTRACT_NAME: &str = "crates.io:cwd-pre-propose-single-timelocked";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[derive(Serialize, JsonSchema, Deserialize, Debug, Clone)]
@@ -64,6 +67,9 @@ pub fn execute(
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, PreProposeError> {
+    let pre_propose = PrePropose::default();
+    let proposal_module = pre_propose.proposal_module.load(deps.storage)?;
+
     // We don't want to expose the `proposer` field on the propose
     // message externally as that is to be set by this module. Here,
     // we transform an external message which omits that field into an
@@ -77,15 +83,32 @@ pub fn execute(
                     description,
                     msgs,
                 },
-        } => ExecuteInternal::Propose {
-            msg: ProposeMessageInternal::Propose {
-                // Fill in proposer based on message sender.
-                proposer: Some(info.sender.to_string()),
-                title,
-                description,
-                msgs,
-            },
-        },
+        } => {
+            let last_proposal_id: u64 = deps.querier.query_wasm_smart(
+                proposal_module.into_string(),
+                &ProposalQueryMsg::ProposalCount {},
+            )?;
+
+            let timelock_msg = CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: "timelock_contract".to_string(),
+                msg: to_binary(&TimelockExecuteMsg::TimelockProposal {
+                    proposal_id: last_proposal_id + 1,
+                    msgs,
+                })
+                .unwrap(),
+                funds: vec![],
+            });
+
+            ExecuteInternal::Propose {
+                msg: ProposeMessageInternal::Propose {
+                    // Fill in proposer based on message sender.
+                    proposer: Some(info.sender.to_string()),
+                    title,
+                    description,
+                    msgs: vec![timelock_msg],
+                },
+            }
+        }
         ExecuteMsg::Withdraw { denom } => ExecuteInternal::Withdraw { denom },
         ExecuteMsg::UpdateConfig {
             deposit_info,

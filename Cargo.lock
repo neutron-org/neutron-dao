@@ -734,6 +734,7 @@ dependencies = [
  "cwd-subdao-proposal-single",
  "cwd-voting",
  "neutron-sdk",
+ "neutron-timelock",
  "schemars",
  "serde",
 ]
@@ -1070,6 +1071,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "neutron-timelock"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-std",
+ "neutron-sdk",
+ "schemars",
+ "serde",
+]
+
+[[package]]
 name = "neutron-timelock-single"
 version = "0.2.0"
 dependencies = [
@@ -1085,6 +1096,7 @@ dependencies = [
  "cwd-interface",
  "cwd-macros",
  "neutron-sdk",
+ "neutron-timelock",
  "schemars",
  "serde",
  "thiserror",
