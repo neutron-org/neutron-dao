@@ -3,8 +3,8 @@ use neutron_bindings::bindings::msg::NeutronMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cwd_interface::Admin;
 use crate::proposal::SingleChoiceProposal;
+use cwd_interface::Admin;
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 pub struct InstantiateMsg {
@@ -23,8 +23,12 @@ pub enum ExecuteMsg {
         proposal_id: u64,
         msgs: Vec<CosmosMsg<NeutronMsg>>,
     },
-    ExecuteProposal { proposal_id: u64 },
-    OverruleProposal { proposal_id: u64 },
+    ExecuteProposal {
+        proposal_id: u64,
+    },
+    OverruleProposal {
+        proposal_id: u64,
+    },
     UpdateConfig {
         owner: Option<String>,
         timelock_duration: Option<u64>,
@@ -59,7 +63,7 @@ pub enum QueryMsg {
 pub struct MigrateMsg {}
 
 /// A list of proposals returned by `ListProposals`.
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, JsonSchema, Debug)]
 pub struct ProposalListResponse {
     pub proposals: Vec<SingleChoiceProposal>,
 }

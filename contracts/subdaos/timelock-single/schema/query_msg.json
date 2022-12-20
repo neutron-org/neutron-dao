@@ -3,85 +3,62 @@
   "title": "QueryMsg",
   "oneOf": [
     {
+      "description": "Gets the config. Returns `state::Config`.",
       "type": "object",
       "required": [
-        "dao"
+        "config"
       ],
       "properties": {
-        "dao": {
+        "config": {
           "type": "object"
         }
       },
       "additionalProperties": false
     },
     {
+      "description": "Gets information about a proposal. Returns `proposals::Proposal`.",
       "type": "object",
       "required": [
-        "description"
+        "proposal"
       ],
       "properties": {
-        "description": {
-          "type": "object"
+        "proposal": {
+          "type": "object",
+          "required": [
+            "proposal_id"
+          ],
+          "properties": {
+            "proposal_id": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            }
+          }
         }
       },
       "additionalProperties": false
     },
     {
+      "description": "Lists all the proposals that have been cast in this module. Returns `query::ProposalListResponse`.",
       "type": "object",
       "required": [
-        "get_config"
+        "list_proposals"
       ],
       "properties": {
-        "get_config": {
-          "type": "object"
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "list_bonders"
-      ],
-      "properties": {
-        "list_bonders": {
+        "list_proposals": {
           "type": "object",
           "properties": {
             "limit": {
+              "description": "The maximum number of proposals to return as part of this query. If no limit is set a max of 30 proposals will be returned.",
               "type": [
                 "integer",
                 "null"
               ],
-              "format": "uint32",
+              "format": "uint64",
               "minimum": 0.0
             },
             "start_after": {
-              "type": [
-                "string",
-                "null"
-              ]
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "voting_power_at_height"
-      ],
-      "properties": {
-        "voting_power_at_height": {
-          "type": "object",
-          "required": [
-            "address"
-          ],
-          "properties": {
-            "address": {
-              "type": "string"
-            },
-            "height": {
+              "description": "The proposal ID to start listing proposals after. For example, if this is set to 2 proposals with IDs 3 and higher will be returned.",
               "type": [
                 "integer",
                 "null"
@@ -90,40 +67,6 @@
               "minimum": 0.0
             }
           }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "total_power_at_height"
-      ],
-      "properties": {
-        "total_power_at_height": {
-          "type": "object",
-          "properties": {
-            "height": {
-              "type": [
-                "integer",
-                "null"
-              ],
-              "format": "uint64",
-              "minimum": 0.0
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "info"
-      ],
-      "properties": {
-        "info": {
-          "type": "object"
         }
       },
       "additionalProperties": false

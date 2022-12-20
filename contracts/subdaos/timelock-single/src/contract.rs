@@ -1,6 +1,9 @@
-use cosmwasm_std::{Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdResult, SubMsg, to_binary};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
+use cosmwasm_std::{
+    to_binary, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdResult,
+    SubMsg,
+};
 use cw2::set_contract_version;
 use cw_storage_plus::Bound;
 use neutron_bindings::bindings::msg::NeutronMsg;
@@ -48,13 +51,14 @@ pub fn instantiate(
                 .owner
                 .map(|a| a.to_string())
                 .unwrap_or_else(|| "None".to_string()),
-        ).add_attribute(
-        "timelock_duration",
-        config
-            .timelock_duration
-            .map(|a| a.to_string())
-            .unwrap_or_else(|| "None".to_string()),
-    ))
+        )
+        .add_attribute(
+            "timelock_duration",
+            config
+                .timelock_duration
+                .map(|a| a.to_string())
+                .unwrap_or_else(|| "None".to_string()),
+        ))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -65,10 +69,15 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response<NeutronMsg>, ContractError> {
     match msg {
-        ExecuteMsg::TimelockProposal { proposal_id, msgs } =>
-            execute_timelock_proposal(deps, env, info, proposal_id, msgs),
-        ExecuteMsg::ExecuteProposal { proposal_id } => execute_execute_proposal(deps, env, info, proposal_id),
-        ExecuteMsg::OverruleProposal { proposal_id } => execute_overrule_proposal(deps, info, proposal_id),
+        ExecuteMsg::TimelockProposal { proposal_id, msgs } => {
+            execute_timelock_proposal(deps, env, info, proposal_id, msgs)
+        }
+        ExecuteMsg::ExecuteProposal { proposal_id } => {
+            execute_execute_proposal(deps, env, info, proposal_id)
+        }
+        ExecuteMsg::OverruleProposal { proposal_id } => {
+            execute_overrule_proposal(deps, info, proposal_id)
+        }
         ExecuteMsg::UpdateConfig {
             owner,
             timelock_duration,
@@ -99,7 +108,7 @@ pub fn execute_timelock_proposal(
 
     Ok(Response::default()
         .add_attribute("action", "timelock_proposal")
-        .add_attribute("sender", info.sender.clone())
+        .add_attribute("sender", info.sender)
         .add_attribute("proposal_id", proposal_id.to_string())
         .add_attribute("status", proposal.status.to_string()))
 }
@@ -116,7 +125,9 @@ pub fn execute_execute_proposal(
 
     // Check if proposal is timelocked
     if proposal.status != ProposalStatus::Timelocked {
-        return Err(ContractError::WrongStatus { status: proposal.status.to_string() });
+        return Err(ContractError::WrongStatus {
+            status: proposal.status.to_string(),
+        });
     }
 
     // Check if timelock has passed
@@ -130,7 +141,8 @@ pub fn execute_execute_proposal(
     proposal.status = ProposalStatus::Executed;
     PROPOSALS.save(deps.storage, proposal_id, &proposal)?;
 
-    let msgs: Vec<SubMsg<NeutronMsg>> = proposal.msgs
+    let msgs: Vec<SubMsg<NeutronMsg>> = proposal
+        .msgs
         .iter()
         .map(|msg| SubMsg::reply_on_error(msg.clone(), proposal_id))
         .collect();
@@ -140,7 +152,7 @@ pub fn execute_execute_proposal(
     Ok(Response::new()
         .add_submessages(msgs)
         .add_attribute("action", "execute_proposal")
-        .add_attribute("sender", info.sender.clone())
+        .add_attribute("sender", info.sender)
         .add_attribute("proposal_id", proposal_id.to_string()))
 }
 
@@ -160,7 +172,9 @@ pub fn execute_overrule_proposal(
 
     // Check if proposal is timelocked
     if proposal.status != ProposalStatus::Timelocked {
-        return Err(ContractError::WrongStatus { status: proposal.status.to_string() });
+        return Err(ContractError::WrongStatus {
+            status: proposal.status.to_string(),
+        });
     }
 
     // Update proposal status
@@ -169,7 +183,7 @@ pub fn execute_overrule_proposal(
 
     Ok(Response::default()
         .add_attribute("action", "overrule_proposal")
-        .add_attribute("sender", info.sender.clone())
+        .add_attribute("sender", info.sender)
         .add_attribute("proposal_id", proposal_id.to_string()))
 }
 
@@ -222,7 +236,9 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config {} => to_binary(&CONFIG.load(deps.storage)?),
         QueryMsg::Proposal { proposal_id } => to_binary(&query_proposal(deps, proposal_id)?),
-        QueryMsg::ListProposals { start_after, limit } => to_binary(&query_list_proposals(deps, start_after, limit)?),
+        QueryMsg::ListProposals { start_after, limit } => {
+            to_binary(&query_list_proposals(deps, start_after, limit)?)
+        }
     }
 }
 
@@ -249,7 +265,6 @@ pub fn query_list_proposals(
     to_binary(&ProposalListResponse { proposals: props })
 }
 
-
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     // Set contract to version to latest
@@ -272,4 +287,3 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
 
     Ok(Response::new().add_attribute("proposal_execution_failed", proposal_id.to_string()))
 }
-

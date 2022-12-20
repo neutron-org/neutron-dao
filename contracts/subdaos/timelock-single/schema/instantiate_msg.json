@@ -3,22 +3,9 @@
   "title": "InstantiateMsg",
   "type": "object",
   "required": [
-    "denom",
-    "description"
+    "timelock_duration"
   ],
   "properties": {
-    "denom": {
-      "type": "string"
-    },
-    "description": {
-      "type": "string"
-    },
-    "manager": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
     "owner": {
       "anyOf": [
         {
@@ -28,6 +15,11 @@
           "type": "null"
         }
       ]
+    },
+    "timelock_duration": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
     }
   },
   "definitions": {

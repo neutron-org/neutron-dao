@@ -1,8 +1,8 @@
-use cosmwasm_std::{Addr};
+use crate::proposal::SingleChoiceProposal;
+use cosmwasm_std::Addr;
 use cw_storage_plus::{Item, Map};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use crate::proposal::SingleChoiceProposal;
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 pub struct Config {
