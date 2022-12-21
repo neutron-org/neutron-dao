@@ -709,7 +709,6 @@ dependencies = [
  "cwd-interface",
  "cwd-macros",
  "exec-control",
- "exec-control-macros",
  "neutron-sdk",
  "schemars",
  "serde",
@@ -914,18 +913,6 @@ dependencies = [
  "schemars",
  "serde",
  "thiserror",
-]
-
-[[package]]
-name = "exec-control-macros"
-version = "0.1.0"
-dependencies = [
- "cosmwasm-schema",
- "proc-macro2",
- "quote",
- "schemars",
- "serde",
- "syn",
 ]
 
 [[package]]

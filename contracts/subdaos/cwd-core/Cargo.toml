@@ -29,7 +29,6 @@ serde = { version = "1.0.147", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0" }
 cwd-interface = { path = "../../../packages/cwd-interface" }
 exec-control = { path = "../../../packages/exec-control" }
-exec-control-macros = { path = "../../../packages/exec-control-macros" }
 cwd-macros = { path = "../../../packages/cwd-macros" }
 cw-paginate = { path = "../../../packages/cw-paginate" }
 cw-core-v1 = { package = "cw-core", version = "0.1.0", git = "https://github.com/DA0-DA0/dao-contracts.git", tag = "v1.0.0" }
