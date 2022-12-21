@@ -908,10 +908,6 @@ name = "exec-control"
 version = "0.1.0"
 dependencies = [
  "cosmwasm-std",
- "cw-storage-plus 0.13.4",
- "neutron-sdk",
- "schemars",
- "serde",
  "thiserror",
 ]
 

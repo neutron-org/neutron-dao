@@ -6,13 +6,7 @@ use cosmwasm_std::{
 };
 use cw2::{get_contract_version, set_contract_version};
 use cw_utils::parse_reply_instantiate_data;
-use exec_control::{
-    exec_control::{
-        execute_pause, execute_unpause, get_pause_info, handle_possible_paused_state,
-        init as init_exec_control,
-    },
-    types::{Config as ExecControlConfig, PausedStateAction},
-};
+use exec_control::pause::{validate_duration, validate_sender, PauseError};
 
 use cw_paginate::{paginate_map, paginate_map_values};
 use cwd_interface::{voting, ModuleInstantiateInfo};
@@ -20,10 +14,11 @@ use neutron_bindings::bindings::msg::NeutronMsg;
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InitialItem, InstantiateMsg, MigrateMsg, QueryMsg};
-use crate::query::{DumpStateResponse, GetItemResponse, SubDao};
+use crate::query::{DumpStateResponse, GetItemResponse, PauseInfoResponse, SubDao};
 use crate::state::{
     Config, ProposalModule, ProposalModuleStatus, ACTIVE_PROPOSAL_MODULE_COUNT, CONFIG, ITEMS,
-    PROPOSAL_MODULES, SUBDAO_LIST, TOTAL_PROPOSAL_MODULE_COUNT, VOTING_REGISTRY_MODULE,
+    PAUSED_UNTIL, PROPOSAL_MODULES, SUBDAO_LIST, TOTAL_PROPOSAL_MODULE_COUNT,
+    VOTING_REGISTRY_MODULE,
 };
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:cwd-core";
@@ -42,16 +37,12 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    let exec_control_config = ExecControlConfig {
-        admin: info.sender.clone(),
-        guardian: msg.guardian,
-    };
-    init_exec_control(deps.storage, &exec_control_config)?;
-
     let config = Config {
         name: msg.name,
         description: msg.description,
         dao_uri: msg.dao_uri,
+        admin: info.sender.clone(),
+        guardian: msg.guardian,
     };
     CONFIG.save(deps.storage, &config)?;
 
@@ -92,26 +83,25 @@ pub fn execute(
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response<NeutronMsg>, ContractError> {
-    match handle_possible_paused_state(
-        deps.storage,
-        env.clone(),
-        info.clone(),
-        exec_msg_to_paused_state_action(msg.clone()),
-    )? {
-        None => (),
-        Some(r) => return Ok(r),
+    match get_pause_info(deps.as_ref(), env.clone())? {
+        PauseInfoResponse::Paused { .. } => {
+            match msg {
+                ExecuteMsg::Pause { duration } => {
+                    return execute_pause(deps, env, info.sender, duration)
+                }
+                ExecuteMsg::Unpause {} => return execute_unpause(deps, info.sender),
+                _ => return Err(ContractError::PauseError(PauseError::Paused {})),
+            };
+        }
+        PauseInfoResponse::Unpaused {} => (),
     }
 
     match msg {
         ExecuteMsg::ExecuteProposalHook { msgs } => {
             execute_proposal_hook(deps.as_ref(), info.sender, msgs)
         }
-        ExecuteMsg::Pause { duration } => {
-            execute_pause(deps.storage, env, info.sender, duration).map_err(ContractError::from)
-        }
-        ExecuteMsg::Unpause {} => {
-            execute_unpause(deps.storage, info.sender).map_err(ContractError::from)
-        }
+        ExecuteMsg::Pause { duration } => execute_pause(deps, env, info.sender, duration),
+        ExecuteMsg::Unpause {} => execute_unpause(deps, info.sender),
         ExecuteMsg::RemoveItem { key } => execute_remove_item(deps, env, info.sender, key),
         ExecuteMsg::SetItem { key, addr } => execute_set_item(deps, env, info.sender, key, addr),
         ExecuteMsg::UpdateConfig { config } => {
@@ -127,6 +117,36 @@ pub fn execute(
             execute_update_sub_daos_list(deps, env, info.sender, to_add, to_remove)
         }
     }
+}
+
+pub fn execute_pause(
+    deps: DepsMut,
+    env: Env,
+    sender: Addr,
+    duration: u64,
+) -> Result<Response<NeutronMsg>, ContractError> {
+    let config: Config = CONFIG.load(deps.storage)?;
+    validate_sender(sender.clone(), config.admin, config.guardian)?;
+    validate_duration(duration)?;
+
+    let paused_until_height: u64 = env.block.height + duration;
+    PAUSED_UNTIL.save(deps.storage, &Some(paused_until_height))?;
+
+    Ok(Response::new()
+        .add_attribute("action", "execute_pause")
+        .add_attribute("sender", sender)
+        .add_attribute("paused_until_height", paused_until_height.to_string()))
+}
+
+pub fn execute_unpause(deps: DepsMut, sender: Addr) -> Result<Response<NeutronMsg>, ContractError> {
+    let config: Config = CONFIG.load(deps.storage)?;
+    validate_sender(sender.clone(), config.admin, config.guardian)?;
+
+    PAUSED_UNTIL.save(deps.storage, &None)?;
+
+    Ok(Response::new()
+        .add_attribute("action", "execute_unpause")
+        .add_attribute("sender", sender))
 }
 
 pub fn execute_proposal_hook(
@@ -396,8 +416,23 @@ pub fn query_active_proposal_modules(
     )
 }
 
+fn get_pause_info(deps: Deps, env: Env) -> StdResult<PauseInfoResponse> {
+    Ok(match PAUSED_UNTIL.may_load(deps.storage)?.unwrap_or(None) {
+        Some(paused_until_height) => {
+            if env.block.height.ge(&paused_until_height) {
+                PauseInfoResponse::Unpaused {}
+            } else {
+                PauseInfoResponse::Paused {
+                    until_height: paused_until_height,
+                }
+            }
+        }
+        None => PauseInfoResponse::Unpaused {},
+    })
+}
+
 pub fn query_paused(deps: Deps, env: Env) -> StdResult<Binary> {
-    to_binary(&get_pause_info(deps.storage, env)?)
+    to_binary(&get_pause_info(deps, env)?)
 }
 
 pub fn query_dump_state(deps: Deps, env: Env) -> StdResult<Binary> {
@@ -407,7 +442,7 @@ pub fn query_dump_state(deps: Deps, env: Env) -> StdResult<Binary> {
         .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
         .map(|kv| Ok(kv?.1))
         .collect::<StdResult<Vec<ProposalModule>>>()?;
-    let pause_info = get_pause_info(deps.storage, env)?;
+    let pause_info = get_pause_info(deps, env)?;
     let version = get_contract_version(deps.storage)?;
     let active_proposal_module_count = ACTIVE_PROPOSAL_MODULE_COUNT.load(deps.storage)?;
     let total_proposal_module_count = TOTAL_PROPOSAL_MODULE_COUNT.load(deps.storage)?;
@@ -499,14 +534,6 @@ pub fn query_list_sub_daos(
 pub fn query_dao_uri(deps: Deps) -> StdResult<Binary> {
     let config = CONFIG.load(deps.storage)?;
     to_binary(&config.dao_uri)
-}
-
-fn exec_msg_to_paused_state_action(msg: ExecuteMsg) -> PausedStateAction {
-    match msg {
-        ExecuteMsg::Pause { duration } => PausedStateAction::Pause(duration),
-        ExecuteMsg::Unpause {} => PausedStateAction::Unpause,
-        _ => PausedStateAction::Other,
-    }
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

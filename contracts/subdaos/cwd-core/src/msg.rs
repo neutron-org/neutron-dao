@@ -46,7 +46,7 @@ pub struct InstantiateMsg {
 }
 
 #[pausable]
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     /// Callable by proposal modules. The DAO will execute the
