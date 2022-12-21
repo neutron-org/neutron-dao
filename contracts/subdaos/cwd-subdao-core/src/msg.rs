@@ -38,7 +38,7 @@ pub struct InstantiateMsg {
 
     /// Instantiate information for the core contract's timelock
     /// module.
-    pub timelock_module_instantiate_info: ModuleInstantiateInfo,
+    // pub timelock_module_instantiate_info: ModuleInstantiateInfo,
 
     /// Initial information for arbitrary contract addresses to be
     /// added to the items map. The key is the name of the item in the
