@@ -6,7 +6,7 @@ use cwd_interface::Admin;
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 pub struct InstantiateMsg {
-    // Owner can update all configs including changing the owner. This will generally be a DAO.
+    // Owner can update all configs including changing the owner.
     pub owner: Option<Admin>,
 
     // Timelock duration for all proposals (starts when TimelockProposal message handler is executed).

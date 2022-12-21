@@ -28,12 +28,17 @@ pub struct InstantiateMsg {
 
     /// Instantiate information for the core contract's voting
     /// power module.
-    pub voting_registry_module_instantiate_info: ModuleInstantiateInfo,
+    pub vote_module_instantiate_info: ModuleInstantiateInfo,
+
     /// Instantiate information for the core contract's
     /// proposal modules.
     // NOTE: the pre-propose-base package depends on it being the case
     // that the core module instantiates its proposal module.
     pub proposal_modules_instantiate_info: Vec<ModuleInstantiateInfo>,
+
+    /// Instantiate information for the core contract's timelock
+    /// module.
+    pub timelock_module_instantiate_info: ModuleInstantiateInfo,
 
     /// Initial information for arbitrary contract addresses to be
     /// added to the items map. The key is the name of the item in the

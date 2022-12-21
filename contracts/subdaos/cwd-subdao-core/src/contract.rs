@@ -25,6 +25,7 @@ pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 const PROPOSAL_MODULE_REPLY_ID: u64 = 0;
 const VOTE_MODULE_INSTANTIATE_REPLY_ID: u64 = 1;
 const VOTE_MODULE_UPDATE_REPLY_ID: u64 = 2;
+const TIMELOCK_MODULE_INSTANTIATE_REPLY_ID: u64 = 3;
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -43,7 +44,7 @@ pub fn instantiate(
     CONFIG.save(deps.storage, &config)?;
 
     let vote_module_msg = msg
-        .voting_registry_module_instantiate_info
+        .vote_module_instantiate_info
         .into_wasm_msg(env.contract.address.clone());
     let vote_module_msg: SubMsg<Empty> =
         SubMsg::reply_on_success(vote_module_msg, VOTE_MODULE_INSTANTIATE_REPLY_ID);
@@ -58,6 +59,12 @@ pub fn instantiate(
         return Err(ContractError::NoActiveProposalModules {});
     }
 
+    let timelock_module_msg = msg
+        .timelock_module_instantiate_info
+        .into_wasm_msg(env.contract.address.clone());
+    let timelock_module_msg: SubMsg<Empty> =
+        SubMsg::reply_on_success(timelock_module_msg, TIMELOCK_MODULE_INSTANTIATE_REPLY_ID);
+
     for InitialItem { key, value } in msg.initial_items.unwrap_or_default() {
         ITEMS.save(deps.storage, key, &value)?;
     }
@@ -69,7 +76,8 @@ pub fn instantiate(
         .add_attribute("action", "instantiate")
         .add_attribute("sender", info.sender)
         .add_submessage(vote_module_msg)
-        .add_submessages(proposal_module_msgs))
+        .add_submessages(proposal_module_msgs)
+        .add_submessage(timelock_module_msg))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
