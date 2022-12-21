@@ -1,13 +1,19 @@
 # Single choice proposal deposit contract
 
 This is a pre-propose module that manages proposal deposits for the
-`cwd-proposal-single` proposal module.
+`cwd-subdao-proposal-single` proposal module.
+
+In addition to managing deposits, it also wraps the original proposal message
+with a message to the Timelock contract; this means that instead of executing
+the messages from the original payload, these messages are sent to the timelock
+contract and can be either overruled by the Neutron DAO or executed after the
+timelock period.
 
 It may accept either native ([bank
 module](https://docs.cosmos.network/main/modules/bank/)),
 [cw20](https://github.com/CosmWasm/cw-plus/tree/bc339368b1ee33c97c55a19d4cff983c7708ce36/packages/cw20)
 tokens, or no tokens as a deposit. If a proposal deposit is enabled
-the following refund strategies are avaliable:
+the following refund strategies are available:
 
 1. Never refund deposits. All deposits are sent to the DAO on proposal
    completion.

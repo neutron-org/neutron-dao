@@ -33,8 +33,8 @@ cw-utils = "0.13.2"
 cw4-group = "0.13.2"
 cw20 = "0.13.2"
 cw20-base = "0.13.2"
-cwd-subdao-proposal-single = { path = "../../proposal/cwd-proposal-single" }
-cwd-subdao-core = { path = "../../../subdaos/cwd-core" }
+cwd-subdao-proposal-single = { path = "../../proposal/cwd-subdao-proposal-single" }
+cwd-subdao-core = { path = "../../cwd-subdao-core" }
 cwd-voting = { path = "../../../../packages/cwd-voting" }
 cw-denom = { path = "../../../../packages/cw-denom" }
 cwd-interface = { path = "../../../../packages/cwd-interface" }

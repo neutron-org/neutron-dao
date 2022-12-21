@@ -4,7 +4,7 @@ version = "0.2.0"
 authors = ["ekez <ekez@withoutdoing.com>"]
 edition = "2021"
 repository = "https://github.com/DA0-DA0/dao-contracts"
-description = "A DAO DAO proposal module for single choice (yes / no) voting."
+description = "A Neutron subDAO proposal module for single choice (yes / no) voting."
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -28,10 +28,10 @@ schemars = "0.8"
 serde = { version = "1.0.147", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0" }
 
-cwd-subdao-core = { path = "../../cwd-core", features = ["library"] }
+cwd-subdao-core = { path = "../../cwd-subdao-core", features = ["library"] }
 cwd-macros = { path = "../../../../packages/cwd-macros" }
 cwd-pre-propose-base = { path = "../../../../packages/cwd-pre-propose-base" }
-cwd-subdao-pre-propose-single = { path = "../../pre-propose/cwd-pre-propose-single-timelocked" }
+cwd-subdao-pre-propose-single = { path = "../../pre-propose/cwd-subdao-pre-propose-single" }
 cwd-interface = { path = "../../../../packages/cwd-interface" }
 cwd-voting = { path = "../../../../packages/cwd-voting" }
 cwd-hooks = { path = "../../../../packages/cwd-hooks" }

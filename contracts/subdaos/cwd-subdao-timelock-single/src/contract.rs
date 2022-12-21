@@ -16,7 +16,7 @@ use crate::msg::{InstantiateMsg, MigrateMsg, ProposalListResponse, QueryMsg};
 use crate::proposal::{ProposalStatus, SingleChoiceProposal};
 use crate::state::{Config, CONFIG, DEFAULT_LIMIT, PROPOSALS};
 
-pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-timelock-single";
+pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-cwd-subdao-timelock-single";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg_attr(not(feature = "library"), entry_point)]

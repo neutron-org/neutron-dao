@@ -776,6 +776,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "cwd-subdao-timelock-single"
+version = "0.2.0"
+dependencies = [
+ "anyhow",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cosmwasm-storage",
+ "cw-controllers",
+ "cw-multi-test",
+ "cw-storage-plus 0.13.4",
+ "cw-utils",
+ "cw2",
+ "cwd-interface",
+ "cwd-macros",
+ "neutron-sdk",
+ "neutron-timelock",
+ "schemars",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "cwd-vote-hooks"
 version = "0.2.0"
 dependencies = [
@@ -1079,28 +1101,6 @@ dependencies = [
  "neutron-sdk",
  "schemars",
  "serde",
-]
-
-[[package]]
-name = "neutron-timelock-single"
-version = "0.2.0"
-dependencies = [
- "anyhow",
- "cosmwasm-schema",
- "cosmwasm-std",
- "cosmwasm-storage",
- "cw-controllers",
- "cw-multi-test",
- "cw-storage-plus 0.13.4",
- "cw-utils",
- "cw2",
- "cwd-interface",
- "cwd-macros",
- "neutron-sdk",
- "neutron-timelock",
- "schemars",
- "serde",
- "thiserror",
 ]
 
 [[package]]

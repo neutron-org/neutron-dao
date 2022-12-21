@@ -18,7 +18,7 @@ use cwd_pre_propose_base::{
 use cwd_voting::deposit::UncheckedDepositInfo;
 use neutron_timelock::single::{ExecuteMsg as TimelockExecuteMsg, ProposalQueryMsg};
 
-pub(crate) const CONTRACT_NAME: &str = "crates.io:cwd-pre-propose-single-timelocked";
+pub(crate) const CONTRACT_NAME: &str = "crates.io:cwd-subdao-pre-propose-single";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[derive(Serialize, JsonSchema, Deserialize, Debug, Clone)]
