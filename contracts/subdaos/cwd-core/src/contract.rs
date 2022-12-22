@@ -124,7 +124,8 @@ pub fn execute_pause(
     duration: u64,
 ) -> Result<Response<NeutronMsg>, ContractError> {
     let config: Config = CONFIG.load(deps.storage)?;
-    can_pause(&sender, &config.main_dao, config.security_dao);
+
+    can_pause(&sender, &config.main_dao, config.security_dao)?;
     validate_duration(duration)?;
 
     let paused_until_height: u64 = env.block.height + duration;
@@ -138,7 +139,8 @@ pub fn execute_pause(
 
 pub fn execute_unpause(deps: DepsMut, sender: Addr) -> Result<Response<NeutronMsg>, ContractError> {
     let config: Config = CONFIG.load(deps.storage)?;
-    can_unpause(&sender, &config.main_dao);
+
+    can_unpause(&sender, &config.main_dao)?;
 
     PAUSED_UNTIL.save(deps.storage, &None)?;
 

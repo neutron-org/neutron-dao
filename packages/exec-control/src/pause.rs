@@ -9,14 +9,24 @@ pub fn can_pause(
     sender: &Addr,
     main_dao_address: &Addr,
     security_dao_address: Option<Addr>,
-) -> bool {
-    sender == main_dao_address
-        || (security_dao_address.is_some() && sender == &security_dao_address.unwrap())
+) -> Result<(), PauseError> {
+    let authorized = sender == main_dao_address
+        || (security_dao_address.is_some() && sender == &security_dao_address.unwrap());
+
+    if !authorized {
+        return Err(PauseError::Unauthorized {});
+    }
+
+    Ok(())
 }
 
 // checks whether the sender is capable to unpause a subDAO
-pub fn can_unpause(sender: &Addr, main_dao_address: &Addr) -> bool {
-    sender == main_dao_address
+pub fn can_unpause(sender: &Addr, main_dao_address: &Addr) -> Result<(), PauseError> {
+    if sender != main_dao_address {
+        return Err(PauseError::Unauthorized {});
+    }
+
+    Ok(())
 }
 
 /// checks whether the duration is not greater than MAX_PAUSE_DURATION.
