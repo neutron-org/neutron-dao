@@ -1,6 +1,9 @@
 [workspace]
 members = [
 	"contracts/cwd-core",
+	"contracts/treasury/",
+	"contracts/distribution/",
+	"contracts/reserve/",
 	"contracts/proposal/*",
 	"contracts/pre-propose/*",
 	"contracts/voting/*",
