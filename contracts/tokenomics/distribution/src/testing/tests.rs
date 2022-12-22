@@ -1,22 +1,27 @@
+use crate::{
+    contract::{execute, instantiate, query},
+    error::ContractError,
+    msg::{ExecuteMsg, InstantiateMsg, PauseInfoResponse, QueryMsg},
+    state::{CONFIG, FUND_COUNTER, PENDING_DISTRIBUTION, SHARES},
+    testing::mock_querier::mock_dependencies,
+};
 use cosmwasm_std::{
     coin, coins, from_binary,
     testing::{mock_env, mock_info},
     Addr, BankMsg, CosmosMsg, DepsMut, Empty, Uint128,
 };
-
-use crate::{
-    contract::{execute, instantiate, query},
-    msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
-    state::{CONFIG, FUND_COUNTER, PENDING_DISTRIBUTION, SHARES},
-    testing::mock_querier::mock_dependencies,
-};
+use exec_control::pause::PauseError;
 
 const DENOM: &str = "denom";
+const MAIN_DAO_ADDR: &str = "main_dao";
+const NEW_MAIN_DAO_ADDR: &str = "new_main_dao";
+const SECURITY_DAO_ADDR: &str = "security_dao";
 
 pub fn init_base_contract(deps: DepsMut<Empty>) {
     let msg = InstantiateMsg {
         denom: DENOM.to_string(),
-        owner: "owner".to_string(),
+        main_dao_address: Addr::unchecked(MAIN_DAO_ADDR),
+        security_dao_address: Addr::unchecked(SECURITY_DAO_ADDR),
     };
     let info = mock_info("creator", &coins(2, DENOM));
     instantiate(deps, mock_env(), info, msg).unwrap();
@@ -26,11 +31,19 @@ pub fn init_base_contract(deps: DepsMut<Empty>) {
 fn test_transfer_ownership() {
     let mut deps = mock_dependencies(&[]);
     init_base_contract(deps.as_mut());
-    let msg = ExecuteMsg::TransferOwnership("new_owner".to_string());
-    let res = execute(deps.as_mut(), mock_env(), mock_info("owner", &[]), msg);
+    let msg = ExecuteMsg::TransferOwnership(NEW_MAIN_DAO_ADDR.to_string());
+    let res = execute(
+        deps.as_mut(),
+        mock_env(),
+        mock_info(MAIN_DAO_ADDR, &[]),
+        msg,
+    );
     assert!(res.is_ok());
     let config = CONFIG.load(deps.as_ref().storage).unwrap();
-    assert_eq!(config.owner.to_string(), "new_owner".to_string());
+    assert_eq!(
+        config.main_dao_address.to_string(),
+        NEW_MAIN_DAO_ADDR.to_string()
+    );
 }
 
 #[test]
@@ -40,7 +53,7 @@ fn test_fund_no_funds() {
     let msg = ExecuteMsg::Fund {};
     let res = execute(deps.as_mut(), mock_env(), mock_info("someone", &[]), msg);
     assert!(res.is_err());
-    assert_eq!(res.unwrap_err().to_string(), "Generic error: no funds sent");
+    assert_eq!(res.unwrap_err(), ContractError::NoFundsSent {});
 }
 
 #[test]
@@ -55,7 +68,7 @@ fn test_fund_no_shares() {
         msg,
     );
     assert!(res.is_err());
-    assert_eq!(res.unwrap_err().to_string(), "Generic error: no shares set");
+    assert_eq!(res.unwrap_err(), ContractError::NoSharesSent {});
 }
 
 #[test]
@@ -150,10 +163,7 @@ fn test_withdraw_no_pending() {
     let msg = ExecuteMsg::Claim {};
     let res = execute(deps.as_mut(), mock_env(), mock_info("someone", &[]), msg);
     assert!(res.is_err());
-    assert_eq!(
-        res.unwrap_err().to_string(),
-        "Generic error: no pending distribution"
-    );
+    assert_eq!(res.unwrap_err(), ContractError::NoPendingDistribution {});
 }
 
 #[test]
@@ -197,7 +207,7 @@ fn test_set_shares_unauthorized() {
     };
     let res = execute(deps.as_mut(), mock_env(), mock_info("someone", &[]), msg);
     assert!(res.is_err());
-    assert_eq!(res.unwrap_err().to_string(), "Generic error: unauthorized");
+    assert_eq!(res.unwrap_err(), ContractError::Unauthorized {});
 }
 
 #[test]
@@ -231,7 +241,12 @@ fn test_set_shares() {
             ("addr2".to_string(), Uint128::from(2u128)),
         ],
     };
-    let res = execute(deps.as_mut(), mock_env(), mock_info("owner", &[]), msg);
+    let res = execute(
+        deps.as_mut(),
+        mock_env(),
+        mock_info(MAIN_DAO_ADDR, &[]),
+        msg,
+    );
     assert!(res.is_ok());
     assert_eq!(
         SHARES
@@ -313,4 +328,100 @@ fn test_query_pending() {
             ("addr2".to_string(), Uint128::from(3u128))
         ]
     );
+}
+
+#[test]
+fn test_pause() {
+    let mut deps = mock_dependencies(&[]);
+    init_base_contract(deps.as_mut());
+
+    // pause contracts for 10 blocks from main dao
+    let msg = ExecuteMsg::Pause { duration: 10u64 };
+    let res = execute(
+        deps.as_mut(),
+        mock_env(),
+        mock_info(MAIN_DAO_ADDR, &[]),
+        msg,
+    );
+    assert!(res.is_ok());
+    let pause_info: PauseInfoResponse =
+        from_binary(&query(deps.as_ref(), mock_env(), QueryMsg::PauseInfo {}).unwrap()).unwrap();
+    assert_eq!(
+        pause_info,
+        PauseInfoResponse::Paused {
+            until_height: mock_env().block.height + 10
+        }
+    );
+
+    // security dao can't unpause contracts
+    let msg = ExecuteMsg::Unpause {};
+    let res = execute(
+        deps.as_mut(),
+        mock_env(),
+        mock_info(SECURITY_DAO_ADDR, &[]),
+        msg,
+    );
+    assert_eq!(
+        res.err().unwrap(),
+        ContractError::PauseError(PauseError::Unauthorized {})
+    );
+
+    // unable to execute anything
+    let msg = ExecuteMsg::TransferOwnership(NEW_MAIN_DAO_ADDR.to_string());
+    let res = execute(
+        deps.as_mut(),
+        mock_env(),
+        mock_info(MAIN_DAO_ADDR, &[]),
+        msg,
+    );
+    assert_eq!(
+        res.err().unwrap(),
+        ContractError::PauseError(PauseError::Paused {})
+    );
+
+    let mut env = mock_env();
+    env.block.height += 11;
+
+    // but we can do it after 11 blocks
+    let msg = ExecuteMsg::TransferOwnership(NEW_MAIN_DAO_ADDR.to_string());
+    let res = execute(
+        deps.as_mut(),
+        env.clone(),
+        mock_info(MAIN_DAO_ADDR, &[]),
+        msg,
+    );
+    assert!(res.is_ok());
+
+    env.block.height += 15;
+
+    // pause contracts for 10 blocks from security dao
+    let msg = ExecuteMsg::Pause { duration: 10u64 };
+    let res = execute(
+        deps.as_mut(),
+        env.clone(),
+        mock_info(SECURITY_DAO_ADDR, &[]),
+        msg,
+    );
+    assert!(res.is_ok());
+    let pause_info: PauseInfoResponse =
+        from_binary(&query(deps.as_ref(), env.clone(), QueryMsg::PauseInfo {}).unwrap()).unwrap();
+    assert_eq!(
+        pause_info,
+        PauseInfoResponse::Paused {
+            until_height: env.block.height + 10
+        }
+    );
+
+    // only main dao can unpause contracts
+    let msg = ExecuteMsg::Unpause {};
+    let res = execute(
+        deps.as_mut(),
+        mock_env(),
+        mock_info(NEW_MAIN_DAO_ADDR, &[]),
+        msg,
+    );
+    assert!(res.is_ok(),);
+    let pause_info: PauseInfoResponse =
+        from_binary(&query(deps.as_ref(), mock_env(), QueryMsg::PauseInfo {}).unwrap()).unwrap();
+    assert_eq!(pause_info, PauseInfoResponse::Unpaused {});
 }
