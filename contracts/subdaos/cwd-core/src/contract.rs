@@ -125,7 +125,7 @@ pub fn execute_pause(
 ) -> Result<Response<NeutronMsg>, ContractError> {
     let config: Config = CONFIG.load(deps.storage)?;
 
-    can_pause(&sender, &config.main_dao, config.security_dao)?;
+    can_pause(&sender, &config.main_dao, &config.security_dao)?;
     validate_duration(duration)?;
 
     let paused_until_height: u64 = env.block.height + duration;

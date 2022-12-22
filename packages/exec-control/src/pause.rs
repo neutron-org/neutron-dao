@@ -4,14 +4,13 @@ use thiserror::Error;
 /// Approximately one week given block time = 2sec.
 pub const MAX_PAUSE_DURATION: u64 = 302400;
 
-// checks whether the sender is capable to pause a subDAO
+// checks whether the sender is capable to pause a contract
 pub fn can_pause(
     sender: &Addr,
     main_dao_address: &Addr,
-    security_dao_address: Option<Addr>,
+    security_dao_address: &Addr,
 ) -> Result<(), PauseError> {
-    let authorized = sender == main_dao_address
-        || (security_dao_address.is_some() && sender == &security_dao_address.unwrap());
+    let authorized = sender == main_dao_address || sender == security_dao_address;
 
     if !authorized {
         return Err(PauseError::Unauthorized {});
@@ -20,7 +19,7 @@ pub fn can_pause(
     Ok(())
 }
 
-// checks whether the sender is capable to unpause a subDAO
+// checks whether the sender is capable to unpause a contract
 pub fn can_unpause(sender: &Addr, main_dao_address: &Addr) -> Result<(), PauseError> {
     if sender != main_dao_address {
         return Err(PauseError::Unauthorized {});

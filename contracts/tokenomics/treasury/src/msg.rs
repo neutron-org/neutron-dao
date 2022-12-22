@@ -1,4 +1,5 @@
 use cosmwasm_std::{Decimal, Uint128};
+use cwd_macros::pausable;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -14,8 +15,11 @@ pub struct InstantiateMsg {
     pub distribution_contract: String,
     /// Address of reserve contract
     pub reserve_contract: String,
+    /// Address of security DAO contract
+    pub security_dao_address: String,
 }
 
+#[pausable]
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
@@ -31,6 +35,7 @@ pub enum ExecuteMsg {
         min_period: Option<u64>,
         distribution_contract: Option<String>,
         reserve_contract: Option<String>,
+        security_dao_contract: Option<String>,
     },
 }
 
@@ -54,4 +59,11 @@ pub struct StatsResponse {
 #[serde(rename_all = "snake_case")]
 pub enum DistributeMsg {
     Fund {},
+}
+
+/// Information about if the contract is currently paused.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+pub enum PauseInfoResponse {
+    Paused { until_height: u64 },
+    Unpaused {},
 }

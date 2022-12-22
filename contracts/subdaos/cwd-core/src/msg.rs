@@ -42,7 +42,7 @@ pub struct InstantiateMsg {
     /// Implements the DAO Star standard: https://daostar.one/EIP
     pub dao_uri: Option<String>,
     /// The address of the security DAO. The security DAO is capable of pausing the subDAO.
-    pub security_dao: Option<Addr>,
+    pub security_dao: Addr,
 }
 
 #[pausable]

@@ -6,6 +6,7 @@ use cosmwasm_std::{
     to_binary, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, Empty, Uint128, WasmMsg,
 };
 
+use crate::error::ContractError;
 use crate::{
     contract::{execute, instantiate},
     msg::{DistributeMsg, ExecuteMsg, InstantiateMsg},
@@ -23,6 +24,7 @@ pub fn init_base_contract(deps: DepsMut<Empty>, distribution_rate: &str) {
         reserve_contract: "reserve_contract".to_string(),
         distribution_rate: Decimal::from_str(distribution_rate).unwrap(),
         owner: "owner".to_string(),
+        security_dao_address: "security_address_dao".to_string(),
     };
     let info = mock_info("creator", &coins(2, DENOM));
     instantiate(deps, mock_env(), info, msg).unwrap();
@@ -36,7 +38,10 @@ fn test_transfer_ownership() {
     let res = execute(deps.as_mut(), mock_env(), mock_info("owner", &[]), msg);
     assert!(res.is_ok());
     let config = CONFIG.load(deps.as_ref().storage).unwrap();
-    assert_eq!(config.owner.to_string(), "new_owner".to_string());
+    assert_eq!(
+        config.main_dao_contract.to_string(),
+        "new_owner".to_string()
+    );
 }
 
 #[test]
@@ -46,10 +51,7 @@ fn test_collect_with_no_money() {
     let msg = ExecuteMsg::Distribute {};
     let res = execute(deps.as_mut(), mock_env(), mock_info("anyone", &[]), msg);
     assert!(res.is_err());
-    assert_eq!(
-        res.unwrap_err().to_string(),
-        "Generic error: no new funds to distribute"
-    );
+    assert_eq!(res.unwrap_err(), ContractError::NoFundsToDistribute {});
 }
 
 #[test]
@@ -155,10 +157,11 @@ fn test_update_config_unauthorized() {
         reserve_contract: None,
         distribution_rate: None,
         min_period: None,
+        security_dao_contract: None,
     };
     let res = execute(deps.as_mut(), mock_env(), mock_info("not_owner", &[]), msg);
     assert!(res.is_err());
-    assert_eq!(res.unwrap_err().to_string(), "Generic error: unauthorized");
+    assert_eq!(res.unwrap_err(), ContractError::Unauthorized {});
 }
 
 #[test]
@@ -170,6 +173,7 @@ fn test_update_config_success() {
         reserve_contract: Some("new_reserve_contract".to_string()),
         distribution_rate: Some(Decimal::from_str("0.11").unwrap()),
         min_period: Some(3000),
+        security_dao_contract: Some("security_dao_address_contract".to_string()),
     };
     let res = execute(deps.as_mut(), mock_env(), mock_info("owner", &[]), msg);
     assert!(res.is_ok());
@@ -178,6 +182,10 @@ fn test_update_config_success() {
     assert_eq!(config.reserve_contract, "new_reserve_contract");
     assert_eq!(config.distribution_rate, Decimal::from_str("0.11").unwrap());
     assert_eq!(config.min_period, 3000);
+    assert_eq!(
+        config.security_dao_contract,
+        "security_dao_address_contract"
+    )
 }
 
 #[test]
@@ -189,6 +197,7 @@ fn test_update_distribution_rate_below_the_limit() {
         reserve_contract: None,
         distribution_rate: Some(Decimal::from_str("2").unwrap()),
         min_period: None,
+        security_dao_contract: None,
     };
     let res = execute(deps.as_mut(), mock_env(), mock_info("owner", &[]), msg);
     assert!(res.is_err());

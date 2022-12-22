@@ -17,7 +17,7 @@ pub struct Config {
     /// The address of the main DAO. It's capable of pausing and unpausing subDAO
     pub main_dao: Addr,
     /// The address of the DAO guardian. The security DAO is capable only of pausing the subDAO.
-    pub security_dao: Option<Addr>,
+    pub security_dao: Addr,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]

@@ -1,13 +1,18 @@
+use crate::error::ContractError;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     coins, to_binary, Addr, BankMsg, Binary, CosmosMsg, Decimal, Deps, DepsMut, Env, MessageInfo,
-    Response, StdError, StdResult, Uint128, WasmMsg,
+    Response, StdResult, Uint128, WasmMsg,
 };
+use exec_control::pause::{can_pause, can_unpause, validate_duration, PauseError};
 
-use crate::msg::{DistributeMsg, ExecuteMsg, InstantiateMsg, QueryMsg, StatsResponse};
+use crate::msg::{
+    DistributeMsg, ExecuteMsg, InstantiateMsg, PauseInfoResponse, QueryMsg, StatsResponse,
+};
 use crate::state::{
-    Config, CONFIG, LAST_DISTRIBUTION_TIME, TOTAL_DISTRIBUTED, TOTAL_RECEIVED, TOTAL_RESERVED,
+    Config, CONFIG, LAST_DISTRIBUTION_TIME, PAUSED_UNTIL, TOTAL_DISTRIBUTED, TOTAL_RECEIVED,
+    TOTAL_RESERVED,
 };
 
 //--------------------------------------------------------------------------------------------------
@@ -27,7 +32,8 @@ pub fn instantiate(
         distribution_contract: deps.api.addr_validate(msg.distribution_contract.as_str())?,
         reserve_contract: deps.api.addr_validate(msg.reserve_contract.as_str())?,
         distribution_rate: msg.distribution_rate,
-        owner: deps.api.addr_validate(&msg.owner)?,
+        main_dao_contract: deps.api.addr_validate(&msg.owner)?,
+        security_dao_contract: deps.api.addr_validate(&msg.security_dao_address)?,
     };
     CONFIG.save(deps.storage, &config)?;
     TOTAL_RECEIVED.save(deps.storage, &Uint128::zero())?;
@@ -38,13 +44,89 @@ pub fn instantiate(
     Ok(Response::new())
 }
 
+pub fn execute_pause(
+    deps: DepsMut,
+    env: Env,
+    sender: Addr,
+    duration: u64,
+) -> Result<Response, ContractError> {
+    let config: Config = CONFIG.load(deps.storage)?;
+
+    can_pause(
+        &sender,
+        &config.main_dao_contract,
+        &config.security_dao_contract,
+    )?;
+    validate_duration(duration)?;
+
+    let paused_until_height: u64 = env.block.height + duration;
+
+    let already_paused_until = PAUSED_UNTIL.load(deps.storage)?;
+    if already_paused_until.unwrap_or(0u64) >= paused_until_height {
+        return Err(ContractError::PauseError(PauseError::InvalidDuration(
+            "contracts are already paused for a greater or equal duration".to_string(),
+        )));
+    }
+
+    PAUSED_UNTIL.save(deps.storage, &Some(paused_until_height))?;
+
+    Ok(Response::new()
+        .add_attribute("action", "execute_pause")
+        .add_attribute("sender", sender)
+        .add_attribute("paused_until_height", paused_until_height.to_string()))
+}
+
+pub fn execute_unpause(deps: DepsMut, sender: Addr) -> Result<Response, ContractError> {
+    let config: Config = CONFIG.load(deps.storage)?;
+
+    can_unpause(&sender, &config.main_dao_contract)?;
+
+    PAUSED_UNTIL.save(deps.storage, &None)?;
+
+    Ok(Response::new()
+        .add_attribute("action", "execute_unpause")
+        .add_attribute("sender", sender))
+}
+
+fn get_pause_info(deps: Deps, env: &Env) -> StdResult<PauseInfoResponse> {
+    Ok(match PAUSED_UNTIL.may_load(deps.storage)?.unwrap_or(None) {
+        Some(paused_until_height) => {
+            if env.block.height.ge(&paused_until_height) {
+                PauseInfoResponse::Unpaused {}
+            } else {
+                PauseInfoResponse::Paused {
+                    until_height: paused_until_height,
+                }
+            }
+        }
+        None => PauseInfoResponse::Unpaused {},
+    })
+}
+
 //--------------------------------------------------------------------------------------------------
 // Executions
 //--------------------------------------------------------------------------------------------------
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> StdResult<Response> {
+pub fn execute(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    msg: ExecuteMsg,
+) -> Result<Response, ContractError> {
     let api = deps.api;
+
+    match get_pause_info(deps.as_ref(), &env)? {
+        PauseInfoResponse::Paused { .. } => {
+            return match msg {
+                ExecuteMsg::Pause { duration } => execute_pause(deps, env, info.sender, duration),
+                ExecuteMsg::Unpause {} => execute_unpause(deps, info.sender),
+                _ => Err(ContractError::PauseError(PauseError::Paused {})),
+            };
+        }
+        PauseInfoResponse::Unpaused {} => (),
+    }
+
     match msg {
         // permissioned - owner
         ExecuteMsg::TransferOwnership(new_owner) => {
@@ -59,6 +141,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
             min_period,
             distribution_contract,
             reserve_contract,
+            security_dao_contract,
         } => execute_update_config(
             deps,
             info,
@@ -66,7 +149,10 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
             min_period,
             distribution_contract,
             reserve_contract,
+            security_dao_contract,
         ),
+        ExecuteMsg::Pause { duration } => execute_pause(deps, env, info.sender, duration),
+        ExecuteMsg::Unpause {} => execute_unpause(deps, info.sender),
     }
 }
 
@@ -74,16 +160,16 @@ pub fn execute_transfer_ownership(
     deps: DepsMut,
     info: MessageInfo,
     new_owner_addr: Addr,
-) -> StdResult<Response> {
+) -> Result<Response, ContractError> {
     let config = CONFIG.load(deps.storage)?;
     let sender_addr = info.sender;
-    let old_owner = config.owner;
+    let old_owner = config.main_dao_contract;
     if sender_addr != old_owner {
-        return Err(StdError::generic_err("unauthorized"));
+        return Err(ContractError::Unauthorized {});
     }
 
     CONFIG.update(deps.storage, |mut config| -> StdResult<_> {
-        config.owner = new_owner_addr.clone();
+        config.main_dao_contract = new_owner_addr.clone();
         Ok(config)
     })?;
 
@@ -100,10 +186,11 @@ pub fn execute_update_config(
     min_period: Option<u64>,
     distribution_contract: Option<String>,
     reserve_contract: Option<String>,
-) -> StdResult<Response> {
+    security_dao_contract: Option<String>,
+) -> Result<Response, ContractError> {
     let mut config: Config = CONFIG.load(deps.storage)?;
-    if info.sender != config.owner {
-        return Err(StdError::generic_err("unauthorized"));
+    if info.sender != config.main_dao_contract {
+        return Err(ContractError::Unauthorized {});
     }
 
     if let Some(min_period) = min_period {
@@ -115,10 +202,13 @@ pub fn execute_update_config(
     if let Some(reserve_contract) = reserve_contract {
         config.reserve_contract = deps.api.addr_validate(reserve_contract.as_str())?;
     }
+    if let Some(security_dao_contract) = security_dao_contract {
+        config.security_dao_contract = deps.api.addr_validate(security_dao_contract.as_str())?;
+    }
     if let Some(distribution_rate) = distribution_rate {
         if (distribution_rate > Decimal::one()) || (distribution_rate < Decimal::zero()) {
-            return Err(StdError::generic_err(
-                "distribution_rate must be between 0 and 1",
+            return Err(ContractError::InvalidDistributionRate(
+                "distribution_rate must be between 0 and 1".to_string(),
             ));
         }
         config.distribution_rate = distribution_rate;
@@ -132,15 +222,15 @@ pub fn execute_update_config(
         .add_attribute("min_period", config.min_period.to_string())
         .add_attribute("distribution_contract", config.distribution_contract)
         .add_attribute("distribution_rate", config.distribution_rate.to_string())
-        .add_attribute("owner", config.owner))
+        .add_attribute("owner", config.main_dao_contract))
 }
 
-pub fn execute_distribute(deps: DepsMut, env: Env) -> StdResult<Response> {
+pub fn execute_distribute(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
     let config: Config = CONFIG.load(deps.storage)?;
     let denom = config.denom;
     let current_time = env.block.time.seconds();
     if current_time - LAST_DISTRIBUTION_TIME.load(deps.storage)? < config.min_period {
-        return Err(StdError::generic_err("too soon to distribute"));
+        return Err(ContractError::TooSoonToDistribute {});
     }
     LAST_DISTRIBUTION_TIME.save(deps.storage, &current_time)?;
     let current_balance = deps
@@ -149,9 +239,7 @@ pub fn execute_distribute(deps: DepsMut, env: Env) -> StdResult<Response> {
         .amount;
 
     if current_balance.is_zero() {
-        return Err(StdError::GenericErr {
-            msg: "no new funds to distribute".to_string(),
-        });
+        return Err(ContractError::NoFundsToDistribute {});
     }
 
     let to_distribute = current_balance * config.distribution_rate;
