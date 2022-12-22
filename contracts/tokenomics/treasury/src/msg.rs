@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct InstantiateMsg {
-    pub owner: String,
+    pub main_dao_address: String,
     pub denom: String,
     /// Distribution rate (0-1) which goes to distribution contract
     pub distribution_rate: Decimal,
@@ -45,6 +45,8 @@ pub enum QueryMsg {
     /// The contract's configurations; returns [`ConfigResponse`]
     Config {},
     Stats {},
+    /// Returns information about if the contract is currently paused.
+    PauseInfo {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]

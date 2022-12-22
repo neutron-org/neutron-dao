@@ -32,7 +32,7 @@ pub fn instantiate(
         distribution_contract: deps.api.addr_validate(msg.distribution_contract.as_str())?,
         reserve_contract: deps.api.addr_validate(msg.reserve_contract.as_str())?,
         distribution_rate: msg.distribution_rate,
-        main_dao_contract: deps.api.addr_validate(&msg.owner)?,
+        main_dao_contract: deps.api.addr_validate(&msg.main_dao_address)?,
         security_dao_contract: deps.api.addr_validate(&msg.security_dao_address)?,
     };
     CONFIG.save(deps.storage, &config)?;
@@ -40,6 +40,7 @@ pub fn instantiate(
     TOTAL_DISTRIBUTED.save(deps.storage, &Uint128::zero())?;
     TOTAL_RESERVED.save(deps.storage, &Uint128::zero())?;
     LAST_DISTRIBUTION_TIME.save(deps.storage, &0)?;
+    PAUSED_UNTIL.save(deps.storage, &None)?;
 
     Ok(Response::new())
 }
@@ -287,11 +288,16 @@ pub fn execute_distribute(deps: DepsMut, env: Env) -> Result<Response, ContractE
 //--------------------------------------------------------------------------------------------------
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config {} => to_binary(&query_config(deps)?),
         QueryMsg::Stats {} => to_binary(&query_stats(deps)?),
+        QueryMsg::PauseInfo {} => query_paused(deps, env),
     }
+}
+
+pub fn query_paused(deps: Deps, env: Env) -> StdResult<Binary> {
+    to_binary(&get_pause_info(deps, &env)?)
 }
 
 pub fn query_config(deps: Deps) -> StdResult<Config> {
