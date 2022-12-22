@@ -129,6 +129,14 @@ pub fn execute_pause(
     validate_duration(duration)?;
 
     let paused_until_height: u64 = env.block.height + duration;
+
+    let already_paused_until = PAUSED_UNTIL.load(deps.storage)?;
+    if already_paused_until.unwrap_or(0u64) >= paused_until_height {
+        return Err(ContractError::PauseError(PauseError::InvalidDuration(
+            "contracts are already paused for a greater or equal duration".to_string(),
+        )));
+    }
+
     PAUSED_UNTIL.save(deps.storage, &Some(paused_until_height))?;
 
     Ok(Response::new()

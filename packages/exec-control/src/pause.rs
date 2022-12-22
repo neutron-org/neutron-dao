@@ -32,7 +32,10 @@ pub fn can_unpause(sender: &Addr, main_dao_address: &Addr) -> Result<(), PauseEr
 /// checks whether the duration is not greater than MAX_PAUSE_DURATION.
 pub fn validate_duration(duration: u64) -> Result<(), PauseError> {
     if duration.gt(&MAX_PAUSE_DURATION) {
-        return Err(PauseError::PauseDurationTooBig {});
+        return Err(PauseError::InvalidDuration(format!(
+            "Pause duration is too big: it's only possible to pause the contract for {} blocks",
+            MAX_PAUSE_DURATION
+        )));
     }
     Ok(())
 }
@@ -42,11 +45,8 @@ pub enum PauseError {
     #[error("Unauthorized.")]
     Unauthorized {},
 
-    #[error(
-        "Pause duration is too big: it's only possible to pause the contract for {} blocks.",
-        MAX_PAUSE_DURATION
-    )]
-    PauseDurationTooBig {},
+    #[error("invalid duration")]
+    InvalidDuration(String),
 
     #[error("Contract execution is paused.")]
     Paused {},
