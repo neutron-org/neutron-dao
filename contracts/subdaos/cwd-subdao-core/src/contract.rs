@@ -141,15 +141,18 @@ pub fn execute_proposal_hook(
     sender: Addr,
     msgs: Vec<CosmosMsg<NeutronMsg>>,
 ) -> Result<Response<NeutronMsg>, ContractError> {
+    deps.api.debug("xxx: core 1");
     let module = PROPOSAL_MODULES
         .may_load(deps.storage, sender.clone())?
         .ok_or(ContractError::Unauthorized {})?;
 
+    deps.api.debug("xxx: core 2");
     // Check that the message has come from an active module
     if module.status != ProposalModuleStatus::Enabled {
         return Err(ContractError::ModuleDisabledCannotExecute { address: sender });
     }
 
+    deps.api.debug("xxx: core 3");
     Ok(Response::default()
         .add_attribute("action", "execute_proposal_hook")
         .add_messages(msgs))

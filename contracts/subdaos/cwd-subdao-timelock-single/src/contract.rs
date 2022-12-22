@@ -93,8 +93,11 @@ pub fn execute_timelock_proposal(
     proposal_id: u64,
     msgs: Vec<CosmosMsg<NeutronMsg>>,
 ) -> Result<Response<NeutronMsg>, ContractError> {
+    deps.api.debug("xxx: timelock 1");
     let config = CONFIG.load(deps.storage)?;
+    deps.api.debug("xxx: timelock 2");
     if config.owner != Some(info.sender.clone()) {
+        deps.api.debug("xxx: timelock 3");
         return Err(ContractError::Unauthorized {});
     }
 
@@ -106,6 +109,7 @@ pub fn execute_timelock_proposal(
     };
 
     PROPOSALS.save(deps.storage, proposal_id, &proposal)?;
+    deps.api.debug("xxx: timelock 3");
 
     Ok(Response::default()
         .add_attribute("action", "timelock_proposal")
@@ -236,9 +240,9 @@ pub fn execute_update_config(
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config {} => to_binary(&CONFIG.load(deps.storage)?),
-        QueryMsg::Proposal { proposal_id } => to_binary(&query_proposal(deps, proposal_id)?),
+        QueryMsg::Proposal { proposal_id } => query_proposal(deps, proposal_id),
         QueryMsg::ListProposals { start_after, limit } => {
-            to_binary(&query_list_proposals(deps, start_after, limit)?)
+            query_list_proposals(deps, start_after, limit)
         }
     }
 }
@@ -286,5 +290,8 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
         None => Err(ContractError::NoSuchProposal { id: proposal_id }),
     })?;
 
-    Ok(Response::new().add_attribute("proposal_execution_failed", proposal_id.to_string()))
+    Ok(Response::new().add_attribute(
+        "timelocked_proposal_execution_failed",
+        proposal_id.to_string(),
+    ))
 }

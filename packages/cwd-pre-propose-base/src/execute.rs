@@ -1,6 +1,7 @@
 use cosmwasm_std::{
     to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, WasmMsg,
 };
+use std::fmt::Debug;
 
 use cw2::set_contract_version;
 
@@ -23,7 +24,7 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 impl<ProposalMessage> PreProposeContract<ProposalMessage>
 where
-    ProposalMessage: Serialize,
+    ProposalMessage: Serialize + Debug,
 {
     pub fn instantiate(
         &self,
