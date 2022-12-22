@@ -16,7 +16,7 @@ use crate::msg::{ExecuteMsg, InitialItem, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::query::{DumpStateResponse, GetItemResponse, PauseInfoResponse, SubDao};
 use crate::state::{
     Config, ProposalModule, ProposalModuleStatus, ACTIVE_PROPOSAL_MODULE_COUNT, CONFIG, ITEMS,
-    PAUSED, PROPOSAL_MODULES, SUBDAO_LIST, TOTAL_PROPOSAL_MODULE_COUNT, VOTING_REGISTRY_MODULE,
+    PAUSED, PROPOSAL_MODULES, SUBDAO_LIST, TOTAL_PROPOSAL_MODULE_COUNT, VOTE_MODULE,
 };
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:cwd-subdao-core";
@@ -342,7 +342,7 @@ pub fn query_config(deps: Deps) -> StdResult<Binary> {
 }
 
 pub fn query_voting_module(deps: Deps) -> StdResult<Binary> {
-    let voting_module = VOTING_REGISTRY_MODULE.load(deps.storage)?;
+    let voting_module = VOTE_MODULE.load(deps.storage)?;
     to_binary(&voting_module)
 }
 
@@ -422,7 +422,7 @@ pub fn query_paused(deps: Deps, env: Env) -> StdResult<Binary> {
 
 pub fn query_dump_state(deps: Deps, env: Env) -> StdResult<Binary> {
     let config = CONFIG.load(deps.storage)?;
-    let voting_registry_module = VOTING_REGISTRY_MODULE.load(deps.storage)?;
+    let voting_registry_module = VOTE_MODULE.load(deps.storage)?;
     let proposal_modules = PROPOSAL_MODULES
         .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
         .map(|kv| Ok(kv?.1))
@@ -447,7 +447,7 @@ pub fn query_voting_power_at_height(
     address: String,
     height: Option<u64>,
 ) -> StdResult<Binary> {
-    let voting_registry_module = VOTING_REGISTRY_MODULE.load(deps.storage)?;
+    let voting_registry_module = VOTE_MODULE.load(deps.storage)?;
     let voting_power: voting::VotingPowerAtHeightResponse = deps.querier.query_wasm_smart(
         voting_registry_module,
         &voting::Query::VotingPowerAtHeight { height, address },
@@ -456,7 +456,7 @@ pub fn query_voting_power_at_height(
 }
 
 pub fn query_total_power_at_height(deps: Deps, height: Option<u64>) -> StdResult<Binary> {
-    let voting_registry_module = VOTING_REGISTRY_MODULE.load(deps.storage)?;
+    let voting_registry_module = VOTE_MODULE.load(deps.storage)?;
     let total_power: voting::TotalPowerAtHeightResponse = deps.querier.query_wasm_smart(
         voting_registry_module,
         &voting::Query::TotalPowerAtHeight { height },
@@ -553,8 +553,8 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
 
         VOTE_MODULE_INSTANTIATE_REPLY_ID => {
             let res = parse_reply_instantiate_data(msg)?;
-            let voting_registry_addr = deps.api.addr_validate(&res.contract_address)?;
-            let current = VOTING_REGISTRY_MODULE.may_load(deps.storage)?;
+            let vote_module_addr = deps.api.addr_validate(&res.contract_address)?;
+            let current = VOTE_MODULE.may_load(deps.storage)?;
 
             // Make sure a bug in instantiation isn't causing us to
             // make more than one voting module.
@@ -562,15 +562,15 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
                 return Err(ContractError::MultipleVotingModules {});
             }
 
-            VOTING_REGISTRY_MODULE.save(deps.storage, &voting_registry_addr)?;
+            VOTE_MODULE.save(deps.storage, &vote_module_addr)?;
 
-            Ok(Response::default().add_attribute("voting_regsitry_module", voting_registry_addr))
+            Ok(Response::default().add_attribute("vote_module", vote_module_addr))
         }
         VOTE_MODULE_UPDATE_REPLY_ID => {
             let res = parse_reply_instantiate_data(msg)?;
             let voting_registry_addr = deps.api.addr_validate(&res.contract_address)?;
 
-            VOTING_REGISTRY_MODULE.save(deps.storage, &voting_registry_addr)?;
+            VOTE_MODULE.save(deps.storage, &voting_registry_addr)?;
 
             Ok(Response::default().add_attribute("voting_registry_module", voting_registry_addr))
         }

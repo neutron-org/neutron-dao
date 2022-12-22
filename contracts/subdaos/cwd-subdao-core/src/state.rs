@@ -44,7 +44,7 @@ pub const CONFIG: Item<Config> = Item::new("config_v2");
 pub const PAUSED: Item<Expiration> = Item::new("paused");
 
 /// The voting module associated with this contract.
-pub const VOTING_REGISTRY_MODULE: Item<Addr> = Item::new("voting_module");
+pub const VOTE_MODULE: Item<Addr> = Item::new("voting_module");
 
 /// The proposal modules associated with this contract.
 /// When we change the data format of this map, we update the key (previously "proposal_modules")

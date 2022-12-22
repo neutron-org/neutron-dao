@@ -90,7 +90,7 @@ PRE_PROPOSE_INIT_MSG='{
     "denom": {
       "token": {
         "denom": {
-          "native": "untrn"
+          "native": "stake"
         }
       }
     },
@@ -159,5 +159,60 @@ CORE_CONTRACT_INIT_MSG='{
 }'
 
 RES=$(${BIN} tx wasm instantiate $CORE_CONTRACT_CODE_ID "$CORE_CONTRACT_INIT_MSG" --from ${USERNAME_1} --admin ${ADMIN_ADDR} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --label "init"  --keyring-backend test --gas-prices 0.0025stake --gas auto --gas-adjustment 1.4 --home ${HOME_1} --node tcp://127.0.0.1:16657)
+
 CORE_CONTRACT_ADDR=$(echo $RES | jq -r '.logs[0].events[0].attributes[0].value')
 echo "CORE_CONTRACT_ADDR:" $CORE_CONTRACT_ADDR
+
+CW4_VOTE_CONTRACT_ADDR=$(echo $RES | jq -r '.logs[0].events[4].attributes[16].value')
+echo "CW4_VOTE_CONTRACT_ADDR:" $CW4_VOTE_CONTRACT_ADDR
+
+PROPOSAL_SINGLE_CONTRACT_ADDR=$(echo $RES | jq -r '.logs[0].events[4].attributes[24].value')
+echo "PROPOSAL_SINGLE_CONTRACT_ADDR:" $PROPOSAL_SINGLE_CONTRACT_ADDR
+
+PRE_PROPOSE_SINGLE_CONTRACT_ADDR=$(echo $RES | jq -r '.logs[0].events[4].attributes[26].value')
+echo "PRE_PROPOSE_SINGLE_CONTRACT_ADDR:" $PRE_PROPOSE_SINGLE_CONTRACT_ADDR
+
+echo """
+#############################################################################
+#
+# Publishing a bank send proposal
+#
+#############################################################################
+"""
+
+RES=$(${BIN} tx bank send ${ADMIN_ADDR} ${CORE_CONTRACT_ADDR}  5000stake  -y --chain-id ${CHAIN_ID_1} --output json \
+  --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 --keyring-backend test \
+  --home ${HOME_1} --node tcp://127.0.0.1:16657)
+echo "Sent 5000stake from ADMIN_ADDR to CORE_CONTRACT_ADDR, tx hash:" $(echo $RES | jq -r '.txhash')
+
+PROPOSAL_MSG='{
+  "propose":{
+    "msg":{
+      "propose":{
+        "title":"TEST_TIMELOCK_PROPOSAL",
+        "description":"A proposal to test the timelock functionality",
+        "msgs":[
+          {
+            "bank":{
+              "send":{
+                "to_address":"'"${ADMIN_ADDR}"'",
+                "amount":[
+                  {
+                    "denom":"stake",
+                    "amount":"10"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}
+'
+
+RES=$(${BIN} tx wasm execute $PRE_PROPOSE_SINGLE_CONTRACT_ADDR "$PROPOSAL_MSG" --amount 10stake --from ${ADMIN_ADDR} -y \
+  --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 \
+  --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
+echo "Submitted proposal, tx hash:" $(echo $RES | jq -r '.txhash')
