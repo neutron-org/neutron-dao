@@ -62,7 +62,7 @@ echo """
 """
 
 TIMELOCK_SINGLE_CONTRACT_INIT_MSG='{
-  "timelock_duration": 60,
+  "timelock_duration": 20,
   "owner": {
     "address": {
       "addr": "'"${ADMIN_ADDR}"'"
@@ -223,8 +223,13 @@ RES=$(${BIN} tx wasm execute $PROPOSAL_SINGLE_CONTRACT_ADDR '{"vote": {"proposal
 echo "> Submitted a YES vote (1 / 1 members), tx hash:" $(echo $RES | jq -r '.txhash')
 
 RES=$(${BIN} q wasm contract-state smart $PROPOSAL_SINGLE_CONTRACT_ADDR '{"proposal": {"proposal_id": 1}}'  --chain-id ${CHAIN_ID_1} --output json  --home ${HOME_1} --node tcp://127.0.0.1:16657)
-PROPOSAL_STATUS_AFTER_VOTE_IN_PROPOSAL_CONTRACT=$(echo $RES | jq -r '.data.proposal.status')
-echo '> Proposal status [proposal contract] should be "passed":' ${PROPOSAL_STATUS_AFTER_VOTE_IN_PROPOSAL_CONTRACT}
+PROPOSAL_STATUS=$(echo $RES | jq -r '.data.proposal.status')
+if [ $PROPOSAL_STATUS == "passed"  ]; then
+  echo '> Proposal status (in proposal contract) is "passed", all good'
+else
+  echo "ERROR: Proposal status is \"${PROPOSAL_STATUS}\", should be \"timelocked\""
+  exit 1
+fi
 
 RES=$(${BIN} tx wasm execute $PROPOSAL_SINGLE_CONTRACT_ADDR '{"execute": {"proposal_id": 1}}'  --from ${ADMIN_ADDR} \
   -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 \
@@ -232,8 +237,13 @@ RES=$(${BIN} tx wasm execute $PROPOSAL_SINGLE_CONTRACT_ADDR '{"execute": {"propo
 echo "> Execute the proposal (should send it to timelock), tx hash:" $(echo $RES | jq -r '.txhash')
 
 RES=$(${BIN} q wasm contract-state smart $TIMELOCK_SINGLE_CONTRACT_ADDR '{"proposal": {"proposal_id": 1}}'  --chain-id ${CHAIN_ID_1} --output json  --home ${HOME_1} --node tcp://127.0.0.1:16657)
-PROPOSAL_STATUS_AFTER_VOTE_IN_TIMELOCK_CONTRACT=$(echo $RES | jq -r '.data.status')
-echo '> Proposal status [timelock contract] should be "timelocked":' ${PROPOSAL_STATUS_AFTER_VOTE_IN_TIMELOCK_CONTRACT}
+PROPOSAL_STATUS=$(echo $RES | jq -r '.data.status')
+if [ $PROPOSAL_STATUS == "timelocked"  ]; then
+  echo '> Proposal status (in timelock contract) is "timelocked", all good'
+else
+  echo "ERROR: Proposal status is \"${PROPOSAL_STATUS}\", should be \"timelocked\""
+  exit 1
+fi
 
 ${BIN} tx wasm execute $TIMELOCK_SINGLE_CONTRACT_ADDR '{"execute_proposal": {"proposal_id": 1}}'  --from ${ADMIN_ADDR} \
   -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 \
@@ -241,15 +251,25 @@ ${BIN} tx wasm execute $TIMELOCK_SINGLE_CONTRACT_ADDR '{"execute_proposal": {"pr
 echo "> Tried to execute the proposal before timelock expires (suppressing output)"
 
 RES=$(${BIN} q wasm contract-state smart $TIMELOCK_SINGLE_CONTRACT_ADDR '{"proposal": {"proposal_id": 1}}'  --chain-id ${CHAIN_ID_1} --output json  --home ${HOME_1} --node tcp://127.0.0.1:16657)
-PROPOSAL_STATUS_AFTER_VOTE_IN_TIMELOCK_CONTRACT=$(echo $RES | jq -r '.data.status')
-echo '> Proposal status [timelock contract] (should be *still* "timelocked"):' ${PROPOSAL_STATUS_AFTER_VOTE_IN_TIMELOCK_CONTRACT}
+PROPOSAL_STATUS=$(echo $RES | jq -r '.data.status')
+if [ $PROPOSAL_STATUS == "timelocked"  ]; then
+  echo '> Proposal status (in timelock contract) is still "timelocked", all good'
+else
+  echo "ERROR: Proposal status is \"${PROPOSAL_STATUS}\", should be \"timelocked\""
+  exit 1
+fi
 
-echo "> Waiting for 60 seconds for the timelock to expire..."
-sleep 60
+echo "> Waiting for 20 seconds for the timelock to expire..."
+sleep 20
 
 RES=$(${BIN} tx wasm execute $TIMELOCK_SINGLE_CONTRACT_ADDR '{"execute_proposal": {"proposal_id": 1}}'  --from ${ADMIN_ADDR} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
 echo "> Tried to execute the proposal *after* timelock expires, tx hash:" $(echo $RES | jq -r '.txhash')
 
 RES=$(${BIN} q wasm contract-state smart $TIMELOCK_SINGLE_CONTRACT_ADDR '{"proposal": {"proposal_id": 1}}'  --chain-id ${CHAIN_ID_1} --output json  --home ${HOME_1} --node tcp://127.0.0.1:16657)
-PROPOSAL_STATUS_AFTER_VOTE_IN_TIMELOCK_CONTRACT=$(echo $RES | jq -r '.data.status')
-echo '> Proposal status [timelock contract] (should be "executed"):' ${PROPOSAL_STATUS_AFTER_VOTE_IN_TIMELOCK_CONTRACT}
+PROPOSAL_STATUS=$(echo $RES | jq -r '.data.status')
+if [ $PROPOSAL_STATUS == "executed"  ]; then
+  echo '> Proposal status (in timelock contract) is "executed", all good'
+else
+  echo "ERROR: Proposal status is \"${PROPOSAL_STATUS}\", should be \"executed\""
+  exit 1
+fi
