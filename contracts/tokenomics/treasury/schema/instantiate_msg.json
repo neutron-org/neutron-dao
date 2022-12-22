@@ -6,9 +6,10 @@
     "denom",
     "distribution_contract",
     "distribution_rate",
+    "main_dao_address",
     "min_period",
-    "owner",
-    "reserve_contract"
+    "reserve_contract",
+    "security_dao_address"
   ],
   "properties": {
     "denom": {
@@ -26,17 +27,21 @@
         }
       ]
     },
+    "main_dao_address": {
+      "type": "string"
+    },
     "min_period": {
       "description": "Minimum period between distribution calls",
       "type": "integer",
       "format": "uint64",
       "minimum": 0.0
     },
-    "owner": {
-      "type": "string"
-    },
     "reserve_contract": {
       "description": "Address of reserve contract",
+      "type": "string"
+    },
+    "security_dao_address": {
+      "description": "Address of security DAO contract",
       "type": "string"
     }
   },

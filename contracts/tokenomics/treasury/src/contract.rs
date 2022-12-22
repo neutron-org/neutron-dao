@@ -32,8 +32,8 @@ pub fn instantiate(
         distribution_contract: deps.api.addr_validate(msg.distribution_contract.as_str())?,
         reserve_contract: deps.api.addr_validate(msg.reserve_contract.as_str())?,
         distribution_rate: msg.distribution_rate,
-        main_dao_contract: deps.api.addr_validate(&msg.main_dao_address)?,
-        security_dao_contract: deps.api.addr_validate(&msg.security_dao_address)?,
+        main_dao_address: deps.api.addr_validate(&msg.main_dao_address)?,
+        security_dao_address: deps.api.addr_validate(&msg.security_dao_address)?,
     };
     CONFIG.save(deps.storage, &config)?;
     TOTAL_RECEIVED.save(deps.storage, &Uint128::zero())?;
@@ -55,8 +55,8 @@ pub fn execute_pause(
 
     can_pause(
         &sender,
-        &config.main_dao_contract,
-        &config.security_dao_contract,
+        &config.main_dao_address,
+        &config.security_dao_address,
     )?;
     validate_duration(duration)?;
 
@@ -80,7 +80,7 @@ pub fn execute_pause(
 pub fn execute_unpause(deps: DepsMut, sender: Addr) -> Result<Response, ContractError> {
     let config: Config = CONFIG.load(deps.storage)?;
 
-    can_unpause(&sender, &config.main_dao_contract)?;
+    can_unpause(&sender, &config.main_dao_address)?;
 
     PAUSED_UNTIL.save(deps.storage, &None)?;
 
@@ -142,7 +142,7 @@ pub fn execute(
             min_period,
             distribution_contract,
             reserve_contract,
-            security_dao_contract,
+            security_dao_address,
         } => execute_update_config(
             deps,
             info,
@@ -150,7 +150,7 @@ pub fn execute(
             min_period,
             distribution_contract,
             reserve_contract,
-            security_dao_contract,
+            security_dao_address,
         ),
         ExecuteMsg::Pause { duration } => execute_pause(deps, env, info.sender, duration),
         ExecuteMsg::Unpause {} => execute_unpause(deps, info.sender),
@@ -164,13 +164,13 @@ pub fn execute_transfer_ownership(
 ) -> Result<Response, ContractError> {
     let config = CONFIG.load(deps.storage)?;
     let sender_addr = info.sender;
-    let old_owner = config.main_dao_contract;
+    let old_owner = config.main_dao_address;
     if sender_addr != old_owner {
         return Err(ContractError::Unauthorized {});
     }
 
     CONFIG.update(deps.storage, |mut config| -> StdResult<_> {
-        config.main_dao_contract = new_owner_addr.clone();
+        config.main_dao_address = new_owner_addr.clone();
         Ok(config)
     })?;
 
@@ -187,10 +187,10 @@ pub fn execute_update_config(
     min_period: Option<u64>,
     distribution_contract: Option<String>,
     reserve_contract: Option<String>,
-    security_dao_contract: Option<String>,
+    security_dao_address: Option<String>,
 ) -> Result<Response, ContractError> {
     let mut config: Config = CONFIG.load(deps.storage)?;
-    if info.sender != config.main_dao_contract {
+    if info.sender != config.main_dao_address {
         return Err(ContractError::Unauthorized {});
     }
 
@@ -203,8 +203,8 @@ pub fn execute_update_config(
     if let Some(reserve_contract) = reserve_contract {
         config.reserve_contract = deps.api.addr_validate(reserve_contract.as_str())?;
     }
-    if let Some(security_dao_contract) = security_dao_contract {
-        config.security_dao_contract = deps.api.addr_validate(security_dao_contract.as_str())?;
+    if let Some(security_dao_address) = security_dao_address {
+        config.security_dao_address = deps.api.addr_validate(security_dao_address.as_str())?;
     }
     if let Some(distribution_rate) = distribution_rate {
         if (distribution_rate > Decimal::one()) || (distribution_rate < Decimal::zero()) {
@@ -223,7 +223,7 @@ pub fn execute_update_config(
         .add_attribute("min_period", config.min_period.to_string())
         .add_attribute("distribution_contract", config.distribution_contract)
         .add_attribute("distribution_rate", config.distribution_rate.to_string())
-        .add_attribute("owner", config.main_dao_contract))
+        .add_attribute("owner", config.main_dao_address))
 }
 
 pub fn execute_distribute(deps: DepsMut, env: Env) -> Result<Response, ContractError> {

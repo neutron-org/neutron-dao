@@ -41,10 +41,7 @@ fn test_transfer_ownership() {
     let res = execute(deps.as_mut(), mock_env(), mock_info("main_dao", &[]), msg);
     assert!(res.is_ok());
     let config = CONFIG.load(deps.as_ref().storage).unwrap();
-    assert_eq!(
-        config.main_dao_contract.to_string(),
-        "new_owner".to_string()
-    );
+    assert_eq!(config.main_dao_address.to_string(), "new_owner".to_string());
 }
 
 #[test]
@@ -236,7 +233,7 @@ fn test_update_config_unauthorized() {
         reserve_contract: None,
         distribution_rate: None,
         min_period: None,
-        security_dao_contract: None,
+        security_dao_address: None,
     };
     let res = execute(deps.as_mut(), mock_env(), mock_info("not_owner", &[]), msg);
     assert!(res.is_err());
@@ -252,7 +249,7 @@ fn test_update_config_success() {
         reserve_contract: Some("new_reserve_contract".to_string()),
         distribution_rate: Some(Decimal::from_str("0.11").unwrap()),
         min_period: Some(3000),
-        security_dao_contract: Some("security_dao_address_contract".to_string()),
+        security_dao_address: Some("security_dao_address_contract".to_string()),
     };
     let res = execute(deps.as_mut(), mock_env(), mock_info("main_dao", &[]), msg);
     assert!(res.is_ok());
@@ -261,10 +258,7 @@ fn test_update_config_success() {
     assert_eq!(config.reserve_contract, "new_reserve_contract");
     assert_eq!(config.distribution_rate, Decimal::from_str("0.11").unwrap());
     assert_eq!(config.min_period, 3000);
-    assert_eq!(
-        config.security_dao_contract,
-        "security_dao_address_contract"
-    )
+    assert_eq!(config.security_dao_address, "security_dao_address_contract")
 }
 
 #[test]
@@ -276,7 +270,7 @@ fn test_update_distribution_rate_below_the_limit() {
         reserve_contract: None,
         distribution_rate: Some(Decimal::from_str("2").unwrap()),
         min_period: None,
-        security_dao_contract: None,
+        security_dao_address: None,
     };
     let res = execute(deps.as_mut(), mock_env(), mock_info("main_dao", &[]), msg);
     assert!(res.is_err());

@@ -16,10 +16,10 @@ pub struct Config {
     pub denom: String,
 
     /// Address of the main DAO contract
-    pub main_dao_contract: Addr,
+    pub main_dao_address: Addr,
 
     /// Address of the security DAO contract
-    pub security_dao_contract: Addr,
+    pub security_dao_address: Addr,
 }
 
 pub const TOTAL_RECEIVED: Item<Uint128> = Item::new("total_received");

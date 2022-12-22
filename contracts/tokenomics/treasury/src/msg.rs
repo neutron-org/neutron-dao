@@ -35,7 +35,7 @@ pub enum ExecuteMsg {
         min_period: Option<u64>,
         distribution_contract: Option<String>,
         reserve_contract: Option<String>,
-        security_dao_contract: Option<String>,
+        security_dao_address: Option<String>,
     },
 }
 
