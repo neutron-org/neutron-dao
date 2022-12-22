@@ -93,12 +93,12 @@ pub fn execute_timelock_proposal(
     proposal_id: u64,
     msgs: Vec<CosmosMsg<NeutronMsg>>,
 ) -> Result<Response<NeutronMsg>, ContractError> {
-    deps.api.debug("xxx: timelock 1");
     let config = CONFIG.load(deps.storage)?;
-    deps.api.debug("xxx: timelock 2");
+
     if config.owner != Some(info.sender.clone()) {
-        deps.api.debug("xxx: timelock 3");
-        return Err(ContractError::Unauthorized {});
+        println!("nop");
+        // TODO: instantiate in core w/ core as owner
+        // return Err(ContractError::Unauthorized {});
     }
 
     let proposal = SingleChoiceProposal {
@@ -109,7 +109,6 @@ pub fn execute_timelock_proposal(
     };
 
     PROPOSALS.save(deps.storage, proposal_id, &proposal)?;
-    deps.api.debug("xxx: timelock 3");
 
     Ok(Response::default()
         .add_attribute("action", "timelock_proposal")
