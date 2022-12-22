@@ -6,7 +6,7 @@ use cosmwasm_std::{
 };
 use cw2::{get_contract_version, set_contract_version};
 use cw_utils::parse_reply_instantiate_data;
-use exec_control::pause::{validate_duration, validate_sender, PauseError};
+use exec_control::pause::{can_pause, can_unpause, validate_duration, PauseError};
 
 use cw_paginate::{paginate_map, paginate_map_values};
 use cwd_interface::{voting, ModuleInstantiateInfo};
@@ -41,8 +41,8 @@ pub fn instantiate(
         name: msg.name,
         description: msg.description,
         dao_uri: msg.dao_uri,
-        admin: info.sender.clone(),
-        guardian: msg.guardian,
+        main_dao: info.sender.clone(),
+        security_dao: msg.security_dao,
     };
     CONFIG.save(deps.storage, &config)?;
 
@@ -83,14 +83,12 @@ pub fn execute(
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response<NeutronMsg>, ContractError> {
-    match get_pause_info(deps.as_ref(), env.clone())? {
+    match get_pause_info(deps.as_ref(), &env)? {
         PauseInfoResponse::Paused { .. } => {
-            match msg {
-                ExecuteMsg::Pause { duration } => {
-                    return execute_pause(deps, env, info.sender, duration)
-                }
-                ExecuteMsg::Unpause {} => return execute_unpause(deps, info.sender),
-                _ => return Err(ContractError::PauseError(PauseError::Paused {})),
+            return match msg {
+                ExecuteMsg::Pause { duration } => execute_pause(deps, env, info.sender, duration),
+                ExecuteMsg::Unpause {} => execute_unpause(deps, info.sender),
+                _ => Err(ContractError::PauseError(PauseError::Paused {})),
             };
         }
         PauseInfoResponse::Unpaused {} => (),
@@ -126,7 +124,7 @@ pub fn execute_pause(
     duration: u64,
 ) -> Result<Response<NeutronMsg>, ContractError> {
     let config: Config = CONFIG.load(deps.storage)?;
-    validate_sender(sender.clone(), config.admin, config.guardian)?;
+    can_pause(&sender, &config.main_dao, config.security_dao);
     validate_duration(duration)?;
 
     let paused_until_height: u64 = env.block.height + duration;
@@ -140,7 +138,7 @@ pub fn execute_pause(
 
 pub fn execute_unpause(deps: DepsMut, sender: Addr) -> Result<Response<NeutronMsg>, ContractError> {
     let config: Config = CONFIG.load(deps.storage)?;
-    validate_sender(sender.clone(), config.admin, config.guardian)?;
+    can_unpause(&sender, &config.main_dao);
 
     PAUSED_UNTIL.save(deps.storage, &None)?;
 
@@ -416,7 +414,7 @@ pub fn query_active_proposal_modules(
     )
 }
 
-fn get_pause_info(deps: Deps, env: Env) -> StdResult<PauseInfoResponse> {
+fn get_pause_info(deps: Deps, env: &Env) -> StdResult<PauseInfoResponse> {
     Ok(match PAUSED_UNTIL.may_load(deps.storage)?.unwrap_or(None) {
         Some(paused_until_height) => {
             if env.block.height.ge(&paused_until_height) {
@@ -432,7 +430,7 @@ fn get_pause_info(deps: Deps, env: Env) -> StdResult<PauseInfoResponse> {
 }
 
 pub fn query_paused(deps: Deps, env: Env) -> StdResult<Binary> {
-    to_binary(&get_pause_info(deps, env)?)
+    to_binary(&get_pause_info(deps, &env)?)
 }
 
 pub fn query_dump_state(deps: Deps, env: Env) -> StdResult<Binary> {
@@ -442,7 +440,7 @@ pub fn query_dump_state(deps: Deps, env: Env) -> StdResult<Binary> {
         .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
         .map(|kv| Ok(kv?.1))
         .collect::<StdResult<Vec<ProposalModule>>>()?;
-    let pause_info = get_pause_info(deps, env)?;
+    let pause_info = get_pause_info(deps, &env)?;
     let version = get_contract_version(deps.storage)?;
     let active_proposal_module_count = ACTIVE_PROPOSAL_MODULE_COUNT.load(deps.storage)?;
     let total_proposal_module_count = TOTAL_PROPOSAL_MODULE_COUNT.load(deps.storage)?;

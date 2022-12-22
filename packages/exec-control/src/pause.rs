@@ -4,20 +4,19 @@ use thiserror::Error;
 /// Approximately one week given block time = 2sec.
 pub const MAX_PAUSE_DURATION: u64 = 302400;
 
-/// checks whether the sender is either the admin or the guardian if any.
-pub fn validate_sender(
-    sender: Addr,
-    admin: Addr,
-    guardian: Option<Addr>,
-) -> Result<(), PauseError> {
-    let authorized = match guardian {
-        Some(g) => sender == admin || sender == g,
-        None => sender == admin,
-    };
-    if !authorized {
-        return Err(PauseError::Unauthorized {});
-    }
-    Ok(())
+// checks whether the sender is capable to pause a subDAO
+pub fn can_pause(
+    sender: &Addr,
+    main_dao_address: &Addr,
+    security_dao_address: Option<Addr>,
+) -> bool {
+    sender == main_dao_address
+        || (security_dao_address.is_some() && sender == &security_dao_address.unwrap())
+}
+
+// checks whether the sender is capable to unpause a subDAO
+pub fn can_unpause(sender: &Addr, main_dao_address: &Addr) -> bool {
+    sender == main_dao_address
 }
 
 /// checks whether the duration is not greater than MAX_PAUSE_DURATION.
@@ -28,7 +27,7 @@ pub fn validate_duration(duration: u64) -> Result<(), PauseError> {
     Ok(())
 }
 
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug, PartialEq, Eq)]
 pub enum PauseError {
     #[error("Unauthorized.")]
     Unauthorized {},

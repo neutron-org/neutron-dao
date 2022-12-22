@@ -27,7 +27,7 @@ pub struct DumpStateResponse {
 }
 
 /// Information about if the contract is currently paused.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub enum PauseInfoResponse {
     Paused { until_height: u64 },
     Unpaused {},

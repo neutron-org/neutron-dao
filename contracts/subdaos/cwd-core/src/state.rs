@@ -14,10 +14,10 @@ pub struct Config {
     /// The URI for the DAO as defined by the DAOstar standard
     /// https://daostar.one/EIP
     pub dao_uri: Option<String>,
-    /// The address of the DAO admin.
-    pub admin: Addr,
-    /// The address of the DAO guardian. The guardian is capable of pausing/unpausing the DAO.
-    pub guardian: Option<Addr>,
+    /// The address of the main DAO. It's capable of pausing and unpausing subDAO
+    pub main_dao: Addr,
+    /// The address of the DAO guardian. The security DAO is capable only of pausing the subDAO.
+    pub security_dao: Option<Addr>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]

@@ -41,12 +41,12 @@ pub struct InstantiateMsg {
     pub initial_items: Option<Vec<InitialItem>>,
     /// Implements the DAO Star standard: https://daostar.one/EIP
     pub dao_uri: Option<String>,
-    /// The address of the DAO guardian. The guardian is capable of pausing/unpausing the subDAO.
-    pub guardian: Option<Addr>,
+    /// The address of the security DAO. The security DAO is capable of pausing the subDAO.
+    pub security_dao: Option<Addr>,
 }
 
 #[pausable]
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     /// Callable by proposal modules. The DAO will execute the
