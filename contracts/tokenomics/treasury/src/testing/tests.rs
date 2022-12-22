@@ -79,9 +79,7 @@ fn test_pause() {
     );
 
     // unable to execute anything
-    let msg = ExecuteMsg::TransferOwnership {
-        0: "main_dao".to_string(),
-    };
+    let msg = ExecuteMsg::TransferOwnership("main_dao".to_string());
     let res = execute(deps.as_mut(), mock_env(), mock_info("main_dao", &[]), msg);
     assert_eq!(
         res.err().unwrap(),
@@ -92,9 +90,7 @@ fn test_pause() {
     env.block.height += 11;
 
     // but we can do it after 11 blocks
-    let msg = ExecuteMsg::TransferOwnership {
-        0: "main_dao".to_string(),
-    };
+    let msg = ExecuteMsg::TransferOwnership("main_dao".to_string());
     let res = execute(deps.as_mut(), env.clone(), mock_info("main_dao", &[]), msg);
     assert!(res.is_ok());
 
