@@ -56,10 +56,12 @@ echo "TIMELOCK_SINGLE_CONTRACT_CODE_ID:" $TIMELOCK_SINGLE_CONTRACT_CODE_ID
 echo """
 #############################################################################
 #
-# Instantiating the timelock contract
+# Instantiating the core subDAO contract
 #
 #############################################################################
 """
+
+# -------------------- PROPOSE { PRE-PROPOSE { TIMELOCK } } --------------------
 
 TIMELOCK_SINGLE_CONTRACT_INIT_MSG='{
   "timelock_duration": 20,
@@ -69,20 +71,7 @@ TIMELOCK_SINGLE_CONTRACT_INIT_MSG='{
     }
   }
 }'
-
-RES=$(${BIN} tx wasm instantiate $TIMELOCK_SINGLE_CONTRACT_CODE_ID "$TIMELOCK_SINGLE_CONTRACT_INIT_MSG" --from ${USERNAME_1} --admin ${ADMIN_ADDR} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --label "init"  --keyring-backend test --gas-prices 0.0025stake --gas auto --gas-adjustment 1.4 --home ${HOME_1} --node tcp://127.0.0.1:16657)
-TIMELOCK_SINGLE_CONTRACT_ADDR=$(echo $RES | jq -r '.logs[0].events[0].attributes[0].value')
-echo "TIMELOCK_SINGLE_CONTRACT_ADDR:" $TIMELOCK_SINGLE_CONTRACT_ADDR
-
-echo """
-#############################################################################
-#
-# Instantiating the core subDAO contract
-#
-#############################################################################
-"""
-
-# -------------------- PROPOSE { PRE-PROPOSE } --------------------
+TIMELOCK_SINGLE_CONTRACT_INIT_MSG_BASE64=$(echo ${TIMELOCK_SINGLE_CONTRACT_INIT_MSG} | base64)
 
 # PRE_PROPOSE_INIT_MSG will be put into the PROPOSAL_SINGLE_INIT_MSG
 PRE_PROPOSE_INIT_MSG='{
@@ -98,7 +87,11 @@ PRE_PROPOSE_INIT_MSG='{
     "refund_policy": "always"
   },
   "open_proposal_submission": false,
-  "timelock_contract": "'"${TIMELOCK_SINGLE_CONTRACT_ADDR}"'"
+  "timelock_module_instantiate_info": {
+    "code_id": '"${TIMELOCK_SINGLE_CONTRACT_CODE_ID}"',
+    "label": "Neutron subDAO timelock",
+    "msg": "'"${TIMELOCK_SINGLE_CONTRACT_INIT_MSG_BASE64}"'"
+  }
 }'
 PRE_PROPOSE_INIT_MSG_BASE64=$(echo ${PRE_PROPOSE_INIT_MSG} | base64)
 
@@ -152,7 +145,7 @@ CORE_CONTRACT_INIT_MSG='{
   "proposal_modules_instantiate_info": [
     {
       "code_id": '"${PROPOSAL_SINGLE_CONTRACT_CODE_ID}"',
-      "label": "DAO_Neutron_cw-proposal-single",
+      "label": "Neutron DAO proposal",
       "msg": "'"${PROPOSAL_SINGLE_INIT_MSG_BASE64}"'"
     }
   ]
@@ -169,8 +162,13 @@ echo "CW4_VOTE_CONTRACT_ADDR:" $CW4_VOTE_CONTRACT_ADDR
 PROPOSAL_SINGLE_CONTRACT_ADDR=$(echo $RES | jq -r '.logs[0].events[4].attributes[24].value')
 echo "PROPOSAL_SINGLE_CONTRACT_ADDR:" $PROPOSAL_SINGLE_CONTRACT_ADDR
 
-PRE_PROPOSE_SINGLE_CONTRACT_ADDR=$(echo $RES | jq -r '.logs[0].events[4].attributes[26].value')
+TIMELOCK_SINGLE_CONTRACT_ADDR=$(echo $RES | jq -r '.logs[0].events[4].attributes[30].value')
+echo "TIMELOCK_SINGLE_CONTRACT_ADDR:" $TIMELOCK_SINGLE_CONTRACT_ADDR
+
+PRE_PROPOSE_SINGLE_CONTRACT_ADDR=$(echo $RES | jq -r '.logs[0].events[4].attributes[32].value')
 echo "PRE_PROPOSE_SINGLE_CONTRACT_ADDR:" $PRE_PROPOSE_SINGLE_CONTRACT_ADDR
+
+echo $RES
 
 echo """
 #############################################################################
