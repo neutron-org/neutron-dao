@@ -1,13 +1,13 @@
+use cosmwasm_std::Addr;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::proposal::SingleChoiceProposal;
-use cwd_interface::Admin;
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 pub struct InstantiateMsg {
     // Owner can update all configs including changing the owner.
-    pub owner: Option<Admin>,
+    pub owner: Option<Addr>,
 
     // Timelock duration for all proposals (starts when TimelockProposal message handler is executed).
     // In seconds.

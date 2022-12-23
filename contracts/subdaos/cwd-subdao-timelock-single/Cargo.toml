@@ -29,6 +29,7 @@ thiserror = { version = "1.0" }
 cwd-interface = { path = "../../../packages/cwd-interface" }
 cwd-macros = { path = "../../../packages/cwd-macros" }
 neutron-timelock = { path = "../../../packages/neutron-timelock" }
+cwd-pre-propose-base = { path = "../../../packages/cwd-pre-propose-base" }
 
 [dev-dependencies]
 cosmwasm-schema = { version = "1.0.0" }

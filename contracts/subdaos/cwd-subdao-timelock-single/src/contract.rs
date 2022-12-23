@@ -1,14 +1,14 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdResult,
-    SubMsg,
+    to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply, Response,
+    StdResult, SubMsg,
 };
 use cw2::set_contract_version;
 use cw_storage_plus::Bound;
 use neutron_bindings::bindings::msg::NeutronMsg;
 
-use cwd_interface::Admin;
+use cwd_pre_propose_base::msg::QueryMsg as PreProposeQuery;
 use neutron_timelock::single::ExecuteMsg;
 
 use crate::error::ContractError;
@@ -16,7 +16,7 @@ use crate::msg::{InstantiateMsg, MigrateMsg, ProposalListResponse, QueryMsg};
 use crate::proposal::{ProposalStatus, SingleChoiceProposal};
 use crate::state::{Config, CONFIG, DEFAULT_LIMIT, PROPOSALS};
 
-pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-cwd-subdao-timelock-single";
+pub(crate) const CONTRACT_NAME: &str = "crates.io:cwd-subdao-timelock-single";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -28,18 +28,16 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    let owner = msg
-        .owner
-        .as_ref()
-        .map(|owner| match owner {
-            Admin::Address { addr } => deps.api.addr_validate(addr),
-            Admin::CoreModule {} => Ok(info.sender.clone()),
-        })
-        .transpose()?;
+    deps.api.debug("xxx: 1");
+    let subdao_core: Addr = deps
+        .querier
+        .query_wasm_smart(info.sender, &PreProposeQuery::Dao {})?;
+    deps.api.debug(format!("xxx: 2 {}", subdao_core).as_str());
 
     let config = Config {
-        owner,
+        owner: msg.owner,
         timelock_duration: Some(msg.timelock_duration),
+        subdao: Some(subdao_core),
     };
 
     CONFIG.save(deps.storage, &config)?;
@@ -95,10 +93,8 @@ pub fn execute_timelock_proposal(
 ) -> Result<Response<NeutronMsg>, ContractError> {
     let config = CONFIG.load(deps.storage)?;
 
-    if config.owner != Some(info.sender.clone()) {
-        println!("nop");
-        // TODO: instantiate in core w/ core as owner
-        // return Err(ContractError::Unauthorized {});
+    if config.subdao != Some(info.sender.clone()) {
+        return Err(ContractError::Unauthorized {});
     }
 
     let proposal = SingleChoiceProposal {
@@ -215,6 +211,8 @@ pub fn execute_update_config(
     if let Some(timelock_duration) = new_timelock_duration {
         config.timelock_duration = Some(timelock_duration);
     }
+
+    // TODO(oopcode): implement updating the .sudbao parameter.
 
     CONFIG.save(deps.storage, &config)?;
     Ok(Response::new()
