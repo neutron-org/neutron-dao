@@ -445,6 +445,77 @@ pub fn limit_variant_count(metadata: TokenStream, input: TokenStream) -> TokenSt
 }
 
 /// Adds the necessary fields to an enum such that the enum implements the
+/// query interface needed to be paused/unpaused.
+///
+/// For example:
+///
+/// ```
+/// use cwd_macros::pausable_query;
+///
+/// #[pausable_query]
+/// enum QueryMsg {}
+/// ```
+///
+/// Will transform the enum to:
+///
+/// ```
+/// enum QueryMsg {
+///     /// Returns information about if the contract is currently paused.
+///     PauseInfo {},
+/// }
+/// ```
+///
+/// Note that other derive macro invocations must occur after this
+/// procedural macro as they may depend on the new fields. For
+/// example, the following will fail becase the `Clone` derivation
+/// occurs before the addition of the field.
+///
+/// ```compile_fail
+/// use cwd_macros::pausable_query;
+///
+/// #[derive(Clone)]
+/// #[pausable_query]
+/// #[allow(dead_code)]
+/// enum Test {
+///     Foo,
+///     Bar(u64),
+///     Baz { foo: u64 },
+/// }
+/// ```
+#[proc_macro_attribute]
+pub fn pausable_query(metadata: TokenStream, input: TokenStream) -> TokenStream {
+    // Make sure that no arguments were passed in.
+    let args = parse_macro_input!(metadata as AttributeArgs);
+    if let Some(first_arg) = args.first() {
+        return syn::Error::new_spanned(first_arg, "pausing cmd macro takes no arguments")
+            .to_compile_error()
+            .into();
+    }
+
+    let mut ast: DeriveInput = parse_macro_input!(input);
+    match &mut ast.data {
+        syn::Data::Enum(DataEnum { variants, .. }) => {
+            let pause_info: Variant = syn::parse2(quote! { PauseInfo {} }).unwrap();
+
+            variants.push(pause_info);
+        }
+        _ => {
+            return syn::Error::new(
+                ast.ident.span(),
+                "pausing cmd types can not be only be derived for enums",
+            )
+            .to_compile_error()
+            .into()
+        }
+    };
+
+    quote! {
+    #ast
+    }
+    .into()
+}
+
+/// Adds the necessary fields to an enum such that the enum implements the
 /// interface needed to be paused/unpaused.
 ///
 /// For example:

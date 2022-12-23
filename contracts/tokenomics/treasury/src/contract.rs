@@ -5,11 +5,11 @@ use cosmwasm_std::{
     coins, to_binary, Addr, BankMsg, Binary, CosmosMsg, Decimal, Deps, DepsMut, Env, MessageInfo,
     Response, StdResult, Uint128, WasmMsg,
 };
-use exec_control::pause::{can_pause, can_unpause, validate_duration, PauseError};
-
-use crate::msg::{
-    DistributeMsg, ExecuteMsg, InstantiateMsg, PauseInfoResponse, QueryMsg, StatsResponse,
+use exec_control::pause::{
+    can_pause, can_unpause, validate_duration, PauseError, PauseInfoResponse,
 };
+
+use crate::msg::{DistributeMsg, ExecuteMsg, InstantiateMsg, QueryMsg, StatsResponse};
 use crate::state::{
     Config, CONFIG, LAST_DISTRIBUTION_TIME, PAUSED_UNTIL, TOTAL_DISTRIBUTED, TOTAL_RECEIVED,
     TOTAL_RESERVED,

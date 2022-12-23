@@ -1,5 +1,5 @@
 use cosmwasm_std::{Addr, Uint128};
-use cwd_macros::pausable;
+use cwd_macros::{pausable, pausable_query};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -31,6 +31,7 @@ pub enum ExecuteMsg {
     Claim {},
 }
 
+#[pausable_query]
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
@@ -38,8 +39,6 @@ pub enum QueryMsg {
     Config {},
     Pending {},
     Shares {},
-    /// Returns information about if the contract is currently paused.
-    PauseInfo {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
@@ -55,11 +54,4 @@ pub struct StatsResponse {
 pub struct ShareResponse {
     address: Addr,
     shares: Uint128,
-}
-
-/// Information about if the contract is currently paused.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-pub enum PauseInfoResponse {
-    Paused { until_height: u64 },
-    Unpaused {},
 }

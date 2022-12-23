@@ -1,7 +1,7 @@
 use crate::{
     contract::{execute, instantiate, query},
     error::ContractError,
-    msg::{ExecuteMsg, InstantiateMsg, PauseInfoResponse, QueryMsg},
+    msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
     state::CONFIG,
     testing::mock_querier::mock_dependencies,
 };
@@ -10,7 +10,7 @@ use cosmwasm_std::{
     testing::{mock_env, mock_info},
     Addr, BankMsg, Coin, CosmosMsg, DepsMut, Empty, Uint128,
 };
-use exec_control::pause::PauseError;
+use exec_control::pause::{PauseError, PauseInfoResponse};
 
 const DENOM: &str = "denom";
 const MAIN_DAO_ADDR: &str = "main_dao";

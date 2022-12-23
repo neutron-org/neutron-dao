@@ -28,7 +28,6 @@
       "additionalProperties": false
     },
     {
-      "description": "Returns information about if the contract is currently paused.",
       "type": "object",
       "required": [
         "pause_info"

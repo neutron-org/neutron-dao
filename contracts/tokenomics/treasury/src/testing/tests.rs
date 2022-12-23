@@ -5,11 +5,11 @@ use cosmwasm_std::{
     testing::{mock_env, mock_info},
     to_binary, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, Empty, Uint128, WasmMsg,
 };
-use exec_control::pause::PauseError;
+use exec_control::pause::{PauseError, PauseInfoResponse};
 
 use crate::contract::query;
 use crate::error::ContractError;
-use crate::msg::{PauseInfoResponse, QueryMsg};
+use crate::msg::QueryMsg;
 use crate::{
     contract::{execute, instantiate},
     msg::{DistributeMsg, ExecuteMsg, InstantiateMsg},

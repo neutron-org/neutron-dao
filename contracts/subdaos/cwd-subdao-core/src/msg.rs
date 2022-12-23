@@ -4,7 +4,7 @@ use neutron_bindings::bindings::msg::NeutronMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cwd_macros::{info_query, pausable, voting_query};
+use cwd_macros::{info_query, pausable, pausable_query, voting_query};
 
 use crate::query::SubDao;
 use crate::state::Config;
@@ -86,6 +86,7 @@ pub enum ExecuteMsg {
     },
 }
 
+#[pausable_query]
 #[voting_query]
 #[info_query]
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
@@ -120,8 +121,6 @@ pub enum QueryMsg {
         start_after: Option<String>,
         limit: Option<u32>,
     },
-    /// Returns information about if the contract is currently paused.
-    PauseInfo {},
     /// Gets the contract's voting module. Returns Addr.
     VotingModule {},
     /// Returns all SubDAOs with their charters in a vec

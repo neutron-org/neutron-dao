@@ -1,4 +1,6 @@
 use cosmwasm_std::Addr;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 /// Approximately one week given block time = 2sec.
@@ -49,4 +51,11 @@ pub enum PauseError {
 
     #[error("Contract execution is paused.")]
     Paused {},
+}
+
+/// Information about if the contract is currently paused.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+pub enum PauseInfoResponse {
+    Paused { until_height: u64 },
+    Unpaused {},
 }

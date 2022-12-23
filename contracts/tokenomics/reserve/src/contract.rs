@@ -4,10 +4,12 @@ use cosmwasm_std::{
     coins, to_binary, Addr, BankMsg, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response,
     StdResult, Uint128,
 };
-use exec_control::pause::{can_pause, can_unpause, validate_duration, PauseError};
+use exec_control::pause::{
+    can_pause, can_unpause, validate_duration, PauseError, PauseInfoResponse,
+};
 
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, PauseInfoResponse, QueryMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::{Config, CONFIG, PAUSED_UNTIL};
 
 //--------------------------------------------------------------------------------------------------
