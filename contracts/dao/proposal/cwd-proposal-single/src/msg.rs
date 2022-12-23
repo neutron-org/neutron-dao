@@ -17,7 +17,7 @@ pub struct InstantiateMsg {
     /// The minimum amount of time a proposal must be open before
     /// passing. A proposal may fail before this amount of time has
     /// elapsed, but it will not pass. This can be useful for
-    /// preventing governance attacks wherein an attacker aquires a
+    /// preventing governance attacks wherein an attacker acquires a
     /// large number of tokens and forces a proposal through.
     pub min_voting_period: Option<Duration>,
     /// Allows changing votes before the proposal expires. If this is
@@ -89,7 +89,7 @@ pub enum ExecuteMsg {
         /// The minimum amount of time a proposal must be open before
         /// passing. A proposal may fail before this amount of time has
         /// elapsed, but it will not pass. This can be useful for
-        /// preventing governance attacks wherein an attacker aquires a
+        /// preventing governance attacks wherein an attacker acquires a
         /// large number of tokens and forces a proposal through.
         min_voting_period: Option<Duration>,
         /// Allows changing votes before the proposal expires. If this is
@@ -152,7 +152,7 @@ pub enum QueryMsg {
         limit: Option<u64>,
     },
     /// Lists all of the proposals that have been cast in this module
-    /// in decending order of proposal ID. Returns
+    /// in descending order of proposal ID. Returns
     /// `query::ProposalListResponse`.
     ReverseProposals {
         /// The proposal ID to start listing proposals before. For
@@ -167,7 +167,7 @@ pub enum QueryMsg {
     /// Returns the number of proposals that have been created in this
     /// module.
     ProposalCount {},
-    /// Returns a voters position on a propsal. Returns
+    /// Returns a voters position on a proposal. Returns
     /// `query::VoteResponse`.
     GetVote { proposal_id: u64, voter: String },
     /// Lists all of the votes that have been cast on a

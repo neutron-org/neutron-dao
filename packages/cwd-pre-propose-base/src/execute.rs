@@ -1,6 +1,7 @@
 use cosmwasm_std::{
     to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, WasmMsg,
 };
+use std::fmt::Debug;
 
 use cw2::set_contract_version;
 
@@ -23,7 +24,7 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 impl<ProposalMessage> PreProposeContract<ProposalMessage>
 where
-    ProposalMessage: Serialize,
+    ProposalMessage: Serialize + Debug,
 {
     pub fn instantiate(
         &self,
@@ -62,7 +63,8 @@ where
         Ok(Response::default()
             .add_attribute("method", "instantiate")
             .add_attribute("proposal_module", info.sender.into_string())
-            .add_attribute("deposit_info", format!("{:?}", config.deposit_info))
+            // TODO: This line produces malformed transaction logs.
+            // .add_attribute("deposit_info", format!("{:?}", config.deposit_info))
             .add_attribute(
                 "open_proposal_submission",
                 config.open_proposal_submission.to_string(),

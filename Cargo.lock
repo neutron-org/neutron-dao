@@ -723,6 +723,7 @@ dependencies = [
  "cosmwasm-std",
  "cw-denom",
  "cw-multi-test",
+ "cw-storage-plus 0.13.4",
  "cw-utils",
  "cw2",
  "cw20",
@@ -735,6 +736,7 @@ dependencies = [
  "cwd-subdao-proposal-single",
  "cwd-voting",
  "neutron-sdk",
+ "neutron-timelock",
  "schemars",
  "serde",
 ]
@@ -772,6 +774,28 @@ dependencies = [
  "serde",
  "thiserror",
  "voting",
+]
+
+[[package]]
+name = "cwd-subdao-timelock-single"
+version = "0.2.0"
+dependencies = [
+ "anyhow",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cosmwasm-storage",
+ "cw-controllers",
+ "cw-multi-test",
+ "cw-storage-plus 0.13.4",
+ "cw-utils",
+ "cw2",
+ "cwd-interface",
+ "cwd-macros",
+ "neutron-sdk",
+ "neutron-timelock",
+ "schemars",
+ "serde",
+ "thiserror",
 ]
 
 [[package]]
@@ -1052,6 +1076,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "neutron-reserve"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-storage-plus 1.0.1",
+ "schemars",
+ "serde",
+]
+
+[[package]]
 name = "neutron-sdk"
 version = "0.1.0"
 source = "git+https://github.com/neutron-org/neutron-contracts.git#3ad81939da78954ff032a26e54d792cc16a4d9f3"
@@ -1068,6 +1103,16 @@ dependencies = [
  "serde-json-wasm",
  "serde_json",
  "thiserror",
+]
+
+[[package]]
+name = "neutron-timelock"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-std",
+ "neutron-sdk",
+ "schemars",
+ "serde",
 ]
 
 [[package]]

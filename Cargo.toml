@@ -4,14 +4,16 @@ members = [
     "contracts/dao/proposal/*",
     "contracts/dao/pre-propose/*",
     "contracts/dao/voting/*",
-
-    "contracts/subdaos/cwd-core",
+    "contracts/subdaos/cwd-subdao-core",
     "contracts/subdaos/proposal/*",
     "contracts/subdaos/pre-propose/*",
     "contracts/subdaos/voting/*",
+    "contracts/subdaos/cwd-subdao-timelock-single",
+
     "contracts/tokenomics/treasury",
     "contracts/tokenomics/distribution",
-#    "contracts/tokenomics/reserve",
+    "contracts/tokenomics/reserve",
+
     "packages/*",
 ]
 

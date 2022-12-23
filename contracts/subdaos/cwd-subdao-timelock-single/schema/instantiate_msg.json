@@ -1,0 +1,66 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "InstantiateMsg",
+  "type": "object",
+  "required": [
+    "timelock_duration"
+  ],
+  "properties": {
+    "owner": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/Admin"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "timelock_duration": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    }
+  },
+  "definitions": {
+    "Admin": {
+      "description": "Information about the CosmWasm level admin of a contract. Used in conjunction with `ModuleInstantiateInfo` to instantiate modules.",
+      "oneOf": [
+        {
+          "description": "Set the admin to a specified address.",
+          "type": "object",
+          "required": [
+            "address"
+          ],
+          "properties": {
+            "address": {
+              "type": "object",
+              "required": [
+                "addr"
+              ],
+              "properties": {
+                "addr": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "Sets the admin as the core module address.",
+          "type": "object",
+          "required": [
+            "core_module"
+          ],
+          "properties": {
+            "core_module": {
+              "type": "object"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}
