@@ -19,12 +19,14 @@ library = []
 cosmwasm-std = "1.0.0"
 cw2 = "0.13.2"
 cw-storage-plus = "0.13"
+cw-utils = "0.13"
 serde = { version = "1.0.147", default-features = false, features = ["derive"] }
 cwd-pre-propose-base = { version = "*", path = "../../../../packages/cwd-pre-propose-base" }
 cwd-voting = { path = "../../../../packages/cwd-voting" }
 neutron_bindings = { package = "neutron-sdk", version = "0.1.0", git = "https://github.com/neutron-org/neutron-contracts.git" }
 neutron-timelock = { path = "../../../../packages/neutron-timelock" }
 schemars = "0.8.8"
+cwd-interface = { path = "../../../../packages/cwd-interface" }
 
 [dev-dependencies]
 cosmwasm-schema = "1.0.0"

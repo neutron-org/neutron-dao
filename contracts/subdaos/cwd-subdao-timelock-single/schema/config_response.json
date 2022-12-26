@@ -13,6 +13,16 @@
         }
       ]
     },
+    "subdao": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/Addr"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "timelock_duration": {
       "type": [
         "integer",
