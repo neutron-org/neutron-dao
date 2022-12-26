@@ -55,6 +55,7 @@ pub enum PauseError {
 
 /// Information about if the contract is currently paused.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "lowercase")]
 pub enum PauseInfoResponse {
     Paused { until_height: u64 },
     Unpaused {},
