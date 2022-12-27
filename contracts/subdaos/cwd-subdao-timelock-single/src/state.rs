@@ -9,7 +9,7 @@ pub struct Config {
     pub owner: Option<Addr>,
     pub timelock_duration: Option<u64>,
     // subDAO core module can timelock proposals.
-    pub subdao: Option<Addr>,
+    pub subdao: Addr,
 }
 
 /// Default limit for proposal pagination.

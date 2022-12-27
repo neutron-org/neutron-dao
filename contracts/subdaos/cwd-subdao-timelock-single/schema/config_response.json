@@ -2,6 +2,9 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "ConfigResponse",
   "type": "object",
+  "required": [
+    "subdao"
+  ],
   "properties": {
     "owner": {
       "anyOf": [
@@ -14,14 +17,7 @@
       ]
     },
     "subdao": {
-      "anyOf": [
-        {
-          "$ref": "#/definitions/Addr"
-        },
-        {
-          "type": "null"
-        }
-      ]
+      "$ref": "#/definitions/Addr"
     },
     "timelock_duration": {
       "type": [

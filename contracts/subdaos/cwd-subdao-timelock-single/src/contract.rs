@@ -35,7 +35,7 @@ pub fn instantiate(
     let config = Config {
         owner: msg.owner,
         timelock_duration: Some(msg.timelock_duration),
-        subdao: Some(subdao_core),
+        subdao: subdao_core,
     };
 
     CONFIG.save(deps.storage, &config)?;
@@ -91,7 +91,7 @@ pub fn execute_timelock_proposal(
 ) -> Result<Response<NeutronMsg>, ContractError> {
     let config = CONFIG.load(deps.storage)?;
 
-    if config.subdao != Some(info.sender.clone()) {
+    if config.subdao != info.sender {
         return Err(ContractError::Unauthorized {});
     }
 
