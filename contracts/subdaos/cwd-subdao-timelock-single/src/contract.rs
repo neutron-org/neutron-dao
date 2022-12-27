@@ -34,7 +34,7 @@ pub fn instantiate(
 
     let config = Config {
         owner: msg.owner,
-        timelock_duration: Some(msg.timelock_duration),
+        timelock_duration: msg.timelock_duration,
         subdao: subdao_core,
     };
 
@@ -49,13 +49,7 @@ pub fn instantiate(
                 .map(|a| a.to_string())
                 .unwrap_or_else(|| "None".to_string()),
         )
-        .add_attribute(
-            "timelock_duration",
-            config
-                .timelock_duration
-                .map(|a| a.to_string())
-                .unwrap_or_else(|| "None".to_string()),
-        ))
+        .add_attribute("timelock_duration", config.timelock_duration.to_string()))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -129,10 +123,8 @@ pub fn execute_execute_proposal(
     }
 
     // Check if timelock has passed
-    if let Some(timelock_duration) = config.timelock_duration {
-        if env.block.time.seconds() < (timelock_duration + proposal.timelock_ts.seconds()) {
-            return Err(ContractError::TimeLocked {});
-        }
+    if env.block.time.seconds() < (config.timelock_duration + proposal.timelock_ts.seconds()) {
+        return Err(ContractError::TimeLocked {});
     }
 
     // Update proposal status
@@ -207,7 +199,7 @@ pub fn execute_update_config(
     config.owner = new_owner;
 
     if let Some(timelock_duration) = new_timelock_duration {
-        config.timelock_duration = Some(timelock_duration);
+        config.timelock_duration = timelock_duration;
     }
 
     // TODO(oopcode): implement updating the .sudbao parameter.
@@ -222,13 +214,7 @@ pub fn execute_update_config(
                 .map(|a| a.to_string())
                 .unwrap_or_else(|| "None".to_string()),
         )
-        .add_attribute(
-            "timelock_duration",
-            config
-                .timelock_duration
-                .map(|a| a.to_string())
-                .unwrap_or_else(|| "None".to_string()),
-        ))
+        .add_attribute("timelock_duration", config.timelock_duration.to_string()))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 pub struct Config {
     pub owner: Option<Addr>,
-    pub timelock_duration: Option<u64>,
+    pub timelock_duration: u64,
     // subDAO core module can timelock proposals.
     pub subdao: Addr,
 }

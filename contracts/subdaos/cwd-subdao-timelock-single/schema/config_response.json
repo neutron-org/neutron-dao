@@ -3,7 +3,8 @@
   "title": "ConfigResponse",
   "type": "object",
   "required": [
-    "subdao"
+    "subdao",
+    "timelock_duration"
   ],
   "properties": {
     "owner": {
@@ -20,10 +21,7 @@
       "$ref": "#/definitions/Addr"
     },
     "timelock_duration": {
-      "type": [
-        "integer",
-        "null"
-      ],
+      "type": "integer",
       "format": "uint64",
       "minimum": 0.0
     }
