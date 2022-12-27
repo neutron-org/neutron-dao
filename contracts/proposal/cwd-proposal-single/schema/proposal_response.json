@@ -37,6 +37,17 @@
               "type": "null"
             }
           ]
+        },
+        "software_upgrade_proposal": {
+          "description": "*software_upgrade_proposal** is a software upgrade proposal field.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SoftwareUpgradeProposal"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       }
     },
@@ -557,7 +568,7 @@
           ]
         },
         "path": {
-          "description": "*path** is a path to the storage (storage prefix) where you want to read value by key (usually name of cosmos-sdk module: 'staking', 'bank', etc.)",
+          "description": "*path** is a path to the storage (storage prefix) where you want to read value by key (usually name of cosmos-packages module: 'staking', 'bank', etc.)",
           "type": "string"
         }
       }
@@ -876,7 +887,7 @@
       ],
       "properties": {
         "description": {
-          "description": "*descriptionr** is a text description of proposal. Non unique.",
+          "description": "*description** is a text description of proposal. Non unique.",
           "type": "string"
         },
         "param_changes": {
@@ -922,6 +933,30 @@
           "additionalProperties": false
         }
       ]
+    },
+    "Plan": {
+      "description": "Plan defines the struct for planned upgrade.",
+      "type": "object",
+      "required": [
+        "height",
+        "info",
+        "name"
+      ],
+      "properties": {
+        "height": {
+          "description": "*height** is a height at which the upgrade must be performed",
+          "type": "integer",
+          "format": "int64"
+        },
+        "info": {
+          "description": "*info** is any application specific upgrade info to be included on-chain",
+          "type": "string"
+        },
+        "name": {
+          "description": "*name** is a name for the upgrade",
+          "type": "string"
+        }
+      }
     },
     "ProtobufAny": {
       "description": "Type for wrapping any protobuf message",
@@ -1052,6 +1087,33 @@
         },
         "votes": {
           "$ref": "#/definitions/Votes"
+        }
+      }
+    },
+    "SoftwareUpgradeProposal": {
+      "description": "SoftwareUpgradeProposal defines the struct for software upgrade proposal.",
+      "type": "object",
+      "required": [
+        "description",
+        "plan",
+        "title"
+      ],
+      "properties": {
+        "description": {
+          "description": "*description** is a text description of proposal. Non unique.",
+          "type": "string"
+        },
+        "plan": {
+          "description": "*plan** is a plan of upgrade.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Plan"
+            }
+          ]
+        },
+        "title": {
+          "description": "*title** is a text title of proposal. Non unique.",
+          "type": "string"
         }
       }
     },
