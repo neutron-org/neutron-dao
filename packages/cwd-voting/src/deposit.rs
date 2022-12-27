@@ -103,7 +103,7 @@ impl UncheckedDepositInfo {
             DepositToken::VotingModuleToken {} => {
                 let voting_module: Addr = deps
                     .querier
-                    .query_wasm_smart(dao, &cwd_core::msg::QueryMsg::VotingModule {})?;
+                    .query_wasm_smart(dao, &QueryMsg::VotingModule {})?;
                 // If the voting module has no token this will
                 // error. This is desirable.
                 let token_addr: Addr = deps.querier.query_wasm_smart(
@@ -124,6 +124,13 @@ impl UncheckedDepositInfo {
             refund_policy,
         })
     }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum QueryMsg {
+    /// Gets the contract's voting module. Returns Addr.
+    VotingModule {},
 }
 
 impl CheckedDepositInfo {

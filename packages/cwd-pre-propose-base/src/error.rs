@@ -1,5 +1,6 @@
 use cosmwasm_std::StdError;
 use cw_denom::DenomError;
+use cw_utils::ParseReplyError;
 use thiserror::Error;
 
 use cwd_voting::{deposit::DepositError, status::Status};
@@ -32,4 +33,13 @@ pub enum PreProposeError {
 
     #[error("Proposal status ({status}) not closed or executed")]
     NotClosedOrExecuted { status: Status },
+
+    #[error("Multiple voting modules during instantiation.")]
+    MultipleTimelockModules {},
+
+    #[error("An unknown reply ID was received.")]
+    UnknownReplyID {},
+
+    #[error(transparent)]
+    ParseReplyError(#[from] ParseReplyError),
 }

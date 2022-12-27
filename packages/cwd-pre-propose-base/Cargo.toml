@@ -26,6 +26,7 @@ cwd-voting = { path = "../cwd-voting" }
 cwd-proposal-hooks = { path = "../cwd-proposal-hooks" }
 cwd-interface = { path = "../cwd-interface" }
 cw-denom = { path = "../cw-denom" }
+cw-utils = "0.13"
 
 [dev-dependencies]
 cosmwasm-schema = "1.0.0"
