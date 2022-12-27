@@ -7,10 +7,10 @@ use crate::{
 use cosmwasm_std::{
     from_binary,
     testing::{mock_env, mock_info},
-    to_binary, Addr, Empty, Uint128,
+    to_binary, Addr, Uint128,
 };
 use cw4_voting::msg::InstantiateMsg as VoteModuleInstantiateMsg;
-use cw_multi_test::{custom_app, BasicApp, Contract, ContractWrapper, Executor};
+use cw_multi_test::{App, Contract, ContractWrapper, Executor};
 use cwd_interface::ModuleInstantiateInfo;
 use cwd_subdao_pre_propose_single::contract::InstantiateMsg as PreProposeSingleInstantiateMsg;
 use cwd_subdao_proposal_single::msg::InstantiateMsg as ProposalSingleInstantiateMsg;
@@ -40,7 +40,7 @@ fn cwd_subdao_core_contract() -> Box<dyn Contract<NeutronMsg>> {
     Box::new(contract)
 }
 
-pub fn init_base_contract(app: &mut BasicApp<NeutronMsg>) -> Addr {
+pub fn init_base_contract(app: &mut App) -> Addr {
     let vote_module_instantiate = VoteModuleInstantiateMsg {
         cw4_group_code_id: 42,
         initial_members: vec![
@@ -124,7 +124,7 @@ pub fn init_base_contract(app: &mut BasicApp<NeutronMsg>) -> Addr {
 #[test]
 fn test_pause() {
     let mut deps = mock_dependencies(&[]);
-    let mut app = custom_app::<NeutronMsg, Empty, _>(|_, _, _| {});
+    let mut app = App::default();
     let subdao_addr = init_base_contract(&mut app);
     println!("SUBDAO addr: {}", subdao_addr);
 
