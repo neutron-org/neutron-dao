@@ -28,11 +28,9 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    deps.api.debug("xxx: 1");
     let subdao_core: Addr = deps
         .querier
         .query_wasm_smart(info.sender, &PreProposeQuery::Dao {})?;
-    deps.api.debug(format!("xxx: 2 {}", subdao_core).as_str());
 
     let config = Config {
         owner: msg.owner,

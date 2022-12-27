@@ -190,7 +190,7 @@ echo """
 RES=$(${BIN} tx bank send ${ADMIN_ADDR} ${TIMELOCK_SINGLE_CONTRACT_ADDR}  5000stake  -y --chain-id ${CHAIN_ID} --output json \
   --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 --keyring-backend test \
   --home ${HOME} --node tcp://127.0.0.1:16657)
-echo "> Sent 5000stake from ADMIN_ADDR to CORE_CONTRACT_ADDR, tx hash:" $(echo $RES | jq -r '.txhash')
+echo "> Sent 5000stake from ADMIN_ADDR to TIMELOCK_SINGLE_CONTRACT_ADDR, tx hash:" $(echo $RES | jq -r '.txhash')
 
 PROPOSAL_MSG='{
   "propose":{
@@ -302,7 +302,7 @@ echo """
 RES=$(${BIN} tx bank send ${ADMIN_ADDR} ${TIMELOCK_SINGLE_CONTRACT_ADDR}  5000stake  -y --chain-id ${CHAIN_ID} --output json \
   --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 --keyring-backend test \
   --home ${HOME} --node tcp://127.0.0.1:16657)
-echo "> Sent 5000stake from ADMIN_ADDR to CORE_CONTRACT_ADDR, tx hash:" $(echo $RES | jq -r '.txhash')
+echo "> Sent 5000stake from ADMIN_ADDR to TIMELOCK_SINGLE_CONTRACT_ADDR, tx hash:" $(echo $RES | jq -r '.txhash')
 
 PROPOSAL_MSG='{
   "propose":{
