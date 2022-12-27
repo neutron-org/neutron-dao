@@ -34,11 +34,6 @@ cw-paginate = { path = "../../../packages/cw-paginate" }
 cw-core-v1 = { package = "cw-core", version = "0.1.0", git = "https://github.com/DA0-DA0/dao-contracts.git", tag = "v1.0.0" }
 
 [dev-dependencies]
-cw-multi-test = "0.16"
-cw4 = "0.13"
 cosmwasm-schema = { version = "1.0.0" }
-cwd-subdao-timelock-single = { path = "../cwd-subdao-timelock-single" }
-cwd-subdao-pre-propose-single = { path = "../pre-propose/cwd-subdao-pre-propose-single" }
-cwd-subdao-proposal-single = { path = "../proposal/cwd-subdao-proposal-single" }
-cw4-voting = { path = "../voting/dao-voting-cw4" }
-cwd-voting = { path = "../../../packages/cwd-voting" }
+# TODO: remove this and enable tests.
+#cw-multi-test = { version = "0.14", features = ["stargate"] }

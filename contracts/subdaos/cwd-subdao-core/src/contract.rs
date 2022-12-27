@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError,
-    StdResult, SubMsg,
+    to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, Reply, Response,
+    StdError, StdResult, SubMsg,
 };
 use cw2::{get_contract_version, set_contract_version};
 use cw_utils::parse_reply_instantiate_data;
@@ -35,7 +35,7 @@ pub fn instantiate(
     env: Env,
     info: MessageInfo,
     msg: InstantiateMsg,
-) -> Result<Response<NeutronMsg>, ContractError> {
+) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     let config = Config {
@@ -46,15 +46,14 @@ pub fn instantiate(
         security_dao: msg.security_dao,
     };
     CONFIG.save(deps.storage, &config)?;
-    PAUSED_UNTIL.save(deps.storage, &None)?;
 
     let vote_module_msg = msg
         .vote_module_instantiate_info
         .into_wasm_msg(env.contract.address.clone());
-    let vote_module_msg: SubMsg<NeutronMsg> =
+    let vote_module_msg: SubMsg<Empty> =
         SubMsg::reply_on_success(vote_module_msg, VOTE_MODULE_INSTANTIATE_REPLY_ID);
 
-    let proposal_module_msgs: Vec<SubMsg<NeutronMsg>> = msg
+    let proposal_module_msgs: Vec<SubMsg<Empty>> = msg
         .proposal_modules_instantiate_info
         .into_iter()
         .map(|info| info.into_wasm_msg(env.contract.address.clone()))
@@ -547,16 +546,12 @@ pub fn query_dao_uri(deps: Deps) -> StdResult<Binary> {
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(
-    _deps: DepsMut,
-    _env: Env,
-    _msg: MigrateMsg,
-) -> Result<Response<NeutronMsg>, ContractError> {
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     Ok(Response::default())
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response<NeutronMsg>, ContractError> {
+pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
     match msg.id {
         PROPOSAL_MODULE_REPLY_ID => {
             let res = parse_reply_instantiate_data(msg)?;
