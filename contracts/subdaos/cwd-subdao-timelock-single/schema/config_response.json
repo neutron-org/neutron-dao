@@ -2,6 +2,10 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "ConfigResponse",
   "type": "object",
+  "required": [
+    "subdao",
+    "timelock_duration"
+  ],
   "properties": {
     "owner": {
       "anyOf": [
@@ -14,20 +18,10 @@
       ]
     },
     "subdao": {
-      "anyOf": [
-        {
-          "$ref": "#/definitions/Addr"
-        },
-        {
-          "type": "null"
-        }
-      ]
+      "$ref": "#/definitions/Addr"
     },
     "timelock_duration": {
-      "type": [
-        "integer",
-        "null"
-      ],
+      "type": "integer",
       "format": "uint64",
       "minimum": 0.0
     }
