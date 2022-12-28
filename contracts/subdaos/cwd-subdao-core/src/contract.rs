@@ -46,6 +46,7 @@ pub fn instantiate(
         security_dao: msg.security_dao,
     };
     CONFIG.save(deps.storage, &config)?;
+    PAUSED_UNTIL.save(deps.storage, &None)?;
 
     let vote_module_msg = msg
         .vote_module_instantiate_info
