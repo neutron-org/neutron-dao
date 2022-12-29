@@ -25,7 +25,7 @@ fn test_instantiate_test() {
         owner: Some(Addr::unchecked("dao")),
         timelock_duration: 10,
     };
-    let res = instantiate(deps.as_mut(), env.clone(), info.clone(), msg.clone());
+    let res = instantiate(deps.as_mut(), env.clone(), info, msg);
     assert_eq!(
         "Generic error: Querier system error: No such contract: neutron1unknownsender",
         res.unwrap_err().to_string()
@@ -182,7 +182,7 @@ fn test_execute_proposal() {
     assert_eq!("Proposal is timelocked", res.unwrap_err().to_string());
 
     env.block.time = env.block.time.plus_seconds(11);
-    let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
+    let res = execute(deps.as_mut(), env, info, msg).unwrap();
     let expected_attributes = vec![
         Attribute::new("action", "execute_proposal"),
         Attribute::new("sender", "neutron1unknownsender"),
@@ -257,7 +257,7 @@ fn test_overrule_proposal() {
     PROPOSALS
         .save(deps.as_mut().storage, proposal.id, &proposal)
         .unwrap();
-    let res_ok = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
+    let res_ok = execute(deps.as_mut(), env, info.clone(), msg).unwrap();
     assert_eq!(0, res_ok.messages.len());
     let expected_attributes = vec![
         Attribute::new("action", "overrule_proposal"),
@@ -311,7 +311,7 @@ fn execute_update_config() {
         subdao: Addr::unchecked(MOCK_SUBDAO_CORE_ADDR),
     };
     CONFIG.save(deps.as_mut().storage, &config).unwrap();
-    let res_ok = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
+    let res_ok = execute(deps.as_mut(), env.clone(), info.clone(), msg).unwrap();
     assert_eq!(0, res_ok.messages.len());
     let expected_attributes = vec![
         Attribute::new("action", "update_config"),
@@ -353,7 +353,7 @@ fn execute_update_config() {
     );
 
     // old owner
-    let err = execute(deps.as_mut(), env.clone(), info, msg.clone()).unwrap_err();
+    let err = execute(deps.as_mut(), env, info, msg).unwrap_err();
     assert_eq!("Unauthorized", err.to_string());
 }
 

@@ -184,7 +184,7 @@ pub fn execute_update_config(
     new_timelock_duration: Option<u64>,
 ) -> Result<Response<NeutronMsg>, ContractError> {
     let mut config: Config = CONFIG.load(deps.storage)?;
-    if Some(info.sender.clone()) != config.owner {
+    if Some(info.sender) != config.owner {
         return Err(ContractError::Unauthorized {});
     }
 
