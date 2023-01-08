@@ -36,10 +36,6 @@ pub struct InstantiateMsg {
     // that the core module instantiates its proposal module.
     pub proposal_modules_instantiate_info: Vec<ModuleInstantiateInfo>,
 
-    /// Instantiate information for the core contract's timelock
-    /// module.
-    // pub timelock_module_instantiate_info: ModuleInstantiateInfo,
-
     /// Initial information for arbitrary contract addresses to be
     /// added to the items map. The key is the name of the item in the
     /// items map. The value is an enum that either uses an existing

@@ -22,7 +22,7 @@ fn test_instantiate_test() {
     let env = mock_env();
     let info = mock_info("neutron1unknownsender", &[]);
     let msg = InstantiateMsg {
-        owner: Some(Addr::unchecked("dao")),
+        owner: Addr::unchecked("dao"),
         timelock_duration: 10,
     };
     let res = instantiate(deps.as_mut(), env.clone(), info, msg);
@@ -34,7 +34,7 @@ fn test_instantiate_test() {
     let info = mock_info(MOCK_TIMELOCK_INITIALIZER, &[]);
 
     let msg = InstantiateMsg {
-        owner: Some(Addr::unchecked("dao")),
+        owner: Addr::unchecked("dao"),
         timelock_duration: 10,
     };
     let res = instantiate(deps.as_mut(), env.clone(), info.clone(), msg.clone());
@@ -54,7 +54,7 @@ fn test_instantiate_test() {
     assert_eq!(expected_config, config);
 
     let msg = InstantiateMsg {
-        owner: None,
+        owner: Addr::unchecked("none"),
         timelock_duration: 10,
     };
     let res = instantiate(deps.as_mut(), env, info, msg.clone());
@@ -92,7 +92,7 @@ fn test_execute_timelock_proposal() {
     );
 
     let config = Config {
-        owner: Some(Addr::unchecked("owner")),
+        owner: Addr::unchecked("owner"),
         timelock_duration: 10,
         subdao: Addr::unchecked(MOCK_SUBDAO_CORE_ADDR),
     };
@@ -136,7 +136,7 @@ fn test_execute_proposal() {
     );
 
     let config = Config {
-        owner: Some(Addr::unchecked("owner")),
+        owner: Addr::unchecked("owner"),
         timelock_duration: 10,
         subdao: Addr::unchecked(MOCK_SUBDAO_CORE_ADDR),
     };
@@ -216,7 +216,7 @@ fn test_overrule_proposal() {
     );
 
     let config = Config {
-        owner: Some(Addr::unchecked("owner")),
+        owner: Addr::unchecked("owner"),
         timelock_duration: 10,
         subdao: Addr::unchecked(MOCK_SUBDAO_CORE_ADDR),
     };
@@ -287,7 +287,7 @@ fn execute_update_config() {
     );
 
     let config = Config {
-        owner: Some(Addr::unchecked("owner")),
+        owner: Addr::unchecked("owner"),
         timelock_duration: 10,
         subdao: Addr::unchecked(MOCK_SUBDAO_CORE_ADDR),
     };
@@ -297,7 +297,7 @@ fn execute_update_config() {
 
     let info = mock_info("owner", &[]);
     let config = Config {
-        owner: None,
+        owner: Addr::unchecked("none"),
         timelock_duration: 10,
         subdao: Addr::unchecked(MOCK_SUBDAO_CORE_ADDR),
     };
@@ -306,7 +306,7 @@ fn execute_update_config() {
     assert_eq!("Unauthorized", res.unwrap_err().to_string());
 
     let config = Config {
-        owner: Some(Addr::unchecked("owner")),
+        owner: Addr::unchecked("owner"),
         timelock_duration: 10,
         subdao: Addr::unchecked(MOCK_SUBDAO_CORE_ADDR),
     };
@@ -323,7 +323,7 @@ fn execute_update_config() {
     assert_eq!(
         updated_config,
         Config {
-            owner: Some(Addr::unchecked("owner")),
+            owner: Addr::unchecked("owner"),
             timelock_duration: 20,
             subdao: Addr::unchecked(MOCK_SUBDAO_CORE_ADDR)
         }
@@ -346,7 +346,7 @@ fn execute_update_config() {
     assert_eq!(
         updated_config,
         Config {
-            owner: Some(Addr::unchecked("neutron1newowner")),
+            owner: Addr::unchecked("neutron1newowner"),
             timelock_duration: 20,
             subdao: Addr::unchecked(MOCK_SUBDAO_CORE_ADDR)
         }
@@ -361,7 +361,7 @@ fn execute_update_config() {
 fn test_query_config() {
     let mut deps = mock_dependencies();
     let config = Config {
-        owner: Some(Addr::unchecked("owner")),
+        owner: Addr::unchecked("owner"),
         timelock_duration: 20,
         subdao: Addr::unchecked(MOCK_SUBDAO_CORE_ADDR),
     };

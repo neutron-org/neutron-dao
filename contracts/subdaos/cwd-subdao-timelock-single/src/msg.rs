@@ -7,7 +7,7 @@ use crate::proposal::SingleChoiceProposal;
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 pub struct InstantiateMsg {
     // Owner can update all configs including changing the owner.
-    pub owner: Option<Addr>,
+    pub owner: Addr,
 
     // Timelock duration for all proposals (starts when TimelockProposal message handler is executed).
     // In seconds.
