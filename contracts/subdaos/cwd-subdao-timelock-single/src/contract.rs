@@ -184,7 +184,7 @@ pub fn execute_update_config(
     new_timelock_duration: Option<u64>,
 ) -> Result<Response<NeutronMsg>, ContractError> {
     let mut config: Config = CONFIG.load(deps.storage)?;
-    if Some(info.sender.clone()) != config.owner {
+    if Some(info.sender) != config.owner {
         return Err(ContractError::Unauthorized {});
     }
 
@@ -192,11 +192,9 @@ pub fn execute_update_config(
         .map(|new_owner| deps.api.addr_validate(&new_owner))
         .transpose()?;
 
-    if Some(info.sender) != config.owner && new_owner != config.owner {
-        return Err(ContractError::OnlyOwnerCanChangeOwner {});
-    };
-
-    config.owner = new_owner;
+    if new_owner.is_some() {
+        config.owner = new_owner;
+    }
 
     if let Some(timelock_duration) = new_timelock_duration {
         config.timelock_duration = timelock_duration;
