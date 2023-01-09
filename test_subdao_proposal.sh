@@ -3,8 +3,8 @@ BIN=neutrond
 CORE_CONTRACT=./artifacts/cwd_subdao_core.wasm
 PROPOSAL_SINGLE_CONTRACT=./artifacts/cwd_subdao_proposal_single.wasm
 TIMELOCK_SINGLE_CONTRACT=./artifacts/cwd_subdao_timelock_single.wasm
-CW4_VOTING_CONTRACT=./artifacts/cw4_voting.wasm
-CW4_GROUP_CONTRACT=./artifacts/cw4_group.wasm
+CW4_VOTING_CONTRACT=./artifacts/cw4_voting.wasm  # Vanilla DAO DAO contract, compiled from original repo
+CW4_GROUP_CONTRACT=./artifacts/cw4_group.wasm # Vanilla cw-plus contract, compiled from original repo
 PRE_PROPOSE_SINGLE_CONTRACT=./artifacts/cwd_subdao_pre_propose_single.wasm
 
 CHAIN_ID=test-1
@@ -235,7 +235,7 @@ PROPOSAL_STATUS=$(echo $RES | jq -r '.data.proposal.status')
 if [ $PROPOSAL_STATUS == "passed"  ]; then
   echo '> Proposal status (in proposal contract) is "passed", all good'
 else
-  echo "ERROR: Proposal status is \"${PROPOSAL_STATUS}\", should be \"timelocked\""
+  echo "ERROR: Proposal status is \"${PROPOSAL_STATUS}\", should be \"passed\""
   exit 1
 fi
 
@@ -347,7 +347,7 @@ PROPOSAL_STATUS=$(echo $RES | jq -r '.data.proposal.status')
 if [ $PROPOSAL_STATUS == "passed"  ]; then
   echo '> Proposal status (in proposal contract) is "passed", all good'
 else
-  echo "ERROR: Proposal status is \"${PROPOSAL_STATUS}\", should be \"timelocked\""
+  echo "ERROR: Proposal status is \"${PROPOSAL_STATUS}\", should be \"passed\""
   exit 1
 fi
 
@@ -376,7 +376,7 @@ PROPOSAL_STATUS=$(echo $RES | jq -r '.data.status')
 if [ $PROPOSAL_STATUS == "overruled"  ]; then
   echo '> Proposal status (in timelock contract) is "overruled", all good'
 else
-  echo "ERROR: Proposal status is \"${PROPOSAL_STATUS}\", should be \"timelocked\""
+  echo "ERROR: Proposal status is \"${PROPOSAL_STATUS}\", should be \"overruled\""
   exit 1
 fi
 

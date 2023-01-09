@@ -42,13 +42,7 @@ pub fn instantiate(
 
     Ok(Response::new()
         .add_attribute("action", "instantiate")
-        .add_attribute(
-            "owner",
-            config
-                .owner
-                .map(|a| a.to_string())
-                .unwrap_or_else(|| "None".to_string()),
-        )
+        .add_attribute("owner", config.owner)
         .add_attribute("timelock_duration", config.timelock_duration.to_string()))
 }
 
@@ -154,7 +148,7 @@ pub fn execute_overrule_proposal(
     let config = CONFIG.load(deps.storage)?;
 
     // Check if sender is owner; the owner is supposed to be the main Neutron DAO.
-    if config.owner != Some(info.sender.clone()) {
+    if config.owner != info.sender {
         return Err(ContractError::Unauthorized {});
     }
 
@@ -184,7 +178,7 @@ pub fn execute_update_config(
     new_timelock_duration: Option<u64>,
 ) -> Result<Response<NeutronMsg>, ContractError> {
     let mut config: Config = CONFIG.load(deps.storage)?;
-    if Some(info.sender.clone()) != config.owner {
+    if info.sender != config.owner {
         return Err(ContractError::Unauthorized {});
     }
 
@@ -192,11 +186,9 @@ pub fn execute_update_config(
         .map(|new_owner| deps.api.addr_validate(&new_owner))
         .transpose()?;
 
-    if Some(info.sender) != config.owner && new_owner != config.owner {
-        return Err(ContractError::OnlyOwnerCanChangeOwner {});
-    };
-
-    config.owner = new_owner;
+    if let Some(owner) = new_owner {
+        config.owner = owner;
+    }
 
     if let Some(timelock_duration) = new_timelock_duration {
         config.timelock_duration = timelock_duration;
@@ -207,13 +199,7 @@ pub fn execute_update_config(
     CONFIG.save(deps.storage, &config)?;
     Ok(Response::new()
         .add_attribute("action", "update_config")
-        .add_attribute(
-            "owner",
-            config
-                .owner
-                .map(|a| a.to_string())
-                .unwrap_or_else(|| "None".to_string()),
-        )
+        .add_attribute("owner", config.owner)
         .add_attribute("timelock_duration", config.timelock_duration.to_string()))
 }
 
