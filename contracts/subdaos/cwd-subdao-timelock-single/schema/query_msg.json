@@ -1,0 +1,75 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "QueryMsg",
+  "oneOf": [
+    {
+      "description": "Gets the config. Returns `state::Config`.",
+      "type": "object",
+      "required": [
+        "config"
+      ],
+      "properties": {
+        "config": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Gets information about a proposal. Returns `proposals::Proposal`.",
+      "type": "object",
+      "required": [
+        "proposal"
+      ],
+      "properties": {
+        "proposal": {
+          "type": "object",
+          "required": [
+            "proposal_id"
+          ],
+          "properties": {
+            "proposal_id": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Lists all the proposals that have been cast in this module. Returns `query::ProposalListResponse`.",
+      "type": "object",
+      "required": [
+        "list_proposals"
+      ],
+      "properties": {
+        "list_proposals": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "description": "The maximum number of proposals to return as part of this query. If no limit is set a max of 30 proposals will be returned.",
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint64",
+              "minimum": 0.0
+            },
+            "start_after": {
+              "description": "The proposal ID to start listing proposals after. For example, if this is set to 2 proposals with IDs 3 and higher will be returned.",
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint64",
+              "minimum": 0.0
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  ]
+}

@@ -1,14 +1,20 @@
 [workspace]
 members = [
-	"contracts/cwd-core",
-	"contracts/treasury/",
-	"contracts/distribution/",
-	"contracts/reserve/",
-	"contracts/proposal/*",
-	"contracts/pre-propose/*",
-	"contracts/voting/*",
-	"packages/*",
-	]
+    "contracts/dao/cwd-core",
+    "contracts/dao/proposal/*",
+    "contracts/dao/pre-propose/*",
+    "contracts/dao/voting/*",
+    "contracts/subdaos/cwd-subdao-core",
+    "contracts/subdaos/proposal/*",
+    "contracts/subdaos/pre-propose/*",
+    "contracts/subdaos/cwd-subdao-timelock-single",
+
+    "contracts/tokenomics/treasury",
+    "contracts/tokenomics/distribution",
+    "contracts/tokenomics/reserve",
+
+    "packages/*",
+]
 
 [profile.release]
 codegen-units = 1
