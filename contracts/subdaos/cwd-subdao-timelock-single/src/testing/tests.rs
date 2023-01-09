@@ -61,7 +61,7 @@ fn test_instantiate_test() {
     let res_ok = res.unwrap();
     let expected_attributes = vec![
         Attribute::new("action", "instantiate"),
-        Attribute::new("owner", "None"),
+        Attribute::new("owner", "none"),
         Attribute::new("timelock_duration", "10"),
     ];
     assert_eq!(expected_attributes, res_ok.attributes);
