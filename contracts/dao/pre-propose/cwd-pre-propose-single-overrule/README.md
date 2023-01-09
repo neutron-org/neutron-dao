@@ -1,27 +1,14 @@
-# Single choice proposal deposit contract
+# Overrule proposal module
 
-This is a pre-propose module that manages proposal deposits for the
-`cwd-proposal-single` proposal module.
+This is a pre-propose module that allows to create overrule type proposals.
 
-It may accept either native ([bank
-module](https://docs.cosmos.network/main/modules/bank/)),
-[cw20](https://github.com/CosmWasm/cw-plus/tree/bc339368b1ee33c97c55a19d4cff983c7708ce36/packages/cw20)
-tokens, or no tokens as a deposit. If a proposal deposit is enabled
-the following refund strategies are avaliable:
+It requires for the DAO to have separate proposal module for overrule proposals
+(it should have less voting period as well as low voting power threshold).
 
-1. Never refund deposits. All deposits are sent to the DAO on proposal
-   completion.
-2. Always refund deposits. Deposits are returned to the proposer on
-   proposal completion.
-3. Only refund passed proposals. Deposits are only returned to the
-   proposer if the proposal passes. Otherwise, they are sent to the
-   DAO.
+This pre-proposal module
+1. Restricts the creation of something other than overrule proposals
+2. Provides the interface for simple overrule proposal creation
 
-This module may also be configured to only accept proposals from
-members (addresses with voting power) of the DAO.
+Essentially, this pre-proposal module just a wrapper to for a proper proposal message.
 
-Here is a flowchart showing the proposal creation process using this
-module:
-
-![](https://bafkreig42cxswefi2ks7vhrwyvkcnumbnwdk7ov643yaafm7loi6vh2gja.ipfs.nftstorage.link)
-
+Warning: no deposits allowed 
