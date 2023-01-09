@@ -3,19 +3,13 @@
   "title": "ConfigResponse",
   "type": "object",
   "required": [
+    "owner",
     "subdao",
     "timelock_duration"
   ],
   "properties": {
     "owner": {
-      "anyOf": [
-        {
-          "$ref": "#/definitions/Addr"
-        },
-        {
-          "type": "null"
-        }
-      ]
+      "$ref": "#/definitions/Addr"
     },
     "subdao": {
       "$ref": "#/definitions/Addr"

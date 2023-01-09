@@ -1,7 +1,7 @@
 .PHONY: schema test clippy proto-gen build fmt
 
 schema:
-	@find contracts/* -maxdepth 1 -type d \( ! -name . \) -exec bash -c "cd '{}' && cargo schema" \;
+	@find contracts/* -type f -name 'Cargo.toml' -execdir cargo schema \;
 
 test:
 	@cargo test

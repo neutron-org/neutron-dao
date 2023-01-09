@@ -3,18 +3,12 @@
   "title": "InstantiateMsg",
   "type": "object",
   "required": [
+    "owner",
     "timelock_duration"
   ],
   "properties": {
     "owner": {
-      "anyOf": [
-        {
-          "$ref": "#/definitions/Addr"
-        },
-        {
-          "type": "null"
-        }
-      ]
+      "$ref": "#/definitions/Addr"
     },
     "timelock_duration": {
       "type": "integer",

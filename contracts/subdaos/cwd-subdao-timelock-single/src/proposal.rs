@@ -3,7 +3,7 @@ use neutron_bindings::bindings::msg::NeutronMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Clone, JsonSchema, Debug)]
+#[derive(Serialize, Deserialize, Clone, JsonSchema, Debug, Eq, PartialEq)]
 pub struct SingleChoiceProposal {
     /// The ID of the proposal being returned.
     pub id: u64,
