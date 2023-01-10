@@ -950,7 +950,7 @@ dependencies = [
 [[package]]
 name = "neutron-sdk"
 version = "0.1.0"
-source = "git+https://github.com/neutron-org/neutron-sdk.git?rev=8bfe55e549e683e36f44ccca7a22e94ae3fb47d8#8bfe55e549e683e36f44ccca7a22e94ae3fb47d8"
+source = "git+https://github.com/neutron-org/neutron-sdk.git?rev=e84b98a60fc727ee809e791ac90b35db5c39883c#e84b98a60fc727ee809e791ac90b35db5c39883c"
 dependencies = [
  "base64 0.20.0",
  "bech32",
