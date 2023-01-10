@@ -2,19 +2,13 @@ use crate::contract::{migrate, CONTRACT_NAME, CONTRACT_VERSION};
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::state::Config;
 use cosmwasm_std::testing::{mock_dependencies, mock_env};
-use cosmwasm_std::{coins, Addr, Coin, Empty, Uint128};
-use cw_multi_test::{
-    custom_app, next_block, App, AppResponse, Contract, ContractWrapper, Executor,
-};
-use cwd_interface::voting::{
-    InfoResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
-};
+use cosmwasm_std::{Addr, Coin, Empty, Uint128};
+use cw_multi_test::{custom_app, App, AppResponse, Contract, ContractWrapper, Executor};
+use cwd_interface::voting::InfoResponse;
 use cwd_interface::Admin;
 
 const DAO_ADDR: &str = "dao";
 const VAULT_ADDR: &str = "vault";
-const DESCRIPTION: &str = "description";
-const NEW_DESCRIPTION: &str = "new description";
 const ADDR1: &str = "addr1";
 const ADDR2: &str = "addr2";
 const DENOM: &str = "ujuno";
@@ -480,7 +474,7 @@ fn test_remove_last_vault_owner() {
     );
 
     let new_vault: &str = "new_vault";
-    remove_vault(&mut app, addr.clone(), DAO_ADDR, new_vault.to_string()).unwrap();
+    remove_vault(&mut app, addr, DAO_ADDR, new_vault.to_string()).unwrap();
 }
 
 #[test]
