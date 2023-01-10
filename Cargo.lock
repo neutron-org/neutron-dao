@@ -604,6 +604,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "cwd-pre-propose-overrule"
+version = "0.2.0"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-denom",
+ "cw-multi-test",
+ "cw-storage-plus 0.13.4",
+ "cw-utils",
+ "cw2",
+ "cw20",
+ "cw20-base",
+ "cw4-group",
+ "cwd-core",
+ "cwd-interface",
+ "cwd-pre-propose-base",
+ "cwd-proposal-hooks",
+ "cwd-proposal-single",
+ "cwd-voting",
+ "neutron-sdk",
+ "schemars",
+ "serde",
+]
+
+[[package]]
 name = "cwd-pre-propose-single"
 version = "0.2.0"
 dependencies = [
@@ -693,31 +718,6 @@ dependencies = [
  "schemars",
  "serde",
  "thiserror",
-]
-
-[[package]]
-name = "cwd-subdao-pre-propose-overrule"
-version = "0.2.0"
-dependencies = [
- "cosmwasm-schema",
- "cosmwasm-std",
- "cw-denom",
- "cw-multi-test",
- "cw-storage-plus 0.13.4",
- "cw-utils",
- "cw2",
- "cw20",
- "cw20-base",
- "cw4-group",
- "cwd-core",
- "cwd-interface",
- "cwd-pre-propose-base",
- "cwd-proposal-hooks",
- "cwd-proposal-single",
- "cwd-voting",
- "neutron-sdk",
- "schemars",
- "serde",
 ]
 
 [[package]]

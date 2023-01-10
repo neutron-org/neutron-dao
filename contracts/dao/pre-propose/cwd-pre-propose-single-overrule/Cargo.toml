@@ -1,5 +1,5 @@
 [package]
-name = "cwd-subdao-pre-propose-overrule"
+name = "cwd-pre-propose-overrule"
 version = "0.2.0"
 authors = ["oldremez"]
 edition = "2021"
