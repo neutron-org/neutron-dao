@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use crate::reply::pre_propose_module_instantiation_id;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub enum PreProposeInfo {
     /// Anyone may create a proposal free of charge.
     AnyoneMayPropose {},
