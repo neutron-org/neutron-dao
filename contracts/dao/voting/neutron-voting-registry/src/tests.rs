@@ -1,7 +1,5 @@
 use crate::contract::{migrate, CONTRACT_NAME, CONTRACT_VERSION};
-use crate::msg::{
-    ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg,
-};
+use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::state::Config;
 use cosmwasm_std::testing::{mock_dependencies, mock_env};
 use cosmwasm_std::{coins, Addr, Coin, Empty, Uint128};
@@ -100,10 +98,7 @@ fn update_config(
     app.execute_contract(
         Addr::unchecked(sender),
         contract_addr,
-        &ExecuteMsg::UpdateConfig {
-            owner,
-            manager,
-        },
+        &ExecuteMsg::UpdateConfig { owner, manager },
         &[],
     )
 }
@@ -134,7 +129,7 @@ fn remove_vault(
         Addr::unchecked(sender),
         contract_addr,
         &ExecuteMsg::RemoveVotingVault {
-            old_voting_vault_contract
+            old_voting_vault_contract,
         },
         &[],
     )
@@ -170,7 +165,7 @@ fn test_instantiate() {
         InstantiateMsg {
             owner: None,
             manager: None,
-            voting_vault: VAULT_ADDR.to_string()
+            voting_vault: VAULT_ADDR.to_string(),
         },
     );
 }
@@ -186,7 +181,7 @@ fn test_instantiate_dao_owner() {
         InstantiateMsg {
             owner: Some(Admin::CoreModule {}),
             manager: Some(ADDR1.to_string()),
-            voting_vault: VAULT_ADDR.to_string()
+            voting_vault: VAULT_ADDR.to_string(),
         },
     );
 
@@ -194,7 +189,6 @@ fn test_instantiate_dao_owner() {
 
     assert_eq!(config.owner, Some(Addr::unchecked(DAO_ADDR)))
 }
-
 
 #[test]
 #[should_panic(expected = "Unauthorized")]
@@ -207,7 +201,7 @@ fn test_update_config_invalid_sender() {
         InstantiateMsg {
             owner: Some(Admin::CoreModule {}),
             manager: Some(ADDR1.to_string()),
-            voting_vault: VAULT_ADDR.to_string()
+            voting_vault: VAULT_ADDR.to_string(),
         },
     );
 
@@ -219,7 +213,7 @@ fn test_update_config_invalid_sender() {
         Some(ADDR1.to_string()),
         Some(DAO_ADDR.to_string()),
     )
-        .unwrap();
+    .unwrap();
 }
 
 #[test]
@@ -233,7 +227,7 @@ fn test_update_config_non_owner_changes_owner() {
         InstantiateMsg {
             owner: Some(Admin::CoreModule {}),
             manager: Some(ADDR1.to_string()),
-            voting_vault: VAULT_ADDR.to_string()
+            voting_vault: VAULT_ADDR.to_string(),
         },
     );
 
@@ -251,7 +245,7 @@ fn test_update_config_as_owner() {
         InstantiateMsg {
             owner: Some(Admin::CoreModule {}),
             manager: Some(ADDR1.to_string()),
-            voting_vault: VAULT_ADDR.to_string()
+            voting_vault: VAULT_ADDR.to_string(),
         },
     );
 
@@ -263,7 +257,7 @@ fn test_update_config_as_owner() {
         Some(ADDR1.to_string()),
         Some(DAO_ADDR.to_string()),
     )
-        .unwrap();
+    .unwrap();
 
     let config = get_config(&mut app, addr);
     assert_eq!(
@@ -286,7 +280,7 @@ fn test_update_config_as_manager() {
         InstantiateMsg {
             owner: Some(Admin::CoreModule {}),
             manager: Some(ADDR1.to_string()),
-            voting_vault: VAULT_ADDR.to_string()
+            voting_vault: VAULT_ADDR.to_string(),
         },
     );
 
@@ -298,7 +292,7 @@ fn test_update_config_as_manager() {
         Some(DAO_ADDR.to_string()),
         Some(ADDR2.to_string()),
     )
-        .unwrap();
+    .unwrap();
 
     let config = get_config(&mut app, addr);
     assert_eq!(
@@ -321,7 +315,7 @@ fn test_query_dao() {
         InstantiateMsg {
             owner: Some(Admin::CoreModule {}),
             manager: Some(ADDR1.to_string()),
-            voting_vault: VAULT_ADDR.to_string()
+            voting_vault: VAULT_ADDR.to_string(),
         },
     );
 
@@ -340,7 +334,7 @@ fn test_query_info() {
         InstantiateMsg {
             owner: Some(Admin::CoreModule {}),
             manager: Some(ADDR1.to_string()),
-            voting_vault: VAULT_ADDR.to_string()
+            voting_vault: VAULT_ADDR.to_string(),
         },
     );
 
@@ -359,7 +353,7 @@ fn test_query_get_config() {
         InstantiateMsg {
             owner: Some(Admin::CoreModule {}),
             manager: Some(ADDR1.to_string()),
-            voting_vault: VAULT_ADDR.to_string()
+            voting_vault: VAULT_ADDR.to_string(),
         },
     );
 
@@ -384,7 +378,7 @@ fn test_add_vault_owner() {
         InstantiateMsg {
             owner: Some(Admin::CoreModule {}),
             manager: Some(ADDR1.to_string()),
-            voting_vault: VAULT_ADDR.to_string()
+            voting_vault: VAULT_ADDR.to_string(),
         },
     );
 
@@ -412,7 +406,7 @@ fn test_remove_vault_owner() {
         InstantiateMsg {
             owner: Some(Admin::CoreModule {}),
             manager: Some(ADDR1.to_string()),
-            voting_vault: VAULT_ADDR.to_string()
+            voting_vault: VAULT_ADDR.to_string(),
         },
     );
 
@@ -436,12 +430,10 @@ fn test_remove_vault_owner() {
         Config {
             owner: Some(Addr::unchecked(DAO_ADDR)),
             manager: Some(Addr::unchecked(ADDR1)),
-            voting_vaults: vec![ Addr::unchecked(new_vault)]
+            voting_vaults: vec![Addr::unchecked(new_vault)]
         }
     );
-
 }
-
 
 #[test]
 #[should_panic(expected = "Unauthorized")]
@@ -454,7 +446,7 @@ fn test_add_vault_manager() {
         InstantiateMsg {
             owner: Some(Admin::CoreModule {}),
             manager: Some(ADDR1.to_string()),
-            voting_vault: VAULT_ADDR.to_string()
+            voting_vault: VAULT_ADDR.to_string(),
         },
     );
 
@@ -483,7 +475,7 @@ fn test_remove_last_vault_owner() {
         InstantiateMsg {
             owner: Some(Admin::CoreModule {}),
             manager: Some(ADDR1.to_string()),
-            voting_vault: VAULT_ADDR.to_string()
+            voting_vault: VAULT_ADDR.to_string(),
         },
     );
 
