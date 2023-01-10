@@ -11,4 +11,4 @@ This pre-proposal module
 
 Essentially, this pre-proposal module just a wrapper to for a proper proposal message.
 
-Warning: no deposits allowed 
+Warning: no deposits allowed since deposits make no sense in context of overrule proposals.

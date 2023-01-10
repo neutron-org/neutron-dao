@@ -14,9 +14,8 @@ use cwd_pre_propose_base::{
     msg::{ExecuteMsg as ExecuteBase, InstantiateMsg as InstantiateBase, QueryMsg as QueryBase},
     state::PreProposeContract,
 };
-// use cwd_voting::deposit::UncheckedDepositInfo;
 
-pub(crate) const CONTRACT_NAME: &str = "crates.io:cwd-pre-propose-single-timelocked";
+pub(crate) const CONTRACT_NAME: &str = "crates.io:cwd-pre-propose-single-overrule";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[derive(Serialize, JsonSchema, Deserialize, Debug, Clone)]
@@ -64,7 +63,7 @@ pub fn instantiate(
     info: MessageInfo,
     _msg: InstantiateMsg,
 ) -> Result<Response, PreProposeError> {
-    // the contract has no info for instantiation, so it just calls the init function of base
+    // the contract has no info for instantiation so far, so it just calls the init function of base
     // deposit is set to zero because it makes no sense for overrule proposals
     // for open submission it's tbd
     let resp = PrePropose::default().instantiate(
@@ -72,7 +71,7 @@ pub fn instantiate(
         env,
         info,
         InstantiateBase {
-            deposit_info: Option::None,
+            deposit_info: None,
             open_proposal_submission: false,
         },
     )?;
@@ -110,13 +109,13 @@ pub fn execute(
                 msg: ProposeMessageInternal::Propose {
                     // Fill in proposer based on message sender.
                     proposer: Some(info.sender.to_string()),
-                    title: "Overrule proposal _number_ of _subdao_name_ subdao".to_string(),
+                    title: "Overrule proposal".to_string(),
                     description: "Reject the decision made by subdao".to_string(),
                     msgs: vec![overrule_msg],
                 },
             }
         },
-        _ => panic!(""),
+        _ => panic!("Overrule proposal wrapper doesn't allow anything but overrule proposals"),
     };
 
     PrePropose::default().execute(deps, env, info, internalized)
