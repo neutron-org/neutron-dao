@@ -45,7 +45,7 @@ pub struct InstantiateMsg {}
 /// of the external message.
 #[derive(Serialize, JsonSchema, Deserialize, Debug, Clone)]
 #[serde(rename_all = "snake_case")]
-enum ProposeMessageInternal {
+pub enum ProposeMessageInternal {
     Propose {
         title: String,
         description: String,
@@ -72,7 +72,7 @@ pub fn instantiate(
         info,
         InstantiateBase {
             deposit_info: None,
-            open_proposal_submission: false,
+            open_proposal_submission: true,
         },
     )?;
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
