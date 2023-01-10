@@ -275,7 +275,7 @@ PROPOSAL_STATUS=$(echo $RES | jq -r '.data.proposal.status')
 if [ $PROPOSAL_STATUS == "passed"  ]; then
   echo '> Proposal status (in proposal contract) is "passed", all good'
 else
-  echo "ERROR: Proposal status is \"${PROPOSAL_STATUS}\", should be \"timelocked\""
+  echo "ERROR: Proposal status is \"${PROPOSAL_STATUS}\", should be \"passed\""
   exit 1
 fi
 
@@ -387,7 +387,7 @@ PROPOSAL_STATUS=$(echo $RES | jq -r '.data.proposal.status')
 if [ $PROPOSAL_STATUS == "passed"  ]; then
   echo '> Proposal status (in proposal contract) is "passed", all good'
 else
-  echo "ERROR: Proposal status is \"${PROPOSAL_STATUS}\", should be \"timelocked\""
+  echo "ERROR: Proposal status is \"${PROPOSAL_STATUS}\", should be \"passed\""
   exit 1
 fi
 
