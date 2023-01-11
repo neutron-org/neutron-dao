@@ -1,13 +1,18 @@
-use cosmwasm_std::{testing::{mock_env, mock_info}, Addr, CosmosMsg, DepsMut, Empty, SubMsg, WasmMsg, to_binary, from_binary};
+use cosmwasm_std::{
+    from_binary,
+    testing::{mock_env, mock_info},
+    to_binary, Addr, CosmosMsg, DepsMut, Empty, SubMsg, WasmMsg,
+};
 
 use crate::{
-    contract::{execute, instantiate, InstantiateMsg, ExecuteMsg, ProposeMessage, ProposeMessageInternal, TimelockExecuteMsg, QueryMsg, query},
+    contract::{
+        execute, instantiate, query, ExecuteMsg, InstantiateMsg, ProposeMessage,
+        ProposeMessageInternal, QueryMsg, TimelockExecuteMsg,
+    },
     testing::mock_querier::{mock_dependencies, MOCK_PROPOSE_MODULE, MOCK_TIMELOCK_CONTRACT},
 };
 
-use cwd_pre_propose_base::{
-    state::Config,
-};
+use cwd_pre_propose_base::state::Config;
 
 pub fn init_base_contract(deps: DepsMut<Empty>) {
     let msg = InstantiateMsg {};
@@ -27,36 +32,41 @@ fn test_create_overrule_proposal() {
             proposal_id: PROPOSAL_ID,
         },
     };
-    let res = execute(deps.as_mut(), mock_env(), mock_info(PROPOSER_ADDR, &[]), msg);
+    let res = execute(
+        deps.as_mut(),
+        mock_env(),
+        mock_info(PROPOSER_ADDR, &[]),
+        msg,
+    );
     assert!(res.is_ok());
-    assert_eq!(res.unwrap().messages, vec![
-        SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+    assert_eq!(
+        res.unwrap().messages,
+        vec![SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: MOCK_PROPOSE_MODULE.to_string(),
             msg: to_binary(&ProposeMessageInternal::Propose {
                 title: "Overrule proposal".to_string(),
                 description: "Reject the decision made by subdao".to_string(),
-                msgs: vec![
-                    CosmosMsg::Wasm(WasmMsg::Execute {
-                        contract_addr: MOCK_TIMELOCK_CONTRACT.to_string(),
-                        msg: to_binary(&TimelockExecuteMsg::OverruleProposal {
-                            proposal_id: PROPOSAL_ID
-                        }).unwrap(),
-                        funds: vec![],
+                msgs: vec![CosmosMsg::Wasm(WasmMsg::Execute {
+                    contract_addr: MOCK_TIMELOCK_CONTRACT.to_string(),
+                    msg: to_binary(&TimelockExecuteMsg::OverruleProposal {
+                        proposal_id: PROPOSAL_ID
                     })
-                ],
+                    .unwrap(),
+                    funds: vec![],
+                })],
                 proposer: Some(PROPOSER_ADDR.to_string()),
-            }
-            ).unwrap(),
+            })
+            .unwrap(),
             funds: vec![],
-        }))
-    ]);
+        }))]
+    );
 }
 
 #[test]
 fn test_query_deposit() {
     let mut deps = mock_dependencies();
     init_base_contract(deps.as_mut());
-    let query_msg = QueryMsg::Config { };
+    let query_msg = QueryMsg::Config {};
     let res = query(deps.as_ref(), mock_env(), query_msg).unwrap();
     let queried_prop = from_binary(&res).unwrap();
     let expected_prop = Config {
@@ -67,14 +77,21 @@ fn test_query_deposit() {
 }
 
 #[test]
-#[should_panic(expected = "Overrule proposal wrapper doesn't allow anything but overrule proposals")]
+#[should_panic(
+    expected = "Overrule proposal wrapper doesn't allow anything but overrule proposals"
+)]
 fn test_base_prepropose_methods() {
     let mut deps = mock_dependencies();
     init_base_contract(deps.as_mut());
     const PROPOSER_ADDR: &str = "whatever";
     let msg = ExecuteMsg::UpdateConfig {
         deposit_info: None,
-        open_proposal_submission: true
+        open_proposal_submission: true,
     };
-    let _res = execute(deps.as_mut(), mock_env(), mock_info(PROPOSER_ADDR, &[]), msg);
+    let _res = execute(
+        deps.as_mut(),
+        mock_env(),
+        mock_info(PROPOSER_ADDR, &[]),
+        msg,
+    );
 }

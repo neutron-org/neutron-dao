@@ -114,7 +114,7 @@ pub fn execute(
                     msgs: vec![overrule_msg],
                 },
             }
-        },
+        }
         _ => panic!("Overrule proposal wrapper doesn't allow anything but overrule proposals"),
     };
 
