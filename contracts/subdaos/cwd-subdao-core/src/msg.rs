@@ -7,7 +7,6 @@ use serde::{Deserialize, Serialize};
 use cwd_macros::{info_query, pausable, pausable_query, voting_query};
 
 use crate::query::SubDao;
-use crate::state::Config;
 
 /// Information about an item to be stored in the items list.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
@@ -42,6 +41,8 @@ pub struct InstantiateMsg {
     pub initial_items: Option<Vec<InitialItem>>,
     /// Implements the DAO Star standard: https://daostar.one/EIP
     pub dao_uri: Option<String>,
+    /// The address of the Neutron DAO.
+    pub main_dao: Addr,
     /// The address of the security DAO. The security DAO is capable of pausing the subDAO.
     pub security_dao: Addr,
 }
@@ -61,7 +62,11 @@ pub enum ExecuteMsg {
     SetItem { key: String, addr: String },
     /// Callable by the core contract. Replaces the current
     /// governance contract config with the provided config.
-    UpdateConfig { config: Config },
+    UpdateConfig {
+        name: Option<String>,
+        description: Option<String>,
+        dao_uri: Option<String>,
+    },
     /// Updates the governance contract's governance modules. Module
     /// instantiate info in `to_add` is used to create new modules and
     /// install them.

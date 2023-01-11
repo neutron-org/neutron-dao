@@ -42,7 +42,7 @@ pub fn instantiate(
         name: msg.name,
         description: msg.description,
         dao_uri: msg.dao_uri,
-        main_dao: info.sender.clone(),
+        main_dao: msg.main_dao,
         security_dao: msg.security_dao,
     };
     CONFIG.save(deps.storage, &config)?;
@@ -104,9 +104,11 @@ pub fn execute(
         ExecuteMsg::Unpause {} => execute_unpause(deps, info.sender),
         ExecuteMsg::RemoveItem { key } => execute_remove_item(deps, env, info.sender, key),
         ExecuteMsg::SetItem { key, addr } => execute_set_item(deps, env, info.sender, key, addr),
-        ExecuteMsg::UpdateConfig { config } => {
-            execute_update_config(deps, env, info.sender, config)
-        }
+        ExecuteMsg::UpdateConfig {
+            name,
+            description,
+            dao_uri,
+        } => execute_update_config(deps, env, info, name, description, dao_uri),
         ExecuteMsg::UpdateVotingModule { module } => {
             execute_update_voting_module(env, info.sender, module)
         }
@@ -181,11 +183,24 @@ pub fn execute_proposal_hook(
 pub fn execute_update_config(
     deps: DepsMut,
     env: Env,
-    sender: Addr,
-    config: Config,
+    info: MessageInfo,
+    name: Option<String>,
+    description: Option<String>,
+    dao_uri: Option<String>,
 ) -> Result<Response<NeutronMsg>, ContractError> {
-    if env.contract.address != sender {
+    if info.sender != env.contract.address {
         return Err(ContractError::Unauthorized {});
+    }
+
+    let mut config: Config = CONFIG.load(deps.storage)?;
+    if let Some(name) = name {
+        config.name = name;
+    }
+    if let Some(description) = description {
+        config.description = description;
+    }
+    if let Some(dao_uri) = dao_uri {
+        config.dao_uri = Some(dao_uri);
     }
 
     CONFIG.save(deps.storage, &config)?;
@@ -197,7 +212,10 @@ pub fn execute_update_config(
     Ok(Response::default()
         .add_attribute("action", "execute_update_config")
         .add_attribute("name", config.name)
-        .add_attribute("description", config.description))
+        .add_attribute("description", config.description)
+        .add_attribute("dao_uri", config.dao_uri.unwrap_or_default())
+        .add_attribute("main_dao", config.main_dao)
+        .add_attribute("security_dao", config.security_dao))
 }
 
 pub fn execute_update_voting_module(
