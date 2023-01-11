@@ -1,7 +1,7 @@
 use cosmwasm_std::{
     from_binary,
     testing::{mock_env, mock_info},
-    to_binary, Addr, CosmosMsg, DepsMut, Empty, SubMsg, WasmMsg,
+    to_binary, CosmosMsg, DepsMut, Empty, SubMsg, WasmMsg,
 };
 
 use crate::{
@@ -29,7 +29,7 @@ fn test_create_overrule_proposal() {
     const PROPOSER_ADDR: &str = "whatever";
     let msg = ExecuteMsg::Propose {
         msg: ProposeMessage::ProposeOverrule {
-            timelock_contract: Addr::unchecked(MOCK_TIMELOCK_CONTRACT),
+            timelock_contract: MOCK_TIMELOCK_CONTRACT.to_string(),
             proposal_id: PROPOSAL_ID,
         },
     };

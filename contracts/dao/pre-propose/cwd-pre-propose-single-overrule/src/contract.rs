@@ -1,8 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
-    WasmMsg,
+    to_binary, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response, StdResult, WasmMsg,
 };
 use cw2::set_contract_version;
 use neutron_bindings::bindings::msg::NeutronMsg;
@@ -25,7 +24,7 @@ pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 #[serde(rename_all = "snake_case")]
 pub enum ProposeMessage {
     ProposeOverrule {
-        timelock_contract: Addr,
+        timelock_contract: String,
         proposal_id: u64,
     },
 }
@@ -102,8 +101,10 @@ pub fn execute(
                     proposal_id,
                 },
         } => {
+            let timelock_contract_addr = deps.api.addr_validate(&timelock_contract)?;
+
             let overrule_msg = CosmosMsg::Wasm(WasmMsg::Execute {
-                contract_addr: timelock_contract.to_string(),
+                contract_addr: timelock_contract_addr.to_string(),
                 msg: to_binary(&TimelockExecuteMsg::OverruleProposal { proposal_id })?,
                 funds: vec![],
             });
