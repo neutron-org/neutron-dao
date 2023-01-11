@@ -108,7 +108,7 @@ pub fn execute(
                 funds: vec![],
             });
 
-            let int_msg = ExecuteInternal::Propose {
+            let internal_msg = ExecuteInternal::Propose {
                 msg: ProposeMessageInternal::Propose {
                     // Fill in proposer based on message sender.
                     proposer: Some(info.sender.to_string()),
@@ -118,7 +118,7 @@ pub fn execute(
                 },
             };
 
-            let result = PrePropose::default().execute(deps, env, info, int_msg);
+            let result = PrePropose::default().execute(deps, env, info, internal_msg);
 
             match result {
                 Ok(response) => Ok(response),
