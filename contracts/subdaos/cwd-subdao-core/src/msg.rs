@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, CosmosMsg};
+use cosmwasm_std::CosmosMsg;
 use cwd_interface::ModuleInstantiateInfo;
 use neutron_bindings::bindings::msg::NeutronMsg;
 use schemars::JsonSchema;
@@ -42,9 +42,9 @@ pub struct InstantiateMsg {
     /// Implements the DAO Star standard: https://daostar.one/EIP
     pub dao_uri: Option<String>,
     /// The address of the Neutron DAO.
-    pub main_dao: Addr,
+    pub main_dao: String,
     /// The address of the security DAO. The security DAO is capable of pausing the subDAO.
-    pub security_dao: Addr,
+    pub security_dao: String,
 }
 
 #[pausable]

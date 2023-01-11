@@ -8,7 +8,7 @@ use crate::{
 use cosmwasm_std::{
     coin, coins, from_binary,
     testing::{mock_env, mock_info},
-    Addr, BankMsg, Coin, CosmosMsg, DepsMut, Empty, Uint128,
+    BankMsg, Coin, CosmosMsg, DepsMut, Empty, Uint128,
 };
 use exec_control::pause::{PauseError, PauseInfoResponse};
 
@@ -20,8 +20,8 @@ const SECURITY_DAO_ADDR: &str = "security_dao";
 pub fn init_base_contract(deps: DepsMut<Empty>) {
     let msg = InstantiateMsg {
         denom: DENOM.to_string(),
-        main_dao_address: Addr::unchecked(MAIN_DAO_ADDR),
-        security_dao_address: Addr::unchecked(SECURITY_DAO_ADDR),
+        main_dao_address: MAIN_DAO_ADDR.to_string(),
+        security_dao_address: SECURITY_DAO_ADDR.to_string(),
     };
     let info = mock_info("creator", &coins(2, DENOM));
     instantiate(deps, mock_env(), info, msg).unwrap();

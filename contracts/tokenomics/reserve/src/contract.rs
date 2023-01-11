@@ -25,8 +25,8 @@ pub fn instantiate(
 ) -> StdResult<Response> {
     let config = Config {
         denom: msg.denom,
-        main_dao_address: msg.main_dao_address,
-        security_dao_address: msg.security_dao_address,
+        main_dao_address: deps.api.addr_validate(&msg.main_dao_address)?,
+        security_dao_address: deps.api.addr_validate(&msg.security_dao_address)?,
     };
     CONFIG.save(deps.storage, &config)?;
     PAUSED_UNTIL.save(deps.storage, &None)?;

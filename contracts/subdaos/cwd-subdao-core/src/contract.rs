@@ -42,8 +42,8 @@ pub fn instantiate(
         name: msg.name,
         description: msg.description,
         dao_uri: msg.dao_uri,
-        main_dao: msg.main_dao,
-        security_dao: msg.security_dao,
+        main_dao: deps.api.addr_validate(&msg.main_dao)?,
+        security_dao: deps.api.addr_validate(&msg.security_dao)?,
     };
     CONFIG.save(deps.storage, &config)?;
     PAUSED_UNTIL.save(deps.storage, &None)?;
@@ -204,11 +204,7 @@ pub fn execute_update_config(
     }
 
     CONFIG.save(deps.storage, &config)?;
-    // We incur some gas costs by having the config's fields in the
-    // response. This has the benefit that it makes it reasonably
-    // simple to ask "when did this field in the config change" by
-    // running something like `junod query txs --events
-    // 'wasm._contract_address=core&wasm.name=name'`.
+
     Ok(Response::default()
         .add_attribute("action", "execute_update_config")
         .add_attribute("name", config.name)
