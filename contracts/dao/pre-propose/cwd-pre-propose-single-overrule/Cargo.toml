@@ -24,6 +24,7 @@ cwd-pre-propose-base = { version = "*", path = "../../../../packages/cwd-pre-pro
 cwd-voting = { path = "../../../../packages/cwd-voting" }
 neutron_bindings = { package = "neutron-sdk", version = "0.1.0", git = "https://github.com/neutron-org/neutron-contracts.git" }
 schemars = "0.8.8"
+thiserror = { version = "1.0.31" }
 
 [dev-dependencies]
 cosmwasm-schema = "1.0.0"

@@ -9,11 +9,14 @@ use neutron_bindings::bindings::msg::NeutronMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use error::PreProposeOverruleError;
+
 use cwd_pre_propose_base::{
     error::PreProposeError,
     msg::{ExecuteMsg as ExecuteBase, InstantiateMsg as InstantiateBase, QueryMsg as QueryBase},
     state::PreProposeContract,
 };
+use crate::error;
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:cwd-pre-propose-single-overrule";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -85,13 +88,13 @@ pub fn execute(
     env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
-) -> Result<Response, PreProposeError> {
+) -> Result<Response, PreProposeOverruleError> {
     // We don't want to expose the `proposer` field on the propose
     // message externally as that is to be set by this module. Here,
     // we transform an external message which omits that field into an
     // internal message which sets it.
     type ExecuteInternal = ExecuteBase<ProposeMessageInternal>;
-    let internalized = match msg {
+    match msg {
         ExecuteMsg::Propose {
             msg:
                 ProposeMessage::ProposeOverrule {
@@ -105,7 +108,7 @@ pub fn execute(
                 funds: vec![],
             });
 
-            ExecuteInternal::Propose {
+            let int_msg = ExecuteInternal::Propose {
                 msg: ProposeMessageInternal::Propose {
                     // Fill in proposer based on message sender.
                     proposer: Some(info.sender.to_string()),
@@ -113,12 +116,17 @@ pub fn execute(
                     description: "Reject the decision made by subdao".to_string(),
                     msgs: vec![overrule_msg],
                 },
+            };
+
+            let result = PrePropose::default().execute(deps, env, info, int_msg);
+
+            match result {
+                Ok(response)  => Ok(response),
+                Err(error) => Err(PreProposeOverruleError::PreProposeBase(error)),
             }
         }
-        _ => panic!("Overrule proposal wrapper doesn't allow anything but overrule proposals"),
-    };
-
-    PrePropose::default().execute(deps, env, info, internalized)
+        _ => Err(PreProposeOverruleError::MessageUnsupported {}),
+    }
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

@@ -13,6 +13,7 @@ use crate::{
 };
 
 use cwd_pre_propose_base::state::Config;
+use crate::error::PreProposeOverruleError;
 
 pub fn init_base_contract(deps: DepsMut<Empty>) {
     let msg = InstantiateMsg {};
@@ -63,7 +64,7 @@ fn test_create_overrule_proposal() {
 }
 
 #[test]
-fn test_query_deposit() {
+fn test_query_config() {
     let mut deps = mock_dependencies();
     init_base_contract(deps.as_mut());
     let query_msg = QueryMsg::Config {};
@@ -77,9 +78,6 @@ fn test_query_deposit() {
 }
 
 #[test]
-#[should_panic(
-    expected = "Overrule proposal wrapper doesn't allow anything but overrule proposals"
-)]
 fn test_base_prepropose_methods() {
     let mut deps = mock_dependencies();
     init_base_contract(deps.as_mut());
@@ -88,10 +86,12 @@ fn test_base_prepropose_methods() {
         deposit_info: None,
         open_proposal_submission: true,
     };
-    let _res = execute(
+    let res = execute(
         deps.as_mut(),
         mock_env(),
         mock_info(PROPOSER_ADDR, &[]),
         msg,
     );
+    assert!(res.is_err());
+    assert_eq!(res.err().unwrap(), PreProposeOverruleError::MessageUnsupported {})
 }
