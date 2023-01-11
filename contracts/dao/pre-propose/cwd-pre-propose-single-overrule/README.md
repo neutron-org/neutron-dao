@@ -9,6 +9,6 @@ This pre-proposal module
 1. Restricts the creation of something other than overrule proposals
 2. Provides the interface for simple overrule proposal creation
 
-Essentially, this pre-proposal module just a wrapper to for a proper proposal message.
+Essentially, this pre-proposal module just a wrapper for a proper proposal message.
 
 Warning: no deposits allowed since deposits make no sense in context of overrule proposals.
