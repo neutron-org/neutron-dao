@@ -12,8 +12,8 @@ use crate::{
     testing::mock_querier::{mock_dependencies, MOCK_PROPOSE_MODULE, MOCK_TIMELOCK_CONTRACT},
 };
 
-use cwd_pre_propose_base::state::Config;
 use crate::error::PreProposeOverruleError;
+use cwd_pre_propose_base::state::Config;
 
 pub fn init_base_contract(deps: DepsMut<Empty>) {
     let msg = InstantiateMsg {};
@@ -93,5 +93,8 @@ fn test_base_prepropose_methods() {
         msg,
     );
     assert!(res.is_err());
-    assert_eq!(res.err().unwrap(), PreProposeOverruleError::MessageUnsupported {})
+    assert_eq!(
+        res.err().unwrap(),
+        PreProposeOverruleError::MessageUnsupported {}
+    )
 }

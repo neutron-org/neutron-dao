@@ -11,12 +11,12 @@ use serde::{Deserialize, Serialize};
 
 use error::PreProposeOverruleError;
 
+use crate::error;
 use cwd_pre_propose_base::{
     error::PreProposeError,
     msg::{ExecuteMsg as ExecuteBase, InstantiateMsg as InstantiateBase, QueryMsg as QueryBase},
     state::PreProposeContract,
 };
-use crate::error;
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:cwd-pre-propose-single-overrule";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -121,7 +121,7 @@ pub fn execute(
             let result = PrePropose::default().execute(deps, env, info, int_msg);
 
             match result {
-                Ok(response)  => Ok(response),
+                Ok(response) => Ok(response),
                 Err(error) => Err(PreProposeOverruleError::PreProposeBase(error)),
             }
         }
