@@ -23,7 +23,7 @@ cw-utils = "0.13"
 serde = { version = "1.0.147", default-features = false, features = ["derive"] }
 cwd-pre-propose-base = { version = "*", path = "../../../../packages/cwd-pre-propose-base" }
 cwd-voting = { path = "../../../../packages/cwd-voting" }
-neutron_bindings = { package = "neutron-sdk", version = "0.1.0", git = "https://github.com/neutron-org/neutron-contracts.git" }
+neutron_bindings = { package = "neutron-sdk", version = "0.1.0" }
 neutron-timelock = { path = "../../../../packages/neutron-timelock" }
 schemars = "0.8.8"
 cwd-interface = { path = "../../../../packages/cwd-interface" }
