@@ -104,7 +104,7 @@ pub fn execute(
         } => {
             let overrule_msg = CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: timelock_contract.to_string(),
-                msg: to_binary(&TimelockExecuteMsg::OverruleProposal { proposal_id }).unwrap(),
+                msg: to_binary(&TimelockExecuteMsg::OverruleProposal { proposal_id })?,
                 funds: vec![],
             });
 

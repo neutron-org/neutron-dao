@@ -1,8 +1,12 @@
+use cosmwasm_std::StdError;
 use thiserror::Error;
 use cwd_pre_propose_base::error::PreProposeError;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum PreProposeOverruleError {
+    #[error(transparent)]
+    Std(#[from] StdError),
+
     #[error(transparent)]
     PreProposeBase(PreProposeError),
 
