@@ -1,0 +1,62 @@
+---
+name: Build Contracts
+
+on:
+  workflow_dispatch:
+    inputs:
+      toolchain:
+        description: 'Default Rust Toolchain'
+        default: "stable"
+        required: true
+        type: string
+      target:
+        description: 'Default Rust Target'
+        default: "wasm32-unknown-unknown"
+        required: true
+        type: string
+
+env:
+  TOOLCHAIN: ${{ inputs.toolchain || 'stable' }}
+  TARGET: ${{ inputs.target || 'wasm32-unknown-unknown' }}
+
+jobs:
+  job1:
+    name: Build contracts
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.TOOLCHAIN }}
+          target: ${{ env.TARGET}}
+          components: rustfmt, clippy
+      - run: make schema
+      - run: cargo fetch --verbose
+      - run: cargo clippy --all --all-targets -- -D warnings
+      - run: cargo test --verbose --all
+        env:
+          RUST_BACKTRACE: 1
+      - run: cargo fmt -- --check
+      - run: make compile
+      - run: make -j$(nproc) check_contracts
+  job2:
+    name: Upload contracts
+    needs: job1
+    runs-on: self-hosted
+    steps:
+      - id: 'auth'
+        name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v1'
+        with:
+          credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v1'
+      - name: 'Upload Contracts to the Cloud'
+        run: 'gsutil -m cp -r artifacts/* gs://neutron-contracts/${{ github.repository }}/${{ github.ref_name }}/'
+  job3:
+    name: Cleanup
+    if: always()
+    needs: [job1, job2]
+    runs-on: self-hosted
+    steps:
+      - uses: AutoModality/action-clean@v1.1.0
