@@ -14,10 +14,16 @@ on:
         default: "wasm32-unknown-unknown"
         required: true
         type: string
+      branch:
+        description: 'Default Branch to use'
+        default: "main"
+        required: true
+        type: string
 
 env:
   TOOLCHAIN: ${{ inputs.toolchain || 'stable' }}
   TARGET: ${{ inputs.target || 'wasm32-unknown-unknown' }}
+  BRANCH: ${{ inputs.branch || 'main' }}
 
 jobs:
   job1:
@@ -25,6 +31,8 @@ jobs:
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ env.BRANCH }}
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: ${{ env.TOOLCHAIN }}
@@ -52,7 +60,7 @@ jobs:
       - name: 'Set up Cloud SDK'
         uses: 'google-github-actions/setup-gcloud@v1'
       - name: 'Upload Contracts to the Cloud'
-        run: 'gsutil -m cp -r artifacts/* gs://neutron-contracts/${{ github.repository }}/${{ github.ref_name }}/'
+        run: 'gsutil -m cp -r artifacts/* gs://neutron-contracts/${{ github.repository }}/${{ env.BRANCH }}/'
   job3:
     name: Cleanup
     if: always()
