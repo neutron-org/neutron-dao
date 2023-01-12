@@ -420,7 +420,7 @@ fn test_query_proposals() {
     };
     let res = query(deps.as_ref(), mock_env(), query_msg).unwrap();
     let queried_props: ProposalListResponse = from_binary(&res).unwrap();
-    for (p, i) in queried_props.proposals.iter().zip(1..=DEFAULT_LIMIT) {
+    for (p, i) in queried_props.proposals.iter().zip(1..) {
         let expected_prop = SingleChoiceProposal {
             id: i,
             timelock_ts: mock_env().block.time,
@@ -429,6 +429,7 @@ fn test_query_proposals() {
         };
         assert_eq!(expected_prop, *p);
     }
+    assert_eq!(queried_props.proposals.len(), 100);
 
     let query_msg = QueryMsg::ListProposals {
         start_after: None,
