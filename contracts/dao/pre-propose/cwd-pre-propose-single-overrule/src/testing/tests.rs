@@ -5,9 +5,10 @@ use cosmwasm_std::{
 };
 
 use crate::{
-    contract::{
-        execute, instantiate, query, ExecuteMsg, InstantiateMsg, ProposeMessage,
-        ProposeMessageInternal, QueryMsg, TimelockExecuteMsg,
+    contract::{execute, instantiate, query},
+    msg::{
+        ExecuteMsg, InstantiateMsg, ProposeMessage, ProposeMessageInternal, QueryMsg,
+        TimelockExecuteMsg,
     },
     testing::mock_querier::{mock_dependencies, MOCK_PROPOSE_MODULE, MOCK_TIMELOCK_CONTRACT},
 };

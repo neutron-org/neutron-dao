@@ -4,9 +4,6 @@ use cosmwasm_std::{
     to_binary, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response, StdResult, WasmMsg,
 };
 use cw2::set_contract_version;
-use neutron_bindings::bindings::msg::NeutronMsg;
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
 
 use error::PreProposeOverruleError;
 
@@ -17,7 +14,7 @@ use crate::msg::{
 };
 use cwd_pre_propose_base::{
     error::PreProposeError,
-    msg::{ExecuteMsg as ExecuteBase, InstantiateMsg as InstantiateBase, QueryMsg as QueryBase},
+    msg::{ExecuteMsg as ExecuteBase, InstantiateMsg as InstantiateBase},
     state::PreProposeContract,
 };
 
@@ -87,12 +84,9 @@ pub fn execute(
                 },
             };
 
-            let result = PrePropose::default().execute(deps, env, info, internal_msg);
-
-            match result {
-                Ok(response) => Ok(response),
-                Err(error) => Err(PreProposeOverruleError::PreProposeBase(error)),
-            }
+            PrePropose::default()
+                .execute(deps, env, info, internal_msg)
+                .map_err(|e| PreProposeOverruleError::PreProposeBase(e))
         }
         _ => Err(PreProposeOverruleError::MessageUnsupported {}),
     }
