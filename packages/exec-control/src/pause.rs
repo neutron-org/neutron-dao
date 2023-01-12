@@ -3,8 +3,8 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-/// Approximately one week given block time = 2sec.
-pub const MAX_PAUSE_DURATION: u64 = 302400;
+/// The maximum allowed duration for pause calls in blocks.
+pub const MAX_PAUSE_DURATION: u64 = 200000;
 
 // checks whether the sender is capable to pause a contract
 pub fn can_pause(
