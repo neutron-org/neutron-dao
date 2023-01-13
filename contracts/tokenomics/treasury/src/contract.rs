@@ -1,3 +1,4 @@
+use crate::distribution_params::DistributionParams;
 use crate::error::ContractError;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
@@ -39,7 +40,6 @@ pub fn instantiate(
         main_dao_address: deps.api.addr_validate(&msg.main_dao_address)?,
         security_dao_address: deps.api.addr_validate(&msg.security_dao_address)?,
         vesting_denominator: msg.vesting_denominator,
-        owner: deps.api.addr_validate(&msg.owner)?,
     };
     CONFIG.save(deps.storage, &config)?;
     TOTAL_DISTRIBUTED.save(deps.storage, &Uint128::zero())?;
@@ -52,7 +52,7 @@ pub fn instantiate(
 }
 
 pub fn execute_pause(
-    deps: DepsMut,
+    deps: DepsMut<InterchainQueries>,
     env: Env,
     sender: Addr,
     duration: u64,
@@ -83,7 +83,10 @@ pub fn execute_pause(
         .add_attribute("paused_until_height", paused_until_height.to_string()))
 }
 
-pub fn execute_unpause(deps: DepsMut, sender: Addr) -> Result<Response, ContractError> {
+pub fn execute_unpause(
+    deps: DepsMut<InterchainQueries>,
+    sender: Addr,
+) -> Result<Response, ContractError> {
     let config: Config = CONFIG.load(deps.storage)?;
 
     can_unpause(&sender, &config.main_dao_address)?;
@@ -95,7 +98,7 @@ pub fn execute_unpause(deps: DepsMut, sender: Addr) -> Result<Response, Contract
         .add_attribute("sender", sender))
 }
 
-fn get_pause_info(deps: Deps, env: &Env) -> StdResult<PauseInfoResponse> {
+fn get_pause_info(deps: Deps<InterchainQueries>, env: &Env) -> StdResult<PauseInfoResponse> {
     Ok(match PAUSED_UNTIL.may_load(deps.storage)?.unwrap_or(None) {
         Some(paused_until_height) => {
             if env.block.height.ge(&paused_until_height) {
@@ -153,12 +156,14 @@ pub fn execute(
         } => execute_update_config(
             deps,
             info,
-            distribution_rate,
-            min_period,
             distribution_contract,
             reserve_contract,
             security_dao_address,
-            vesting_denominator,
+            DistributionParams {
+                distribution_rate,
+                min_period,
+                vesting_denominator,
+            },
         ),
         ExecuteMsg::Pause { duration } => execute_pause(deps, env, info.sender, duration),
         ExecuteMsg::Unpause {} => execute_unpause(deps, info.sender),
@@ -191,19 +196,17 @@ pub fn execute_transfer_ownership(
 pub fn execute_update_config(
     deps: DepsMut<InterchainQueries>,
     info: MessageInfo,
-    distribution_rate: Option<Decimal>,
-    min_period: Option<u64>,
     distribution_contract: Option<String>,
     reserve_contract: Option<String>,
     security_dao_address: Option<String>,
-    vesting_denominator: Option<u128>,
+    distribution_params: DistributionParams,
 ) -> Result<Response, ContractError> {
     let mut config: Config = CONFIG.load(deps.storage)?;
     if info.sender != config.main_dao_address {
         return Err(ContractError::Unauthorized {});
     }
 
-    if let Some(min_period) = min_period {
+    if let Some(min_period) = distribution_params.min_period {
         config.min_period = min_period;
     }
     if let Some(distribution_contract) = distribution_contract {
@@ -215,7 +218,7 @@ pub fn execute_update_config(
     if let Some(security_dao_address) = security_dao_address {
         config.security_dao_address = deps.api.addr_validate(security_dao_address.as_str())?;
     }
-    if let Some(distribution_rate) = distribution_rate {
+    if let Some(distribution_rate) = distribution_params.distribution_rate {
         if (distribution_rate > Decimal::one()) || (distribution_rate < Decimal::zero()) {
             return Err(ContractError::InvalidDistributionRate(
                 "distribution_rate must be between 0 and 1".to_string(),
@@ -223,7 +226,7 @@ pub fn execute_update_config(
         }
         config.distribution_rate = distribution_rate;
     }
-    if let Some(vesting_denominator) = vesting_denominator {
+    if let Some(vesting_denominator) = distribution_params.vesting_denominator {
         config.vesting_denominator = vesting_denominator;
     }
 
@@ -242,7 +245,10 @@ pub fn execute_update_config(
         .add_attribute("owner", config.main_dao_address))
 }
 
-pub fn execute_distribute(deps: DepsMut<InterchainQueries>, env: Env) -> StdResult<Response> {
+pub fn execute_distribute(
+    deps: DepsMut<InterchainQueries>,
+    env: Env,
+) -> Result<Response, ContractError> {
     let config: Config = CONFIG.load(deps.storage)?;
     let denom = config.denom.clone();
     let current_time = env.block.time.seconds();
@@ -265,9 +271,7 @@ pub fn execute_distribute(deps: DepsMut<InterchainQueries>, env: Env) -> StdResu
     let burned_coins_for_period = safe_burned_coins_for_period(burned_coins, last_burned_coins)?;
 
     if burned_coins_for_period == 0 {
-        return Err(StdError::GenericErr {
-            msg: "no coins were burned, nothing to distribute".to_string(),
-        });
+        return Err(ContractError::NoBurnedCoins {});
     }
 
     let balance_to_distribute = vesting_function(
@@ -299,7 +303,7 @@ pub fn execute_distribute(deps: DepsMut<InterchainQueries>, env: Env) -> StdResu
 //--------------------------------------------------------------------------------------------------
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps<InterchainQueries>, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config {} => to_binary(&query_config(deps)?),
         QueryMsg::Stats {} => to_binary(&query_stats(deps)?),
@@ -307,16 +311,16 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     }
 }
 
-pub fn query_paused(deps: Deps, env: Env) -> StdResult<Binary> {
+pub fn query_paused(deps: Deps<InterchainQueries>, env: Env) -> StdResult<Binary> {
     to_binary(&get_pause_info(deps, &env)?)
 }
 
-pub fn query_config(deps: Deps) -> StdResult<Config> {
+pub fn query_config(deps: Deps<InterchainQueries>) -> StdResult<Config> {
     let config = CONFIG.load(deps.storage)?;
     Ok(config)
 }
 
-pub fn query_stats(deps: Deps) -> StdResult<StatsResponse> {
+pub fn query_stats(deps: Deps<InterchainQueries>) -> StdResult<StatsResponse> {
     let total_distributed = TOTAL_DISTRIBUTED.load(deps.storage)?;
     let total_reserved = TOTAL_RESERVED.load(deps.storage)?;
     let total_processed_burned_coins = LAST_BURNED_COINS_AMOUNT.load(deps.storage)?;

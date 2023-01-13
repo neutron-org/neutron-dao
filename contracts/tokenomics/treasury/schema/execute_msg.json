@@ -72,6 +72,14 @@
                 "string",
                 "null"
               ]
+            },
+            "vesting_denominator": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint128",
+              "minimum": 0.0
             }
           }
         }

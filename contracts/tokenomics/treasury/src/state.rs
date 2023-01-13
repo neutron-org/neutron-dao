@@ -20,7 +20,8 @@ pub struct Config {
 
     /// Address of the security DAO contract
     pub security_dao_address: Addr,
-    pub owner: Addr,
+
+    // Denomintator used int the vesting release function
     pub vesting_denominator: u128,
 }
 

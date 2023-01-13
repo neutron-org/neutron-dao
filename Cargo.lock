@@ -1096,14 +1096,13 @@ dependencies = [
 [[package]]
 name = "neutron-sdk"
 version = "0.1.0"
-source = "git+https://github.com/neutron-org/neutron-sdk.git?branch=feat/NTRN-300-burn-fee-send-to-treasury#61c1a93acf75f07e2a85500c3bd2d5eec4ac5c3e"
+source = "git+https://github.com/neutron-org/neutron-contracts.git#3ad81939da78954ff032a26e54d792cc16a4d9f3"
 dependencies = [
- "base64 0.20.0",
+ "base64 0.13.1",
  "bech32",
- "cosmos-sdk-proto 0.16.0",
- "cosmwasm-schema",
+ "cosmos-sdk-proto 0.14.0",
  "cosmwasm-std",
- "cw-storage-plus 1.0.1",
+ "cw-storage-plus 0.16.0",
  "prost 0.11.3",
  "protobuf",
  "schemars",
@@ -1116,13 +1115,14 @@ dependencies = [
 [[package]]
 name = "neutron-sdk"
 version = "0.1.0"
-source = "git+https://github.com/neutron-org/neutron-contracts.git#3ad81939da78954ff032a26e54d792cc16a4d9f3"
+source = "git+https://github.com/neutron-org/neutron-sdk.git#c19b40c024eeaa8733af9ddee94a52798d78f469"
 dependencies = [
- "base64 0.13.1",
+ "base64 0.20.0",
  "bech32",
- "cosmos-sdk-proto 0.14.0",
+ "cosmos-sdk-proto 0.16.0",
+ "cosmwasm-schema",
  "cosmwasm-std",
- "cw-storage-plus 0.16.0",
+ "cw-storage-plus 1.0.1",
  "prost 0.11.3",
  "protobuf",
  "schemars",
@@ -1151,7 +1151,7 @@ dependencies = [
  "cw-storage-plus 1.0.1",
  "cwd-macros",
  "exec-control",
- "neutron-sdk 0.1.0 (git+https://github.com/neutron-org/neutron-sdk.git?branch=feat/NTRN-300-burn-fee-send-to-treasury)",
+ "neutron-sdk 0.1.0 (git+https://github.com/neutron-org/neutron-sdk.git)",
  "schemars",
  "serde",
  "thiserror",

@@ -3,7 +3,7 @@ use std::str::FromStr;
 use cosmwasm_std::{
     coin, coins, from_binary,
     testing::{mock_env, mock_info},
-    to_binary, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, Uint128, WasmMsg,
+    to_binary, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, StdError, Uint128, WasmMsg,
 };
 use exec_control::pause::{PauseError, PauseInfoResponse};
 use neutron_bindings::bindings::query::InterchainQueries;
@@ -32,7 +32,6 @@ pub fn init_base_contract(deps: DepsMut<InterchainQueries>, distribution_rate: &
         main_dao_address: "main_dao".to_string(),
         security_dao_address: "security_dao_address".to_string(),
         vesting_denominator: 100_000_000_000u128,
-        owner: "owner".to_string(),
     };
     let info = mock_info("creator", &coins(2, DENOM));
     instantiate(deps, mock_env(), info, msg).unwrap();
@@ -126,21 +125,11 @@ fn test_pause() {
 }
 
 #[test]
-fn test_collect_with_no_money() {
-    let mut deps = mock_dependencies(&[]);
-    init_base_contract(deps.as_mut(), "1");
-    let msg = ExecuteMsg::Distribute {};
-    let res = execute(deps.as_mut(), mock_env(), mock_info("anyone", &[]), msg);
-    assert!(res.is_err());
-    assert_eq!(res.unwrap_err(), ContractError::NoFundsToDistribute {});
-}
-
-#[test]
 fn test_distribute_success() {
     let mut deps = mock_dependencies(&[coin(1000000, DENOM)]);
     init_base_contract(deps.as_mut(), "0.23");
     deps.querier
-        .set_total_burned_neutrons(vec![coin(10000000, DENOM)]);
+        .set_total_burned_neutrons(coin(10000000, DENOM));
     let msg = ExecuteMsg::Distribute {};
     let res = execute(deps.as_mut(), mock_env(), mock_info("anyone", &[]), msg);
     assert!(res.is_ok());
@@ -178,7 +167,7 @@ fn test_burned_maximim_limit() {
     let mut deps = mock_dependencies(&[coin(1000000, DENOM)]);
     init_base_contract(deps.as_mut(), "0.23");
     deps.querier
-        .set_total_burned_neutrons(vec![coin(u32::MAX.into(), DENOM)]);
+        .set_total_burned_neutrons(coin(u32::MAX.into(), DENOM));
     let msg = ExecuteMsg::Distribute {};
     execute(deps.as_mut(), mock_env(), mock_info("anyone", &[]), msg).unwrap();
 
@@ -200,7 +189,7 @@ fn test_burned_maximim_limit_overflow() {
     let total_burned_neutrons = u128::from(u32::MAX) + 10000u128;
 
     deps.querier
-        .set_total_burned_neutrons(vec![coin(total_burned_neutrons, DENOM)]);
+        .set_total_burned_neutrons(coin(total_burned_neutrons, DENOM));
     let msg = ExecuteMsg::Distribute {};
     execute(
         deps.as_mut(),
@@ -237,46 +226,42 @@ fn test_burned_maximim_limit_overflow() {
 }
 
 #[test]
-fn test_zero_treasury_balance_error() {
+fn test_collect_with_no_money() {
     let mut deps = mock_dependencies(&[]);
-    init_base_contract(deps.as_mut(), "0.0");
-    deps.querier
-        .set_total_burned_neutrons(vec![coin(123, DENOM)]);
+    init_base_contract(deps.as_mut(), "1");
     let msg = ExecuteMsg::Distribute {};
     let res = execute(deps.as_mut(), mock_env(), mock_info("anyone", &[]), msg);
-
     assert!(res.is_err());
-    assert_eq!(
-        res.unwrap_err().to_string(),
-        "Generic error: no new funds to distribute"
-    );
+    assert_eq!(res.unwrap_err(), ContractError::NoFundsToDistribute {});
 }
 
 #[test]
 fn test_no_burned_coins_with_denom_error() {
     let mut deps = mock_dependencies(&[coin(1000000, DENOM)]);
     init_base_contract(deps.as_mut(), "0.0");
-    deps.querier.set_total_burned_neutrons(vec![]);
+    deps.querier.set_total_burned_neutrons_error(true);
     let msg = ExecuteMsg::Distribute {};
     let res = execute(deps.as_mut(), mock_env(), mock_info("anyone", &[]), msg);
 
     assert!(res.is_err());
-    assert_eq!(res.unwrap_err().to_string(), "Burned coins not found");
+    assert_eq!(
+        res.unwrap_err(),
+        ContractError::Std(StdError::generic_err(
+            "Generic error: Querier contract error: Contract error"
+        ))
+    );
 }
 
 #[test]
 fn test_no_burned_coins_for_period_error() {
     let mut deps = mock_dependencies(&[coin(1000000, DENOM)]);
     init_base_contract(deps.as_mut(), "0.0");
-    deps.querier.set_total_burned_neutrons(vec![coin(0, DENOM)]);
+    deps.querier.set_total_burned_neutrons(coin(0, DENOM));
     let msg = ExecuteMsg::Distribute {};
     let res = execute(deps.as_mut(), mock_env(), mock_info("anyone", &[]), msg);
 
     assert!(res.is_err());
-    assert_eq!(
-        res.unwrap_err().to_string(),
-        "Generic error: no coins were burned, nothing to distribute"
-    );
+    assert_eq!(res.unwrap_err(), ContractError::NoBurnedCoins {});
 }
 
 #[test]
@@ -284,7 +269,7 @@ fn test_distribute_zero_to_reserve() {
     let mut deps = mock_dependencies(&[coin(1000000, DENOM)]);
     init_base_contract(deps.as_mut(), "1");
     deps.querier
-        .set_total_burned_neutrons(vec![coin(10000000, DENOM)]);
+        .set_total_burned_neutrons(coin(10000000, DENOM));
     let msg = ExecuteMsg::Distribute {};
     let res = execute(deps.as_mut(), mock_env(), mock_info("anyone", &[]), msg);
     assert!(res.is_ok());
@@ -313,7 +298,7 @@ fn test_distribute_zero_to_distribution_contract() {
     let mut deps = mock_dependencies(&[coin(1000000, DENOM)]);
     init_base_contract(deps.as_mut(), "0");
     deps.querier
-        .set_total_burned_neutrons(vec![coin(10000000, DENOM)]);
+        .set_total_burned_neutrons(coin(10000000, DENOM));
     let msg = ExecuteMsg::Distribute {};
     let res = execute(deps.as_mut(), mock_env(), mock_info("anyone", &[]), msg);
     assert!(res.is_ok());

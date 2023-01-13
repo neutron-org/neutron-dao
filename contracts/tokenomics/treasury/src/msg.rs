@@ -17,7 +17,7 @@ pub struct InstantiateMsg {
     pub reserve_contract: String,
     /// Address of security DAO contract
     pub security_dao_address: String,
-    /// Vesting release equation denominator
+    /// Vesting release function denominator
     pub vesting_denominator: u128,
 }
 

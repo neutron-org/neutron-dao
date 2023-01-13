@@ -70,11 +70,8 @@ impl WasmMockQuerier {
         }
     }
 
-    pub fn set_total_burned_neutrons(&mut self, burned_neutrons: Vec<Coin>) {
-        self.total_burned_neutrons = to_binary(&TotalBurnedNeutronsAmountResponse {
-            coins: burned_neutrons,
-        })
-        .unwrap()
+    pub fn set_total_burned_neutrons(&mut self, coin: Coin) {
+        self.total_burned_neutrons = to_binary(&TotalBurnedNeutronsAmountResponse { coin }).unwrap()
     }
 
     pub fn set_total_burned_neutrons_error(&mut self, error_state: bool) {

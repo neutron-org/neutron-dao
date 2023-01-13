@@ -68,12 +68,11 @@ pub fn update_distribution_stats(
 }
 
 pub fn get_burned_coins(deps: Deps<InterchainQueries>, denom: &String) -> StdResult<Uint128> {
-    let burned_coins =
-        query_total_burned_neutrons(deps).map_err(|_err| StdError::not_found("Burned coins"))?;
-    let burned_coin_with_denom = burned_coins.coins.iter().find(|coin| coin.denom == *denom);
+    let res =
+        query_total_burned_neutrons(deps).map_err(|err| StdError::generic_err(err.to_string()))?;
 
-    if let Some(burned_coin_with_denom) = burned_coin_with_denom {
-        return Ok(burned_coin_with_denom.amount);
+    if res.coin.denom == *denom {
+        return Ok(res.coin.amount);
     }
 
     Err(StdError::not_found("Burned coins"))
@@ -137,22 +136,10 @@ mod test {
     fn test_get_burned_coins_single_coin() {
         let mut deps = mock_dependencies(&[coin(1000000, DENOM)]);
 
-        deps.querier
-            .set_total_burned_neutrons(vec![coin(100, DENOM)]);
+        deps.querier.set_total_burned_neutrons(coin(100, DENOM));
 
         let burned_tokens = get_burned_coins(deps.as_ref(), &DENOM.to_string()).unwrap();
         assert_eq!(burned_tokens, Uint128::from(100u128));
-    }
-
-    #[test]
-    fn test_get_burned_coins_multi_coins() {
-        let mut deps = mock_dependencies(&[coin(1000000, DENOM)]);
-
-        deps.querier
-            .set_total_burned_neutrons(vec![coin(200, DENOM), coin(500, "custom_denom")]);
-
-        let burned_tokens = get_burned_coins(deps.as_ref(), &DENOM.to_string()).unwrap();
-        assert_eq!(burned_tokens, Uint128::from(200u128));
     }
 
     #[test]
@@ -160,7 +147,7 @@ mod test {
         let mut deps = mock_dependencies(&[coin(1000000, DENOM)]);
 
         deps.querier
-            .set_total_burned_neutrons(vec![coin(100, "custom_denom")]);
+            .set_total_burned_neutrons(coin(100, "custom_denom"));
 
         let burned_tokens = get_burned_coins(deps.as_ref(), &DENOM.to_string());
         assert_eq!(
@@ -178,7 +165,9 @@ mod test {
         let burned_tokens = get_burned_coins(deps.as_ref(), &DENOM.to_string());
         assert_eq!(
             burned_tokens.err(),
-            Some(StdError::not_found("Burned coins"))
+            Some(StdError::generic_err(
+                "Generic error: Querier contract error: Contract error"
+            ))
         );
 
         deps.querier.set_total_burned_neutrons_error(false);

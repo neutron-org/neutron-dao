@@ -22,6 +22,9 @@ pub enum ContractError {
     #[error("Too soon to distribute")]
     TooSoonToDistribute {},
 
+    #[error("no coins were burned, nothing to distribute")]
+    NoBurnedCoins {},
+
     #[error("Overflow")]
     OverflowError(#[from] OverflowError),
 }
