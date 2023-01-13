@@ -9,11 +9,11 @@ use cwd_interface::voting::{
 use cwd_subdao_core::{
     msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg},
     query::{
-        AdminNominationResponse, Cw20BalanceResponse, DumpStateResponse, GetItemResponse,
-        PauseInfoResponse, SubDao,
+        AdminNominationResponse, Cw20BalanceResponse, DumpStateResponse, GetItemResponse, SubDao,
     },
     state::{Config, ProposalModule},
 };
+use exec_control::pause::PauseInfoResponse;
 
 fn main() {
     let mut out_dir = current_dir().unwrap();
