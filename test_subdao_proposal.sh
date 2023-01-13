@@ -181,6 +181,8 @@ CORE_CONTRACT_INIT_MSG='{
   "name": "Neutron subDAO",
   "description": "Neutron subDAO",
   "initial_items": null,
+  "main_dao": "'"${CORE_ADDRESS}"'",
+  "security_dao": "'"${CORE_ADDRESS}"'",
   "vote_module_instantiate_info": {
     "code_id": '"${CW4_VOTE_CONTRACT_CODE_ID}"',
     "label": "Neutron subDAO vote module",
