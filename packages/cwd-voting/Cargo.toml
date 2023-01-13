@@ -7,7 +7,7 @@ repository = "https://github.com/DA0-DA0/dao-contracts"
 description = "Types and methods for CosmWasm DAO voting."
 
 [dependencies]
-neutron_bindings = { package = "neutron-sdk", git = "https://github.com/neutron-org/neutron-sdk.git", rev = "e84b98a60fc727ee809e791ac90b35db5c39883c" }
+neutron_bindings = { package = "neutron-sdk", git = "https://github.com/neutron-org/neutron-sdk.git", rev = "d0f73c0a377759d0d3fed0bd6d30a17b6b3b110e" }
 cosmwasm-std = { version = "1.0.0" }
 schemars = "0.8"
 serde = { version = "1.0.147", default-features = false, features = ["derive"] }
@@ -15,7 +15,7 @@ thiserror = { version = "1.0" }
 cw20 = "0.13"
 cwd-interface = { path = "../cwd-interface" }
 cwd-macros = { path = "../cwd-macros" }
-cwd-core = { path = "../../contracts/cwd-core" }
+cwd-core = { path = "../../contracts/dao/cwd-core" }
 cw-denom = { path = "../cw-denom" }
 cw-utils = "0.13"
 cw-storage-plus = "0.13"
