@@ -19,6 +19,9 @@ pub enum ContractError {
     #[error("Invalid distribution rate")]
     InvalidDistributionRate(String),
 
+    #[error("Invalid vesting denominator")]
+    InvalidVestingDenominator(String),
+
     #[error("Too soon to distribute")]
     TooSoonToDistribute {},
 

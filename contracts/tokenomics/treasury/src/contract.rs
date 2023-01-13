@@ -30,7 +30,19 @@ pub fn instantiate(
     _env: Env,
     _info: MessageInfo,
     msg: InstantiateMsg,
-) -> StdResult<Response> {
+) -> Result<Response, ContractError> {
+    if (msg.distribution_rate > Decimal::one()) || (msg.distribution_rate < Decimal::zero()) {
+        return Err(ContractError::InvalidDistributionRate(
+            "distribution_rate must be between 0 and 1".to_string(),
+        ));
+    }
+
+    if msg.vesting_denominator == 0 {
+        return Err(ContractError::InvalidVestingDenominator(
+            "vesting_denominator must be more than zero".to_string(),
+        ));
+    }
+
     let config = Config {
         denom: msg.denom,
         min_period: msg.min_period,
@@ -227,6 +239,11 @@ pub fn execute_update_config(
         config.distribution_rate = distribution_rate;
     }
     if let Some(vesting_denominator) = distribution_params.vesting_denominator {
+        if vesting_denominator == 0 {
+            return Err(ContractError::InvalidVestingDenominator(
+                "vesting_denominator must be more than zero".to_string(),
+            ));
+        }
         config.vesting_denominator = vesting_denominator;
     }
 

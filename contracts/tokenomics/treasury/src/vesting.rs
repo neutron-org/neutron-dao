@@ -8,7 +8,7 @@ use crate::state::{LAST_BURNED_COINS_AMOUNT, TOTAL_DISTRIBUTED, TOTAL_RESERVED};
 /// Function calculates how many coins should be released for the current period
 /// based on the current balance and the number of coins burned for the period
 /// Implemented vesting function is linear and is defined as: y=x/vesting_denominator
-/// In order to optimize the function, we use the following formula: y=x - (vesting_denominator-1 / vesting_denominator)^<coins for period> * x
+/// In order to optimize the function, we use the following formula: y=x - ((vesting_denominator-1) / vesting_denominator)^<coins for period> * x
 pub fn vesting_function(
     current_balance: Uint128,
     burned_coins_for_period: u32,
