@@ -24,7 +24,9 @@ pub type QueryMsg = QueryBase;
 
 #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub struct InstantiateMsg {}
+pub struct InstantiateMsg {
+    pub main_dao: String,
+}
 
 /// Internal version of the propose message that includes the
 /// `proposer` field. The module will fill this in based on the sender

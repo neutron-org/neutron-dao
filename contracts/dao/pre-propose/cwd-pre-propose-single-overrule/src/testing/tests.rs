@@ -10,14 +10,18 @@ use crate::{
         ExecuteMsg, InstantiateMsg, ProposeMessage, ProposeMessageInternal, QueryMsg,
         TimelockExecuteMsg,
     },
-    testing::mock_querier::{mock_dependencies, MOCK_PROPOSE_MODULE, MOCK_TIMELOCK_CONTRACT},
+    testing::mock_querier::{
+        mock_dependencies, MOCK_CORE_MODULE, MOCK_PROPOSE_MODULE, MOCK_TIMELOCK_CONTRACT,
+    },
 };
 
 use crate::error::PreProposeOverruleError;
 use cwd_pre_propose_base::state::Config;
 
 pub fn init_base_contract(deps: DepsMut<Empty>) {
-    let msg = InstantiateMsg {};
+    let msg = InstantiateMsg {
+        main_dao: MOCK_CORE_MODULE.to_string(),
+    };
     let info = mock_info(MOCK_PROPOSE_MODULE, &[]);
     instantiate(deps, mock_env(), info, msg).unwrap();
 }
@@ -40,6 +44,7 @@ fn test_create_overrule_proposal() {
         mock_info(PROPOSER_ADDR, &[]),
         msg,
     );
+    println!("{:?}", res);
     assert!(res.is_ok());
     assert_eq!(
         res.unwrap().messages,
