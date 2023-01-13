@@ -403,7 +403,7 @@ fn test_query_proposals() {
     };
     let res = query(deps.as_ref(), mock_env(), query_msg).unwrap();
     let queried_props: ProposalListResponse = from_binary(&res).unwrap();
-    for (p, i) in queried_props.proposals.iter().zip(1..=DEFAULT_LIMIT) {
+    for (p, i) in queried_props.proposals.iter().zip(1..) {
         let expected_prop = SingleChoiceProposal {
             id: i,
             timelock_ts: mock_env().block.time,
@@ -412,6 +412,7 @@ fn test_query_proposals() {
         };
         assert_eq!(expected_prop, *p);
     }
+    assert_eq!(queried_props.proposals.len(), DEFAULT_LIMIT as usize);
 
     let query_msg = QueryMsg::ListProposals {
         start_after: None,
@@ -419,7 +420,7 @@ fn test_query_proposals() {
     };
     let res = query(deps.as_ref(), mock_env(), query_msg).unwrap();
     let queried_props: ProposalListResponse = from_binary(&res).unwrap();
-    for (p, i) in queried_props.proposals.iter().zip(1..=DEFAULT_LIMIT) {
+    for (p, i) in queried_props.proposals.iter().zip(1..) {
         let expected_prop = SingleChoiceProposal {
             id: i,
             timelock_ts: mock_env().block.time,
@@ -428,6 +429,7 @@ fn test_query_proposals() {
         };
         assert_eq!(expected_prop, *p);
     }
+    assert_eq!(queried_props.proposals.len(), 100);
 
     let query_msg = QueryMsg::ListProposals {
         start_after: None,
@@ -435,7 +437,7 @@ fn test_query_proposals() {
     };
     let res = query(deps.as_ref(), mock_env(), query_msg).unwrap();
     let queried_props: ProposalListResponse = from_binary(&res).unwrap();
-    for (p, i) in queried_props.proposals.iter().zip(1..=10) {
+    for (p, i) in queried_props.proposals.iter().zip(1..) {
         let expected_prop = SingleChoiceProposal {
             id: i,
             timelock_ts: mock_env().block.time,
@@ -444,6 +446,7 @@ fn test_query_proposals() {
         };
         assert_eq!(expected_prop, *p);
     }
+    assert_eq!(queried_props.proposals.len(), 10);
 
     let query_msg = QueryMsg::ListProposals {
         start_after: Some(50),
@@ -451,7 +454,7 @@ fn test_query_proposals() {
     };
     let res = query(deps.as_ref(), mock_env(), query_msg).unwrap();
     let queried_props: ProposalListResponse = from_binary(&res).unwrap();
-    for (p, i) in queried_props.proposals.iter().zip(51..=DEFAULT_LIMIT + 50) {
+    for (p, i) in queried_props.proposals.iter().zip(51..) {
         let expected_prop = SingleChoiceProposal {
             id: i,
             timelock_ts: mock_env().block.time,
@@ -460,6 +463,7 @@ fn test_query_proposals() {
         };
         assert_eq!(expected_prop, *p);
     }
+    assert_eq!(queried_props.proposals.len(), DEFAULT_LIMIT as usize);
 
     let query_msg = QueryMsg::ListProposals {
         start_after: Some(90),
@@ -467,7 +471,7 @@ fn test_query_proposals() {
     };
     let res = query(deps.as_ref(), mock_env(), query_msg).unwrap();
     let queried_props: ProposalListResponse = from_binary(&res).unwrap();
-    for (p, i) in queried_props.proposals.iter().zip(91..=100) {
+    for (p, i) in queried_props.proposals.iter().zip(91..) {
         let expected_prop = SingleChoiceProposal {
             id: i,
             timelock_ts: mock_env().block.time,
@@ -476,6 +480,7 @@ fn test_query_proposals() {
         };
         assert_eq!(expected_prop, *p);
     }
+    assert_eq!(queried_props.proposals.len(), 10);
 }
 
 #[test]

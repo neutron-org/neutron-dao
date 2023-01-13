@@ -1,14 +1,12 @@
 use cosmwasm_std::CosmosMsg;
-use cw_utils::Duration;
 use cwd_interface::ModuleInstantiateInfo;
 use neutron_bindings::bindings::msg::NeutronMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cwd_macros::{info_query, voting_query};
+use cwd_macros::{info_query, pausable, pausable_query, voting_query};
 
 use crate::query::SubDao;
-use crate::state::Config;
 
 /// Information about an item to be stored in the items list.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
@@ -43,17 +41,19 @@ pub struct InstantiateMsg {
     pub initial_items: Option<Vec<InitialItem>>,
     /// Implements the DAO Star standard: https://daostar.one/EIP
     pub dao_uri: Option<String>,
+    /// The address of the Neutron DAO.
+    pub main_dao: String,
+    /// The address of the security DAO. The security DAO is capable of pausing the subDAO.
+    pub security_dao: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[pausable]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     /// Callable by proposal modules. The DAO will execute the
     /// messages in the hook in order.
     ExecuteProposalHook { msgs: Vec<CosmosMsg<NeutronMsg>> },
-    /// Pauses the DAO for a set duration.
-    /// When paused the DAO is unable to execute proposals
-    Pause { duration: Duration },
     /// Removes an item from the governance contract's item map.
     RemoveItem { key: String },
     /// Adds an item to the governance contract's item map. If the
@@ -62,7 +62,11 @@ pub enum ExecuteMsg {
     SetItem { key: String, addr: String },
     /// Callable by the core contract. Replaces the current
     /// governance contract config with the provided config.
-    UpdateConfig { config: Config },
+    UpdateConfig {
+        name: Option<String>,
+        description: Option<String>,
+        dao_uri: Option<String>,
+    },
     /// Updates the governance contract's governance modules. Module
     /// instantiate info in `to_add` is used to create new modules and
     /// install them.
@@ -83,6 +87,7 @@ pub enum ExecuteMsg {
     },
 }
 
+#[pausable_query]
 #[voting_query]
 #[info_query]
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
@@ -117,8 +122,6 @@ pub enum QueryMsg {
         start_after: Option<String>,
         limit: Option<u32>,
     },
-    /// Returns information about if the contract is currently paused.
-    PauseInfo {},
     /// Gets the contract's voting module. Returns Addr.
     VotingModule {},
     /// Returns all SubDAOs with their charters in a vec

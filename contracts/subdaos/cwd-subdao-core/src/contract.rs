@@ -5,7 +5,10 @@ use cosmwasm_std::{
     StdError, StdResult, SubMsg,
 };
 use cw2::{get_contract_version, set_contract_version};
-use cw_utils::{parse_reply_instantiate_data, Duration};
+use cw_utils::parse_reply_instantiate_data;
+use exec_control::pause::{
+    can_pause, can_unpause, validate_duration, PauseError, PauseInfoResponse,
+};
 
 use cw_paginate::{paginate_map, paginate_map_values};
 use cwd_interface::{voting, ModuleInstantiateInfo};
@@ -13,10 +16,10 @@ use neutron_bindings::bindings::msg::NeutronMsg;
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InitialItem, InstantiateMsg, MigrateMsg, QueryMsg};
-use crate::query::{DumpStateResponse, GetItemResponse, PauseInfoResponse, SubDao};
+use crate::query::{DumpStateResponse, GetItemResponse, SubDao};
 use crate::state::{
     Config, ProposalModule, ProposalModuleStatus, ACTIVE_PROPOSAL_MODULE_COUNT, CONFIG, ITEMS,
-    PAUSED, PROPOSAL_MODULES, SUBDAO_LIST, TOTAL_PROPOSAL_MODULE_COUNT, VOTE_MODULE,
+    PAUSED_UNTIL, PROPOSAL_MODULES, SUBDAO_LIST, TOTAL_PROPOSAL_MODULE_COUNT, VOTE_MODULE,
 };
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:cwd-subdao-core";
@@ -39,8 +42,11 @@ pub fn instantiate(
         name: msg.name,
         description: msg.description,
         dao_uri: msg.dao_uri,
+        main_dao: deps.api.addr_validate(&msg.main_dao)?,
+        security_dao: deps.api.addr_validate(&msg.security_dao)?,
     };
     CONFIG.save(deps.storage, &config)?;
+    PAUSED_UNTIL.save(deps.storage, &None)?;
 
     let vote_module_msg = msg
         .vote_module_instantiate_info
@@ -79,11 +85,15 @@ pub fn execute(
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response<NeutronMsg>, ContractError> {
-    // No actions can be performed while the DAO is paused.
-    if let Some(expiration) = PAUSED.may_load(deps.storage)? {
-        if !expiration.is_expired(&env.block) {
-            return Err(ContractError::Paused {});
+    match get_pause_info(deps.as_ref(), &env)? {
+        PauseInfoResponse::Paused { .. } => {
+            return match msg {
+                ExecuteMsg::Pause { duration } => execute_pause(deps, env, info.sender, duration),
+                ExecuteMsg::Unpause {} => execute_unpause(deps, info.sender),
+                _ => Err(ContractError::PauseError(PauseError::Paused {})),
+            };
         }
+        PauseInfoResponse::Unpaused {} => (),
     }
 
     match msg {
@@ -91,11 +101,14 @@ pub fn execute(
             execute_proposal_hook(deps.as_ref(), info.sender, msgs)
         }
         ExecuteMsg::Pause { duration } => execute_pause(deps, env, info.sender, duration),
+        ExecuteMsg::Unpause {} => execute_unpause(deps, info.sender),
         ExecuteMsg::RemoveItem { key } => execute_remove_item(deps, env, info.sender, key),
         ExecuteMsg::SetItem { key, addr } => execute_set_item(deps, env, info.sender, key, addr),
-        ExecuteMsg::UpdateConfig { config } => {
-            execute_update_config(deps, env, info.sender, config)
-        }
+        ExecuteMsg::UpdateConfig {
+            name,
+            description,
+            dao_uri,
+        } => execute_update_config(deps, env, info, name, description, dao_uri),
         ExecuteMsg::UpdateVotingModule { module } => {
             execute_update_voting_module(env, info.sender, module)
         }
@@ -112,20 +125,40 @@ pub fn execute_pause(
     deps: DepsMut,
     env: Env,
     sender: Addr,
-    pause_duration: Duration,
+    duration: u64,
 ) -> Result<Response<NeutronMsg>, ContractError> {
-    if sender != env.contract.address {
-        return Err(ContractError::Unauthorized {});
+    let config: Config = CONFIG.load(deps.storage)?;
+
+    can_pause(&sender, &config.main_dao, &config.security_dao)?;
+    validate_duration(duration)?;
+
+    let paused_until_height: u64 = env.block.height + duration;
+
+    let already_paused_until = PAUSED_UNTIL.load(deps.storage)?;
+    if already_paused_until.unwrap_or(0u64) >= paused_until_height {
+        return Err(ContractError::PauseError(PauseError::InvalidDuration(
+            "contracts are already paused for a greater or equal duration".to_string(),
+        )));
     }
 
-    let until = pause_duration.after(&env.block);
-
-    PAUSED.save(deps.storage, &until)?;
+    PAUSED_UNTIL.save(deps.storage, &Some(paused_until_height))?;
 
     Ok(Response::new()
         .add_attribute("action", "execute_pause")
         .add_attribute("sender", sender)
-        .add_attribute("until", until.to_string()))
+        .add_attribute("paused_until_height", paused_until_height.to_string()))
+}
+
+pub fn execute_unpause(deps: DepsMut, sender: Addr) -> Result<Response<NeutronMsg>, ContractError> {
+    let config: Config = CONFIG.load(deps.storage)?;
+
+    can_unpause(&sender, &config.main_dao)?;
+
+    PAUSED_UNTIL.save(deps.storage, &None)?;
+
+    Ok(Response::new()
+        .add_attribute("action", "execute_unpause")
+        .add_attribute("sender", sender))
 }
 
 pub fn execute_proposal_hook(
@@ -150,23 +183,35 @@ pub fn execute_proposal_hook(
 pub fn execute_update_config(
     deps: DepsMut,
     env: Env,
-    sender: Addr,
-    config: Config,
+    info: MessageInfo,
+    name: Option<String>,
+    description: Option<String>,
+    dao_uri: Option<String>,
 ) -> Result<Response<NeutronMsg>, ContractError> {
-    if env.contract.address != sender {
+    if info.sender != env.contract.address {
         return Err(ContractError::Unauthorized {});
     }
 
+    let mut config: Config = CONFIG.load(deps.storage)?;
+    if let Some(name) = name {
+        config.name = name;
+    }
+    if let Some(description) = description {
+        config.description = description;
+    }
+    if let Some(dao_uri) = dao_uri {
+        config.dao_uri = Some(dao_uri);
+    }
+
     CONFIG.save(deps.storage, &config)?;
-    // We incur some gas costs by having the config's fields in the
-    // response. This has the benefit that it makes it reasonably
-    // simple to ask "when did this field in the config change" by
-    // running something like `junod query txs --events
-    // 'wasm._contract_address=core&wasm.name=name'`.
+
     Ok(Response::default()
         .add_attribute("action", "execute_update_config")
         .add_attribute("name", config.name)
-        .add_attribute("description", config.description))
+        .add_attribute("description", config.description)
+        .add_attribute("dao_uri", config.dao_uri.unwrap_or_default())
+        .add_attribute("main_dao", config.main_dao)
+        .add_attribute("security_dao", config.security_dao))
 }
 
 pub fn execute_update_voting_module(
@@ -395,13 +440,15 @@ pub fn query_active_proposal_modules(
     )
 }
 
-fn get_pause_info(deps: Deps, env: Env) -> StdResult<PauseInfoResponse> {
-    Ok(match PAUSED.may_load(deps.storage)? {
-        Some(expiration) => {
-            if expiration.is_expired(&env.block) {
+fn get_pause_info(deps: Deps, env: &Env) -> StdResult<PauseInfoResponse> {
+    Ok(match PAUSED_UNTIL.may_load(deps.storage)?.unwrap_or(None) {
+        Some(paused_until_height) => {
+            if env.block.height.ge(&paused_until_height) {
                 PauseInfoResponse::Unpaused {}
             } else {
-                PauseInfoResponse::Paused { expiration }
+                PauseInfoResponse::Paused {
+                    until_height: paused_until_height,
+                }
             }
         }
         None => PauseInfoResponse::Unpaused {},
@@ -409,7 +456,7 @@ fn get_pause_info(deps: Deps, env: Env) -> StdResult<PauseInfoResponse> {
 }
 
 pub fn query_paused(deps: Deps, env: Env) -> StdResult<Binary> {
-    to_binary(&get_pause_info(deps, env)?)
+    to_binary(&get_pause_info(deps, &env)?)
 }
 
 pub fn query_dump_state(deps: Deps, env: Env) -> StdResult<Binary> {
@@ -419,7 +466,7 @@ pub fn query_dump_state(deps: Deps, env: Env) -> StdResult<Binary> {
         .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
         .map(|kv| Ok(kv?.1))
         .collect::<StdResult<Vec<ProposalModule>>>()?;
-    let pause_info = get_pause_info(deps, env)?;
+    let pause_info = get_pause_info(deps, &env)?;
     let version = get_contract_version(deps.storage)?;
     let active_proposal_module_count = ACTIVE_PROPOSAL_MODULE_COUNT.load(deps.storage)?;
     let total_proposal_module_count = TOTAL_PROPOSAL_MODULE_COUNT.load(deps.storage)?;
