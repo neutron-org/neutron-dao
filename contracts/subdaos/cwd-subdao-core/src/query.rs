@@ -1,10 +1,9 @@
+use crate::state::{Config, ProposalModule};
 use cosmwasm_std::{Addr, Uint128};
 use cw2::ContractVersion;
-use cw_utils::Expiration;
+use exec_control::pause::PauseInfoResponse;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-
-use crate::state::{Config, ProposalModule};
 
 /// Relevant state for the governance module. Returned by the
 /// `DumpState` query.
@@ -12,7 +11,7 @@ use crate::state::{Config, ProposalModule};
 pub struct DumpStateResponse {
     /// The governance contract's config.
     pub config: Config,
-    // True if the contract is currently paused.
+    /// Whether the contract is currently paused.
     pub pause_info: PauseInfoResponse,
     /// The governance contract's version.
     pub version: ContractVersion,
@@ -25,13 +24,6 @@ pub struct DumpStateResponse {
     pub active_proposal_module_count: u32,
     /// The total number of proposal modules.
     pub total_proposal_module_count: u32,
-}
-
-/// Information about if the contract is currently paused.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub enum PauseInfoResponse {
-    Paused { expiration: Expiration },
-    Unpaused {},
 }
 
 /// Returned by the `GetItem` query.

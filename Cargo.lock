@@ -710,6 +710,7 @@ dependencies = [
  "cw721",
  "cwd-interface",
  "cwd-macros",
+ "exec-control",
  "neutron-sdk",
  "schemars",
  "serde",
@@ -930,6 +931,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "exec-control"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-std",
+ "schemars",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "ff"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1062,8 +1073,11 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-storage-plus 1.0.1",
+ "cwd-macros",
+ "exec-control",
  "schemars",
  "serde",
+ "thiserror",
 ]
 
 [[package]]
@@ -1073,8 +1087,11 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-storage-plus 1.0.1",
+ "cwd-macros",
+ "exec-control",
  "schemars",
  "serde",
+ "thiserror",
 ]
 
 [[package]]
@@ -1115,8 +1132,11 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-storage-plus 1.0.1",
+ "cwd-macros",
+ "exec-control",
  "schemars",
  "serde",
+ "thiserror",
 ]
 
 [[package]]

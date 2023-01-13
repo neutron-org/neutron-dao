@@ -4,13 +4,19 @@
   "type": "object",
   "required": [
     "denom",
-    "owner"
+    "main_dao_address",
+    "security_dao_address"
   ],
   "properties": {
     "denom": {
       "type": "string"
     },
-    "owner": {
+    "main_dao_address": {
+      "description": "The address of the main DAO. It's capable of pausing and unpausing the contract",
+      "type": "string"
+    },
+    "security_dao_address": {
+      "description": "The address of the DAO guardian. The security DAO is capable only of pausing the contract.",
       "type": "string"
     }
   }
