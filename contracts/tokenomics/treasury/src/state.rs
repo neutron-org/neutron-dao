@@ -14,13 +14,24 @@ pub struct Config {
     /// Minimum period between distribution calls
     pub min_period: u64,
     pub denom: String,
-    pub owner: Addr,
+
+    /// Address of the main DAO contract
+    pub main_dao_address: Addr,
+
+    /// Address of the security DAO contract
+    pub security_dao_address: Addr,
+
+    // Denomintator used int the vesting release function
+    pub vesting_denominator: u128,
 }
 
-pub const TOTAL_RECEIVED: Item<Uint128> = Item::new("total_received");
 pub const TOTAL_DISTRIBUTED: Item<Uint128> = Item::new("total_distributed");
 pub const TOTAL_RESERVED: Item<Uint128> = Item::new("total_reserved");
 
+pub const LAST_BURNED_COINS_AMOUNT: Item<Uint128> = Item::new("last_burned_coins_amount");
 pub const LAST_DISTRIBUTION_TIME: Item<u64> = Item::new("last_grab_time");
 
 pub const CONFIG: Item<Config> = Item::new("config");
+
+/// The height the subDAO is paused until. If it's None, the subDAO is not paused.
+pub const PAUSED_UNTIL: Item<Option<u64>> = Item::new("paused_until");

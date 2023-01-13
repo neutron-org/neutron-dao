@@ -27,27 +27,6 @@
       "additionalProperties": false
     },
     {
-      "description": "Pauses the DAO for a set duration. When paused the DAO is unable to execute proposals",
-      "type": "object",
-      "required": [
-        "pause"
-      ],
-      "properties": {
-        "pause": {
-          "type": "object",
-          "required": [
-            "duration"
-          ],
-          "properties": {
-            "duration": {
-              "$ref": "#/definitions/Duration"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
       "description": "Removes an item from the governance contract's item map.",
       "type": "object",
       "required": [
@@ -102,12 +81,24 @@
       "properties": {
         "update_config": {
           "type": "object",
-          "required": [
-            "config"
-          ],
           "properties": {
-            "config": {
-              "$ref": "#/definitions/Config"
+            "dao_uri": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "description": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "name": {
+              "type": [
+                "string",
+                "null"
+              ]
             }
           }
         }
@@ -193,6 +184,40 @@
               }
             }
           }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "pause"
+      ],
+      "properties": {
+        "pause": {
+          "type": "object",
+          "required": [
+            "duration"
+          ],
+          "properties": {
+            "duration": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "unpause"
+      ],
+      "properties": {
+        "unpause": {
+          "type": "object"
         }
       },
       "additionalProperties": false
@@ -376,31 +401,6 @@
         }
       }
     },
-    "Config": {
-      "description": "Top level config type for core module.",
-      "type": "object",
-      "required": [
-        "description",
-        "name"
-      ],
-      "properties": {
-        "dao_uri": {
-          "description": "The URI for the DAO as defined by the DAOstar standard https://daostar.one/EIP",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "description": {
-          "description": "A description of the contract.",
-          "type": "string"
-        },
-        "name": {
-          "description": "The name of the contract.",
-          "type": "string"
-        }
-      }
-    },
     "CosmosMsg_for_NeutronMsg": {
       "oneOf": [
         {
@@ -557,40 +557,6 @@
                   "type": "string"
                 }
               }
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
-    "Duration": {
-      "description": "Duration is a delta of time. You can add it to a BlockInfo or Expiration to move that further in the future. Note that an height-based Duration and a time-based Expiration cannot be combined",
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "height"
-          ],
-          "properties": {
-            "height": {
-              "type": "integer",
-              "format": "uint64",
-              "minimum": 0.0
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "description": "Time in seconds",
-          "type": "object",
-          "required": [
-            "time"
-          ],
-          "properties": {
-            "time": {
-              "type": "integer",
-              "format": "uint64",
-              "minimum": 0.0
             }
           },
           "additionalProperties": false
