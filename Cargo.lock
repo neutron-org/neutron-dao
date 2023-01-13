@@ -38,6 +38,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
 
 [[package]]
+name = "base64"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0ea22880d78093b0cbe17c89f64a7d457941e65759157ec6cb31a31d652b05e5"
+
+[[package]]
 name = "base64ct"
 version = "1.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -78,6 +84,9 @@ name = "bytes"
 version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dfb24e866b15a1af2a1b663f10c6b6b8f397a84aadb828f12e5b289ec23a3a3c"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "cfg-if"
@@ -99,7 +108,18 @@ checksum = "20b42021d8488665b1a0d9748f1f81df7235362d194f44481e2e61bf376b77b4"
 dependencies = [
  "prost 0.11.3",
  "prost-types",
- "tendermint-proto",
+ "tendermint-proto 0.23.9",
+]
+
+[[package]]
+name = "cosmos-sdk-proto"
+version = "0.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c4776e787b24d9568dd61d3237eeb4eb321d622fb881b858c7b82806420e87d4"
+dependencies = [
+ "prost 0.11.3",
+ "prost-types",
+ "tendermint-proto 0.27.0",
 ]
 
 [[package]]
@@ -154,7 +174,7 @@ version = "1.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b13d5a84d15cf7be17dc249a21588cdb0f7ef308907c50ce2723316a7d79c3dc"
 dependencies = [
- "base64",
+ "base64 0.13.1",
  "cosmwasm-crypto",
  "cosmwasm-derive",
  "derivative",
@@ -543,7 +563,7 @@ dependencies = [
  "cw721",
  "cwd-interface",
  "cwd-macros",
- "neutron-sdk",
+ "neutron-sdk 0.1.0 (git+https://github.com/neutron-org/neutron-contracts.git)",
  "schemars",
  "serde",
  "thiserror",
@@ -646,7 +666,7 @@ dependencies = [
  "cwd-proposal-hooks",
  "cwd-proposal-single",
  "cwd-voting",
- "neutron-sdk",
+ "neutron-sdk 0.1.0 (git+https://github.com/neutron-org/neutron-contracts.git)",
  "schemars",
  "serde",
 ]
@@ -725,7 +745,7 @@ dependencies = [
  "cwd-proposal-hooks",
  "cwd-vote-hooks",
  "cwd-voting",
- "neutron-sdk",
+ "neutron-sdk 0.1.0 (git+https://github.com/neutron-org/neutron-contracts.git)",
  "schemars",
  "serde",
  "thiserror",
@@ -749,7 +769,7 @@ dependencies = [
  "cwd-interface",
  "cwd-macros",
  "exec-control",
- "neutron-sdk",
+ "neutron-sdk 0.1.0 (git+https://github.com/neutron-org/neutron-contracts.git)",
  "schemars",
  "serde",
  "thiserror",
@@ -775,7 +795,7 @@ dependencies = [
  "cwd-subdao-core",
  "cwd-subdao-proposal-single",
  "cwd-voting",
- "neutron-sdk",
+ "neutron-sdk 0.1.0 (git+https://github.com/neutron-org/neutron-contracts.git)",
  "neutron-timelock",
  "schemars",
  "serde",
@@ -809,7 +829,7 @@ dependencies = [
  "cwd-subdao-pre-propose-single",
  "cwd-vote-hooks",
  "cwd-voting",
- "neutron-sdk",
+ "neutron-sdk 0.1.0 (git+https://github.com/neutron-org/neutron-contracts.git)",
  "schemars",
  "serde",
  "thiserror",
@@ -832,7 +852,7 @@ dependencies = [
  "cwd-interface",
  "cwd-macros",
  "cwd-pre-propose-base",
- "neutron-sdk",
+ "neutron-sdk 0.1.0 (git+https://github.com/neutron-org/neutron-contracts.git)",
  "neutron-timelock",
  "schemars",
  "serde",
@@ -862,7 +882,7 @@ dependencies = [
  "cwd-core",
  "cwd-interface",
  "cwd-macros",
- "neutron-sdk",
+ "neutron-sdk 0.1.0 (git+https://github.com/neutron-org/neutron-contracts.git)",
  "schemars",
  "serde",
  "thiserror",
@@ -1137,11 +1157,31 @@ name = "neutron-sdk"
 version = "0.1.0"
 source = "git+https://github.com/neutron-org/neutron-contracts.git#3ad81939da78954ff032a26e54d792cc16a4d9f3"
 dependencies = [
- "base64",
+ "base64 0.13.1",
  "bech32",
- "cosmos-sdk-proto",
+ "cosmos-sdk-proto 0.14.0",
  "cosmwasm-std",
  "cw-storage-plus 0.16.0",
+ "prost 0.11.3",
+ "protobuf",
+ "schemars",
+ "serde",
+ "serde-json-wasm",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "neutron-sdk"
+version = "0.1.0"
+source = "git+https://github.com/neutron-org/neutron-sdk.git#c19b40c024eeaa8733af9ddee94a52798d78f469"
+dependencies = [
+ "base64 0.20.0",
+ "bech32",
+ "cosmos-sdk-proto 0.16.0",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-storage-plus 1.0.1",
  "prost 0.11.3",
  "protobuf",
  "schemars",
@@ -1156,7 +1196,7 @@ name = "neutron-timelock"
 version = "0.1.0"
 dependencies = [
  "cosmwasm-std",
- "neutron-sdk",
+ "neutron-sdk 0.1.0 (git+https://github.com/neutron-org/neutron-contracts.git)",
  "schemars",
  "serde",
 ]
@@ -1170,6 +1210,7 @@ dependencies = [
  "cw-storage-plus 1.0.1",
  "cwd-macros",
  "exec-control",
+ "neutron-sdk 0.1.0 (git+https://github.com/neutron-org/neutron-sdk.git)",
  "schemars",
  "serde",
  "thiserror",
@@ -1592,6 +1633,24 @@ name = "tendermint-proto"
 version = "0.23.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68ce80bf536476db81ecc9ebab834dc329c9c1509a694f211a73858814bfe023"
+dependencies = [
+ "bytes",
+ "flex-error",
+ "num-derive",
+ "num-traits",
+ "prost 0.11.3",
+ "prost-types",
+ "serde",
+ "serde_bytes",
+ "subtle-encoding",
+ "time",
+]
+
+[[package]]
+name = "tendermint-proto"
+version = "0.27.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d5895470f28c530f8ae8c4071bf8190304ce00bd131d25e81730453124a3375c"
 dependencies = [
  "bytes",
  "flex-error",

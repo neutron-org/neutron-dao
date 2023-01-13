@@ -19,8 +19,14 @@ pub enum ContractError {
     #[error("Invalid distribution rate")]
     InvalidDistributionRate(String),
 
+    #[error("Invalid vesting denominator")]
+    InvalidVestingDenominator(String),
+
     #[error("Too soon to distribute")]
     TooSoonToDistribute {},
+
+    #[error("no coins were burned, nothing to distribute")]
+    NoBurnedCoins {},
 
     #[error("Overflow")]
     OverflowError(#[from] OverflowError),
