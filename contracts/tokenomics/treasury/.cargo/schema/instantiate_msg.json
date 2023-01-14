@@ -8,7 +8,8 @@
     "distribution_rate",
     "min_period",
     "owner",
-    "reserve_contract"
+    "reserve_contract",
+    "vesting_denominator"
   ],
   "properties": {
     "denom": {
@@ -38,6 +39,12 @@
     "reserve_contract": {
       "description": "Address of reserve contract",
       "type": "string"
+    },
+    "vesting_denominator": {
+      "description": "Vesting release equation denominator",
+      "type": "integer",
+      "format": "uint128",
+      "minimum": 0.0
     }
   },
   "definitions": {

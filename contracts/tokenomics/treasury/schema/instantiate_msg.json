@@ -9,7 +9,8 @@
     "main_dao_address",
     "min_period",
     "reserve_contract",
-    "security_dao_address"
+    "security_dao_address",
+    "vesting_denominator"
   ],
   "properties": {
     "denom": {
@@ -43,6 +44,12 @@
     "security_dao_address": {
       "description": "Address of security DAO contract",
       "type": "string"
+    },
+    "vesting_denominator": {
+      "description": "Vesting release function denominator",
+      "type": "integer",
+      "format": "uint128",
+      "minimum": 0.0
     }
   },
   "definitions": {
