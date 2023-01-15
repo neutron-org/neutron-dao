@@ -6,7 +6,6 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 use cw_utils::parse_reply_instantiate_data;
-use cwd_interface::ModuleInstantiateInfo;
 use neutron_bindings::bindings::msg::NeutronMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -14,44 +13,20 @@ use serde::{Deserialize, Serialize};
 use crate::state::TIMELOCK_MODULE;
 use cwd_pre_propose_base::{
     error::PreProposeError,
-    msg::{ExecuteMsg as ExecuteBase, InstantiateMsg as InstantiateBase, QueryMsg as QueryBase},
+    msg::{ExecuteMsg as ExecuteBase, InstantiateMsg as InstantiateBase},
     state::PreProposeContract,
 };
-use cwd_voting::deposit::UncheckedDepositInfo;
-use neutron_timelock::single::{ExecuteMsg as TimelockExecuteMsg, ProposalQueryMsg};
+use neutron_subdao_pre_propose_single::{
+    msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
+    types::ProposeMessage,
+};
+use neutron_subdao_proposal_single::msg::QueryMsg as ProposalQueryMsg;
+use neutron_subdao_timelock_single::msg::ExecuteMsg as TimelockExecuteMsg;
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:cwd-subdao-pre-propose-single";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 const TIMELOCK_MODULE_INSTANTIATE_REPLY_ID: u64 = 1;
-
-#[derive(Serialize, JsonSchema, Deserialize, Debug, Clone)]
-#[serde(rename_all = "snake_case")]
-pub enum ProposeMessage {
-    Propose {
-        title: String,
-        description: String,
-        msgs: Vec<CosmosMsg<NeutronMsg>>,
-    },
-}
-
-pub type ExecuteMsg = ExecuteBase<ProposeMessage>;
-pub type QueryMsg = QueryBase;
-
-#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct InstantiateMsg {
-    /// Information about the deposit requirements for this
-    /// module. None if no deposit.
-    pub deposit_info: Option<UncheckedDepositInfo>,
-    /// If false, only members (addresses with voting power) may create
-    /// proposals in the DAO. Otherwise, any address may create a
-    /// proposal so long as they pay the deposit.
-    pub open_proposal_submission: bool,
-
-    /// Instantiate information for timelock module.
-    pub timelock_module_instantiate_info: ModuleInstantiateInfo,
-}
 
 /// Internal version of the propose message that includes the
 /// `proposer` field. The module will fill this in based on the sender
@@ -176,7 +151,15 @@ pub fn execute(
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
-    PrePropose::default().query(deps, env, msg)
+    match msg {
+        QueryMsg::QueryBase(msg) => PrePropose::default().query(deps, env, msg),
+        QueryMsg::TimelockAddress {} => query_timelock_address(deps),
+    }
+}
+
+pub fn query_timelock_address(deps: Deps) -> StdResult<Binary> {
+    let timelock = TIMELOCK_MODULE.load(deps.storage)?;
+    to_binary(&timelock)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

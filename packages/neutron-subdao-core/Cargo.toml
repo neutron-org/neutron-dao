@@ -1,0 +1,21 @@
+[package]
+name = "neutron-subdao-core"
+version = "0.1.0"
+authors = ["Sergei Sotnikov <sergei.s@p2p.org>"]
+edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/neutron/neutron-dao"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+neutron_bindings = { package = "neutron-sdk", git = "https://github.com/neutron-org/neutron-contracts.git" }
+cosmwasm-std = { version = "1.0.0" }
+schemars = "0.8"
+serde = { version = "1.0.147", default-features = false, features = ["derive"] }
+cwd-macros = { path = "../cwd-macros" }
+cwd-voting = { path = "../cwd-voting" }
+cw-utils = "0.13"
+cwd-interface = { path = "../cwd-interface" }
+cw2 = "0.13"
+exec-control = { path = "../exec-control" }

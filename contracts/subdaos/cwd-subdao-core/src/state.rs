@@ -1,43 +1,6 @@
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
-
 use cosmwasm_std::Addr;
 use cw_storage_plus::{Item, Map};
-
-/// Top level config type for core module.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-pub struct Config {
-    /// The name of the contract.
-    pub name: String,
-    /// A description of the contract.
-    pub description: String,
-    /// The URI for the DAO as defined by the DAOstar standard
-    /// https://daostar.one/EIP
-    pub dao_uri: Option<String>,
-    /// The address of the main DAO. It's capable of pausing and unpausing subDAO
-    pub main_dao: Addr,
-    /// The address of the DAO guardian. The security DAO is capable only of pausing the subDAO.
-    pub security_dao: Addr,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-/// Top level type describing a proposal module.
-pub struct ProposalModule {
-    /// The address of the proposal module.
-    pub address: Addr,
-    /// The URL prefix of this proposal module as derived from the module ID.
-    /// Prefixes are mapped to letters, e.g. 0 is 'A', and 26 is 'AA'.
-    pub prefix: String,
-    /// The status of the proposal module, e.g. 'Active' or 'Disabled.'
-    pub status: ProposalModuleStatus,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-/// The status of a proposal module.
-pub enum ProposalModuleStatus {
-    Enabled,
-    Disabled,
-}
+use neutron_subdao_core::types::{Config, ProposalModule};
 
 /// The current configuration of the module.
 pub const CONFIG: Item<Config> = Item::new("config_v2");

@@ -6,15 +6,16 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 use cw_storage_plus::Bound;
+use cwd_pre_propose_base::msg::QueryMsg as PreProposeQueryBase;
 use neutron_bindings::bindings::msg::NeutronMsg;
-
-use cwd_pre_propose_base::msg::QueryMsg as PreProposeQuery;
-use neutron_timelock::single::ExecuteMsg;
+use neutron_subdao_pre_propose_single::msg::QueryMsg as PreProposeQuery;
+use neutron_subdao_timelock_single::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
+use neutron_subdao_timelock_single::types::{
+    Config, ProposalListResponse, ProposalStatus, SingleChoiceProposal,
+};
 
 use crate::error::ContractError;
-use crate::msg::{InstantiateMsg, MigrateMsg, ProposalListResponse, QueryMsg};
-use crate::proposal::{ProposalStatus, SingleChoiceProposal};
-use crate::state::{Config, CONFIG, DEFAULT_LIMIT, PROPOSALS};
+use crate::state::{CONFIG, DEFAULT_LIMIT, PROPOSALS};
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:cwd-subdao-timelock-single";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -28,9 +29,10 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    let subdao_core: Addr = deps
-        .querier
-        .query_wasm_smart(info.sender, &PreProposeQuery::Dao {})?;
+    let subdao_core: Addr = deps.querier.query_wasm_smart(
+        info.sender, // sender is meant to be the pre-propose module
+        &PreProposeQuery::QueryBase(PreProposeQueryBase::Dao {}),
+    )?;
 
     let config = Config {
         owner: msg.owner,

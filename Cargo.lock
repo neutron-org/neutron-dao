@@ -642,7 +642,7 @@ dependencies = [
  "cwd-proposal-hooks",
  "cwd-proposal-single",
  "cwd-voting",
- "neutron-sdk",
+ "neutron-sdk 0.1.0 (git+https://github.com/neutron-org/neutron-contracts.git)",
  "schemars",
  "serde",
 ]
@@ -710,7 +710,7 @@ dependencies = [
  "cwd-proposal-hooks",
  "cwd-vote-hooks",
  "cwd-voting",
- "neutron-sdk",
+ "neutron-sdk 0.1.0 (git+https://github.com/neutron-org/neutron-contracts.git)",
  "schemars",
  "serde",
  "thiserror",
@@ -768,8 +768,12 @@ dependencies = [
  "cw721",
  "cwd-interface",
  "cwd-macros",
+ "cwd-voting",
  "exec-control",
  "neutron-sdk 0.1.0 (git+https://github.com/neutron-org/neutron-contracts.git)",
+ "neutron-subdao-core",
+ "neutron-subdao-pre-propose-single",
+ "neutron-subdao-proposal-single",
  "schemars",
  "serde",
  "thiserror",
@@ -796,7 +800,9 @@ dependencies = [
  "cwd-subdao-proposal-single",
  "cwd-voting",
  "neutron-sdk 0.1.0 (git+https://github.com/neutron-org/neutron-contracts.git)",
- "neutron-timelock",
+ "neutron-subdao-pre-propose-single",
+ "neutron-subdao-proposal-single",
+ "neutron-subdao-timelock-single",
  "schemars",
  "serde",
 ]
@@ -825,11 +831,13 @@ dependencies = [
  "cwd-macros",
  "cwd-pre-propose-base",
  "cwd-proposal-hooks",
- "cwd-subdao-core",
  "cwd-subdao-pre-propose-single",
  "cwd-vote-hooks",
  "cwd-voting",
  "neutron-sdk 0.1.0 (git+https://github.com/neutron-org/neutron-contracts.git)",
+ "neutron-subdao-core",
+ "neutron-subdao-pre-propose-single",
+ "neutron-subdao-proposal-single",
  "schemars",
  "serde",
  "thiserror",
@@ -853,7 +861,8 @@ dependencies = [
  "cwd-macros",
  "cwd-pre-propose-base",
  "neutron-sdk 0.1.0 (git+https://github.com/neutron-org/neutron-contracts.git)",
- "neutron-timelock",
+ "neutron-subdao-pre-propose-single",
+ "neutron-subdao-timelock-single",
  "schemars",
  "serde",
  "thiserror",
@@ -1192,7 +1201,49 @@ dependencies = [
 ]
 
 [[package]]
-name = "neutron-timelock"
+name = "neutron-subdao-core"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-std",
+ "cw-utils",
+ "cw2",
+ "cwd-interface",
+ "cwd-macros",
+ "cwd-voting",
+ "exec-control",
+ "neutron-sdk 0.1.0 (git+https://github.com/neutron-org/neutron-contracts.git)",
+ "schemars",
+ "serde",
+]
+
+[[package]]
+name = "neutron-subdao-pre-propose-single"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-std",
+ "cwd-interface",
+ "cwd-pre-propose-base",
+ "cwd-voting",
+ "neutron-sdk 0.1.0 (git+https://github.com/neutron-org/neutron-contracts.git)",
+ "schemars",
+ "serde",
+]
+
+[[package]]
+name = "neutron-subdao-proposal-single"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-std",
+ "cw-utils",
+ "cwd-macros",
+ "cwd-voting",
+ "neutron-sdk 0.1.0 (git+https://github.com/neutron-org/neutron-contracts.git)",
+ "schemars",
+ "serde",
+]
+
+[[package]]
+name = "neutron-subdao-timelock-single"
 version = "0.1.0"
 dependencies = [
  "cosmwasm-std",

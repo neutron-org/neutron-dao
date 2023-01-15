@@ -1,7 +1,16 @@
+use cosmwasm_std::Addr;
 use cosmwasm_std::{CosmosMsg, Timestamp};
 use neutron_bindings::bindings::msg::NeutronMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
+pub struct Config {
+    pub owner: Addr,
+    pub timelock_duration: u64,
+    // subDAO core module can timelock proposals.
+    pub subdao: Addr,
+}
 
 #[derive(Serialize, Deserialize, Clone, JsonSchema, Debug, Eq, PartialEq)]
 pub struct SingleChoiceProposal {
@@ -40,4 +49,10 @@ impl std::fmt::Display for ProposalStatus {
             ProposalStatus::ExecutionFailed => write!(f, "execution_failed"),
         }
     }
+}
+
+/// A list of proposals returned by `ListProposals`.
+#[derive(Serialize, Deserialize, Clone, JsonSchema, Debug)]
+pub struct ProposalListResponse {
+    pub proposals: Vec<SingleChoiceProposal>,
 }
