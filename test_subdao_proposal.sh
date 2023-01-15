@@ -115,7 +115,7 @@ TIMELOCK_SINGLE_CONTRACT_INIT_MSG='{
   "timelock_duration": 20,
   "owner": "'"${CORE_ADDRESS}"'"
 }'
-TIMELOCK_SINGLE_CONTRACT_INIT_MSG_BASE64=$(echo ${TIMELOCK_SINGLE_CONTRACT_INIT_MSG} | base64)
+TIMELOCK_SINGLE_CONTRACT_INIT_MSG_BASE64=$(echo ${TIMELOCK_SINGLE_CONTRACT_INIT_MSG} | base64 | tr -d "\n")
 
 # PRE_PROPOSE_INIT_MSG will be put into the PROPOSAL_SINGLE_INIT_MSG
 PRE_PROPOSE_INIT_MSG='{
@@ -137,7 +137,7 @@ PRE_PROPOSE_INIT_MSG='{
     "msg": "'"${TIMELOCK_SINGLE_CONTRACT_INIT_MSG_BASE64}"'"
   }
 }'
-PRE_PROPOSE_INIT_MSG_BASE64=$(echo ${PRE_PROPOSE_INIT_MSG} | base64)
+PRE_PROPOSE_INIT_MSG_BASE64=$(echo ${PRE_PROPOSE_INIT_MSG} | base64 | tr -d "\n")
 
 PROPOSAL_SINGLE_INIT_MSG='{
   "threshold": {
@@ -160,7 +160,7 @@ PROPOSAL_SINGLE_INIT_MSG='{
     }
   }
 }'
-PROPOSAL_SINGLE_INIT_MSG_BASE64=$(echo ${PROPOSAL_SINGLE_INIT_MSG} | base64)
+PROPOSAL_SINGLE_INIT_MSG_BASE64=$(echo ${PROPOSAL_SINGLE_INIT_MSG} | base64 | tr -d "\n")
 
 # -------------------- VOTE MODULE --------------------
 
@@ -173,7 +173,7 @@ CW4_VOTE_INIT_MSG='{
     }
   ]
 }'
-CW4_VOTE_INIT_MSG_BASE64=$(echo ${CW4_VOTE_INIT_MSG} | base64)
+CW4_VOTE_INIT_MSG_BASE64=$(echo ${CW4_VOTE_INIT_MSG} | base64 | tr -d "\n")
 
 # -------------------- CORE MODULE --------------------
 
