@@ -1,6 +1,6 @@
 ## Distribution Contract
 
-The Distribution Contract is owned by DAO and is present in Genesis. The Distribution Schedule contract is responsible of the second step of token distribution where tokens sent to this contract are distributed between `share holders`, where `share holders` are a configurable set of addresses with number of shares.
+The Distribution Contract is owned by DAO and is present in Genesis. The Distribution Schedule contract is responsible for the second step of token distribution where tokens sent to this contract are distributed between `share holders`, where `share holders` are a configurable set of addresses with a number of shares.
 
 The contract allows share holders to withdraw collected tokens. The contract can be configured only by DAO.
 
