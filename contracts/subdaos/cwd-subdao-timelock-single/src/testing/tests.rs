@@ -4,13 +4,14 @@ use cosmwasm_std::{
     Addr, Attribute, Reply, SubMsg, SubMsgResult,
 };
 use neutron_bindings::bindings::msg::NeutronMsg;
-use neutron_timelock::single::ExecuteMsg;
+use neutron_subdao_timelock_single::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use neutron_subdao_timelock_single::types::{
+    Config, ProposalListResponse, ProposalStatus, SingleChoiceProposal,
+};
 
 use crate::{
     contract::{execute, instantiate, query, reply},
-    msg::{InstantiateMsg, ProposalListResponse, QueryMsg},
-    proposal::{ProposalStatus, SingleChoiceProposal},
-    state::{Config, CONFIG, DEFAULT_LIMIT, PROPOSALS},
+    state::{CONFIG, DEFAULT_LIMIT, PROPOSALS},
     testing::mock_querier::MOCK_TIMELOCK_INITIALIZER,
 };
 
@@ -87,7 +88,7 @@ fn test_execute_timelock_proposal() {
 
     let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone());
     assert_eq!(
-        "cwd_subdao_timelock_single::state::Config not found",
+        "neutron_subdao_timelock_single::types::Config not found",
         res.unwrap_err().to_string()
     );
 
@@ -131,7 +132,7 @@ fn test_execute_proposal() {
 
     let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone());
     assert_eq!(
-        "cwd_subdao_timelock_single::state::Config not found",
+        "neutron_subdao_timelock_single::types::Config not found",
         res.unwrap_err().to_string()
     );
 
@@ -143,7 +144,7 @@ fn test_execute_proposal() {
     CONFIG.save(deps.as_mut().storage, &config).unwrap();
     let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone());
     assert_eq!(
-        "cwd_subdao_timelock_single::proposal::SingleChoiceProposal not found",
+        "neutron_subdao_timelock_single::types::SingleChoiceProposal not found",
         res.unwrap_err().to_string()
     );
 
@@ -211,7 +212,7 @@ fn test_overrule_proposal() {
 
     let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone());
     assert_eq!(
-        "cwd_subdao_timelock_single::state::Config not found",
+        "neutron_subdao_timelock_single::types::Config not found",
         res.unwrap_err().to_string()
     );
 
@@ -282,7 +283,7 @@ fn execute_update_config() {
 
     let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone());
     assert_eq!(
-        "cwd_subdao_timelock_single::state::Config not found",
+        "neutron_subdao_timelock_single::types::Config not found",
         res.unwrap_err().to_string()
     );
 

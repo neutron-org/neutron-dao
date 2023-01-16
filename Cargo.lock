@@ -541,7 +541,7 @@ dependencies = [
  "cw721",
  "cwd-interface",
  "cwd-macros",
- "neutron-sdk 0.1.0 (git+https://github.com/neutron-org/neutron-sdk.git?rev=c19b40c024eeaa8733af9ddee94a52798d78f469)",
+ "neutron-sdk",
  "schemars",
  "serde",
  "thiserror",
@@ -620,7 +620,7 @@ dependencies = [
  "cwd-proposal-hooks",
  "cwd-proposal-single",
  "cwd-voting",
- "neutron-sdk 0.1.0 (git+https://github.com/neutron-org/neutron-contracts.git)",
+ "neutron-sdk",
  "schemars",
  "serde",
 ]
@@ -644,7 +644,7 @@ dependencies = [
  "cwd-proposal-hooks",
  "cwd-proposal-single",
  "cwd-voting",
- "neutron-sdk 0.1.0 (git+https://github.com/neutron-org/neutron-sdk.git?rev=c19b40c024eeaa8733af9ddee94a52798d78f469)",
+ "neutron-sdk",
  "schemars",
  "serde",
 ]
@@ -688,7 +688,7 @@ dependencies = [
  "cwd-proposal-hooks",
  "cwd-vote-hooks",
  "cwd-voting",
- "neutron-sdk 0.1.0 (git+https://github.com/neutron-org/neutron-contracts.git)",
+ "neutron-sdk",
  "schemars",
  "serde",
  "thiserror",
@@ -723,7 +723,7 @@ dependencies = [
  "cwd-proposal-hooks",
  "cwd-vote-hooks",
  "cwd-voting",
- "neutron-sdk 0.1.0 (git+https://github.com/neutron-org/neutron-sdk.git?rev=c19b40c024eeaa8733af9ddee94a52798d78f469)",
+ "neutron-sdk",
  "schemars",
  "serde",
  "thiserror",
@@ -746,8 +746,12 @@ dependencies = [
  "cw721",
  "cwd-interface",
  "cwd-macros",
+ "cwd-voting",
  "exec-control",
- "neutron-sdk 0.1.0 (git+https://github.com/neutron-org/neutron-sdk.git?rev=c19b40c024eeaa8733af9ddee94a52798d78f469)",
+ "neutron-sdk",
+ "neutron-subdao-core",
+ "neutron-subdao-pre-propose-single",
+ "neutron-subdao-proposal-single",
  "schemars",
  "serde",
  "thiserror",
@@ -773,8 +777,10 @@ dependencies = [
  "cwd-subdao-core",
  "cwd-subdao-proposal-single",
  "cwd-voting",
- "neutron-sdk 0.1.0 (git+https://github.com/neutron-org/neutron-sdk.git?rev=c19b40c024eeaa8733af9ddee94a52798d78f469)",
- "neutron-timelock",
+ "neutron-sdk",
+ "neutron-subdao-pre-propose-single",
+ "neutron-subdao-proposal-single",
+ "neutron-subdao-timelock-single",
  "schemars",
  "serde",
 ]
@@ -803,11 +809,13 @@ dependencies = [
  "cwd-macros",
  "cwd-pre-propose-base",
  "cwd-proposal-hooks",
- "cwd-subdao-core",
  "cwd-subdao-pre-propose-single",
  "cwd-vote-hooks",
  "cwd-voting",
- "neutron-sdk 0.1.0 (git+https://github.com/neutron-org/neutron-sdk.git?rev=c19b40c024eeaa8733af9ddee94a52798d78f469)",
+ "neutron-sdk",
+ "neutron-subdao-core",
+ "neutron-subdao-pre-propose-single",
+ "neutron-subdao-proposal-single",
  "schemars",
  "serde",
  "thiserror",
@@ -830,8 +838,9 @@ dependencies = [
  "cwd-interface",
  "cwd-macros",
  "cwd-pre-propose-base",
- "neutron-sdk 0.1.0 (git+https://github.com/neutron-org/neutron-sdk.git?rev=c19b40c024eeaa8733af9ddee94a52798d78f469)",
- "neutron-timelock",
+ "neutron-sdk",
+ "neutron-subdao-pre-propose-single",
+ "neutron-subdao-timelock-single",
  "schemars",
  "serde",
  "thiserror",
@@ -860,7 +869,7 @@ dependencies = [
  "cwd-core",
  "cwd-interface",
  "cwd-macros",
- "neutron-sdk 0.1.0 (git+https://github.com/neutron-org/neutron-sdk.git?rev=c19b40c024eeaa8733af9ddee94a52798d78f469)",
+ "neutron-sdk",
  "schemars",
  "serde",
  "thiserror",
@@ -1151,51 +1160,53 @@ dependencies = [
 ]
 
 [[package]]
-name = "neutron-sdk"
+name = "neutron-subdao-core"
 version = "0.1.0"
-source = "git+https://github.com/neutron-org/neutron-contracts.git#c19b40c024eeaa8733af9ddee94a52798d78f469"
 dependencies = [
- "base64 0.20.0",
- "bech32",
- "cosmos-sdk-proto",
- "cosmwasm-schema",
  "cosmwasm-std",
- "cw-storage-plus 1.0.1",
- "prost 0.11.6",
- "protobuf",
+ "cw-utils",
+ "cw2",
+ "cwd-interface",
+ "cwd-macros",
+ "cwd-voting",
+ "exec-control",
+ "neutron-sdk",
  "schemars",
  "serde",
- "serde-json-wasm",
- "serde_json",
- "thiserror",
 ]
 
 [[package]]
-name = "neutron-sdk"
+name = "neutron-subdao-pre-propose-single"
 version = "0.1.0"
-source = "git+https://github.com/neutron-org/neutron-sdk.git#c19b40c024eeaa8733af9ddee94a52798d78f469"
 dependencies = [
- "base64 0.20.0",
- "bech32",
- "cosmos-sdk-proto",
- "cosmwasm-schema",
  "cosmwasm-std",
- "cw-storage-plus 1.0.1",
- "prost 0.11.6",
- "protobuf",
+ "cwd-interface",
+ "cwd-pre-propose-base",
+ "cwd-voting",
+ "neutron-sdk",
  "schemars",
  "serde",
- "serde-json-wasm",
- "serde_json",
- "thiserror",
 ]
 
 [[package]]
-name = "neutron-timelock"
+name = "neutron-subdao-proposal-single"
 version = "0.1.0"
 dependencies = [
  "cosmwasm-std",
- "neutron-sdk 0.1.0 (git+https://github.com/neutron-org/neutron-sdk.git?rev=c19b40c024eeaa8733af9ddee94a52798d78f469)",
+ "cw-utils",
+ "cwd-macros",
+ "cwd-voting",
+ "neutron-sdk",
+ "schemars",
+ "serde",
+]
+
+[[package]]
+name = "neutron-subdao-timelock-single"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-std",
+ "neutron-sdk",
  "schemars",
  "serde",
 ]
@@ -1209,7 +1220,7 @@ dependencies = [
  "cw-storage-plus 1.0.1",
  "cwd-macros",
  "exec-control",
- "neutron-sdk 0.1.0 (git+https://github.com/neutron-org/neutron-sdk.git)",
+ "neutron-sdk",
  "schemars",
  "serde",
  "thiserror",

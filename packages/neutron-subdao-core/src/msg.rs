@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use cwd_macros::{info_query, pausable, pausable_query, voting_query};
 
-use crate::query::SubDao;
+use crate::types::SubDao;
 
 /// Information about an item to be stored in the items list.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
