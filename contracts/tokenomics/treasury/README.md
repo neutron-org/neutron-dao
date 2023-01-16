@@ -1,6 +1,6 @@
 ## Treasury Contract
 
-The Treasury contract is owned by DAO and is instantiated in Genesis. Treasury contract is responsible of the first step of tokens distribution where a fraction of vested of tokens goes to the Distribution Contract, and the the rest goes to the Reserve contract.
+The Treasury contract is owned by DAO and is instantiated in Genesis. Treasury contract is responsible for the first step of tokens distribution where a fraction of vested of tokens goes to the Distribution Contract, and the rest goes to the Reserve contract.
 
 Treasury tokens are vested based on on-chain activity: `burnt_tokens * a_multiplier`. The multiplier is a linear function (fn(y) = x/10; denominator should be changed based on tests run coins consumption, right now it consumes ~13000000 on test run and it means that it will exhaust all treasury tokens very quickly @Spaydh). At the moment I found that this value should be at least 100_000_000_000 of the supply: while initially, one burnt tokens equals multiple NTRN tokens made liquid, the flow of new tokens into the Treasury progressively slows down until the tokens supply is exhausted and the tokenomy becomes deflationary.
 
