@@ -1,5 +1,5 @@
 [package]
-name = "neutron-timelock"
+name = "neutron-subdao-timelock-single"
 version = "0.1.0"
 edition = "2021"
 

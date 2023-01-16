@@ -2,9 +2,7 @@ extern crate core;
 
 pub mod contract;
 mod error;
-pub mod msg;
-pub mod proposal;
-pub mod state;
+mod state;
 
 #[cfg(test)]
 mod testing;

@@ -5,21 +5,25 @@ use cosmwasm_std::{
     StdError, StdResult, SubMsg,
 };
 use cw2::{get_contract_version, set_contract_version};
+use cw_paginate::{paginate_map, paginate_map_values};
 use cw_utils::parse_reply_instantiate_data;
+use cwd_interface::{voting, ModuleInstantiateInfo};
+use cwd_voting::pre_propose::ProposalCreationPolicy;
 use exec_control::pause::{
     can_pause, can_unpause, validate_duration, PauseError, PauseInfoResponse,
 };
-
-use cw_paginate::{paginate_map, paginate_map_values};
-use cwd_interface::{voting, ModuleInstantiateInfo};
 use neutron_bindings::bindings::msg::NeutronMsg;
+use neutron_subdao_core::msg::{ExecuteMsg, InitialItem, InstantiateMsg, MigrateMsg, QueryMsg};
+use neutron_subdao_core::types::{
+    Config, DumpStateResponse, GetItemResponse, ProposalModule, ProposalModuleStatus, SubDao,
+};
+use neutron_subdao_pre_propose_single::msg::QueryMsg as PreProposeQueryMsg;
+use neutron_subdao_proposal_single::msg::QueryMsg as ProposeQueryMsg;
 
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InitialItem, InstantiateMsg, MigrateMsg, QueryMsg};
-use crate::query::{DumpStateResponse, GetItemResponse, SubDao};
 use crate::state::{
-    Config, ProposalModule, ProposalModuleStatus, ACTIVE_PROPOSAL_MODULE_COUNT, CONFIG, ITEMS,
-    PAUSED_UNTIL, PROPOSAL_MODULES, SUBDAO_LIST, TOTAL_PROPOSAL_MODULE_COUNT, VOTE_MODULE,
+    ACTIVE_PROPOSAL_MODULE_COUNT, CONFIG, ITEMS, PAUSED_UNTIL, PROPOSAL_MODULES, SUBDAO_LIST,
+    TOTAL_PROPOSAL_MODULE_COUNT, VOTE_MODULE,
 };
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:cwd-subdao-core";
@@ -102,21 +106,21 @@ pub fn execute(
         }
         ExecuteMsg::Pause { duration } => execute_pause(deps, env, info.sender, duration),
         ExecuteMsg::Unpause {} => execute_unpause(deps, info.sender),
-        ExecuteMsg::RemoveItem { key } => execute_remove_item(deps, env, info.sender, key),
-        ExecuteMsg::SetItem { key, addr } => execute_set_item(deps, env, info.sender, key, addr),
+        ExecuteMsg::RemoveItem { key } => execute_remove_item(deps, info.sender, key),
+        ExecuteMsg::SetItem { key, addr } => execute_set_item(deps, info.sender, key, addr),
         ExecuteMsg::UpdateConfig {
             name,
             description,
             dao_uri,
-        } => execute_update_config(deps, env, info, name, description, dao_uri),
+        } => execute_update_config(deps, info.sender, name, description, dao_uri),
         ExecuteMsg::UpdateVotingModule { module } => {
-            execute_update_voting_module(env, info.sender, module)
+            execute_update_voting_module(deps, env, info.sender, module)
         }
         ExecuteMsg::UpdateProposalModules { to_add, to_disable } => {
             execute_update_proposal_modules(deps, env, info.sender, to_add, to_disable)
         }
         ExecuteMsg::UpdateSubDaos { to_add, to_remove } => {
-            execute_update_sub_daos_list(deps, env, info.sender, to_add, to_remove)
+            execute_update_sub_daos_list(deps, info.sender, to_add, to_remove)
         }
     }
 }
@@ -182,15 +186,12 @@ pub fn execute_proposal_hook(
 
 pub fn execute_update_config(
     deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
+    sender: Addr,
     name: Option<String>,
     description: Option<String>,
     dao_uri: Option<String>,
 ) -> Result<Response<NeutronMsg>, ContractError> {
-    if info.sender != env.contract.address {
-        return Err(ContractError::Unauthorized {});
-    }
+    execution_access_check(deps.as_ref(), sender)?;
 
     let mut config: Config = CONFIG.load(deps.storage)?;
     if let Some(name) = name {
@@ -215,13 +216,12 @@ pub fn execute_update_config(
 }
 
 pub fn execute_update_voting_module(
+    deps: DepsMut,
     env: Env,
     sender: Addr,
     module: ModuleInstantiateInfo,
 ) -> Result<Response<NeutronMsg>, ContractError> {
-    if env.contract.address != sender {
-        return Err(ContractError::Unauthorized {});
-    }
+    execution_access_check(deps.as_ref(), sender)?;
 
     let wasm = module.into_wasm_msg(env.contract.address);
     let submessage = SubMsg::reply_on_success(wasm, VOTE_MODULE_UPDATE_REPLY_ID);
@@ -238,9 +238,7 @@ pub fn execute_update_proposal_modules(
     to_add: Vec<ModuleInstantiateInfo>,
     to_disable: Vec<String>,
 ) -> Result<Response<NeutronMsg>, ContractError> {
-    if env.contract.address != sender {
-        return Err(ContractError::Unauthorized {});
-    }
+    execution_access_check(deps.as_ref(), sender)?;
 
     let disable_count = to_disable.len() as u32;
     for addr in to_disable {
@@ -284,14 +282,11 @@ pub fn execute_update_proposal_modules(
 
 pub fn execute_set_item(
     deps: DepsMut,
-    env: Env,
     sender: Addr,
     key: String,
     value: String,
 ) -> Result<Response<NeutronMsg>, ContractError> {
-    if env.contract.address != sender {
-        return Err(ContractError::Unauthorized {});
-    }
+    execution_access_check(deps.as_ref(), sender)?;
 
     ITEMS.save(deps.storage, key.clone(), &value)?;
     Ok(Response::default()
@@ -302,13 +297,10 @@ pub fn execute_set_item(
 
 pub fn execute_remove_item(
     deps: DepsMut,
-    env: Env,
     sender: Addr,
     key: String,
 ) -> Result<Response<NeutronMsg>, ContractError> {
-    if env.contract.address != sender {
-        return Err(ContractError::Unauthorized {});
-    }
+    execution_access_check(deps.as_ref(), sender)?;
 
     if ITEMS.has(deps.storage, key.clone()) {
         ITEMS.remove(deps.storage, key.clone());
@@ -322,14 +314,11 @@ pub fn execute_remove_item(
 
 pub fn execute_update_sub_daos_list(
     deps: DepsMut,
-    env: Env,
     sender: Addr,
     to_add: Vec<SubDao>,
     to_remove: Vec<String>,
 ) -> Result<Response<NeutronMsg>, ContractError> {
-    if env.contract.address != sender {
-        return Err(ContractError::Unauthorized {});
-    }
+    execution_access_check(deps.as_ref(), sender.clone())?;
 
     for addr in to_remove {
         let addr = deps.api.addr_validate(&addr)?;
@@ -615,6 +604,30 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
         }
         _ => Err(ContractError::UnknownReplyID {}),
     }
+}
+
+/// Validates the sender permissions to execute contract's messages. Valid senders are timelock
+/// contracts behind proposal modules of the DAO.
+pub(crate) fn execution_access_check(deps: Deps, sender: Addr) -> Result<(), ContractError> {
+    let proposal_modules = PROPOSAL_MODULES
+        .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
+        .map(|kv| Ok(kv?.1))
+        .collect::<StdResult<Vec<ProposalModule>>>()?;
+    for proposal_module in proposal_modules.iter() {
+        let policy: ProposalCreationPolicy = deps.querier.query_wasm_smart(
+            &proposal_module.address,
+            &ProposeQueryMsg::ProposalCreationPolicy {},
+        )?;
+        if let ProposalCreationPolicy::Module { addr } = policy {
+            let timelock_contract: Addr = deps
+                .querier
+                .query_wasm_smart(&addr, &PreProposeQueryMsg::TimelockAddress {})?;
+            if sender == timelock_contract {
+                return Ok(());
+            }
+        };
+    }
+    Err(ContractError::Unauthorized {})
 }
 
 pub(crate) fn derive_proposal_module_prefix(mut dividend: usize) -> StdResult<String> {

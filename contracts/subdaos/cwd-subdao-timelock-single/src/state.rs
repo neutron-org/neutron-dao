@@ -1,16 +1,5 @@
-use crate::proposal::SingleChoiceProposal;
-use cosmwasm_std::Addr;
 use cw_storage_plus::{Item, Map};
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
-pub struct Config {
-    pub owner: Addr,
-    pub timelock_duration: u64,
-    // subDAO core module can timelock proposals.
-    pub subdao: Addr,
-}
+use neutron_subdao_timelock_single::types::{Config, SingleChoiceProposal};
 
 /// Default limit for proposal pagination.
 pub const DEFAULT_LIMIT: u64 = 30;

@@ -1,6 +1,5 @@
-use crate::query::ProposalResponse;
-use crate::state::PROPOSAL_COUNT;
-use cosmwasm_std::{Addr, BlockInfo, CosmosMsg, Decimal, StdResult, Storage, Uint128};
+use crate::types::ProposalResponse;
+use cosmwasm_std::{Addr, BlockInfo, CosmosMsg, Decimal, Uint128};
 use cw_utils::Expiration;
 use cwd_voting::status::Status;
 use cwd_voting::threshold::{PercentageThreshold, Threshold};
@@ -36,12 +35,6 @@ pub struct SingleChoiceProposal {
     pub status: Status,
     pub votes: Votes,
     pub allow_revoting: bool,
-}
-
-pub fn advance_proposal_id(store: &mut dyn Storage) -> StdResult<u64> {
-    let id: u64 = PROPOSAL_COUNT.may_load(store)?.unwrap_or_default() + 1;
-    PROPOSAL_COUNT.save(store, &id)?;
-    Ok(id)
 }
 
 impl SingleChoiceProposal {

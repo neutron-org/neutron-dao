@@ -2,9 +2,8 @@ use std::env::current_dir;
 use std::fs::create_dir_all;
 
 use cosmwasm_schema::{export_schema, export_schema_with_title, remove_schemas, schema_for};
-use cwd_subdao_timelock_single::msg::{InstantiateMsg, MigrateMsg, ProposalListResponse, QueryMsg};
-use cwd_subdao_timelock_single::state::Config;
-use neutron_timelock::single::ExecuteMsg;
+use neutron_subdao_timelock_single::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
+use neutron_subdao_timelock_single::types::{Config, ProposalListResponse};
 
 fn main() {
     let mut out_dir = current_dir().unwrap();
