@@ -1335,10 +1335,10 @@
           "description": "Anyone may create a proposal free of charge.",
           "type": "object",
           "required": [
-            "AnyoneMayPropose"
+            "anyone_may_propose"
           ],
           "properties": {
-            "AnyoneMayPropose": {
+            "anyone_may_propose": {
               "type": "object"
             }
           },
@@ -1348,10 +1348,10 @@
           "description": "The module specified in INFO has exclusive rights to proposal creation.",
           "type": "object",
           "required": [
-            "ModuleMayPropose"
+            "module_may_propose"
           ],
           "properties": {
-            "ModuleMayPropose": {
+            "module_may_propose": {
               "type": "object",
               "required": [
                 "info"
