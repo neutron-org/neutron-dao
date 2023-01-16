@@ -8,4 +8,4 @@ pub struct Config {
     pub main_dao: Addr,
 }
 
-pub const CONFIG: Item<Config> = Item::new("config");
+pub const CONFIG: Item<Config> = Item::new("config_overrule");

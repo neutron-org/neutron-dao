@@ -163,12 +163,9 @@ pub fn execute(
                 },
             };
 
-            let query_msg_1 = TimelockQueryMsg::Config {};
-            let timelock_config_bin =
-                deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-                    contract_addr: timelock_contract.to_string(),
-                    msg: to_binary(&query_msg_1)?,
-                }))?;
+            let timelock_config_bin = deps
+                .querier
+                .query_wasm_smart(timelock_contract.to_string(), &TimelockQueryMsg::Config {})?;
             let timelock_config: TimelockConfig = from_binary(&timelock_config_bin).unwrap();
 
             let config = CONFIG.load(deps.storage)?;
@@ -177,10 +174,9 @@ pub fn execute(
                 start_after: None,
                 limit: Some(10),
             };
-            let subdao_list_bin = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-                contract_addr: config.main_dao.to_string(),
-                msg: to_binary(&query_msg_2)?,
-            }))?;
+            let subdao_list_bin = deps
+                .querier
+                .query_wasm_smart(config.main_dao.to_string(), &query_msg_2)?;
             let subdao_list: Vec<SubDao> = from_binary(&subdao_list_bin).unwrap();
 
             //todo pagination handling
@@ -194,10 +190,9 @@ pub fn execute(
             };
 
             let query_msg_3 = TimelockQueryMsg::Proposal { proposal_id };
-            let proposal_bin = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-                contract_addr: timelock_contract.to_string(),
-                msg: to_binary(&query_msg_3)?,
-            }))?;
+            let proposal_bin = deps
+                .querier
+                .query_wasm_smart(timelock_contract.to_string(), &query_msg_3)?;
             let proposal_from_timelock: SingleChoiceProposal = from_binary(&proposal_bin).unwrap();
 
             if proposal_from_timelock.status != ProposalStatus::Timelocked {
