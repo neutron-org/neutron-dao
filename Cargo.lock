@@ -602,29 +602,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cwd-pre-propose-overrule"
-version = "0.2.0"
-dependencies = [
- "cosmwasm-schema",
- "cosmwasm-std",
- "cw-denom",
- "cw-multi-test",
- "cw-storage-plus 0.13.4",
- "cw-utils",
- "cw2",
- "cwd-core",
- "cwd-interface",
- "cwd-pre-propose-base",
- "cwd-proposal-hooks",
- "cwd-proposal-single",
- "cwd-voting",
- "neutron-sdk",
- "schemars",
- "serde",
- "thiserror",
-]
-
-[[package]]
 name = "cwd-pre-propose-multiple"
 version = "0.2.0"
 dependencies = [
@@ -646,6 +623,29 @@ dependencies = [
  "neutron-sdk",
  "schemars",
  "serde",
+]
+
+[[package]]
+name = "cwd-pre-propose-overrule"
+version = "0.2.0"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-denom",
+ "cw-multi-test",
+ "cw-storage-plus 0.13.4",
+ "cw-utils",
+ "cw2",
+ "cwd-core",
+ "cwd-interface",
+ "cwd-pre-propose-base",
+ "cwd-proposal-hooks",
+ "cwd-proposal-single",
+ "cwd-voting",
+ "neutron-sdk",
+ "schemars",
+ "serde",
+ "thiserror",
 ]
 
 [[package]]
@@ -1165,8 +1165,7 @@ dependencies = [
 [[package]]
 name = "neutron-sdk"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e48b0fe1882e00f244da9a05937a6f0d7f9f82bb2539d35ea2a06507f78418af"
+source = "git+https://github.com/neutron-org/neutron-sdk.git?rev=c19b40c024eeaa8733af9ddee94a52798d78f469#c19b40c024eeaa8733af9ddee94a52798d78f469"
 dependencies = [
  "base64 0.20.0",
  "bech32",
