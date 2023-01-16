@@ -27,27 +27,6 @@
       "additionalProperties": false
     },
     {
-      "description": "Pauses the DAO for a set duration. When paused the DAO is unable to execute proposals",
-      "type": "object",
-      "required": [
-        "pause"
-      ],
-      "properties": {
-        "pause": {
-          "type": "object",
-          "required": [
-            "duration"
-          ],
-          "properties": {
-            "duration": {
-              "$ref": "#/definitions/Duration"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
       "description": "Removes an item from the governance contract's item map.",
       "type": "object",
       "required": [
@@ -196,9 +175,47 @@
         }
       },
       "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "pause"
+      ],
+      "properties": {
+        "pause": {
+          "type": "object",
+          "required": [
+            "duration"
+          ],
+          "properties": {
+            "duration": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "unpause"
+      ],
+      "properties": {
+        "unpause": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
     }
   ],
   "definitions": {
+    "Addr": {
+      "description": "A human readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multi-chain smart contracts no assumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways 1. Use `Addr::unchecked(input)` 2. Use `let checked: Addr = deps.api.addr_validate(input)?` 3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?` 4. Deserialize from JSON. This must only be done from JSON that was validated before such as a contract's state. `Addr` must not be used in messages sent by the user because this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create a mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String` instance.",
+      "type": "string"
+    },
     "Admin": {
       "description": "Information about the CosmWasm level admin of a contract. Used in conjunction with `ModuleInstantiateInfo` to instantiate modules.",
       "oneOf": [
@@ -336,7 +353,9 @@
       "type": "object",
       "required": [
         "description",
-        "name"
+        "main_dao",
+        "name",
+        "security_dao"
       ],
       "properties": {
         "dao_uri": {
@@ -350,9 +369,25 @@
           "description": "A description of the contract.",
           "type": "string"
         },
+        "main_dao": {
+          "description": "The address of the main DAO. It's capable of pausing and unpausing subDAO",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Addr"
+            }
+          ]
+        },
         "name": {
           "description": "The name of the contract.",
           "type": "string"
+        },
+        "security_dao": {
+          "description": "The address of the DAO guardian. The security DAO is capable only of pausing the subDAO.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Addr"
+            }
+          ]
         }
       }
     },
@@ -512,40 +547,6 @@
                   "type": "string"
                 }
               }
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
-    "Duration": {
-      "description": "Duration is a delta of time. You can add it to a BlockInfo or Expiration to move that further in the future. Note that an height-based Duration and a time-based Expiration cannot be combined",
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "height"
-          ],
-          "properties": {
-            "height": {
-              "type": "integer",
-              "format": "uint64",
-              "minimum": 0.0
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "description": "Time in seconds",
-          "type": "object",
-          "required": [
-            "time"
-          ],
-          "properties": {
-            "time": {
-              "type": "integer",
-              "format": "uint64",
-              "minimum": 0.0
             }
           },
           "additionalProperties": false

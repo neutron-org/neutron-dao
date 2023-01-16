@@ -1,14 +1,18 @@
 use cosmwasm_std::{Addr, Uint128};
+use cwd_macros::{pausable, pausable_query};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct InstantiateMsg {
-    /// The contract's owner
-    pub owner: String,
     pub denom: String,
+    /// The address of the main DAO. It's capable of pausing and unpausing the contract
+    pub main_dao_address: String,
+    /// The address of the DAO guardian. The security DAO is capable only of pausing the contract.
+    pub security_dao_address: String,
 }
 
+#[pausable]
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
@@ -27,6 +31,7 @@ pub enum ExecuteMsg {
     Claim {},
 }
 
+#[pausable_query]
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
@@ -39,7 +44,6 @@ pub enum QueryMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct StatsResponse {
-    pub total_received: Uint128,
     pub total_distributed: Uint128,
     pub last_balance: Uint128,
 }

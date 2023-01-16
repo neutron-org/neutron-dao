@@ -1,12 +1,15 @@
+use crate::error::ContractError;
+use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::state::{Config, CONFIG, FUND_COUNTER, PAUSED_UNTIL, PENDING_DISTRIBUTION, SHARES};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_binary, Addr, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Order,
     Response, StdError, StdResult, Storage, Uint128,
 };
-
-use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::state::{Config, CONFIG, FUND_COUNTER, PENDING_DISTRIBUTION, SHARES};
+use exec_control::pause::{
+    can_pause, can_unpause, validate_duration, PauseError, PauseInfoResponse,
+};
 
 //--------------------------------------------------------------------------------------------------
 // Instantiation
@@ -21,9 +24,11 @@ pub fn instantiate(
 ) -> StdResult<Response> {
     let config = Config {
         denom: msg.denom,
-        owner: deps.api.addr_validate(&msg.owner)?,
+        main_dao_address: deps.api.addr_validate(&msg.main_dao_address)?,
+        security_dao_address: deps.api.addr_validate(&msg.security_dao_address)?,
     };
     CONFIG.save(deps.storage, &config)?;
+    PAUSED_UNTIL.save(deps.storage, &None)?;
     Ok(Response::new())
 }
 
@@ -34,15 +39,28 @@ pub fn instantiate(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
-) -> StdResult<Response> {
-    let api = deps.api;
+) -> Result<Response, ContractError> {
+    match get_pause_info(deps.as_ref(), &env)? {
+        PauseInfoResponse::Paused { .. } => {
+            return match msg {
+                ExecuteMsg::Pause { duration } => execute_pause(deps, env, info.sender, duration),
+                ExecuteMsg::Unpause {} => execute_unpause(deps, info.sender),
+                _ => Err(ContractError::PauseError(PauseError::Paused {})),
+            };
+        }
+        PauseInfoResponse::Unpaused {} => (),
+    }
+
     match msg {
+        ExecuteMsg::Pause { duration } => execute_pause(deps, env, info.sender, duration),
+        ExecuteMsg::Unpause {} => execute_unpause(deps, info.sender),
         // permissioned - owner
         ExecuteMsg::TransferOwnership(new_owner) => {
-            execute_transfer_ownership(deps, info, api.addr_validate(&new_owner)?)
+            let new_owner_addr = deps.api.addr_validate(&new_owner)?;
+            execute_transfer_ownership(deps, info, new_owner_addr)
         }
 
         // permissioned - owner
@@ -56,20 +74,64 @@ pub fn execute(
     }
 }
 
+pub fn execute_pause(
+    deps: DepsMut,
+    env: Env,
+    sender: Addr,
+    duration: u64,
+) -> Result<Response, ContractError> {
+    let config: Config = CONFIG.load(deps.storage)?;
+
+    can_pause(
+        &sender,
+        &config.main_dao_address,
+        &config.security_dao_address,
+    )?;
+    validate_duration(duration)?;
+
+    let paused_until_height: u64 = env.block.height + duration;
+
+    let already_paused_until = PAUSED_UNTIL.load(deps.storage)?;
+    if already_paused_until.unwrap_or(0u64) >= paused_until_height {
+        return Err(ContractError::PauseError(PauseError::InvalidDuration(
+            "contracts are already paused for a greater or equal duration".to_string(),
+        )));
+    }
+
+    PAUSED_UNTIL.save(deps.storage, &Some(paused_until_height))?;
+
+    Ok(Response::new()
+        .add_attribute("action", "execute_pause")
+        .add_attribute("sender", sender)
+        .add_attribute("paused_until_height", paused_until_height.to_string()))
+}
+
+pub fn execute_unpause(deps: DepsMut, sender: Addr) -> Result<Response, ContractError> {
+    let config: Config = CONFIG.load(deps.storage)?;
+
+    can_unpause(&sender, &config.main_dao_address)?;
+
+    PAUSED_UNTIL.save(deps.storage, &None)?;
+
+    Ok(Response::new()
+        .add_attribute("action", "execute_unpause")
+        .add_attribute("sender", sender))
+}
+
 pub fn execute_transfer_ownership(
     deps: DepsMut,
     info: MessageInfo,
     new_owner_addr: Addr,
-) -> StdResult<Response> {
+) -> Result<Response, ContractError> {
     let config = CONFIG.load(deps.storage)?;
-    let old_owner = config.owner;
     let sender_addr = info.sender;
+    let old_owner = config.main_dao_address;
     if sender_addr != old_owner {
-        return Err(StdError::generic_err("unauthorized"));
+        return Err(ContractError::Unauthorized {});
     }
 
     CONFIG.update(deps.storage, |mut config| -> StdResult<_> {
-        config.owner = new_owner_addr.clone();
+        config.main_dao_address = new_owner_addr.clone();
         Ok(config)
     })?;
 
@@ -86,27 +148,30 @@ fn get_denom_amount(coins: Vec<Coin>, denom: String) -> Option<Uint128> {
         .map(|c| c.amount)
 }
 
-pub fn execute_fund(deps: DepsMut, info: MessageInfo) -> StdResult<Response> {
+pub fn execute_fund(deps: DepsMut, info: MessageInfo) -> Result<Response, ContractError> {
     let config: Config = CONFIG.load(deps.storage)?;
     let denom = config.denom;
     let fund_counter = FUND_COUNTER.may_load(deps.storage)?.unwrap_or(0);
     let funds = get_denom_amount(info.funds, denom).unwrap_or(Uint128::zero());
     if funds.is_zero() {
-        return Err(StdError::generic_err("no funds sent"));
+        return Err(ContractError::NoFundsSent {});
     }
     let shares = SHARES
         .range(deps.storage, None, None, Order::Ascending)
         .into_iter()
         .collect::<StdResult<Vec<_>>>()?;
     if shares.is_empty() {
-        return Err(StdError::generic_err("no shares set"));
+        return Err(ContractError::NoSharesSent {});
     }
     let total_shares = shares.iter().fold(Uint128::zero(), |acc, (_, s)| acc + s);
     let mut spent = Uint128::zero();
     let mut resp = Response::new().add_attribute("action", "neutron/distribution/fund");
 
     for (addr, share) in shares.iter() {
-        let amount = funds.checked_mul(*share)?.checked_div(total_shares)?;
+        let amount = funds
+            .checked_mul(*share)?
+            .checked_div(total_shares)
+            .map_err(|e| StdError::DivideByZero { source: e })?;
         let pending = PENDING_DISTRIBUTION
             .may_load(deps.storage, addr.clone())?
             .unwrap_or(Uint128::zero());
@@ -140,10 +205,10 @@ pub fn execute_set_shares(
     deps: DepsMut,
     info: MessageInfo,
     shares: Vec<(String, Uint128)>,
-) -> StdResult<Response> {
+) -> Result<Response, ContractError> {
     let config: Config = CONFIG.load(deps.storage)?;
-    if info.sender != config.owner {
-        return Err(StdError::generic_err("unauthorized"));
+    if info.sender != config.main_dao_address {
+        return Err(ContractError::Unauthorized {});
     }
     let mut new_shares = Vec::with_capacity(shares.len());
     for (addr, share) in shares {
@@ -169,7 +234,7 @@ pub fn remove_all_shares(storage: &mut dyn Storage) -> StdResult<()> {
     Ok(())
 }
 
-pub fn execute_claim(deps: DepsMut, info: MessageInfo) -> StdResult<Response> {
+pub fn execute_claim(deps: DepsMut, info: MessageInfo) -> Result<Response, ContractError> {
     let config = CONFIG.load(deps.storage)?;
     let denom = config.denom;
     let sender = info.sender;
@@ -177,7 +242,7 @@ pub fn execute_claim(deps: DepsMut, info: MessageInfo) -> StdResult<Response> {
         .may_load(deps.storage, sender.clone())?
         .unwrap_or(Uint128::zero());
     if pending.is_zero() {
-        return Err(StdError::generic_err("no pending distribution"));
+        return Err(ContractError::NoPendingDistribution {});
     }
     PENDING_DISTRIBUTION.remove(deps.storage, sender.clone());
     Ok(Response::new().add_message(CosmosMsg::Bank(BankMsg::Send {
@@ -194,11 +259,12 @@ pub fn execute_claim(deps: DepsMut, info: MessageInfo) -> StdResult<Response> {
 //--------------------------------------------------------------------------------------------------
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config {} => to_binary(&query_config(deps)?),
         QueryMsg::Pending {} => to_binary(&query_pending(deps)?),
         QueryMsg::Shares {} => to_binary(&query_shares(deps)?),
+        QueryMsg::PauseInfo {} => query_paused(deps, env),
     }
 }
 
@@ -219,4 +285,23 @@ pub fn query_pending(deps: Deps) -> StdResult<Vec<(Addr, Uint128)>> {
         .range(deps.storage, None, None, Order::Ascending)
         .collect::<StdResult<Vec<(Addr, Uint128)>>>()?;
     Ok(pending)
+}
+
+pub fn query_paused(deps: Deps, env: Env) -> StdResult<Binary> {
+    to_binary(&get_pause_info(deps, &env)?)
+}
+
+fn get_pause_info(deps: Deps, env: &Env) -> StdResult<PauseInfoResponse> {
+    Ok(match PAUSED_UNTIL.may_load(deps.storage)?.unwrap_or(None) {
+        Some(paused_until_height) => {
+            if env.block.height.ge(&paused_until_height) {
+                PauseInfoResponse::Unpaused {}
+            } else {
+                PauseInfoResponse::Paused {
+                    until_height: paused_until_height,
+                }
+            }
+        }
+        None => PauseInfoResponse::Unpaused {},
+    })
 }
