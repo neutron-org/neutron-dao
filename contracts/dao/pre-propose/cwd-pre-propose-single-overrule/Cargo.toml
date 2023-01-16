@@ -1,0 +1,38 @@
+[package]
+name = "cwd-pre-propose-overrule"
+version = "0.2.0"
+authors = ["oldremez"]
+edition = "2021"
+repository = "https://github.com/neutron-org/neutron-dao"
+description = "A pre-propose module for Neutron DAO overrule proposals creation."
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+# for more explicit tests, cargo test --features=backtraces
+backtraces = ["cosmwasm-std/backtraces"]
+# use library feature to disable all instantiate/execute/query exports
+library = []
+
+[dependencies]
+cosmwasm-std = "1.0.0"
+cw2 = "0.13.2"
+cw-storage-plus = "0.13"
+serde = { version = "1.0.147", default-features = false, features = ["derive"] }
+cwd-pre-propose-base = { version = "*", path = "../../../../packages/cwd-pre-propose-base" }
+cwd-voting = { path = "../../../../packages/cwd-voting" }
+neutron_bindings = { package = "neutron-sdk", git = "https://github.com/neutron-org/neutron-sdk.git", rev = "c19b40c024eeaa8733af9ddee94a52798d78f469" }
+schemars = "0.8.8"
+thiserror = { version = "1.0.31" }
+
+[dev-dependencies]
+cosmwasm-schema = "1.0.0"
+cw-multi-test = "0.13.2"
+cw-utils = "0.13.2"
+cwd-proposal-single = { path = "../../proposal/cwd-proposal-single" }
+cwd-core = { path = "../../cwd-core" }
+cwd-voting = { path = "../../../../packages/cwd-voting" }
+cw-denom = { path = "../../../../packages/cw-denom" }
+cwd-interface = { path = "../../../../packages/cwd-interface" }
+cwd-proposal-hooks = { path = "../../../../packages/cwd-proposal-hooks" }
