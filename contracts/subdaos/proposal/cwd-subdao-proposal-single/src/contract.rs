@@ -1,3 +1,10 @@
+use crate::state::CREATION_POLICY;
+use crate::{
+    error::ContractError,
+    state::{
+        advance_proposal_id, BALLOTS, CONFIG, PROPOSALS, PROPOSAL_COUNT, PROPOSAL_HOOKS, VOTE_HOOKS,
+    },
+};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -9,7 +16,6 @@ use cw_storage_plus::Bound;
 use cw_utils::{parse_reply_instantiate_data, Duration};
 use cwd_hooks::Hooks;
 use cwd_proposal_hooks::{new_proposal_hooks, proposal_status_changed_hooks};
-use cwd_subdao_pre_propose_single::contract::ExecuteMsg as PreProposeMsg;
 use cwd_vote_hooks::new_vote_hooks;
 use cwd_voting::pre_propose::{PreProposeInfo, ProposalCreationPolicy};
 use cwd_voting::proposal::{DEFAULT_LIMIT, MAX_PROPOSAL_SIZE};
@@ -20,18 +26,14 @@ use cwd_voting::status::Status;
 use cwd_voting::threshold::Threshold;
 use cwd_voting::voting::{get_total_power, get_voting_power, validate_voting_period, Vote, Votes};
 use neutron_bindings::bindings::msg::NeutronMsg;
-
-use crate::msg::MigrateMsg;
-use crate::proposal::SingleChoiceProposal;
-use crate::state::{Config, CREATION_POLICY};
-
-use crate::{
-    error::ContractError,
-    msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
-    proposal::advance_proposal_id,
-    query::ProposalListResponse,
-    query::{ProposalResponse, VoteInfo, VoteListResponse, VoteResponse},
-    state::{Ballot, BALLOTS, CONFIG, PROPOSALS, PROPOSAL_COUNT, PROPOSAL_HOOKS, VOTE_HOOKS},
+use neutron_subdao_pre_propose_single::msg::ExecuteMsg as PreProposeExecuteMsg;
+use neutron_subdao_proposal_single::{
+    msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg},
+    proposal::SingleChoiceProposal,
+    types::{
+        Ballot, Config, ProposalListResponse, ProposalResponse, VoteInfo, VoteListResponse,
+        VoteResponse,
+    },
 };
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:cwd-subdao-proposal-single";
@@ -219,7 +221,7 @@ pub fn execute_propose(
     let hooks = match proposal_creation_policy {
         ProposalCreationPolicy::Anyone {} => hooks,
         ProposalCreationPolicy::Module { addr } => {
-            let msg = to_binary(&PreProposeMsg::ProposalCreatedHook {
+            let msg = to_binary(&PreProposeExecuteMsg::ProposalCreatedHook {
                 proposal_id: id,
                 proposer: proposer.into_string(),
             })?;
@@ -273,7 +275,7 @@ pub fn execute_execute(
         if !prop.msgs.is_empty() {
             let execute_message = WasmMsg::Execute {
                 contract_addr: config.dao.to_string(),
-                msg: to_binary(&cwd_subdao_core::msg::ExecuteMsg::ExecuteProposalHook {
+                msg: to_binary(&neutron_subdao_core::msg::ExecuteMsg::ExecuteProposalHook {
                     msgs: prop.msgs,
                 })?,
                 funds: vec![],
@@ -304,7 +306,7 @@ pub fn execute_execute(
     let hooks = match proposal_creation_policy {
         ProposalCreationPolicy::Anyone {} => hooks,
         ProposalCreationPolicy::Module { addr } => {
-            let msg = to_binary(&PreProposeMsg::ProposalCompletedHook {
+            let msg = to_binary(&PreProposeExecuteMsg::ProposalCompletedHook {
                 proposal_id,
                 new_status: prop.status,
             })?;
@@ -452,7 +454,7 @@ pub fn execute_close(
     let hooks = match proposal_creation_policy {
         ProposalCreationPolicy::Anyone {} => hooks,
         ProposalCreationPolicy::Module { addr } => {
-            let msg = to_binary(&PreProposeMsg::ProposalCompletedHook {
+            let msg = to_binary(&PreProposeExecuteMsg::ProposalCompletedHook {
                 proposal_id,
                 new_status: prop.status,
             })?;

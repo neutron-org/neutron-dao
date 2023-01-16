@@ -28,7 +28,8 @@ serde = { version = "1.0.147", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0" }
 cwd-interface = { path = "../../../packages/cwd-interface" }
 cwd-macros = { path = "../../../packages/cwd-macros" }
-neutron-timelock = { path = "../../../packages/neutron-timelock" }
+neutron-subdao-pre-propose-single = { path = "../../../packages/neutron-subdao-pre-propose-single" }
+neutron-subdao-timelock-single = { path = "../../../packages/neutron-subdao-timelock-single" }
 cwd-pre-propose-base = { path = "../../../packages/cwd-pre-propose-base" }
 
 [dev-dependencies]
