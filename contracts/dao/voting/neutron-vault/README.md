@@ -1,7 +1,3 @@
-# CW Native Staked Balance Voting
+### Neutron Voting Vault
 
-Simple native token voting contract which assumes the native denom
-provided is not used for staking for securing the network e.g. IBC
-denoms or secondary tokens (ION). Staked balances may be queried at an
-arbitrary height. This contract implements the interface needed to be
-a DAO DAO voting module.
+This vault will allow its users to Bond NTRN tokens without locking them (i.e., you can bond and unbond tokens with this vault with no unbonding period). Just as with normal DAO DAO voting modules, for each specific proposal, you can only use the voting power that was available to you at the time of proposal submission. No additional restrictions are imposed on the vault funds.
