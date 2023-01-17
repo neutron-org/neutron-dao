@@ -3,7 +3,7 @@
 This is a pre-propose module that manages proposal deposits for the
 `cwd-proposal-single` proposal module.
 
-It accept NTRN tokens. If a proposal deposit is enabled (by default it is enabled)
+It accepts NTRN tokens. If a proposal deposit is enabled (by default it is enabled)
 the following refund strategies are avaliable:
 
 1. Never refund deposits. All deposits are sent to the DAO on proposal
