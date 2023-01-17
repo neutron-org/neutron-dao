@@ -1,4 +1,4 @@
-# Neutron dao
+# Neutron DAO
 
 [![BSL 1.1 License][license-shield]][license-url]
 <!--[![Website][neutron-shield]][neutron-url]-->
