@@ -1,6 +1,6 @@
 ## Reserve Contract
 
-The Reserve Contract keeps the funds that have already been vested, but haven't been sent to the Distribution contract yet. Is is used by the neutron DAO for one-off payouts.
+**The Reserve** contract keeps funds vested from treasury for one-off payments
 
 ### Methods:
 
