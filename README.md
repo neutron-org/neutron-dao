@@ -34,7 +34,7 @@ The Neutron governance is based on [DAO DAO](https://github.com/DA0-DA0/dao-cont
 2. run `./test_proposal.sh` or  `./test_subdao_proposal.sh`.
 3. see that proposal has passed.
 
-There is decent amount of [integration tests](https://github.com/neutron-org/neutron-integration-tests/tree/main/src/testcases)
+There are a number of [integration tests](https://github.com/neutron-org/neutron-integration-tests/tree/main/src/testcases) to cover main functionality.
 
 
 ## License
