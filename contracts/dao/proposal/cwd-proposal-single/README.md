@@ -1,18 +1,9 @@
-# cw-proposal-single
+# cwd-proposal-single
 
-A proposal module for a DAO DAO DAO which supports simple "yes", "no",
+A proposal module for a Neutron DAO which supports simple "yes", "no",
 "abstain" voting. Proposals may have associated messages which will be
 executed by the core module upon the proposal being passed and
 executed.
-
-For more information about how these modules fit together see
-[this](https://github.com/DA0-DA0/dao-contracts/wiki/DAO-DAO-v1-Contracts-Design)
-wiki page.
-
-For information about how this module counts votes and handles passing
-thresholds see
-[this](https://github.com/DA0-DA0/dao-contracts/wiki/A-brief-overview-of-DAO-DAO-voting#proposal-status)
-wiki page.
 
 ## Proposal deposits
 

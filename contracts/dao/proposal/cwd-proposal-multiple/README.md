@@ -1,6 +1,6 @@
 ## cwd-proposal-multiple
 
-A proposal module for a DAO DAO DAO which allows the users to select
+A proposal module for a main Neutron DAO which allows the users to select
 their voting choice(s) from an array of `MultipleChoiceOption`.
 Each of the options may have associated messages which are to be
 executed by the core module upon the proposal being passed and executed.
