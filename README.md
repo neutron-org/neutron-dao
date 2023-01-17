@@ -25,7 +25,7 @@ The Neutron governance is based on [DAO DAO](https://github.com/DA0-DA0/dao-cont
 - **The Neutron DAO.**
 - **Multiple subDAOs** Subdao is basically an entity to delegate a control of minor network properties. They're pretty similar to main DAO, but every SubDAO proposal is timelocked for a certain period, during which the main DAO can cancel the proposal via an overrule proposal. 
 - **The Treasury** holds the vested NTRNs and sends them to the Reserve and Distribution contracts.
-- **The Reserve** contract keeps the funds that have already vested, but were not sent to the Distribution contract. It is used by the neutron DAO for one-off payouts.
+- **The Reserve** contract keeps funds vested from treasury for one-off payments
 - **The Distribution** contract is responsible of the second step of token distribution where tokens sent to this contract are distributed between `share holders`, where `share holders` are a configurable set of addresses with number of shares. This contract allows shareholders to withdraw collected tokens.
 
 ## Testing 
