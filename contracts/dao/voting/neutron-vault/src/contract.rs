@@ -46,7 +46,7 @@ pub fn instantiate(
         manager,
         denom: msg.denom,
     };
-
+    config.validate()?;
     CONFIG.save(deps.storage, &config)?;
     DAO.save(deps.storage, &info.sender)?;
 
@@ -180,6 +180,7 @@ pub fn execute_update_config(
         config.description = description;
     }
 
+    config.validate()?;
     CONFIG.save(deps.storage, &config)?;
     Ok(Response::new()
         .add_attribute("action", "update_config")
