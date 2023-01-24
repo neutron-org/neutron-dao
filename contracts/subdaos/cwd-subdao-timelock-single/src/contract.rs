@@ -35,7 +35,7 @@ pub fn instantiate(
     )?;
 
     let config = Config {
-        owner: msg.owner,
+        owner: deps.api.addr_validate(&msg.owner)?,
         timelock_duration: msg.timelock_duration,
         subdao: subdao_core,
     };
