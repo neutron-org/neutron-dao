@@ -49,6 +49,7 @@ pub fn instantiate(
         main_dao: deps.api.addr_validate(&msg.main_dao)?,
         security_dao: deps.api.addr_validate(&msg.security_dao)?,
     };
+    config.validate()?;
     CONFIG.save(deps.storage, &config)?;
     PAUSED_UNTIL.save(deps.storage, &None)?;
 
@@ -204,13 +205,17 @@ pub fn execute_update_config(
         config.dao_uri = Some(dao_uri);
     }
 
+    config.validate()?;
     CONFIG.save(deps.storage, &config)?;
 
     Ok(Response::default()
         .add_attribute("action", "execute_update_config")
         .add_attribute("name", config.name)
         .add_attribute("description", config.description)
-        .add_attribute("dao_uri", config.dao_uri.unwrap_or_default())
+        .add_attribute(
+            "dao_uri",
+            config.dao_uri.unwrap_or_else(|| String::from("None")),
+        )
         .add_attribute("main_dao", config.main_dao)
         .add_attribute("security_dao", config.security_dao))
 }

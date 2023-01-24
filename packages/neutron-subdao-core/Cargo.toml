@@ -19,3 +19,4 @@ cw-utils = "0.13"
 cwd-interface = { path = "../cwd-interface" }
 cw2 = "0.13"
 exec-control = { path = "../exec-control" }
+thiserror = { version = "1.0" }

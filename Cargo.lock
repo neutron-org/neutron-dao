@@ -1196,6 +1196,7 @@ dependencies = [
  "neutron-sdk",
  "schemars",
  "serde",
+ "thiserror",
 ]
 
 [[package]]
