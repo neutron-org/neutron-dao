@@ -40,6 +40,7 @@ pub fn instantiate(
         description: msg.description,
         dao_uri: msg.dao_uri,
     };
+    config.validate()?;
     CONFIG.save(deps.storage, &config)?;
 
     let vote_module_msg = msg
@@ -157,6 +158,7 @@ pub fn execute_update_config(
         return Err(ContractError::Unauthorized {});
     }
 
+    config.validate()?;
     CONFIG.save(deps.storage, &config)?;
     // We incur some gas costs by having the config's fields in the
     // response. This has the benefit that it makes it reasonably
@@ -166,7 +168,11 @@ pub fn execute_update_config(
     Ok(Response::default()
         .add_attribute("action", "execute_update_config")
         .add_attribute("name", config.name)
-        .add_attribute("description", config.description))
+        .add_attribute("description", config.description)
+        .add_attribute(
+            "dao_uri",
+            config.dao_uri.unwrap_or_else(|| String::from("None")),
+        ))
 }
 
 pub fn execute_update_voting_module(

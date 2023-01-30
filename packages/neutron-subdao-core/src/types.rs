@@ -1,3 +1,4 @@
+use crate::error::ContractError;
 use cosmwasm_std::{Addr, Uint128};
 use cw2::ContractVersion;
 use exec_control::pause::PauseInfoResponse;
@@ -74,6 +75,24 @@ pub struct Config {
     pub security_dao: Addr,
 }
 
+impl Config {
+    /// checks whether the config fields are valid.
+    pub fn validate(&self) -> Result<(), ContractError> {
+        if self.name.is_empty() {
+            return Err(ContractError::NameIsEmpty {});
+        };
+        if self.description.is_empty() {
+            return Err(ContractError::DescriptionIsEmpty {});
+        };
+        if let Some(dao_uri) = self.dao_uri.clone() {
+            if dao_uri.is_empty() {
+                return Err(ContractError::DaoUriIsEmpty {});
+            }
+        }
+        Ok(())
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 /// Top level type describing a proposal module.
 pub struct ProposalModule {
@@ -91,4 +110,67 @@ pub struct ProposalModule {
 pub enum ProposalModuleStatus {
     Enabled,
     Disabled,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Config;
+    use crate::error::ContractError;
+    use cosmwasm_std::Addr;
+
+    #[test]
+    fn test_config_validate() {
+        let cfg_ok = Config {
+            name: String::from("name"),
+            description: String::from("description"),
+            dao_uri: Some(String::from("www.dao.org")),
+            main_dao: Addr::unchecked("main_dao"),
+            security_dao: Addr::unchecked("security_dao"),
+        };
+        assert_eq!(cfg_ok.validate(), Ok(()));
+        let cfg_ok_none_uri = Config {
+            name: String::from("name"),
+            description: String::from("description"),
+            dao_uri: None,
+            main_dao: Addr::unchecked("main_dao"),
+            security_dao: Addr::unchecked("security_dao"),
+        };
+        assert_eq!(cfg_ok_none_uri.validate(), Ok(()));
+
+        let cfg_empty_name = Config {
+            name: String::from(""),
+            description: String::from("description"),
+            dao_uri: Some(String::from("www.dao.org")),
+            main_dao: Addr::unchecked("main_dao"),
+            security_dao: Addr::unchecked("security_dao"),
+        };
+        assert_eq!(
+            cfg_empty_name.validate(),
+            Err(ContractError::NameIsEmpty {})
+        );
+
+        let cfg_empty_description = Config {
+            name: String::from("name"),
+            description: String::from(""),
+            dao_uri: Some(String::from("www.dao.org")),
+            main_dao: Addr::unchecked("main_dao"),
+            security_dao: Addr::unchecked("security_dao"),
+        };
+        assert_eq!(
+            cfg_empty_description.validate(),
+            Err(ContractError::DescriptionIsEmpty {})
+        );
+
+        let cfg_empty_dao_uri = Config {
+            name: String::from("name"),
+            description: String::from("description"),
+            dao_uri: Some(String::from("")),
+            main_dao: Addr::unchecked("main_dao"),
+            security_dao: Addr::unchecked("security_dao"),
+        };
+        assert_eq!(
+            cfg_empty_dao_uri.validate(),
+            Err(ContractError::DaoUriIsEmpty {})
+        );
+    }
 }

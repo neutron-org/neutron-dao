@@ -464,7 +464,7 @@ fn test_update_config_as_manager() {
 }
 
 #[test]
-#[should_panic(expected = "Empty attribute value. Key: description")]
+#[should_panic(expected = "config description cannot be empty.")]
 fn test_update_config_invalid_description() {
     let mut app = mock_app();
     let vault_id = app.store_code(vault_contract());
