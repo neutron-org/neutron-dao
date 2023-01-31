@@ -5,9 +5,6 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 pub struct InstantiateMsg {
-    // Owner can update all configs including changing the owner.
-    pub owner: String,
-
     // Timelock duration for all proposals (starts when TimelockProposal message handler is executed).
     // In seconds.
     pub timelock_duration: u64,

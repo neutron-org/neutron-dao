@@ -8,6 +8,7 @@ use cw2::set_contract_version;
 use cw_storage_plus::Bound;
 use cwd_pre_propose_base::msg::QueryMsg as PreProposeQueryBase;
 use neutron_bindings::bindings::msg::NeutronMsg;
+use neutron_subdao_core::msg::QueryMsg as SubdaoQuery;
 use neutron_subdao_pre_propose_single::msg::QueryMsg as PreProposeQuery;
 use neutron_subdao_timelock_single::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use neutron_subdao_timelock_single::types::{
@@ -34,8 +35,12 @@ pub fn instantiate(
         &PreProposeQuery::QueryBase(PreProposeQueryBase::Dao {}),
     )?;
 
+    let main_dao: Addr = deps
+        .querier
+        .query_wasm_smart(subdao_core.clone(), &SubdaoQuery::MainDao {})?;
+
     let config = Config {
-        owner: deps.api.addr_validate(&msg.owner)?,
+        owner: main_dao,
         timelock_duration: msg.timelock_duration,
         subdao: subdao_core,
     };

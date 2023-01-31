@@ -31,6 +31,7 @@ cwd-macros = { path = "../../../packages/cwd-macros" }
 neutron-subdao-pre-propose-single = { path = "../../../packages/neutron-subdao-pre-propose-single" }
 neutron-subdao-timelock-single = { path = "../../../packages/neutron-subdao-timelock-single" }
 cwd-pre-propose-base = { path = "../../../packages/cwd-pre-propose-base" }
+neutron-subdao-core = { path = "../../../packages/neutron-subdao-core" }
 
 [dev-dependencies]
 cosmwasm-schema = { version = "1.0.0" }

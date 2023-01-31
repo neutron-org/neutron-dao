@@ -364,6 +364,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
             query_list_sub_daos(deps, start_after, limit)
         }
         QueryMsg::DaoURI {} => query_dao_uri(deps),
+        QueryMsg::MainDao {} => query_main_dao(deps),
     }
 }
 
@@ -552,6 +553,11 @@ pub fn query_list_sub_daos(
 pub fn query_dao_uri(deps: Deps) -> StdResult<Binary> {
     let config = CONFIG.load(deps.storage)?;
     to_binary(&config.dao_uri)
+}
+
+pub fn query_main_dao(deps: Deps) -> StdResult<Binary> {
+    let config = CONFIG.load(deps.storage)?;
+    to_binary(&config.main_dao)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

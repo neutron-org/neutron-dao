@@ -113,7 +113,6 @@ echo """
 
 TIMELOCK_SINGLE_CONTRACT_INIT_MSG='{
   "timelock_duration": 20,
-  "owner": "'"${CORE_ADDRESS}"'"
 }'
 TIMELOCK_SINGLE_CONTRACT_INIT_MSG_BASE64=$(echo ${TIMELOCK_SINGLE_CONTRACT_INIT_MSG} | base64 | tr -d "\n")
 
