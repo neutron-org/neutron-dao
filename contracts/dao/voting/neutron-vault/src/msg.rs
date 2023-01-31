@@ -1,6 +1,6 @@
 use cosmwasm_std::Uint128;
 use cwd_interface::Admin;
-use cwd_macros::{info_query, voting_query};
+use cwd_macros::{info_query, voting_query, voting_vault};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -16,13 +16,10 @@ pub struct InstantiateMsg {
     pub denom: String,
 }
 
+#[voting_vault]
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    Bond {},
-    Unbond {
-        amount: Uint128,
-    },
     UpdateConfig {
         owner: Option<String>,
         manager: Option<String>,

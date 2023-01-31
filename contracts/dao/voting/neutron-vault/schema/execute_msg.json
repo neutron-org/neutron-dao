@@ -5,38 +5,6 @@
     {
       "type": "object",
       "required": [
-        "bond"
-      ],
-      "properties": {
-        "bond": {
-          "type": "object"
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "unbond"
-      ],
-      "properties": {
-        "unbond": {
-          "type": "object",
-          "required": [
-            "amount"
-          ],
-          "properties": {
-            "amount": {
-              "$ref": "#/definitions/Uint128"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
         "update_config"
       ],
       "properties": {
@@ -60,6 +28,38 @@
                 "string",
                 "null"
               ]
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "bond"
+      ],
+      "properties": {
+        "bond": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "unbond"
+      ],
+      "properties": {
+        "unbond": {
+          "type": "object",
+          "required": [
+            "amount"
+          ],
+          "properties": {
+            "amount": {
+              "$ref": "#/definitions/Uint128"
             }
           }
         }
