@@ -1136,6 +1136,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "201de327520df007757c1f0adce6e827fe8562fbc28bfd9c15571c66ca1f5f79"
 
 [[package]]
+name = "lockdrop-vault"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-multi-test",
+ "cw-storage-plus 0.13.4",
+ "cw2",
+ "cwd-interface",
+ "cwd-macros",
+ "neutron-lockdrop-vault",
+ "schemars",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "neutron-distribution"
 version = "0.1.0"
 dependencies = [
@@ -1144,6 +1162,18 @@ dependencies = [
  "cw-storage-plus 1.0.1",
  "cwd-macros",
  "exec-control",
+ "schemars",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "neutron-lockdrop-vault"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-std",
+ "cwd-interface",
+ "cwd-macros",
  "schemars",
  "serde",
  "thiserror",
