@@ -170,6 +170,18 @@ fn get_config(app: &mut App, contract_addr: Addr) -> Config {
         .unwrap()
 }
 
+fn get_description(app: &App, contract_addr: &Addr) -> String {
+    app.wrap()
+        .query_wasm_smart(contract_addr, &QueryMsg::Description {})
+        .unwrap()
+}
+
+fn get_dao(app: &App, contract_addr: &Addr) -> String {
+    app.wrap()
+        .query_wasm_smart(contract_addr, &QueryMsg::Dao {})
+        .unwrap()
+}
+
 fn get_balance(app: &mut App, address: &str, denom: &str) -> Uint128 {
     app.wrap().query_balance(address, denom).unwrap().amount
 }
@@ -179,7 +191,7 @@ fn test_instantiate() {
     let mut app = mock_app();
     let vault_id = app.store_code(vault_contract());
     // Populated fields
-    let _addr = instantiate_vault(
+    let addr = instantiate_vault(
         &mut app,
         vault_id,
         InstantiateMsg {
@@ -191,9 +203,10 @@ fn test_instantiate() {
             denom: DENOM.to_string(),
         },
     );
+    assert_eq!(get_dao(&app, &addr), String::from(DAO_ADDR));
 
     // Non populated fields
-    let _addr = instantiate_vault(
+    let addr = instantiate_vault(
         &mut app,
         vault_id,
         InstantiateMsg {
@@ -203,6 +216,7 @@ fn test_instantiate() {
             denom: DENOM.to_string(),
         },
     );
+    assert_eq!(get_dao(&app, &addr), String::from(DAO_ADDR));
 }
 
 #[test]
@@ -440,6 +454,8 @@ fn test_update_config_as_manager() {
         },
     );
 
+    let description_before = get_description(&app, &addr);
+
     // Change description and manager as manager cannot change owner
     update_config(
         &mut app,
@@ -450,6 +466,9 @@ fn test_update_config_as_manager() {
         Some(NEW_DESCRIPTION.to_string()),
     )
     .unwrap();
+
+    let description_after = get_description(&app, &addr);
+    assert_ne!(description_before, description_after);
 
     let config = get_config(&mut app, addr);
     assert_eq!(
@@ -528,7 +547,7 @@ fn test_query_info() {
 
     let msg = QueryMsg::Info {};
     let resp: InfoResponse = app.wrap().query_wasm_smart(addr, &msg).unwrap();
-    assert_eq!(resp.info.contract, "crates.io:neutron-voting-registry");
+    assert_eq!(resp.info.contract, "crates.io:neutron-voting-vault");
 }
 
 #[test]

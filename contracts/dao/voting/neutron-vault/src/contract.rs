@@ -13,9 +13,9 @@ use crate::error::ContractError;
 use crate::msg::{
     BonderBalanceResponse, ExecuteMsg, InstantiateMsg, ListBondersResponse, MigrateMsg, QueryMsg,
 };
-use crate::state::{Config, BONDED_BALANCES, BONDED_TOTAL, CONFIG, DAO, DESCRIPTION};
+use crate::state::{Config, BONDED_BALANCES, BONDED_TOTAL, CONFIG, DAO};
 
-pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-voting-registry";
+pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-voting-vault";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -256,8 +256,8 @@ pub fn query_dao(deps: Deps) -> StdResult<Binary> {
 }
 
 pub fn query_description(deps: Deps) -> StdResult<Binary> {
-    let description = DESCRIPTION.load(deps.storage)?;
-    to_binary(&description)
+    let config = CONFIG.load(deps.storage)?;
+    to_binary(&config.description)
 }
 
 pub fn query_list_bonders(
