@@ -575,6 +575,7 @@ name = "cwd-macros"
 version = "0.2.0"
 dependencies = [
  "cosmwasm-schema",
+ "cosmwasm-std",
  "proc-macro2",
  "quote",
  "schemars",

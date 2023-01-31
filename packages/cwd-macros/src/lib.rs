@@ -590,3 +590,81 @@ pub fn pausable(metadata: TokenStream, input: TokenStream) -> TokenStream {
     }
     .into()
 }
+
+/// Adds the necessary fields to an enum such that the enum implements the
+/// interface needed to be paused/unpaused.
+///
+/// For example:
+///
+/// ```
+/// use cwd_macros::voting_vault;
+///
+/// #[voting_vault]
+/// enum ExecuteMsg {}
+/// ```
+///
+/// Will transform the enum to:
+///
+/// ```
+/// enum ExecuteMsg {
+//      Bond {},
+//      Unbond {
+//          amount: Uint128,
+//      },
+/// }
+/// ```
+///
+/// Note that other derive macro invocations must occur after this
+/// procedural macro as they may depend on the new fields. For
+/// example, the following will fail becase the `Clone` derivation
+/// occurs before the addition of the field.
+///
+/// ```compile_fail
+/// use cwd_macros::voting_vault;
+///
+/// #[derive(Clone)]
+/// #[voting_vault]
+/// #[allow(dead_code)]
+/// enum Test {
+///     Foo,
+///     Bar(u64),
+///     Baz { foo: u64 },
+/// }
+/// ```
+#[proc_macro_attribute]
+pub fn voting_vault(metadata: TokenStream, input: TokenStream) -> TokenStream {
+    // Make sure that no arguments were passed in.
+    let args = parse_macro_input!(metadata as AttributeArgs);
+    if let Some(first_arg) = args.first() {
+        return syn::Error::new_spanned(first_arg, "pausing cmd macro takes no arguments")
+            .to_compile_error()
+            .into();
+    }
+
+    let mut ast: DeriveInput = parse_macro_input!(input);
+    match &mut ast.data {
+        syn::Data::Enum(DataEnum { variants, .. }) => {
+            let bond: Variant = syn::parse2(quote! { Bond {} }).unwrap();
+            let unbond: Variant = syn::parse2(quote! { Unbond {
+                amount: ::cosmwasm_std::Uint128
+            } })
+            .unwrap();
+
+            variants.push(bond);
+            variants.push(unbond);
+        }
+        _ => {
+            return syn::Error::new(
+                ast.ident.span(),
+                "pausing cmd types can not be only be derived for enums",
+            )
+            .to_compile_error()
+            .into()
+        }
+    };
+
+    quote! {
+    #ast
+    }
+    .into()
+}
