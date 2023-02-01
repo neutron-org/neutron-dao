@@ -5,7 +5,8 @@ use cosmwasm_schema::{export_schema, export_schema_with_title, remove_schemas, s
 use cosmwasm_std::Addr;
 use cw_controllers::ClaimsResponse;
 use cwd_interface::voting::{
-    InfoResponse, IsActiveResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
+    BondingStatusResponse, InfoResponse, IsActiveResponse, TotalPowerAtHeightResponse,
+    VotingPowerAtHeightResponse,
 };
 use neutron_vault::msg::{ExecuteMsg, InstantiateMsg, ListBondersResponse, MigrateMsg, QueryMsg};
 use neutron_vault::state::Config;
@@ -27,6 +28,7 @@ fn main() {
     export_schema(&schema_for!(IsActiveResponse), &out_dir);
     export_schema(&schema_for!(ClaimsResponse), &out_dir);
     export_schema(&schema_for!(ListBondersResponse), &out_dir);
+    export_schema(&schema_for!(BondingStatusResponse), &out_dir);
 
     // Auto TS code generation expects the query return type as QueryNameResponse
     // Here we map query resonses to the correct name

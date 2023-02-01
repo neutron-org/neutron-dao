@@ -9,7 +9,7 @@ use cw_multi_test::{
     custom_app, next_block, App, AppResponse, Contract, ContractWrapper, Executor,
 };
 use cwd_interface::voting::{
-    InfoResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
+    BondingStatusResponse, InfoResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
 use cwd_interface::Admin;
 
@@ -186,6 +186,18 @@ fn get_balance(app: &mut App, address: &str, denom: &str) -> Uint128 {
     app.wrap().query_balance(address, denom).unwrap().amount
 }
 
+fn get_bonding_status(app: &App, contract_addr: &Addr, address: &str) -> BondingStatusResponse {
+    app.wrap()
+        .query_wasm_smart(
+            contract_addr,
+            &QueryMsg::BondingStatus {
+                address: address.to_string(),
+                height: None,
+            },
+        )
+        .unwrap()
+}
+
 #[test]
 fn test_instantiate() {
     let mut app = mock_app();
@@ -275,9 +287,17 @@ fn test_bond_valid_denom() {
         },
     );
 
+    let mut bonding_status: BondingStatusResponse = get_bonding_status(&app, &addr, ADDR1);
+    assert!(bonding_status.bonding_enabled);
+    assert_eq!(bonding_status.unbondable_abount, Uint128::zero());
+
     // Try and bond an valid denom
-    bond_tokens(&mut app, addr, ADDR1, 100, DENOM).unwrap();
+    bond_tokens(&mut app, addr.clone(), ADDR1, 100, DENOM).unwrap();
     app.update_block(next_block);
+
+    bonding_status = get_bonding_status(&app, &addr, ADDR1);
+    assert!(bonding_status.bonding_enabled);
+    assert_eq!(bonding_status.unbondable_abount, Uint128::from(100u32));
 }
 
 #[test]
@@ -344,13 +364,27 @@ fn test_unbond() {
     app.update_block(next_block);
     assert_eq!(get_balance(&mut app, ADDR1, DENOM), Uint128::new(9900));
 
+    let mut bonding_status: BondingStatusResponse = get_bonding_status(&app, &addr, ADDR1);
+    assert!(bonding_status.bonding_enabled);
+    assert_eq!(bonding_status.unbondable_abount, Uint128::from(100u32));
+
     // Unbond some
     unbond_tokens(&mut app, addr.clone(), ADDR1, 75).unwrap();
     assert_eq!(get_balance(&mut app, ADDR1, DENOM), Uint128::new(9975));
+    app.update_block(next_block);
+
+    bonding_status = get_bonding_status(&app, &addr, ADDR1);
+    assert!(bonding_status.bonding_enabled);
+    assert_eq!(bonding_status.unbondable_abount, Uint128::from(25u32));
 
     // Unbond the rest
-    unbond_tokens(&mut app, addr, ADDR1, 25).unwrap();
+    unbond_tokens(&mut app, addr.clone(), ADDR1, 25).unwrap();
     assert_eq!(get_balance(&mut app, ADDR1, DENOM), INIT_BALANCE);
+    app.update_block(next_block);
+
+    bonding_status = get_bonding_status(&app, &addr, ADDR1);
+    assert!(bonding_status.bonding_enabled);
+    assert_eq!(bonding_status.unbondable_abount, Uint128::zero());
 }
 
 #[test]

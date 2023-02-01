@@ -592,7 +592,7 @@ pub fn pausable(metadata: TokenStream, input: TokenStream) -> TokenStream {
 }
 
 /// Adds the necessary fields to an enum such that the enum implements the
-/// interface needed to be paused/unpaused.
+/// voting vault execution interface.
 ///
 /// For example:
 ///
@@ -652,6 +652,104 @@ pub fn voting_vault(metadata: TokenStream, input: TokenStream) -> TokenStream {
 
             variants.push(bond);
             variants.push(unbond);
+        }
+        _ => {
+            return syn::Error::new(
+                ast.ident.span(),
+                "pausing cmd types can not be only be derived for enums",
+            )
+            .to_compile_error()
+            .into()
+        }
+    };
+
+    quote! {
+    #ast
+    }
+    .into()
+}
+
+/// Adds the necessary fields to an enum such that the enum implements the
+/// voting vault query interface.
+///
+/// For example:
+///
+/// ```
+/// use cwd_macros::voting_vault_query;
+///
+/// #[voting_vault_query]
+/// enum QueryMsg {}
+/// ```
+///
+/// Will transform the enum to:
+///
+/// ```
+/// enum QueryMsg {
+///     /// Returns bonding status for the given address. The bonding status tells whether the
+///     /// vault is open for bonding and whether the address is eligible for unbonding funds.
+///     BondingStatus {
+///         address: String,
+///         height: Option<u64>
+///     },
+///     /// Returns the address of the DAO behind the vault.
+///     Dao {},
+///     /// Returns the vault's description.
+///     Description {},
+///     /// Returns the list of addresses bonded to this vault and along with the bonded balances.
+///     ListBonders {
+///         start_after: Option<String>,
+///         limit: Option<u32>,
+///     },
+/// }
+/// ```
+///
+/// Note that other derive macro invocations must occur after this
+/// procedural macro as they may depend on the new fields. For
+/// example, the following will fail becase the `Clone` derivation
+/// occurs before the addition of the field.
+///
+/// ```compile_fail
+/// use cwd_macros::voting_vault_query;
+///
+/// #[derive(Clone)]
+/// #[voting_vault_query]
+/// #[allow(dead_code)]
+/// enum Test {
+///     Foo,
+///     Bar(u64),
+///     Baz { foo: u64 },
+/// }
+/// ```
+#[proc_macro_attribute]
+pub fn voting_vault_query(metadata: TokenStream, input: TokenStream) -> TokenStream {
+    // Make sure that no arguments were passed in.
+    let args = parse_macro_input!(metadata as AttributeArgs);
+    if let Some(first_arg) = args.first() {
+        return syn::Error::new_spanned(first_arg, "pausing cmd macro takes no arguments")
+            .to_compile_error()
+            .into();
+    }
+
+    let mut ast: DeriveInput = parse_macro_input!(input);
+    match &mut ast.data {
+        syn::Data::Enum(DataEnum { variants, .. }) => {
+            let bonding_status: Variant = syn::parse2(quote! { BondingStatus {
+                address: ::std::string::String,
+                height: ::std::option::Option<::std::primitive::u64>
+            } })
+            .unwrap();
+            let dao: Variant = syn::parse2(quote! { Dao {} }).unwrap();
+            let description: Variant = syn::parse2(quote! { Description {} }).unwrap();
+            let bonders: Variant = syn::parse2(quote! { ListBonders {
+                start_after: ::std::option::Option<::std::string::String>,
+                limit: ::std::option::Option<::std::primitive::u32>
+            } })
+            .unwrap();
+
+            variants.push(bonding_status);
+            variants.push(dao);
+            variants.push(description);
+            variants.push(bonders);
         }
         _ => {
             return syn::Error::new(

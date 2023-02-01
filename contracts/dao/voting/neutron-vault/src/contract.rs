@@ -6,7 +6,9 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 use cw_utils::must_pay;
-use cwd_interface::voting::{TotalPowerAtHeightResponse, VotingPowerAtHeightResponse};
+use cwd_interface::voting::{
+    BondingStatusResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
+};
 use cwd_interface::Admin;
 
 use crate::error::ContractError;
@@ -216,6 +218,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::ListBonders { start_after, limit } => {
             query_list_bonders(deps, start_after, limit)
         }
+        QueryMsg::BondingStatus { height, address } => {
+            to_binary(&query_bonding_status(deps, env, height, address)?)
+        }
     }
 }
 
@@ -286,6 +291,24 @@ pub fn query_list_bonders(
         .collect();
 
     to_binary(&ListBondersResponse { bonders })
+}
+
+pub fn query_bonding_status(
+    deps: Deps,
+    env: Env,
+    height: Option<u64>,
+    address: String,
+) -> StdResult<BondingStatusResponse> {
+    let address = deps.api.addr_validate(&address)?;
+    let height = height.unwrap_or(env.block.height);
+    let power = BONDED_BALANCES
+        .may_load_at_height(deps.storage, &address, height)?
+        .unwrap_or_default();
+    Ok(BondingStatusResponse {
+        unbondable_abount: power,
+        bonding_enabled: true,
+        height,
+    })
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

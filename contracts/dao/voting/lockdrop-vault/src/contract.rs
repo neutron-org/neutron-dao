@@ -4,7 +4,9 @@ use cosmwasm_std::{
     to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128,
 };
 use cw2::set_contract_version;
-use cwd_interface::voting::{TotalPowerAtHeightResponse, VotingPowerAtHeightResponse};
+use cwd_interface::voting::{
+    BondingStatusResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
+};
 use cwd_interface::Admin;
 
 use crate::state::{CONFIG, DAO};
@@ -174,6 +176,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::ListBonders { start_after, limit } => {
             query_list_bonders(deps, start_after, limit)
         }
+        QueryMsg::BondingStatus { height, address } => {
+            to_binary(&query_bonding_status(deps, env, height, address)?)
+        }
     }
 }
 
@@ -225,9 +230,22 @@ pub fn query_list_bonders(
     unimplemented!()
 }
 
+pub fn query_bonding_status(
+    _deps: Deps,
+    env: Env,
+    height: Option<u64>,
+    _address: String,
+) -> StdResult<BondingStatusResponse> {
+    let height = height.unwrap_or(env.block.height);
+    Ok(BondingStatusResponse {
+        unbondable_abount: Uint128::zero(),
+        bonding_enabled: false,
+        height,
+    })
+}
+
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
-    // Set contract to version to latest
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     Ok(Response::default())
 }

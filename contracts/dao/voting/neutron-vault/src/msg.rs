@@ -1,6 +1,6 @@
 use cosmwasm_std::Uint128;
 use cwd_interface::Admin;
-use cwd_macros::{info_query, voting_query, voting_vault};
+use cwd_macros::{info_query, voting_query, voting_vault, voting_vault_query};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -28,17 +28,12 @@ pub enum ExecuteMsg {
 }
 
 #[voting_query]
+#[voting_vault_query]
 #[info_query]
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    Dao {},
-    Description {},
     GetConfig {},
-    ListBonders {
-        start_after: Option<String>,
-        limit: Option<u32>,
-    },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
