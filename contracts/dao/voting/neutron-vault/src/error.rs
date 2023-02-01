@@ -2,7 +2,7 @@ use cosmwasm_std::StdError;
 use cw_utils::PaymentError;
 use thiserror::Error;
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, PartialEq)]
 pub enum ContractError {
     #[error("{0}")]
     Std(#[from] StdError),
@@ -21,4 +21,10 @@ pub enum ContractError {
 
     #[error("Can only unbond less than or equal to the amount you have bonded")]
     InvalidUnbondAmount {},
+
+    #[error("config name cannot be empty.")]
+    NameIsEmpty {},
+
+    #[error("config description cannot be empty.")]
+    DescriptionIsEmpty {},
 }

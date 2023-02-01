@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 pub struct InstantiateMsg {
+    /// Name contains the vault name which is used to ease the vault's recognition.
+    pub name: String,
     /// Description contains information that characterizes the vault.
     pub description: String,
     /// The lockdrop contract behind the vault.
@@ -24,6 +26,7 @@ pub enum ExecuteMsg {
         owner: Option<String>,
         lockdrop_contract: String,
         manager: Option<String>,
+        name: String,
         description: String,
     },
 }

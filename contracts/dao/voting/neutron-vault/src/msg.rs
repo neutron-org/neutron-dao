@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 pub struct InstantiateMsg {
+    /// Name contains the vault name which is used to ease the vault's recognition.
+    pub name: String,
     // Description contains information that characterizes the vault.
     pub description: String,
     // Owner can update all configs including changing the owner. This will generally be a DAO.
@@ -23,7 +25,8 @@ pub enum ExecuteMsg {
     UpdateConfig {
         owner: Option<String>,
         manager: Option<String>,
-        description: Option<String>,
+        name: String,
+        description: String,
     },
 }
 

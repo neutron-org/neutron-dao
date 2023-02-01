@@ -10,18 +10,22 @@
       "properties": {
         "update_config": {
           "type": "object",
+          "required": [
+            "description",
+            "name"
+          ],
           "properties": {
             "description": {
-              "type": [
-                "string",
-                "null"
-              ]
+              "type": "string"
             },
             "manager": {
               "type": [
                 "string",
                 "null"
               ]
+            },
+            "name": {
+              "type": "string"
             },
             "owner": {
               "type": [

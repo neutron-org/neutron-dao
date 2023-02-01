@@ -107,6 +107,18 @@
     {
       "type": "object",
       "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
         "description"
       ],
       "properties": {

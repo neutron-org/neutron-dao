@@ -43,17 +43,19 @@ pub fn instantiate(
         .transpose()?;
 
     let config = Config {
+        name: msg.name,
         description: msg.description,
         owner,
         manager,
         denom: msg.denom,
     };
-
+    config.validate()?;
     CONFIG.save(deps.storage, &config)?;
     DAO.save(deps.storage, &info.sender)?;
 
     Ok(Response::new()
         .add_attribute("action", "instantiate")
+        .add_attribute("description", config.name)
         .add_attribute("description", config.description)
         .add_attribute(
             "owner",
@@ -84,8 +86,9 @@ pub fn execute(
         ExecuteMsg::UpdateConfig {
             owner,
             manager,
+            name,
             description,
-        } => execute_update_config(deps, info, owner, manager, description),
+        } => execute_update_config(deps, info, owner, manager, name, description),
     }
 }
 
@@ -158,7 +161,8 @@ pub fn execute_update_config(
     info: MessageInfo,
     new_owner: Option<String>,
     new_manager: Option<String>,
-    new_description: Option<String>,
+    new_name: String,
+    new_description: String,
 ) -> Result<Response, ContractError> {
     let mut config: Config = CONFIG.load(deps.storage)?;
     if Some(info.sender.clone()) != config.owner && Some(info.sender.clone()) != config.manager {
@@ -178,11 +182,11 @@ pub fn execute_update_config(
 
     config.owner = new_owner;
     config.manager = new_manager;
-    if let Some(description) = new_description {
-        config.description = description;
-    }
-
+    config.name = new_name;
+    config.description = new_description;
+    config.validate()?;
     CONFIG.save(deps.storage, &config)?;
+
     Ok(Response::new()
         .add_attribute("action", "update_config")
         .add_attribute("description", config.description)
@@ -213,6 +217,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         }
         QueryMsg::Info {} => query_info(deps),
         QueryMsg::Dao {} => query_dao(deps),
+        QueryMsg::Name {} => query_name(deps),
         QueryMsg::Description {} => query_description(deps),
         QueryMsg::GetConfig {} => to_binary(&CONFIG.load(deps.storage)?),
         QueryMsg::ListBonders { start_after, limit } => {
@@ -258,6 +263,11 @@ pub fn query_info(deps: Deps) -> StdResult<Binary> {
 pub fn query_dao(deps: Deps) -> StdResult<Binary> {
     let dao = DAO.load(deps.storage)?;
     to_binary(&dao)
+}
+
+pub fn query_name(deps: Deps) -> StdResult<Binary> {
+    let config = CONFIG.load(deps.storage)?;
+    to_binary(&config.name)
 }
 
 pub fn query_description(deps: Deps) -> StdResult<Binary> {

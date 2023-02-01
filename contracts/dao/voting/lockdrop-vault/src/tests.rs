@@ -10,6 +10,8 @@ use neutron_lockdrop_vault::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryM
 use neutron_lockdrop_vault::types::Config;
 
 const DAO_ADDR: &str = "dao";
+const NAME: &str = "name";
+const NEW_NAME: &str = "new_name";
 const DESCRIPTION: &str = "description";
 const NEW_DESCRIPTION: &str = "new description";
 const LOCKDROP_ADDR: &str = "lockdrop";
@@ -99,6 +101,7 @@ fn unbond_tokens(
     )
 }
 
+#[allow(clippy::too_many_arguments)]
 fn update_config(
     app: &mut App,
     contract_addr: Addr,
@@ -106,6 +109,7 @@ fn update_config(
     owner: Option<String>,
     lockdrop_contract: String,
     manager: Option<String>,
+    name: String,
     description: String,
 ) -> anyhow::Result<AppResponse> {
     app.execute_contract(
@@ -115,6 +119,7 @@ fn update_config(
             owner,
             lockdrop_contract,
             manager,
+            name,
             description,
         },
         &[],
@@ -172,6 +177,7 @@ fn test_instantiate() {
         &mut app,
         vault_id,
         InstantiateMsg {
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Some(Admin::Address {
                 addr: DAO_ADDR.to_string(),
@@ -187,6 +193,7 @@ fn test_instantiate() {
         &mut app,
         vault_id,
         InstantiateMsg {
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: None,
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
@@ -205,6 +212,7 @@ fn test_instantiate_dao_owner() {
         &mut app,
         vault_id,
         InstantiateMsg {
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Some(Admin::CoreModule {}),
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
@@ -226,6 +234,7 @@ fn test_bond() {
         &mut app,
         vault_id,
         InstantiateMsg {
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Some(Admin::CoreModule {}),
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
@@ -246,6 +255,7 @@ fn test_unbond() {
         &mut app,
         vault_id,
         InstantiateMsg {
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Some(Admin::CoreModule {}),
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
@@ -265,6 +275,7 @@ fn test_update_config_invalid_sender() {
         &mut app,
         vault_id,
         InstantiateMsg {
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Some(Admin::CoreModule {}),
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
@@ -280,6 +291,7 @@ fn test_update_config_invalid_sender() {
         Some(ADDR1.to_string()),
         NEW_LOCKDROP_ADDR.to_string(),
         Some(DAO_ADDR.to_string()),
+        NEW_NAME.to_string(),
         NEW_DESCRIPTION.to_string(),
     )
     .unwrap();
@@ -294,6 +306,7 @@ fn test_update_config_non_owner_changes_owner() {
         &mut app,
         vault_id,
         InstantiateMsg {
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Some(Admin::CoreModule {}),
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
@@ -309,6 +322,7 @@ fn test_update_config_non_owner_changes_owner() {
         Some(ADDR2.to_string()),
         LOCKDROP_ADDR.to_string(),
         None,
+        NAME.to_string(),
         DESCRIPTION.to_string(),
     )
     .unwrap();
@@ -323,6 +337,7 @@ fn test_update_config_non_owner_changes_lockdrop() {
         &mut app,
         vault_id,
         InstantiateMsg {
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Some(Admin::CoreModule {}),
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
@@ -338,6 +353,7 @@ fn test_update_config_non_owner_changes_lockdrop() {
         Some(DAO_ADDR.to_string()),
         NEW_LOCKDROP_ADDR.to_string(),
         None,
+        NAME.to_string(),
         DESCRIPTION.to_string(),
     )
     .unwrap();
@@ -351,6 +367,7 @@ fn test_update_config_as_owner() {
         &mut app,
         vault_id,
         InstantiateMsg {
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Some(Admin::CoreModule {}),
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
@@ -358,7 +375,7 @@ fn test_update_config_as_owner() {
         },
     );
 
-    // Swap owner and manager, change description and lockdrop contract
+    // Swap owner and manager, change description, name and lockdrop contract
     update_config(
         &mut app,
         addr.clone(),
@@ -366,6 +383,7 @@ fn test_update_config_as_owner() {
         Some(ADDR1.to_string()),
         NEW_LOCKDROP_ADDR.to_string(),
         Some(DAO_ADDR.to_string()),
+        NEW_NAME.to_string(),
         NEW_DESCRIPTION.to_string(),
     )
     .unwrap();
@@ -373,6 +391,7 @@ fn test_update_config_as_owner() {
     let config = get_config(&mut app, addr);
     assert_eq!(
         Config {
+            name: NEW_NAME.to_string(),
             description: NEW_DESCRIPTION.to_string(),
             owner: Some(Addr::unchecked(ADDR1)),
             lockdrop_contract: Addr::unchecked(NEW_LOCKDROP_ADDR),
@@ -390,6 +409,7 @@ fn test_update_config_as_manager() {
         &mut app,
         vault_id,
         InstantiateMsg {
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Some(Admin::CoreModule {}),
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
@@ -399,7 +419,7 @@ fn test_update_config_as_manager() {
 
     let description_before = get_description(&app, &addr);
 
-    // Change description and manager as manager cannot change owner and lockdrop contract
+    // Change description, name and manager as manager cannot change owner and lockdrop contract
     update_config(
         &mut app,
         addr.clone(),
@@ -407,6 +427,7 @@ fn test_update_config_as_manager() {
         Some(DAO_ADDR.to_string()),
         LOCKDROP_ADDR.to_string(),
         Some(ADDR2.to_string()),
+        NEW_NAME.to_string(),
         NEW_DESCRIPTION.to_string(),
     )
     .unwrap();
@@ -417,6 +438,7 @@ fn test_update_config_as_manager() {
     let config = get_config(&mut app, addr);
     assert_eq!(
         Config {
+            name: NEW_NAME.to_string(),
             description: NEW_DESCRIPTION.to_string(),
             owner: Some(Addr::unchecked(DAO_ADDR)),
             lockdrop_contract: Addr::unchecked(LOCKDROP_ADDR),
@@ -427,7 +449,7 @@ fn test_update_config_as_manager() {
 }
 
 #[test]
-#[should_panic(expected = "Empty attribute value. Key: description")]
+#[should_panic(expected = "config description cannot be empty.")]
 fn test_update_config_invalid_description() {
     let mut app = mock_app();
     let vault_id = app.store_code(vault_contract());
@@ -435,6 +457,38 @@ fn test_update_config_invalid_description() {
         &mut app,
         vault_id,
         InstantiateMsg {
+            name: NAME.to_string(),
+            description: DESCRIPTION.to_string(),
+            owner: Some(Admin::CoreModule {}),
+            lockdrop_contract: LOCKDROP_ADDR.to_string(),
+            manager: Some(ADDR1.to_string()),
+        },
+    );
+
+    // Change name and manager as manager cannot change owner
+    update_config(
+        &mut app,
+        addr,
+        ADDR1,
+        Some(DAO_ADDR.to_string()),
+        LOCKDROP_ADDR.to_string(),
+        Some(ADDR2.to_string()),
+        NEW_NAME.to_string(),
+        String::from(""),
+    )
+    .unwrap();
+}
+
+#[test]
+#[should_panic(expected = "config name cannot be empty.")]
+fn test_update_config_invalid_name() {
+    let mut app = mock_app();
+    let vault_id = app.store_code(vault_contract());
+    let addr = instantiate_vault(
+        &mut app,
+        vault_id,
+        InstantiateMsg {
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Some(Admin::CoreModule {}),
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
@@ -451,6 +505,7 @@ fn test_update_config_invalid_description() {
         LOCKDROP_ADDR.to_string(),
         Some(ADDR2.to_string()),
         String::from(""),
+        NEW_DESCRIPTION.to_string(),
     )
     .unwrap();
 }
@@ -463,6 +518,7 @@ fn test_query_dao() {
         &mut app,
         vault_id,
         InstantiateMsg {
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Some(Admin::CoreModule {}),
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
@@ -483,6 +539,7 @@ fn test_query_info() {
         &mut app,
         vault_id,
         InstantiateMsg {
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Some(Admin::CoreModule {}),
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
@@ -503,6 +560,7 @@ fn test_query_get_config() {
         &mut app,
         vault_id,
         InstantiateMsg {
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Some(Admin::CoreModule {}),
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
@@ -514,6 +572,7 @@ fn test_query_get_config() {
     assert_eq!(
         config,
         Config {
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Some(Addr::unchecked(DAO_ADDR)),
             lockdrop_contract: Addr::unchecked(LOCKDROP_ADDR),
@@ -531,6 +590,7 @@ fn test_voting_power_at_height() {
         &mut app,
         vault_id,
         InstantiateMsg {
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Some(Admin::CoreModule {}),
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
@@ -550,6 +610,7 @@ fn test_total_power_at_height() {
         &mut app,
         vault_id,
         InstantiateMsg {
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Some(Admin::CoreModule {}),
             lockdrop_contract: LOCKDROP_ADDR.to_string(),

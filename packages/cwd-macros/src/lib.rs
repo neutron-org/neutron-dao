@@ -693,6 +693,8 @@ pub fn voting_vault(metadata: TokenStream, input: TokenStream) -> TokenStream {
 ///     },
 ///     /// Returns the address of the DAO behind the vault.
 ///     Dao {},
+///     /// The name of the vault to ease recognition.
+///     Name {},
 ///     /// Returns the vault's description.
 ///     Description {},
 ///     /// Returns the list of addresses bonded to this vault and along with the bonded balances.
@@ -739,6 +741,7 @@ pub fn voting_vault_query(metadata: TokenStream, input: TokenStream) -> TokenStr
             } })
             .unwrap();
             let dao: Variant = syn::parse2(quote! { Dao {} }).unwrap();
+            let name: Variant = syn::parse2(quote! { Name {} }).unwrap();
             let description: Variant = syn::parse2(quote! { Description {} }).unwrap();
             let bonders: Variant = syn::parse2(quote! { ListBonders {
                 start_after: ::std::option::Option<::std::string::String>,
@@ -748,6 +751,7 @@ pub fn voting_vault_query(metadata: TokenStream, input: TokenStream) -> TokenStr
 
             variants.push(bonding_status);
             variants.push(dao);
+            variants.push(name);
             variants.push(description);
             variants.push(bonders);
         }
