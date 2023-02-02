@@ -22,6 +22,9 @@ impl Config {
         if self.description.is_empty() {
             return Err(ContractError::DescriptionIsEmpty {});
         };
+        if self.denom.is_empty() {
+            return Err(ContractError::DenomIsEmpty {});
+        };
         Ok(())
     }
 }
@@ -81,6 +84,18 @@ mod tests {
         assert_eq!(
             cfg_empty_description.validate(),
             Err(ContractError::DescriptionIsEmpty {})
+        );
+
+        let cfg_empty_denom = Config {
+            name: String::from("name"),
+            description: String::from("description"),
+            owner: Some(Addr::unchecked("owner")),
+            manager: Some(Addr::unchecked("manager")),
+            denom: String::from(""),
+        };
+        assert_eq!(
+            cfg_empty_denom.validate(),
+            Err(ContractError::DenomIsEmpty {})
         );
     }
 }

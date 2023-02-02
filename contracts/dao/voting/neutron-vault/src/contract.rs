@@ -55,7 +55,7 @@ pub fn instantiate(
 
     Ok(Response::new()
         .add_attribute("action", "instantiate")
-        .add_attribute("description", config.name)
+        .add_attribute("name", config.name)
         .add_attribute("description", config.description)
         .add_attribute(
             "owner",
