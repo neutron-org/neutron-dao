@@ -226,7 +226,7 @@ fn test_instantiate_dao_owner() {
 }
 
 #[test]
-#[should_panic(expected = "not implemented")] // when implemented, use neutron vault tests as template.
+#[should_panic(expected = "Bonding is not available for this contract")]
 fn test_bond() {
     let mut app = mock_app();
     let vault_id = app.store_code(vault_contract());
@@ -247,7 +247,7 @@ fn test_bond() {
 }
 
 #[test]
-#[should_panic(expected = "not implemented")] // when implemented, use neutron vault tests as template.
+#[should_panic(expected = "Direct unbonding is not available for this contract")]
 fn test_unbond() {
     let mut app = mock_app();
     let vault_id = app.store_code(vault_contract());

@@ -104,7 +104,7 @@ pub fn execute_bond(
     _env: Env,
     _info: MessageInfo,
 ) -> Result<Response, ContractError> {
-    unimplemented!()
+    Err(ContractError::BondingDisabled {})
 }
 
 pub fn execute_unbond(
@@ -113,7 +113,7 @@ pub fn execute_unbond(
     _info: MessageInfo,
     _amount: Uint128,
 ) -> Result<Response, ContractError> {
-    unimplemented!()
+    Err(ContractError::DirectUnbondingDisabled {})
 }
 
 pub fn execute_update_config(

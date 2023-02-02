@@ -9,6 +9,12 @@ pub enum ContractError {
     #[error("Unauthorized")]
     Unauthorized {},
 
+    #[error("Bonding is not available for this contract")]
+    BondingDisabled {},
+
+    #[error("Direct unbonding is not available for this contract")]
+    DirectUnbondingDisabled {},
+
     #[error("Only owner can change owner")]
     OnlyOwnerCanChangeOwner {},
 
