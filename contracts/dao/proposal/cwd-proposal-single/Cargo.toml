@@ -46,6 +46,9 @@ cosmwasm-schema = { version = "1.0.0" }
 cw-multi-test = "0.13"
 cw-denom = { path = "../../../../packages/cw-denom" }
 cw20-base = "0.13"
+cwd-testing = { path = "../../../../packages/cwd-testing" }
 cw721-base = "0.13"
+neutron-voting-registry = { path = "../../voting/neutron-voting-registry" }
+neutron-vault = { path = "../../voting/neutron-vault" }
 cw4 = "0.13"
 cw4-group = "0.13"
