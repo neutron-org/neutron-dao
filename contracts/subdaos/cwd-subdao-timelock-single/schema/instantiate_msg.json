@@ -3,13 +3,9 @@
   "title": "InstantiateMsg",
   "type": "object",
   "required": [
-    "owner",
     "timelock_duration"
   ],
   "properties": {
-    "owner": {
-      "type": "string"
-    },
     "timelock_duration": {
       "type": "integer",
       "format": "uint64",
