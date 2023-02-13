@@ -20,7 +20,7 @@ on:
         required: true
         type: string
       branch:
-        description: 'Default Branch to use'
+        description: 'Default Branch or Commit hash to use'
         default: "main"
         required: true
         type: string
@@ -33,7 +33,7 @@ on:
 env:
   TOOLCHAIN: ${{ inputs.toolchain || 'stable' }}
   TARGET: ${{ inputs.target || 'wasm32-unknown-unknown' }}
-  BRANCH: ${{ inputs.branch || 'main' }}
+  REF: ${{ inputs.branch || 'main' }}
   ID: ${{ inputs.id || 'scheduled' }}
 
 jobs:
@@ -43,9 +43,36 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          ref: ${{ env.BRANCH }}
+          ref: ${{ env.REF }}
+          fetch-depth: 0
       - name: Save SHA
-        run: echo "sha=$(/usr/bin/git log -1 --format='%H')" >> $GITHUB_ENV
+        run: echo "sha=$(/usr/bin/git log -1 --format='%H')" >> $GITHUB_ENV 
+      - name: Check input type
+        run: |
+          if git show-ref --quiet --heads $REF; then
+            echo "REF is a branch"
+            echo "The value is $REF"
+            echo "REF_TYPE=branch" >> $GITHUB_ENV
+            echo "BRANCH=${REF}" >> $GITHUB_ENV
+          else
+            echo "REF is a commit hash"
+            echo "The value is $REF"
+            echo "REF_TYPE=commit" >> $GITHUB_ENV
+          fi
+        env:
+          REF: ${{ env.REF }}
+      - name: Get branch name from commit
+        if: ${{ env.REF_TYPE == 'commit' }}
+        run: |
+          set -x
+          echo "REF = ${REF}"
+          git show -s --pretty=%d "${REF}"
+          BRANCH_NAME="$(git show -s --pretty=%d "${REF}" | sed -n 's/^.*[(,]\s*origin\/\([^),]*\).*$/\1/p')"
+          echo "BRANCH_NAME = ${BRANCH_NAME}"
+          echo "BRANCH=${BRANCH_NAME}" >> $GITHUB_ENV
+          echo "Commit ${REF} is on branch ${BRANCH_NAME}"
+        env:
+          REF: ${{ env.REF }}
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: ${{ env.TOOLCHAIN }}
