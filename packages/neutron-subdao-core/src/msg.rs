@@ -132,6 +132,8 @@ pub enum QueryMsg {
     },
     /// Implements the DAO Star standard: https://daostar.one/EIP
     DaoURI {},
+    /// Gets main dao address
+    MainDao {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]

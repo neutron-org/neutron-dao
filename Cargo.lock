@@ -863,6 +863,7 @@ dependencies = [
  "cwd-macros",
  "cwd-pre-propose-base",
  "neutron-sdk",
+ "neutron-subdao-core",
  "neutron-subdao-pre-propose-single",
  "neutron-subdao-timelock-single",
  "schemars",
