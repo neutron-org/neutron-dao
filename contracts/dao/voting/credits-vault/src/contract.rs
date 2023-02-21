@@ -1,20 +1,13 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{
-    coins, to_binary, BankMsg, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response,
-    StdResult, Uint128,
-};
+use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 use cw2::set_contract_version;
-use cw_utils::must_pay;
-use cwd_interface::voting::{self, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse};
+use cwd_interface::voting::{TotalPowerAtHeightResponse, VotingPowerAtHeightResponse};
 use cwd_interface::Admin;
 
 use crate::error::ContractError;
-use crate::msg::{
-    BalanceAtHeight, BonderBalanceResponse, ExecuteMsg, InstantiateMsg, ListBondersResponse,
-    MigrateMsg, QueryMsg,
-};
-use crate::state::{Config, BONDED_BALANCES, BONDED_TOTAL, CONFIG, DAO, DESCRIPTION};
+use crate::msg::{BalanceAtHeight, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, TokenInfo};
+use crate::state::{Config, CONFIG, DAO, DESCRIPTION};
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-credits-vault";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -202,18 +195,18 @@ pub fn query_total_power_at_height(
     env: Env,
     height: Option<u64>,
 ) -> StdResult<TotalPowerAtHeightResponse> {
+    let config = CONFIG.load(deps.storage)?;
+
     let height = height.unwrap_or(env.block.height);
 
-    let voting_registry_module = VOTING_REGISTRY_MODULE.load(deps.storage)?;
-    let voting_power: voting::VotingPowerAtHeightResponse = deps.querier.query_wasm_smart(
-        voting_registry_module,
-        &voting::Query::VotingPowerAtHeight { height, address },
-    )?;
+    let token_info: cw20::TokenInfoResponse = deps
+        .querier
+        .query_wasm_smart(config.credits_contract_address, &TokenInfo {})?;
 
-    let power = BONDED_TOTAL
-        .may_load_at_height(deps.storage, height)?
-        .unwrap_or_default();
-    Ok(TotalPowerAtHeightResponse { power, height })
+    Ok(TotalPowerAtHeightResponse {
+        power: token_info.total_supply,
+        height,
+    })
 }
 
 pub fn query_info(deps: Deps) -> StdResult<Binary> {

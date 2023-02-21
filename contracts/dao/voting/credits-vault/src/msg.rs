@@ -41,8 +41,8 @@ pub enum QueryMsg {
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 #[serde(rename_all = "snake_case")]
 pub struct BalanceAtHeight {
-    address: String,
-    height: Option<u64>,
+    pub address: String,
+    pub height: Option<u64>,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
