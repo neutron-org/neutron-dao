@@ -4,7 +4,8 @@
   "type": "object",
   "required": [
     "denom",
-    "description"
+    "description",
+    "name"
   ],
   "properties": {
     "denom": {
@@ -18,6 +19,10 @@
         "string",
         "null"
       ]
+    },
+    "name": {
+      "description": "Name contains the vault name which is used to ease the vault's recognition.",
+      "type": "string"
     },
     "owner": {
       "anyOf": [

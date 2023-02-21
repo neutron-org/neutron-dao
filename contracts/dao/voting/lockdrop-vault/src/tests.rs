@@ -1,27 +1,24 @@
 use crate::contract::{migrate, CONTRACT_NAME, CONTRACT_VERSION};
-use crate::msg::{
-    BonderBalanceResponse, ExecuteMsg, InstantiateMsg, ListBondersResponse, MigrateMsg, QueryMsg,
-};
-use crate::state::Config;
 use cosmwasm_std::testing::{mock_dependencies, mock_env};
 use cosmwasm_std::{coins, Addr, Coin, Empty, Uint128};
-use cw_multi_test::{
-    custom_app, next_block, App, AppResponse, Contract, ContractWrapper, Executor,
-};
+use cw_multi_test::{custom_app, App, AppResponse, Contract, ContractWrapper, Executor};
 use cwd_interface::voting::{
-    BondingStatusResponse, InfoResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
+    InfoResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
 use cwd_interface::Admin;
+use neutron_lockdrop_vault::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
+use neutron_lockdrop_vault::types::Config;
 
 const DAO_ADDR: &str = "dao";
 const NAME: &str = "name";
 const NEW_NAME: &str = "new_name";
 const DESCRIPTION: &str = "description";
 const NEW_DESCRIPTION: &str = "new description";
+const LOCKDROP_ADDR: &str = "lockdrop";
+const NEW_LOCKDROP_ADDR: &str = "new_lockdrop";
 const ADDR1: &str = "addr1";
 const ADDR2: &str = "addr2";
 const DENOM: &str = "ujuno";
-const INVALID_DENOM: &str = "uinvalid";
 const INIT_BALANCE: Uint128 = Uint128::new(10000);
 
 fn vault_contract() -> Box<dyn Contract<Empty>> {
@@ -39,48 +36,30 @@ fn mock_app() -> App {
             .init_balance(
                 s,
                 &Addr::unchecked(DAO_ADDR),
-                vec![
-                    Coin {
-                        denom: DENOM.to_string(),
-                        amount: INIT_BALANCE,
-                    },
-                    Coin {
-                        denom: INVALID_DENOM.to_string(),
-                        amount: INIT_BALANCE,
-                    },
-                ],
+                vec![Coin {
+                    denom: DENOM.to_string(),
+                    amount: INIT_BALANCE,
+                }],
             )
             .unwrap();
         r.bank
             .init_balance(
                 s,
                 &Addr::unchecked(ADDR1),
-                vec![
-                    Coin {
-                        denom: DENOM.to_string(),
-                        amount: INIT_BALANCE,
-                    },
-                    Coin {
-                        denom: INVALID_DENOM.to_string(),
-                        amount: INIT_BALANCE,
-                    },
-                ],
+                vec![Coin {
+                    denom: DENOM.to_string(),
+                    amount: INIT_BALANCE,
+                }],
             )
             .unwrap();
         r.bank
             .init_balance(
                 s,
                 &Addr::unchecked(ADDR2),
-                vec![
-                    Coin {
-                        denom: DENOM.to_string(),
-                        amount: INIT_BALANCE,
-                    },
-                    Coin {
-                        denom: INVALID_DENOM.to_string(),
-                        amount: INIT_BALANCE,
-                    },
-                ],
+                vec![Coin {
+                    denom: DENOM.to_string(),
+                    amount: INIT_BALANCE,
+                }],
             )
             .unwrap();
     })
@@ -122,11 +101,13 @@ fn unbond_tokens(
     )
 }
 
+#[allow(clippy::too_many_arguments)]
 fn update_config(
     app: &mut App,
     contract_addr: Addr,
     sender: &str,
     owner: Option<String>,
+    lockdrop_contract: String,
     manager: Option<String>,
     name: String,
     description: String,
@@ -136,6 +117,7 @@ fn update_config(
         contract_addr,
         &ExecuteMsg::UpdateConfig {
             owner,
+            lockdrop_contract,
             manager,
             name,
             description,
@@ -186,22 +168,6 @@ fn get_dao(app: &App, contract_addr: &Addr) -> String {
         .unwrap()
 }
 
-fn get_balance(app: &mut App, address: &str, denom: &str) -> Uint128 {
-    app.wrap().query_balance(address, denom).unwrap().amount
-}
-
-fn get_bonding_status(app: &App, contract_addr: &Addr, address: &str) -> BondingStatusResponse {
-    app.wrap()
-        .query_wasm_smart(
-            contract_addr,
-            &QueryMsg::BondingStatus {
-                address: address.to_string(),
-                height: None,
-            },
-        )
-        .unwrap()
-}
-
 #[test]
 fn test_instantiate() {
     let mut app = mock_app();
@@ -216,8 +182,8 @@ fn test_instantiate() {
             owner: Some(Admin::Address {
                 addr: DAO_ADDR.to_string(),
             }),
+            lockdrop_contract: LOCKDROP_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
-            denom: DENOM.to_string(),
         },
     );
     assert_eq!(get_dao(&app, &addr), String::from(DAO_ADDR));
@@ -230,8 +196,8 @@ fn test_instantiate() {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: None,
+            lockdrop_contract: LOCKDROP_ADDR.to_string(),
             manager: None,
-            denom: DENOM.to_string(),
         },
     );
     assert_eq!(get_dao(&app, &addr), String::from(DAO_ADDR));
@@ -249,8 +215,8 @@ fn test_instantiate_dao_owner() {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Some(Admin::CoreModule {}),
+            lockdrop_contract: LOCKDROP_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
-            denom: DENOM.to_string(),
         },
     );
 
@@ -260,8 +226,8 @@ fn test_instantiate_dao_owner() {
 }
 
 #[test]
-#[should_panic(expected = "Must send reserve token 'ujuno'")]
-fn test_bond_invalid_denom() {
+#[should_panic(expected = "Bonding is not available for this contract")]
+fn test_bond() {
     let mut app = mock_app();
     let vault_id = app.store_code(vault_contract());
     let addr = instantiate_vault(
@@ -271,90 +237,17 @@ fn test_bond_invalid_denom() {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Some(Admin::CoreModule {}),
+            lockdrop_contract: LOCKDROP_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
-            denom: DENOM.to_string(),
         },
     );
 
     // Try and bond an invalid denom
-    bond_tokens(&mut app, addr, ADDR1, 100, INVALID_DENOM).unwrap();
+    bond_tokens(&mut app, addr, ADDR1, 100, DENOM).unwrap();
 }
 
 #[test]
-fn test_bond_valid_denom() {
-    let mut app = mock_app();
-    let vault_id = app.store_code(vault_contract());
-    let addr = instantiate_vault(
-        &mut app,
-        vault_id,
-        InstantiateMsg {
-            name: NAME.to_string(),
-            description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
-            manager: Some(ADDR1.to_string()),
-            denom: DENOM.to_string(),
-        },
-    );
-
-    let mut bonding_status: BondingStatusResponse = get_bonding_status(&app, &addr, ADDR1);
-    assert!(bonding_status.bonding_enabled);
-    assert_eq!(bonding_status.unbondable_abount, Uint128::zero());
-
-    // Try and bond an valid denom
-    bond_tokens(&mut app, addr.clone(), ADDR1, 100, DENOM).unwrap();
-    app.update_block(next_block);
-
-    bonding_status = get_bonding_status(&app, &addr, ADDR1);
-    assert!(bonding_status.bonding_enabled);
-    assert_eq!(bonding_status.unbondable_abount, Uint128::from(100u32));
-}
-
-#[test]
-#[should_panic(expected = "Can only unbond less than or equal to the amount you have bonded")]
-fn test_unbond_none_bonded() {
-    let mut app = mock_app();
-    let vault_id = app.store_code(vault_contract());
-    let addr = instantiate_vault(
-        &mut app,
-        vault_id,
-        InstantiateMsg {
-            name: NAME.to_string(),
-            description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
-            manager: Some(ADDR1.to_string()),
-            denom: DENOM.to_string(),
-        },
-    );
-
-    unbond_tokens(&mut app, addr, ADDR1, 100).unwrap();
-}
-
-#[test]
-#[should_panic(expected = "Can only unbond less than or equal to the amount you have bonded")]
-fn test_unbond_invalid_balance() {
-    let mut app = mock_app();
-    let vault_id = app.store_code(vault_contract());
-    let addr = instantiate_vault(
-        &mut app,
-        vault_id,
-        InstantiateMsg {
-            name: NAME.to_string(),
-            description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
-            manager: Some(ADDR1.to_string()),
-            denom: DENOM.to_string(),
-        },
-    );
-
-    // bond some tokens
-    bond_tokens(&mut app, addr.clone(), ADDR1, 100, DENOM).unwrap();
-    app.update_block(next_block);
-
-    // Try and unbond too many
-    unbond_tokens(&mut app, addr, ADDR1, 200).unwrap();
-}
-
-#[test]
+#[should_panic(expected = "Direct unbonding is not available for this contract")]
 fn test_unbond() {
     let mut app = mock_app();
     let vault_id = app.store_code(vault_contract());
@@ -365,38 +258,12 @@ fn test_unbond() {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Some(Admin::CoreModule {}),
+            lockdrop_contract: LOCKDROP_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
-            denom: DENOM.to_string(),
         },
     );
 
-    assert_eq!(get_balance(&mut app, ADDR1, DENOM), INIT_BALANCE);
-    // bond some tokens
-    bond_tokens(&mut app, addr.clone(), ADDR1, 100, DENOM).unwrap();
-    app.update_block(next_block);
-    assert_eq!(get_balance(&mut app, ADDR1, DENOM), Uint128::new(9900));
-
-    let mut bonding_status: BondingStatusResponse = get_bonding_status(&app, &addr, ADDR1);
-    assert!(bonding_status.bonding_enabled);
-    assert_eq!(bonding_status.unbondable_abount, Uint128::from(100u32));
-
-    // Unbond some
-    unbond_tokens(&mut app, addr.clone(), ADDR1, 75).unwrap();
-    assert_eq!(get_balance(&mut app, ADDR1, DENOM), Uint128::new(9975));
-    app.update_block(next_block);
-
-    bonding_status = get_bonding_status(&app, &addr, ADDR1);
-    assert!(bonding_status.bonding_enabled);
-    assert_eq!(bonding_status.unbondable_abount, Uint128::from(25u32));
-
-    // Unbond the rest
-    unbond_tokens(&mut app, addr.clone(), ADDR1, 25).unwrap();
-    assert_eq!(get_balance(&mut app, ADDR1, DENOM), INIT_BALANCE);
-    app.update_block(next_block);
-
-    bonding_status = get_bonding_status(&app, &addr, ADDR1);
-    assert!(bonding_status.bonding_enabled);
-    assert_eq!(bonding_status.unbondable_abount, Uint128::zero());
+    unbond_tokens(&mut app, addr, ADDR1, 100).unwrap();
 }
 
 #[test]
@@ -411,8 +278,8 @@ fn test_update_config_invalid_sender() {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Some(Admin::CoreModule {}),
+            lockdrop_contract: LOCKDROP_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
-            denom: DENOM.to_string(),
         },
     );
 
@@ -422,6 +289,7 @@ fn test_update_config_invalid_sender() {
         addr,
         ADDR2,
         Some(ADDR1.to_string()),
+        NEW_LOCKDROP_ADDR.to_string(),
         Some(DAO_ADDR.to_string()),
         NEW_NAME.to_string(),
         NEW_DESCRIPTION.to_string(),
@@ -441,8 +309,8 @@ fn test_update_config_non_owner_changes_owner() {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Some(Admin::CoreModule {}),
+            lockdrop_contract: LOCKDROP_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
-            denom: DENOM.to_string(),
         },
     );
 
@@ -452,9 +320,41 @@ fn test_update_config_non_owner_changes_owner() {
         addr,
         ADDR1,
         Some(ADDR2.to_string()),
+        LOCKDROP_ADDR.to_string(),
         None,
-        NEW_NAME.to_string(),
-        NEW_DESCRIPTION.to_string(),
+        NAME.to_string(),
+        DESCRIPTION.to_string(),
+    )
+    .unwrap();
+}
+
+#[test]
+#[should_panic(expected = "Only owner can change lockdrop contract")]
+fn test_update_config_non_owner_changes_lockdrop() {
+    let mut app = mock_app();
+    let vault_id = app.store_code(vault_contract());
+    let addr = instantiate_vault(
+        &mut app,
+        vault_id,
+        InstantiateMsg {
+            name: NAME.to_string(),
+            description: DESCRIPTION.to_string(),
+            owner: Some(Admin::CoreModule {}),
+            lockdrop_contract: LOCKDROP_ADDR.to_string(),
+            manager: Some(ADDR1.to_string()),
+        },
+    );
+
+    // ADDR1 is the manager so cannot change the lockdrop contract
+    update_config(
+        &mut app,
+        addr,
+        ADDR1,
+        Some(DAO_ADDR.to_string()),
+        NEW_LOCKDROP_ADDR.to_string(),
+        None,
+        NAME.to_string(),
+        DESCRIPTION.to_string(),
     )
     .unwrap();
 }
@@ -470,17 +370,18 @@ fn test_update_config_as_owner() {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Some(Admin::CoreModule {}),
+            lockdrop_contract: LOCKDROP_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
-            denom: DENOM.to_string(),
         },
     );
 
-    // Swap owner and manager, change description and name
+    // Swap owner and manager, change description, name and lockdrop contract
     update_config(
         &mut app,
         addr.clone(),
         DAO_ADDR,
         Some(ADDR1.to_string()),
+        NEW_LOCKDROP_ADDR.to_string(),
         Some(DAO_ADDR.to_string()),
         NEW_NAME.to_string(),
         NEW_DESCRIPTION.to_string(),
@@ -493,8 +394,8 @@ fn test_update_config_as_owner() {
             name: NEW_NAME.to_string(),
             description: NEW_DESCRIPTION.to_string(),
             owner: Some(Addr::unchecked(ADDR1)),
+            lockdrop_contract: Addr::unchecked(NEW_LOCKDROP_ADDR),
             manager: Some(Addr::unchecked(DAO_ADDR)),
-            denom: DENOM.to_string(),
         },
         config
     );
@@ -511,19 +412,20 @@ fn test_update_config_as_manager() {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Some(Admin::CoreModule {}),
+            lockdrop_contract: LOCKDROP_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
-            denom: DENOM.to_string(),
         },
     );
 
     let description_before = get_description(&app, &addr);
 
-    // Change description, name and manager as manager cannot change owner
+    // Change description, name and manager as manager cannot change owner and lockdrop contract
     update_config(
         &mut app,
         addr.clone(),
         ADDR1,
         Some(DAO_ADDR.to_string()),
+        LOCKDROP_ADDR.to_string(),
         Some(ADDR2.to_string()),
         NEW_NAME.to_string(),
         NEW_DESCRIPTION.to_string(),
@@ -539,8 +441,8 @@ fn test_update_config_as_manager() {
             name: NEW_NAME.to_string(),
             description: NEW_DESCRIPTION.to_string(),
             owner: Some(Addr::unchecked(DAO_ADDR)),
+            lockdrop_contract: Addr::unchecked(LOCKDROP_ADDR),
             manager: Some(Addr::unchecked(ADDR2)),
-            denom: DENOM.to_string(),
         },
         config
     );
@@ -558,8 +460,8 @@ fn test_update_config_invalid_description() {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Some(Admin::CoreModule {}),
+            lockdrop_contract: LOCKDROP_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
-            denom: DENOM.to_string(),
         },
     );
 
@@ -569,6 +471,7 @@ fn test_update_config_invalid_description() {
         addr,
         ADDR1,
         Some(DAO_ADDR.to_string()),
+        LOCKDROP_ADDR.to_string(),
         Some(ADDR2.to_string()),
         NEW_NAME.to_string(),
         String::from(""),
@@ -588,8 +491,8 @@ fn test_update_config_invalid_name() {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Some(Admin::CoreModule {}),
+            lockdrop_contract: LOCKDROP_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
-            denom: DENOM.to_string(),
         },
     );
 
@@ -599,6 +502,7 @@ fn test_update_config_invalid_name() {
         addr,
         ADDR1,
         Some(DAO_ADDR.to_string()),
+        LOCKDROP_ADDR.to_string(),
         Some(ADDR2.to_string()),
         String::from(""),
         NEW_DESCRIPTION.to_string(),
@@ -617,8 +521,8 @@ fn test_query_dao() {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Some(Admin::CoreModule {}),
+            lockdrop_contract: LOCKDROP_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
-            denom: DENOM.to_string(),
         },
     );
 
@@ -638,14 +542,14 @@ fn test_query_info() {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Some(Admin::CoreModule {}),
+            lockdrop_contract: LOCKDROP_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
-            denom: DENOM.to_string(),
         },
     );
 
     let msg = QueryMsg::Info {};
     let resp: InfoResponse = app.wrap().query_wasm_smart(addr, &msg).unwrap();
-    assert_eq!(resp.info.contract, "crates.io:neutron-voting-vault");
+    assert_eq!(resp.info.contract, "crates.io:neutron-lockdrop-vault");
 }
 
 #[test]
@@ -659,8 +563,8 @@ fn test_query_get_config() {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Some(Admin::CoreModule {}),
+            lockdrop_contract: LOCKDROP_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
-            denom: DENOM.to_string(),
         },
     );
 
@@ -671,14 +575,15 @@ fn test_query_get_config() {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Some(Addr::unchecked(DAO_ADDR)),
+            lockdrop_contract: Addr::unchecked(LOCKDROP_ADDR),
             manager: Some(Addr::unchecked(ADDR1)),
-            denom: DENOM.to_string(),
         }
     )
 }
 
 #[test]
-fn test_voting_power_queries() {
+#[should_panic(expected = "not implemented")] // when implemented, use neutron vault tests as template.
+fn test_voting_power_at_height() {
     let mut app = mock_app();
     let vault_id = app.store_code(vault_contract());
     let addr = instantiate_vault(
@@ -688,104 +593,17 @@ fn test_voting_power_queries() {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Some(Admin::CoreModule {}),
+            lockdrop_contract: LOCKDROP_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
-            denom: DENOM.to_string(),
         },
     );
 
-    // Total power is 0
-    let resp = get_total_power_at_height(&mut app, addr.clone(), None);
-    assert!(resp.power.is_zero());
-
-    // ADDR1 has no power, none bonded
-    let resp = get_voting_power_at_height(&mut app, addr.clone(), ADDR1.to_string(), None);
-    assert!(resp.power.is_zero());
-
-    // ADDR1 bonds
-    bond_tokens(&mut app, addr.clone(), ADDR1, 100, DENOM).unwrap();
-    app.update_block(next_block);
-
-    // Total power is 100
-    let resp = get_total_power_at_height(&mut app, addr.clone(), None);
-    assert_eq!(resp.power, Uint128::new(100));
-
-    // ADDR1 has 100 power
-    let resp = get_voting_power_at_height(&mut app, addr.clone(), ADDR1.to_string(), None);
-    assert_eq!(resp.power, Uint128::new(100));
-
-    // ADDR2 still has 0 power
-    let resp = get_voting_power_at_height(&mut app, addr.clone(), ADDR2.to_string(), None);
-    assert!(resp.power.is_zero());
-
-    // ADDR2 bonds
-    bond_tokens(&mut app, addr.clone(), ADDR2, 50, DENOM).unwrap();
-    app.update_block(next_block);
-    let prev_height = app.block_info().height - 1;
-
-    // Query the previous height, total 100, ADDR1 100, ADDR2 0
-    // Total power is 100
-    let resp = get_total_power_at_height(&mut app, addr.clone(), Some(prev_height));
-    assert_eq!(resp.power, Uint128::new(100));
-
-    // ADDR1 has 100 power
-    let resp =
-        get_voting_power_at_height(&mut app, addr.clone(), ADDR1.to_string(), Some(prev_height));
-    assert_eq!(resp.power, Uint128::new(100));
-
-    // ADDR2 still has 0 power
-    let resp =
-        get_voting_power_at_height(&mut app, addr.clone(), ADDR2.to_string(), Some(prev_height));
-    assert!(resp.power.is_zero());
-
-    // For current height, total 150, ADDR1 100, ADDR2 50
-    // Total power is 150
-    let resp = get_total_power_at_height(&mut app, addr.clone(), None);
-    assert_eq!(resp.power, Uint128::new(150));
-
-    // ADDR1 has 100 power
-    let resp = get_voting_power_at_height(&mut app, addr.clone(), ADDR1.to_string(), None);
-    assert_eq!(resp.power, Uint128::new(100));
-
-    // ADDR2 now has 50 power
-    let resp = get_voting_power_at_height(&mut app, addr.clone(), ADDR2.to_string(), None);
-    assert_eq!(resp.power, Uint128::new(50));
-
-    // ADDR1 unbonds half
-    unbond_tokens(&mut app, addr.clone(), ADDR1, 50).unwrap();
-    app.update_block(next_block);
-    let prev_height = app.block_info().height - 1;
-
-    // Query the previous height, total 150, ADDR1 100, ADDR2 50
-    // Total power is 100
-    let resp = get_total_power_at_height(&mut app, addr.clone(), Some(prev_height));
-    assert_eq!(resp.power, Uint128::new(150));
-
-    // ADDR1 has 100 power
-    let resp =
-        get_voting_power_at_height(&mut app, addr.clone(), ADDR1.to_string(), Some(prev_height));
-    assert_eq!(resp.power, Uint128::new(100));
-
-    // ADDR2 still has 0 power
-    let resp =
-        get_voting_power_at_height(&mut app, addr.clone(), ADDR2.to_string(), Some(prev_height));
-    assert_eq!(resp.power, Uint128::new(50));
-
-    // For current height, total 100, ADDR1 50, ADDR2 50
-    // Total power is 100
-    let resp = get_total_power_at_height(&mut app, addr.clone(), None);
-    assert_eq!(resp.power, Uint128::new(100));
-
-    // ADDR1 has 50 power
-    let resp = get_voting_power_at_height(&mut app, addr.clone(), ADDR1.to_string(), None);
-    assert_eq!(resp.power, Uint128::new(50));
-
-    // ADDR2 now has 50 power
-    let resp = get_voting_power_at_height(&mut app, addr, ADDR2.to_string(), None);
-    assert_eq!(resp.power, Uint128::new(50));
+    get_voting_power_at_height(&mut app, addr, ADDR1.to_string(), None);
 }
 
 #[test]
-fn test_query_list_bonders() {
+#[should_panic(expected = "not implemented")] // when implemented, use neutron vault tests as template.
+fn test_total_power_at_height() {
     let mut app = mock_app();
     let vault_id = app.store_code(vault_contract());
     let addr = instantiate_vault(
@@ -795,78 +613,12 @@ fn test_query_list_bonders() {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Some(Admin::CoreModule {}),
+            lockdrop_contract: LOCKDROP_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
-            denom: DENOM.to_string(),
         },
     );
 
-    // ADDR1 bonds
-    bond_tokens(&mut app, addr.clone(), ADDR1, 100, DENOM).unwrap();
-
-    // ADDR2 bonds
-    bond_tokens(&mut app, addr.clone(), ADDR2, 50, DENOM).unwrap();
-
-    // check entire result set
-    let bonders: ListBondersResponse = app
-        .wrap()
-        .query_wasm_smart(
-            addr.clone(),
-            &QueryMsg::ListBonders {
-                start_after: None,
-                limit: None,
-            },
-        )
-        .unwrap();
-
-    let test_res = ListBondersResponse {
-        bonders: vec![
-            BonderBalanceResponse {
-                address: ADDR1.to_string(),
-                balance: Uint128::new(100),
-            },
-            BonderBalanceResponse {
-                address: ADDR2.to_string(),
-                balance: Uint128::new(50),
-            },
-        ],
-    };
-
-    assert_eq!(bonders, test_res);
-
-    // skipped 1, check result
-    let bonders: ListBondersResponse = app
-        .wrap()
-        .query_wasm_smart(
-            addr.clone(),
-            &QueryMsg::ListBonders {
-                start_after: Some(ADDR1.to_string()),
-                limit: None,
-            },
-        )
-        .unwrap();
-
-    let test_res = ListBondersResponse {
-        bonders: vec![BonderBalanceResponse {
-            address: ADDR2.to_string(),
-            balance: Uint128::new(50),
-        }],
-    };
-
-    assert_eq!(bonders, test_res);
-
-    // skipped 2, check result. should be nothing
-    let bonders: ListBondersResponse = app
-        .wrap()
-        .query_wasm_smart(
-            addr,
-            &QueryMsg::ListBonders {
-                start_after: Some(ADDR2.to_string()),
-                limit: None,
-            },
-        )
-        .unwrap();
-
-    assert_eq!(bonders, ListBondersResponse { bonders: vec![] });
+    get_total_power_at_height(&mut app, addr, None);
 }
 
 #[test]

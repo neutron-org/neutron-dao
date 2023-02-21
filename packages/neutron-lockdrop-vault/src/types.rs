@@ -1,6 +1,5 @@
 use crate::error::ContractError;
-use cosmwasm_std::{Addr, Uint128};
-use cw_storage_plus::{Item, SnapshotItem, SnapshotMap, Strategy};
+use cosmwasm_std::Addr;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -8,9 +7,9 @@ use serde::{Deserialize, Serialize};
 pub struct Config {
     pub name: String,
     pub description: String,
+    pub lockdrop_contract: Addr,
     pub owner: Option<Addr>,
     pub manager: Option<Addr>,
-    pub denom: String,
 }
 
 impl Config {
@@ -22,28 +21,9 @@ impl Config {
         if self.description.is_empty() {
             return Err(ContractError::DescriptionIsEmpty {});
         };
-        if self.denom.is_empty() {
-            return Err(ContractError::DenomIsEmpty {});
-        };
         Ok(())
     }
 }
-
-pub const CONFIG: Item<Config> = Item::new("config");
-pub const DAO: Item<Addr> = Item::new("dao");
-pub const BONDED_BALANCES: SnapshotMap<&Addr, Uint128> = SnapshotMap::new(
-    "bonded_balances",
-    "bonded_balance__checkpoints",
-    "bonded_balance__changelog",
-    Strategy::EveryBlock,
-);
-
-pub const BONDED_TOTAL: SnapshotItem<Uint128> = SnapshotItem::new(
-    "total_bonded",
-    "total_bonded__checkpoints",
-    "total_bonded__changelog",
-    Strategy::EveryBlock,
-);
 
 #[cfg(test)]
 mod tests {
@@ -56,18 +36,18 @@ mod tests {
         let cfg_ok = Config {
             name: String::from("name"),
             description: String::from("description"),
+            lockdrop_contract: Addr::unchecked("lockdrop_contract"),
             owner: Some(Addr::unchecked("owner")),
             manager: Some(Addr::unchecked("manager")),
-            denom: String::from("denom"),
         };
         assert_eq!(cfg_ok.validate(), Ok(()));
 
         let cfg_empty_name = Config {
             name: String::from(""),
             description: String::from("description"),
+            lockdrop_contract: Addr::unchecked("lockdrop_contract"),
             owner: Some(Addr::unchecked("owner")),
             manager: Some(Addr::unchecked("manager")),
-            denom: String::from("denom"),
         };
         assert_eq!(
             cfg_empty_name.validate(),
@@ -77,25 +57,13 @@ mod tests {
         let cfg_empty_description = Config {
             name: String::from("name"),
             description: String::from(""),
+            lockdrop_contract: Addr::unchecked("lockdrop_contract"),
             owner: Some(Addr::unchecked("owner")),
             manager: Some(Addr::unchecked("manager")),
-            denom: String::from("denom"),
         };
         assert_eq!(
             cfg_empty_description.validate(),
             Err(ContractError::DescriptionIsEmpty {})
-        );
-
-        let cfg_empty_denom = Config {
-            name: String::from("name"),
-            description: String::from("description"),
-            owner: Some(Addr::unchecked("owner")),
-            manager: Some(Addr::unchecked("manager")),
-            denom: String::from(""),
-        };
-        assert_eq!(
-            cfg_empty_denom.validate(),
-            Err(ContractError::DenomIsEmpty {})
         );
     }
 }

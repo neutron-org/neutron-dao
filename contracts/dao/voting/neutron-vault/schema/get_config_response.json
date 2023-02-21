@@ -4,7 +4,8 @@
   "type": "object",
   "required": [
     "denom",
-    "description"
+    "description",
+    "name"
   ],
   "properties": {
     "denom": {
@@ -22,6 +23,9 @@
           "type": "null"
         }
       ]
+    },
+    "name": {
+      "type": "string"
     },
     "owner": {
       "anyOf": [

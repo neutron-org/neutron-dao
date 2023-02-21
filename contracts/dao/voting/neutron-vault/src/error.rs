@@ -10,6 +10,9 @@ pub enum ContractError {
     #[error("{0}")]
     PaymentError(#[from] PaymentError),
 
+    #[error("config name cannot be empty.")]
+    NameIsEmpty {},
+
     #[error("config description cannot be empty.")]
     DescriptionIsEmpty {},
 
