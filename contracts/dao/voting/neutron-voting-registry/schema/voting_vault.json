@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "VotingVault",
+  "type": "object",
+  "required": [
+    "address",
+    "description",
+    "name"
+  ],
+  "properties": {
+    "address": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    }
+  }
+}

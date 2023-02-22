@@ -3,7 +3,7 @@
   "title": "InstantiateMsg",
   "type": "object",
   "required": [
-    "voting_vault"
+    "voting_vaults"
   ],
   "properties": {
     "manager": {
@@ -22,8 +22,11 @@
         }
       ]
     },
-    "voting_vault": {
-      "type": "string"
+    "voting_vaults": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     }
   },
   "definitions": {

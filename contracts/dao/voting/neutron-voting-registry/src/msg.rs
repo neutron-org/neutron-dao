@@ -9,8 +9,8 @@ pub struct InstantiateMsg {
     pub owner: Option<Admin>,
     // Manager can update all configs except changing the owner. This will generally be an operations multisig for a DAO.
     pub manager: Option<String>,
-    // Address of voting vault contract
-    pub voting_vault: String,
+    // A list of addresses of relative voting vault contracts.
+    pub voting_vaults: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
@@ -40,3 +40,10 @@ pub enum QueryMsg {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct MigrateMsg {}
+
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
+pub struct VotingVault {
+    pub address: String,
+    pub name: String,
+    pub description: String,
+}
