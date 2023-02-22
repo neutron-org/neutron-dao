@@ -1,0 +1,83 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "InstantiateMsg",
+  "type": "object",
+  "required": [
+    "description",
+    "lockdrop_contract",
+    "name"
+  ],
+  "properties": {
+    "description": {
+      "description": "Description contains information that characterizes the vault.",
+      "type": "string"
+    },
+    "lockdrop_contract": {
+      "description": "The lockdrop contract behind the vault.",
+      "type": "string"
+    },
+    "manager": {
+      "description": "Manager can update configs except changing the owner and the lockdrop contract. This will generally be an operations multisig for a DAO.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "name": {
+      "description": "Name contains the vault name which is used to ease the vault's recognition.",
+      "type": "string"
+    },
+    "owner": {
+      "description": "Owner can update all configs including changing the owner. This will generally be a DAO.",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/Admin"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "definitions": {
+    "Admin": {
+      "description": "Information about the CosmWasm level admin of a contract. Used in conjunction with `ModuleInstantiateInfo` to instantiate modules.",
+      "oneOf": [
+        {
+          "description": "Set the admin to a specified address.",
+          "type": "object",
+          "required": [
+            "address"
+          ],
+          "properties": {
+            "address": {
+              "type": "object",
+              "required": [
+                "addr"
+              ],
+              "properties": {
+                "addr": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "Sets the admin as the core module address.",
+          "type": "object",
+          "required": [
+            "core_module"
+          ],
+          "properties": {
+            "core_module": {
+              "type": "object"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}
