@@ -582,7 +582,6 @@ fn test_query_get_config() {
 }
 
 #[test]
-#[should_panic(expected = "not implemented")] // when implemented, use neutron vault tests as template.
 fn test_voting_power_at_height() {
     let mut app = mock_app();
     let vault_id = app.store_code(vault_contract());
@@ -598,11 +597,12 @@ fn test_voting_power_at_height() {
         },
     );
 
-    get_voting_power_at_height(&mut app, addr, ADDR1.to_string(), None);
+    // describe test when lockdrop contract is implemented. use neutron vault tests as template.
+    let resp = get_voting_power_at_height(&mut app, addr, ADDR1.to_string(), None);
+    assert!(resp.power.is_zero());
 }
 
 #[test]
-#[should_panic(expected = "not implemented")] // when implemented, use neutron vault tests as template.
 fn test_total_power_at_height() {
     let mut app = mock_app();
     let vault_id = app.store_code(vault_contract());
@@ -618,7 +618,9 @@ fn test_total_power_at_height() {
         },
     );
 
-    get_total_power_at_height(&mut app, addr, None);
+    // describe test when lockdrop contract is implemented. use neutron vault tests as template.
+    let resp = get_total_power_at_height(&mut app, addr, None);
+    assert!(resp.power.is_zero());
 }
 
 #[test]
