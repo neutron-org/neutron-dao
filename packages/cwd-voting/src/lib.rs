@@ -6,4 +6,5 @@ pub mod proposal;
 pub mod reply;
 pub mod status;
 pub mod threshold;
+pub mod vault;
 pub mod voting;

@@ -8,7 +8,8 @@ use cwd_interface::voting::{
     BondingStatusResponse, InfoResponse, IsActiveResponse, TotalPowerAtHeightResponse,
     VotingPowerAtHeightResponse,
 };
-use neutron_vault::msg::{ExecuteMsg, InstantiateMsg, ListBondersResponse, MigrateMsg, QueryMsg};
+use cwd_voting::vault::ListBondersResponse;
+use neutron_vault::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use neutron_vault::state::Config;
 
 fn main() {

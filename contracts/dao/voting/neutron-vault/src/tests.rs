@@ -1,7 +1,5 @@
 use crate::contract::{migrate, CONTRACT_NAME, CONTRACT_VERSION};
-use crate::msg::{
-    BonderBalanceResponse, ExecuteMsg, InstantiateMsg, ListBondersResponse, MigrateMsg, QueryMsg,
-};
+use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::state::Config;
 use cosmwasm_std::testing::{mock_dependencies, mock_env};
 use cosmwasm_std::{coins, Addr, Coin, Empty, Uint128};
@@ -12,6 +10,7 @@ use cwd_interface::voting::{
     BondingStatusResponse, InfoResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
 use cwd_interface::Admin;
+use cwd_voting::vault::{BonderBalanceResponse, ListBondersResponse};
 
 const DAO_ADDR: &str = "dao";
 const NAME: &str = "name";
