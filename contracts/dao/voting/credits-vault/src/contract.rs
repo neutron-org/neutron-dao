@@ -6,8 +6,8 @@ use cwd_interface::voting::{TotalPowerAtHeightResponse, VotingPowerAtHeightRespo
 use cwd_interface::Admin;
 
 use crate::error::ContractError;
-use crate::msg::{BalanceAtHeight, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, TokenInfo};
-use crate::state::{Config, CONFIG, DAO, DESCRIPTION};
+use crate::msg::{CreditsQueryMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
+use crate::state::{Config, TotalSupplyResponse, CONFIG, DAO, DESCRIPTION};
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-credits-vault";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -42,7 +42,6 @@ pub fn instantiate(
         description: msg.description,
         owner,
         manager,
-        denom: msg.denom,
     };
 
     CONFIG.save(deps.storage, &config)?;
@@ -178,7 +177,7 @@ pub fn query_voting_power_at_height(
 
     let balance: cw20::BalanceResponse = deps.querier.query_wasm_smart(
         config.credits_contract_address,
-        &BalanceAtHeight {
+        &CreditsQueryMsg::BalanceAtHeight {
             height: Some(height),
             address,
         },
@@ -199,12 +198,15 @@ pub fn query_total_power_at_height(
 
     let height = height.unwrap_or(env.block.height);
 
-    let token_info: cw20::TokenInfoResponse = deps
-        .querier
-        .query_wasm_smart(config.credits_contract_address, &TokenInfo {})?;
+    let total_supply: TotalSupplyResponse = deps.querier.query_wasm_smart(
+        config.credits_contract_address,
+        &CreditsQueryMsg::TotalSupplyAtHeight {
+            height: Some(height),
+        },
+    )?;
 
     Ok(TotalPowerAtHeightResponse {
-        power: token_info.total_supply,
+        power: total_supply.total_supply,
         height,
     })
 }

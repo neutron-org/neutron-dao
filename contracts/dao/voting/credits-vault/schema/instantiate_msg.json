@@ -3,11 +3,11 @@
   "title": "InstantiateMsg",
   "type": "object",
   "required": [
-    "denom",
+    "credits_contract_address",
     "description"
   ],
   "properties": {
-    "denom": {
+    "credits_contract_address": {
       "type": "string"
     },
     "description": {

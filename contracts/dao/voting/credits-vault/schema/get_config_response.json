@@ -3,12 +3,12 @@
   "title": "GetConfigResponse",
   "type": "object",
   "required": [
-    "denom",
+    "credits_contract_address",
     "description"
   ],
   "properties": {
-    "denom": {
-      "type": "string"
+    "credits_contract_address": {
+      "$ref": "#/definitions/Addr"
     },
     "description": {
       "type": "string"

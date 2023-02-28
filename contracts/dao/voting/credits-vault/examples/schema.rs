@@ -3,7 +3,7 @@ use std::fs::create_dir_all;
 
 use cosmwasm_schema::{export_schema, export_schema_with_title, remove_schemas, schema_for};
 use cosmwasm_std::Addr;
-use credits_vault::msg::{ExecuteMsg, InstantiateMsg, ListBondersResponse, MigrateMsg, QueryMsg};
+use credits_vault::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use credits_vault::state::Config;
 use cw_controllers::ClaimsResponse;
 use cwd_interface::voting::{
@@ -26,7 +26,6 @@ fn main() {
     export_schema(&schema_for!(VotingPowerAtHeightResponse), &out_dir);
     export_schema(&schema_for!(IsActiveResponse), &out_dir);
     export_schema(&schema_for!(ClaimsResponse), &out_dir);
-    export_schema(&schema_for!(ListBondersResponse), &out_dir);
 
     // Auto TS code generation expects the query return type as QueryNameResponse
     // Here we map query resonses to the correct name

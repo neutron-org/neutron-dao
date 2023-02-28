@@ -41,34 +41,6 @@
     {
       "type": "object",
       "required": [
-        "list_bonders"
-      ],
-      "properties": {
-        "list_bonders": {
-          "type": "object",
-          "properties": {
-            "limit": {
-              "type": [
-                "integer",
-                "null"
-              ],
-              "format": "uint32",
-              "minimum": 0.0
-            },
-            "start_after": {
-              "type": [
-                "string",
-                "null"
-              ]
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
         "voting_power_at_height"
       ],
       "properties": {

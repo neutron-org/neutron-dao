@@ -13,8 +13,6 @@ pub struct InstantiateMsg {
     pub owner: Option<Admin>,
     // Manager can update all configs except changing the owner. This will generally be an operations multisig for a DAO.
     pub manager: Option<String>,
-    // Token denom e.g. untrn, or some ibc denom
-    pub denom: String,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
@@ -38,16 +36,18 @@ pub enum QueryMsg {
     GetConfig {},
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub struct BalanceAtHeight {
-    pub address: String,
-    pub height: Option<u64>,
-}
+pub enum CreditsQueryMsg {
+    BalanceAtHeight {
+        address: String,
+        height: Option<u64>,
+    },
 
-#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
-#[serde(rename_all = "snake_case")]
-pub struct TokenInfo {}
+    TotalSupplyAtHeight {
+        height: Option<u64>,
+    },
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct MigrateMsg {}
