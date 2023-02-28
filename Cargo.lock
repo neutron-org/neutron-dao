@@ -1240,7 +1240,7 @@ dependencies = [
  "anyhow",
  "cosmwasm-schema",
  "cosmwasm-std",
- "cw-multi-test",
+ "cw-multi-test 0.13.4",
  "cw-storage-plus 0.13.4",
  "cw2 0.13.4",
  "cwd-interface",
