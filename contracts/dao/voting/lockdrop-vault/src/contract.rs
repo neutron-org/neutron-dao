@@ -10,6 +10,7 @@ use cwd_interface::voting::{
 use cwd_interface::Admin;
 
 use crate::state::{CONFIG, DAO};
+use cwd_voting::vault::ListBondersResponse;
 use neutron_lockdrop_vault::error::ContractError;
 use neutron_lockdrop_vault::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use neutron_lockdrop_vault::types::Config;
@@ -200,21 +201,27 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 
 pub fn query_voting_power_at_height(
     _deps: Deps,
-    _env: Env,
+    env: Env,
     _address: String,
-    _height: Option<u64>,
+    height: Option<u64>,
 ) -> StdResult<VotingPowerAtHeightResponse> {
     // TODO: implement once the lockdrop contract is implemented.
-    unimplemented!()
+    Ok(VotingPowerAtHeightResponse {
+        power: Uint128::zero(),
+        height: height.unwrap_or(env.block.height),
+    })
 }
 
 pub fn query_total_power_at_height(
     _deps: Deps,
-    _env: Env,
-    _height: Option<u64>,
+    env: Env,
+    height: Option<u64>,
 ) -> StdResult<TotalPowerAtHeightResponse> {
     // TODO: implement once the lockdrop contract is implemented.
-    unimplemented!()
+    Ok(TotalPowerAtHeightResponse {
+        power: Uint128::zero(),
+        height: height.unwrap_or(env.block.height),
+    })
 }
 
 pub fn query_info(deps: Deps) -> StdResult<Binary> {
@@ -248,7 +255,7 @@ pub fn query_list_bonders(
     _limit: Option<u32>,
 ) -> StdResult<Binary> {
     // TODO: implement once the lockdrop contract is implemented.
-    unimplemented!()
+    to_binary(&ListBondersResponse { bonders: vec![] })
 }
 
 pub fn query_bonding_status(

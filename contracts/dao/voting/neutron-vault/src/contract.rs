@@ -10,11 +10,10 @@ use cwd_interface::voting::{
     BondingStatusResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
 use cwd_interface::Admin;
+use cwd_voting::vault::{BonderBalanceResponse, ListBondersResponse};
 
 use crate::error::ContractError;
-use crate::msg::{
-    BonderBalanceResponse, ExecuteMsg, InstantiateMsg, ListBondersResponse, MigrateMsg, QueryMsg,
-};
+use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::state::{Config, BONDED_BALANCES, BONDED_TOTAL, CONFIG, DAO};
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-voting-vault";

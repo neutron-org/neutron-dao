@@ -1,4 +1,3 @@
-use cosmwasm_std::Uint128;
 use cwd_interface::Admin;
 use cwd_macros::{info_query, voting_query, voting_vault, voting_vault_query};
 use schemars::JsonSchema;
@@ -41,16 +40,3 @@ pub enum QueryMsg {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct MigrateMsg {}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct ListBondersResponse {
-    pub bonders: Vec<BonderBalanceResponse>,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct BonderBalanceResponse {
-    pub address: String,
-    pub balance: Uint128,
-}

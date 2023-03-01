@@ -3,16 +3,32 @@
   "title": "InstantiateMsg",
   "type": "object",
   "required": [
-    "voting_vaults"
+    "description",
+    "lockdrop_contract",
+    "name"
   ],
   "properties": {
+    "description": {
+      "description": "Description contains information that characterizes the vault.",
+      "type": "string"
+    },
+    "lockdrop_contract": {
+      "description": "The lockdrop contract behind the vault.",
+      "type": "string"
+    },
     "manager": {
+      "description": "Manager can update configs except changing the owner and the lockdrop contract. This will generally be an operations multisig for a DAO.",
       "type": [
         "string",
         "null"
       ]
     },
+    "name": {
+      "description": "Name contains the vault name which is used to ease the vault's recognition.",
+      "type": "string"
+    },
     "owner": {
+      "description": "Owner can update all configs including changing the owner. This will generally be a DAO.",
       "anyOf": [
         {
           "$ref": "#/definitions/Admin"
@@ -21,12 +37,6 @@
           "type": "null"
         }
       ]
-    },
-    "voting_vaults": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
     }
   },
   "definitions": {
