@@ -13,7 +13,7 @@ crate-type = ["cdylib", "rlib"]
 backtraces = ["cosmwasm-std/backtraces"]
 
 [dependencies]
-neutron_bindings = { package = "neutron-sdk", git = "https://github.com/neutron-org/neutron-sdk.git", rev = "263e4b36c905b7653e91000c4996a9e28c227c26" }
+neutron_bindings = { package = "neutron-sdk", git = "https://github.com/neutron-org/neutron-sdk.git", rev = "7be02a42212ad160432c827a431936d6e01b90cf" }
 cosmwasm-std = { version = "1.0" }
 cw-storage-plus = "1.0.1"
 schemars = "0.8.1"
