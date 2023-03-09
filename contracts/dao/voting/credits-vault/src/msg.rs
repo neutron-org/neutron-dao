@@ -20,7 +20,7 @@ pub struct InstantiateMsg {
 pub enum ExecuteMsg {
     UpdateConfig {
         credits_contract_address: Option<String>,
-        owner: Option<String>,
+        owner: Option<Admin>,
         manager: Option<String>,
         description: Option<String>,
     },

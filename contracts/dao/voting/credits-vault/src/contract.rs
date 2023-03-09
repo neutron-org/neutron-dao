@@ -95,7 +95,7 @@ pub fn execute_update_config(
     deps: DepsMut,
     info: MessageInfo,
     new_credits_contract_address: Option<String>,
-    new_owner: Option<String>,
+    new_owner: Option<Admin>,
     new_manager: Option<String>,
     new_description: Option<String>,
 ) -> Result<Response, ContractError> {
@@ -109,8 +109,13 @@ pub fn execute_update_config(
         .transpose()?;
 
     let new_owner = new_owner
-        .map(|new_owner| deps.api.addr_validate(&new_owner))
+        .as_ref()
+        .map(|owner| match owner {
+            Admin::Address { addr } => deps.api.addr_validate(addr),
+            Admin::CoreModule {} => Ok(info.sender.clone()),
+        })
         .transpose()?;
+
     let new_manager = new_manager
         .map(|new_manager| deps.api.addr_validate(&new_manager))
         .transpose()?;

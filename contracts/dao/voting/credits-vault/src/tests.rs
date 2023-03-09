@@ -94,7 +94,7 @@ fn update_config(
     contract_addr: Addr,
     sender: &str,
     credits_contract_address: Option<String>,
-    owner: Option<String>,
+    owner: Option<Admin>,
     manager: Option<String>,
     description: Option<String>,
 ) -> anyhow::Result<AppResponse> {
@@ -221,7 +221,9 @@ fn test_update_config_invalid_sender() {
         addr,
         ADDR2,
         Some(credits_contract.to_string()),
-        Some(ADDR1.to_string()),
+        Some(Admin::Address {
+            addr: ADDR1.to_string(),
+        }),
         Some(DAO_ADDR.to_string()),
         Some(NEW_DESCRIPTION.to_string()),
     )
@@ -252,7 +254,9 @@ fn test_update_config_non_owner_changes_owner() {
         addr,
         ADDR1,
         Some(credits_contract.to_string()),
-        Some(ADDR2.to_string()),
+        Some(Admin::Address {
+            addr: ADDR2.to_string(),
+        }),
         None,
         None,
     )
@@ -282,7 +286,9 @@ fn test_update_config_as_owner() {
         addr.clone(),
         DAO_ADDR,
         Some(credits_contract.to_string()),
-        Some(ADDR1.to_string()),
+        Some(Admin::Address {
+            addr: ADDR1.to_string(),
+        }),
         Some(DAO_ADDR.to_string()),
         Some(NEW_DESCRIPTION.to_string()),
     )
@@ -323,7 +329,9 @@ fn test_update_config_as_manager() {
         addr.clone(),
         ADDR1,
         Some(credits_contract.to_string()),
-        Some(DAO_ADDR.to_string()),
+        Some(Admin::Address {
+            addr: DAO_ADDR.to_string(),
+        }),
         Some(ADDR2.to_string()),
         Some(NEW_DESCRIPTION.to_string()),
     )
@@ -365,7 +373,9 @@ fn test_update_config_invalid_description() {
         addr,
         ADDR1,
         Some(credits_contract.to_string()),
-        Some(DAO_ADDR.to_string()),
+        Some(Admin::Address {
+            addr: DAO_ADDR.to_string(),
+        }),
         Some(ADDR2.to_string()),
         Some(String::from("")),
     )
