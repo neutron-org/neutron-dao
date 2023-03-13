@@ -63,7 +63,7 @@ impl WasmMockQuerier {
                 if contract_addr == MOCK_CORE_MODULE {
                     let q: MainDaoQueryMsg = from_binary(msg).unwrap();
                     return match q {
-                        MainDaoQueryMsg::ListSubDaos { start_after, limit } => {
+                        MainDaoQueryMsg::ListSubDaos { start_after: _, limit: _ } => {
                             SystemResult::Ok(ContractResult::from(to_binary(&vec![SubDao {
                                 addr: MOCK_SUBDAO_CORE.to_string(),
                                 charter: None,

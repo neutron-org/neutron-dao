@@ -1,0 +1,18 @@
+[package]
+name = "neutron-dao-pre-propose-overrule"
+version = "0.1.0"
+authors = ["oldremez"]
+edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/neutron/neutron-dao"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+cwd-pre-propose-base = { version = "*", path = "../cwd-pre-propose-base" }
+schemars = "0.8"
+serde = { version = "1.0.147", default-features = false, features = ["derive"] }
+cosmwasm-std = "1.0.0"
+neutron_bindings = { package = "neutron-sdk", git = "https://github.com/neutron-org/neutron-sdk.git", rev = "c19b40c024eeaa8733af9ddee94a52798d78f469" }
+cwd-voting = { path = "../cwd-voting" }
+cwd-interface = { path = "../cwd-interface" }

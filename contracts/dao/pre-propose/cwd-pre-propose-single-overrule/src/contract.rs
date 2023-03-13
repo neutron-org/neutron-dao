@@ -1,14 +1,16 @@
+use std::ops::Add;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    from_binary, to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, QueryRequest,
-    Response, StdResult, Timestamp, WasmMsg, WasmQuery,
+    from_binary, to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
+    Response, StdResult, Timestamp, WasmMsg,
 };
 use cw2::set_contract_version;
 use error::PreProposeOverruleError;
 use neutron_bindings::bindings::msg::NeutronMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use serde::de::Unexpected::Map;
 
 use crate::error;
 use crate::msg::{
@@ -147,6 +149,21 @@ pub fn execute(
         } => {
             let timelock_contract_addr = deps.api.addr_validate(&timelock_contract)?;
 
+            let subdao_address = getSubdaoFromTimelock(timelock_contract, &deps)?;
+
+            // we need this check since the timelock contract might be an impostor
+            if getTimelockFromSubdao(&subdao_address, &deps) != timelock_contract {
+                return Err(PreProposeOverruleError::MessageUnsupported {})
+            }
+
+            if !checkIfSubdaoLegit(&subdao_address, &deps) {
+                return Err(PreProposeOverruleError::MessageUnsupported {})
+            }
+
+            if !checkIsProposalTimelocked(&subdao_address, &deps) {
+                return Err(PreProposeOverruleError::MessageUnsupported {})
+            }
+
             let overrule_msg = CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: timelock_contract_addr.to_string(),
                 msg: to_binary(&TimelockExecuteMsg::OverruleProposal { proposal_id })?,
@@ -158,45 +175,9 @@ pub fn execute(
                     // Fill in proposer based on message sender.
                     proposer: Some(info.sender.to_string()),
                     title: "Overrule proposal".to_string(),
-                    description: "Reject the decision made by subdao".to_string(),
+                    description: "Reject the decision made by the subdao".to_string(),
                     msgs: vec![overrule_msg],
                 },
-            };
-
-            let timelock_config_bin = deps
-                .querier
-                .query_wasm_smart(timelock_contract.to_string(), &TimelockQueryMsg::Config {})?;
-            let timelock_config: TimelockConfig = from_binary(&timelock_config_bin).unwrap();
-
-            let config = CONFIG.load(deps.storage)?;
-
-            let query_msg_2 = MainDaoQueryMsg::ListSubDaos {
-                start_after: None,
-                limit: Some(10),
-            };
-            let subdao_list_bin = deps
-                .querier
-                .query_wasm_smart(config.main_dao.to_string(), &query_msg_2)?;
-            let subdao_list: Vec<SubDao> = from_binary(&subdao_list_bin).unwrap();
-
-            //todo pagination handling
-
-            if subdao_list
-                .into_iter()
-                .find(|x1| x1.addr == timelock_config.subdao)
-                .is_none()
-            {
-                return Err(PreProposeOverruleError::MessageUnsupported {});
-            };
-
-            let query_msg_3 = TimelockQueryMsg::Proposal { proposal_id };
-            let proposal_bin = deps
-                .querier
-                .query_wasm_smart(timelock_contract.to_string(), &query_msg_3)?;
-            let proposal_from_timelock: SingleChoiceProposal = from_binary(&proposal_bin).unwrap();
-
-            if proposal_from_timelock.status != ProposalStatus::Timelocked {
-                return Err(PreProposeOverruleError::MessageUnsupported {});
             };
 
             PrePropose::default()
@@ -205,6 +186,67 @@ pub fn execute(
         }
         _ => Err(PreProposeOverruleError::MessageUnsupported {}),
     }
+}
+
+fn getSubdaoFromTimelock(timelock_contract: String, deps: &DepsMut) -> Result<Addr, PreProposeOverruleError>{
+    let timelock_config: TimelockConfig = deps
+    .querier
+    .query_wasm_smart(timelock_contract.to_string(), &TimelockQueryMsg::Config {})?;
+    Ok(timelock_config.subdao)
+}
+
+fn getTimelockFromSubdao(subdao_core: &Addr, deps: &DepsMut) -> Result<Addr, PreProposeOverruleError>{
+    // let timelock_config: TimelockConfig = deps
+    //     .querier
+    //     .query_wasm_smart(timelock_contract.to_string(), &TimelockQueryMsg::Config {})?;
+    // Ok(timelock_config.subdao)
+    Ok(Addr::unchecked("bla"))
+}
+
+fn checkIfSubdaoLegit(subdao_core: &Addr, deps: &DepsMut) -> bool {
+    let config = CONFIG.load(deps.storage)?;
+
+    let mut start_after: Option<&SubDao> = None;
+
+    loop {
+        let query_msg_2 = MainDaoQueryMsg::ListSubDaos {
+            start_after: start_after.map(|subdao| subdao.addr),
+            limit: Some(10),
+        };
+
+        let subdao_list: Vec<SubDao> = deps
+            .querier
+            .query_wasm_smart(config.main_dao.to_string(), &query_msg_2)?;
+
+        if subdao_list.is_empty() {
+            return false
+        }
+
+        if subdao_list
+            .into_iter()
+            .find(|x1| x1.addr == subdao_core.into_string())
+            .is_some()
+        {
+            return true;
+        };
+        start_after = subdao_list.last();
+    }
+}
+
+fn checkIsProposalTimelocked(subdao_core: &Addr, deps: &DepsMut) -> Result<Addr, PreProposeOverruleError>{
+    // let query_msg_3 = TimelockQueryMsg::Proposal { proposal_id };
+    // let proposal_bin = deps
+    //     .querier
+    //     .query_wasm_smart(timelock_contract.to_string(), &query_msg_3)?;
+    // let proposal_from_timelock: SingleChoiceProposal = from_binary(&proposal_bin).unwrap();
+    //
+    // if proposal_from_timelock.status != ProposalStatus::Timelocked {
+    //     return Err(PreProposeOverruleError::MessageUnsupported {});
+    // };
+}
+
+fn getSubdaoName() -> Result<String, PreProposeOverruleError>{
+    Ok("Subdao".to_string())
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
