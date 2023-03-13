@@ -51,3 +51,7 @@ cw20-base = "0.13"
 cw721-base = "0.13"
 cw4 = "0.13"
 cw4-group = "0.13"
+cwd-testing = { path = "../../../../packages/cwd-testing" }
+neutron-voting-registry = { path = "../../voting/neutron-voting-registry" }
+neutron-vault = { path = "../../voting/neutron-vault" }
+rand = "0.8.5"

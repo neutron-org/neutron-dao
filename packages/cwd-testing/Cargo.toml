@@ -1,0 +1,38 @@
+[package]
+name = "cwd-testing"
+version = "0.2.0"
+edition = "2021"
+authors = ["ekez ekez@withoutdoing.com"]
+repository = "https://github.com/DA0-DA0/dao-contracts"
+description = "Testing helper functions and interfaces for testing DAO modules."
+
+# This crate depends on multi-test and rand. These are not features in
+# wasm builds of cosmwasm. Despite this crate only being used as a dev
+# dependency, because it is part of the workspace it will always be
+# compiled. There is no good way to remove a member from a workspace
+# conditionally. As such, we don't compile anything here if we're
+# targeting wasm.
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+rand = "0.8"
+cosmwasm-std = { version = "1.0.0" }
+cw-multi-test = {  version = "0.13" }
+cw20-base = "0.13"
+cw4 = "0.13"
+cw4-group = "0.13"
+cw-utils = "0.13"
+cw2 = "0.13"
+cw20 = "0.13"
+
+cwd-voting = { path = "../cwd-voting" }
+cwd-hooks = { version = "*", path = "../cwd-hooks" }
+cwd-core = { path = "../../contracts/dao/cwd-core", features = ["library"] }
+cosmwasm-schema = { version = "1.0.0" }
+cwd-interface = { path = "../cwd-interface" }
+cwd-pre-propose-single = {path = "../../contracts/dao/pre-propose/cwd-pre-propose-single"}
+cwd-pre-propose-multiple = {path = "../../contracts/dao/pre-propose/cwd-pre-propose-multiple"}
+cwd-proposal-single-v1 = { package = "cw-proposal-single", version = "0.1.0", git = "https://github.com/DA0-DA0/dao-contracts.git", tag = "v1.0.0" }
+voting-v1 = { package = "voting", version = "0.1.0", git = "https://github.com/DA0-DA0/dao-contracts.git", tag = "v1.0.0" }
+cwd-proposal-single = { path = "../../contracts/dao/proposal/cwd-proposal-single" }
+neutron-voting-registry = { path = "../../contracts/dao/voting/neutron-voting-registry" }
+serde = { version = "1.0", default-features = false, features = ["derive"] }
+cw721-base = "0.13"
