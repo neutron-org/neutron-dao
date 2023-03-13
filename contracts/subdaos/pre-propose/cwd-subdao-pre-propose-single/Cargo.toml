@@ -23,7 +23,7 @@ cw-utils = "0.13"
 serde = { version = "1.0.147", default-features = false, features = ["derive"] }
 cwd-pre-propose-base = { version = "*", path = "../../../../packages/cwd-pre-propose-base" }
 cwd-voting = { path = "../../../../packages/cwd-voting" }
-neutron_bindings = { package = "neutron-sdk", git = "https://github.com/neutron-org/neutron-sdk.git", rev = "c19b40c024eeaa8733af9ddee94a52798d78f469" }
+neutron_bindings = { package = "neutron-sdk", git = "https://github.com/neutron-org/neutron-sdk.git", rev = "8c1792af25daec6884c01691b5448bbe990af100" }
 neutron-subdao-timelock-single = { path = "../../../../packages/neutron-subdao-timelock-single" }
 neutron-subdao-proposal-single = { path = "../../../../packages/neutron-subdao-proposal-single" }
 neutron-subdao-pre-propose-single = { path = "../../../../packages/neutron-subdao-pre-propose-single" }
