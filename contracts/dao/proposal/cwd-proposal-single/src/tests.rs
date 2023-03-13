@@ -147,7 +147,7 @@ fn test_migrate_mock() {
 
 #[test]
 fn test_close_failed_proposal() {
-    let mut app = App::default();
+    let mut app = custom_app::<NeutronMsg, Empty, _>(no_init);
     let govmod_id = app.store_code(proposal_contract());
 
     let threshold = Threshold::AbsolutePercentage {
@@ -384,7 +384,7 @@ fn test_close_failed_proposal() {
 
 #[test]
 fn test_no_double_refund_on_execute_fail_and_close() {
-    let mut app = App::default();
+    let mut app = custom_app::<NeutronMsg, Empty, _>(no_init);
     let proposal_module_id = app.store_code(proposal_contract());
 
     let threshold = Threshold::AbsolutePercentage {

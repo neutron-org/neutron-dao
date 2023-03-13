@@ -4,13 +4,15 @@ use cosmwasm_std::{
     Addr, Attribute, Reply, SubMsg, SubMsgResult,
 };
 use neutron_bindings::bindings::msg::NeutronMsg;
-use neutron_timelock::single::ExecuteMsg;
+use neutron_subdao_timelock_single::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use neutron_subdao_timelock_single::types::{
+    Config, ProposalListResponse, ProposalStatus, SingleChoiceProposal,
+};
 
+use crate::testing::mock_querier::MOCK_MAIN_DAO_ADDR;
 use crate::{
     contract::{execute, instantiate, query, reply},
-    msg::{InstantiateMsg, ProposalListResponse, QueryMsg},
-    proposal::{ProposalStatus, SingleChoiceProposal},
-    state::{Config, CONFIG, DEFAULT_LIMIT, PROPOSALS},
+    state::{CONFIG, DEFAULT_LIMIT, PROPOSALS},
     testing::mock_querier::MOCK_TIMELOCK_INITIALIZER,
 };
 
@@ -22,7 +24,6 @@ fn test_instantiate_test() {
     let env = mock_env();
     let info = mock_info("neutron1unknownsender", &[]);
     let msg = InstantiateMsg {
-        owner: Addr::unchecked("dao"),
         timelock_duration: 10,
     };
     let res = instantiate(deps.as_mut(), env.clone(), info, msg);
@@ -34,40 +35,38 @@ fn test_instantiate_test() {
     let info = mock_info(MOCK_TIMELOCK_INITIALIZER, &[]);
 
     let msg = InstantiateMsg {
-        owner: Addr::unchecked("dao"),
         timelock_duration: 10,
     };
     let res = instantiate(deps.as_mut(), env.clone(), info.clone(), msg.clone());
     let res_ok = res.unwrap();
     let expected_attributes = vec![
         Attribute::new("action", "instantiate"),
-        Attribute::new("owner", "dao"),
+        Attribute::new("owner", MOCK_MAIN_DAO_ADDR),
         Attribute::new("timelock_duration", "10"),
     ];
     assert_eq!(expected_attributes, res_ok.attributes);
     let config = CONFIG.load(&deps.storage).unwrap();
     let expected_config = Config {
-        owner: msg.owner,
+        owner: Addr::unchecked(MOCK_MAIN_DAO_ADDR),
         timelock_duration: msg.timelock_duration,
         subdao: Addr::unchecked(MOCK_SUBDAO_CORE_ADDR),
     };
     assert_eq!(expected_config, config);
 
     let msg = InstantiateMsg {
-        owner: Addr::unchecked("none"),
         timelock_duration: 10,
     };
     let res = instantiate(deps.as_mut(), env, info, msg.clone());
     let res_ok = res.unwrap();
     let expected_attributes = vec![
         Attribute::new("action", "instantiate"),
-        Attribute::new("owner", "none"),
+        Attribute::new("owner", MOCK_MAIN_DAO_ADDR),
         Attribute::new("timelock_duration", "10"),
     ];
     assert_eq!(expected_attributes, res_ok.attributes);
     let config = CONFIG.load(&deps.storage).unwrap();
     let expected_config = Config {
-        owner: msg.owner,
+        owner: Addr::unchecked(MOCK_MAIN_DAO_ADDR),
         timelock_duration: msg.timelock_duration,
         subdao: Addr::unchecked(MOCK_SUBDAO_CORE_ADDR),
     };
@@ -87,7 +86,7 @@ fn test_execute_timelock_proposal() {
 
     let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone());
     assert_eq!(
-        "cwd_subdao_timelock_single::state::Config not found",
+        "neutron_subdao_timelock_single::types::Config not found",
         res.unwrap_err().to_string()
     );
 
@@ -131,7 +130,7 @@ fn test_execute_proposal() {
 
     let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone());
     assert_eq!(
-        "cwd_subdao_timelock_single::state::Config not found",
+        "neutron_subdao_timelock_single::types::Config not found",
         res.unwrap_err().to_string()
     );
 
@@ -143,7 +142,7 @@ fn test_execute_proposal() {
     CONFIG.save(deps.as_mut().storage, &config).unwrap();
     let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone());
     assert_eq!(
-        "cwd_subdao_timelock_single::proposal::SingleChoiceProposal not found",
+        "neutron_subdao_timelock_single::types::SingleChoiceProposal not found",
         res.unwrap_err().to_string()
     );
 
@@ -211,7 +210,7 @@ fn test_overrule_proposal() {
 
     let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone());
     assert_eq!(
-        "cwd_subdao_timelock_single::state::Config not found",
+        "neutron_subdao_timelock_single::types::Config not found",
         res.unwrap_err().to_string()
     );
 
@@ -282,7 +281,7 @@ fn execute_update_config() {
 
     let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone());
     assert_eq!(
-        "cwd_subdao_timelock_single::state::Config not found",
+        "neutron_subdao_timelock_single::types::Config not found",
         res.unwrap_err().to_string()
     );
 
@@ -403,7 +402,7 @@ fn test_query_proposals() {
     };
     let res = query(deps.as_ref(), mock_env(), query_msg).unwrap();
     let queried_props: ProposalListResponse = from_binary(&res).unwrap();
-    for (p, i) in queried_props.proposals.iter().zip(1..=DEFAULT_LIMIT) {
+    for (p, i) in queried_props.proposals.iter().zip(1..) {
         let expected_prop = SingleChoiceProposal {
             id: i,
             timelock_ts: mock_env().block.time,
@@ -412,6 +411,7 @@ fn test_query_proposals() {
         };
         assert_eq!(expected_prop, *p);
     }
+    assert_eq!(queried_props.proposals.len(), DEFAULT_LIMIT as usize);
 
     let query_msg = QueryMsg::ListProposals {
         start_after: None,
@@ -419,7 +419,7 @@ fn test_query_proposals() {
     };
     let res = query(deps.as_ref(), mock_env(), query_msg).unwrap();
     let queried_props: ProposalListResponse = from_binary(&res).unwrap();
-    for (p, i) in queried_props.proposals.iter().zip(1..=DEFAULT_LIMIT) {
+    for (p, i) in queried_props.proposals.iter().zip(1..) {
         let expected_prop = SingleChoiceProposal {
             id: i,
             timelock_ts: mock_env().block.time,
@@ -428,6 +428,7 @@ fn test_query_proposals() {
         };
         assert_eq!(expected_prop, *p);
     }
+    assert_eq!(queried_props.proposals.len(), 100);
 
     let query_msg = QueryMsg::ListProposals {
         start_after: None,
@@ -435,7 +436,7 @@ fn test_query_proposals() {
     };
     let res = query(deps.as_ref(), mock_env(), query_msg).unwrap();
     let queried_props: ProposalListResponse = from_binary(&res).unwrap();
-    for (p, i) in queried_props.proposals.iter().zip(1..=10) {
+    for (p, i) in queried_props.proposals.iter().zip(1..) {
         let expected_prop = SingleChoiceProposal {
             id: i,
             timelock_ts: mock_env().block.time,
@@ -444,6 +445,7 @@ fn test_query_proposals() {
         };
         assert_eq!(expected_prop, *p);
     }
+    assert_eq!(queried_props.proposals.len(), 10);
 
     let query_msg = QueryMsg::ListProposals {
         start_after: Some(50),
@@ -451,7 +453,7 @@ fn test_query_proposals() {
     };
     let res = query(deps.as_ref(), mock_env(), query_msg).unwrap();
     let queried_props: ProposalListResponse = from_binary(&res).unwrap();
-    for (p, i) in queried_props.proposals.iter().zip(51..=DEFAULT_LIMIT + 50) {
+    for (p, i) in queried_props.proposals.iter().zip(51..) {
         let expected_prop = SingleChoiceProposal {
             id: i,
             timelock_ts: mock_env().block.time,
@@ -460,6 +462,7 @@ fn test_query_proposals() {
         };
         assert_eq!(expected_prop, *p);
     }
+    assert_eq!(queried_props.proposals.len(), DEFAULT_LIMIT as usize);
 
     let query_msg = QueryMsg::ListProposals {
         start_after: Some(90),
@@ -467,7 +470,7 @@ fn test_query_proposals() {
     };
     let res = query(deps.as_ref(), mock_env(), query_msg).unwrap();
     let queried_props: ProposalListResponse = from_binary(&res).unwrap();
-    for (p, i) in queried_props.proposals.iter().zip(91..=100) {
+    for (p, i) in queried_props.proposals.iter().zip(91..) {
         let expected_prop = SingleChoiceProposal {
             id: i,
             timelock_ts: mock_env().block.time,
@@ -476,6 +479,7 @@ fn test_query_proposals() {
         };
         assert_eq!(expected_prop, *p);
     }
+    assert_eq!(queried_props.proposals.len(), 10);
 }
 
 #[test]

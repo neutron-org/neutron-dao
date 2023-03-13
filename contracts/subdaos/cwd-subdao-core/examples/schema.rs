@@ -6,13 +6,11 @@ use cosmwasm_std::Addr;
 use cwd_interface::voting::{
     InfoResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
-use cwd_subdao_core::{
-    msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg},
-    query::{
-        AdminNominationResponse, Cw20BalanceResponse, DumpStateResponse, GetItemResponse,
-        PauseInfoResponse, SubDao,
-    },
-    state::{Config, ProposalModule},
+use exec_control::pause::PauseInfoResponse;
+use neutron_subdao_core::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
+use neutron_subdao_core::types::{
+    AdminNominationResponse, Config, Cw20BalanceResponse, DumpStateResponse, GetItemResponse,
+    ProposalModule, SubDao,
 };
 
 fn main() {

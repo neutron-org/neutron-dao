@@ -5,12 +5,11 @@ use cosmwasm_schema::{export_schema, export_schema_with_title, remove_schemas, s
 use cosmwasm_std::Addr;
 use cwd_hooks::HooksResponse;
 use cwd_interface::voting::InfoResponse;
-use cwd_subdao_proposal_single::{
-    msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg},
-    query::{ProposalListResponse, ProposalResponse, VoteListResponse, VoteResponse},
-    state::Config,
-};
 use cwd_voting::pre_propose::ProposalCreationPolicy;
+use neutron_subdao_proposal_single::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
+use neutron_subdao_proposal_single::types::{
+    Config, ProposalListResponse, ProposalResponse, VoteListResponse, VoteResponse,
+};
 
 fn main() {
     let mut out_dir = current_dir().unwrap();

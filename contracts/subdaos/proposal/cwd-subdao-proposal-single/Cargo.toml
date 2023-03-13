@@ -16,7 +16,7 @@ backtraces = ["cosmwasm-std/backtraces"]
 library = []
 
 [dependencies]
-neutron_bindings = { package = "neutron-sdk", version = "0.1.0" }
+neutron_bindings = { package = "neutron-sdk", git = "https://github.com/neutron-org/neutron-sdk.git", rev = "c19b40c024eeaa8733af9ddee94a52798d78f469" }
 cosmwasm-std = { version = "1.0.0", features = ["ibc3"] }
 cosmwasm-storage = { version = "1.0.0" }
 cw-storage-plus = "0.13"
@@ -28,7 +28,7 @@ schemars = "0.8"
 serde = { version = "1.0.147", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0" }
 
-cwd-subdao-core = { path = "../../cwd-subdao-core", features = ["library"] }
+neutron-subdao-core = { path = "../../../../packages/neutron-subdao-core" }
 cwd-macros = { path = "../../../../packages/cwd-macros" }
 cwd-pre-propose-base = { path = "../../../../packages/cwd-pre-propose-base" }
 cwd-subdao-pre-propose-single = { path = "../../pre-propose/cwd-subdao-pre-propose-single" }
@@ -37,7 +37,8 @@ cwd-voting = { path = "../../../../packages/cwd-voting" }
 cwd-hooks = { path = "../../../../packages/cwd-hooks" }
 cwd-proposal-hooks = { path = "../../../../packages/cwd-proposal-hooks" }
 cwd-vote-hooks = { path = "../../../../packages/cwd-vote-hooks" }
-
+neutron-subdao-proposal-single = { path = "../../../../packages/neutron-subdao-proposal-single" }
+neutron-subdao-pre-propose-single = { path = "../../../../packages/neutron-subdao-pre-propose-single" }
 voting-v1 = { package = "voting", version = "0.1.0", git = "https://github.com/DA0-DA0/dao-contracts.git", tag = "v1.0.0" }
 cw-proposal-single-v1 = { package = "cw-proposal-single", version = "0.1.0", git = "https://github.com/DA0-DA0/dao-contracts.git", tag = "v1.0.0" }
 

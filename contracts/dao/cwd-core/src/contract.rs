@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, Reply, Response,
-    StdError, StdResult, SubMsg,
+    to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError,
+    StdResult, SubMsg,
 };
 use cw2::{get_contract_version, set_contract_version};
 use cw_utils::{parse_reply_instantiate_data, Duration};
@@ -32,7 +32,7 @@ pub fn instantiate(
     env: Env,
     info: MessageInfo,
     msg: InstantiateMsg,
-) -> Result<Response, ContractError> {
+) -> Result<Response<NeutronMsg>, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     let config = Config {
@@ -40,15 +40,16 @@ pub fn instantiate(
         description: msg.description,
         dao_uri: msg.dao_uri,
     };
+    config.validate()?;
     CONFIG.save(deps.storage, &config)?;
 
     let vote_module_msg = msg
         .voting_registry_module_instantiate_info
         .into_wasm_msg(env.contract.address.clone());
-    let vote_module_msg: SubMsg<Empty> =
+    let vote_module_msg: SubMsg<NeutronMsg> =
         SubMsg::reply_on_success(vote_module_msg, VOTE_MODULE_INSTANTIATE_REPLY_ID);
 
-    let proposal_module_msgs: Vec<SubMsg<Empty>> = msg
+    let proposal_module_msgs: Vec<SubMsg<NeutronMsg>> = msg
         .proposal_modules_instantiate_info
         .into_iter()
         .map(|info| info.into_wasm_msg(env.contract.address.clone()))
@@ -157,6 +158,7 @@ pub fn execute_update_config(
         return Err(ContractError::Unauthorized {});
     }
 
+    config.validate()?;
     CONFIG.save(deps.storage, &config)?;
     // We incur some gas costs by having the config's fields in the
     // response. This has the benefit that it makes it reasonably
@@ -166,7 +168,11 @@ pub fn execute_update_config(
     Ok(Response::default()
         .add_attribute("action", "execute_update_config")
         .add_attribute("name", config.name)
-        .add_attribute("description", config.description))
+        .add_attribute("description", config.description)
+        .add_attribute(
+            "dao_uri",
+            config.dao_uri.unwrap_or_else(|| String::from("None")),
+        ))
 }
 
 pub fn execute_update_voting_module(
@@ -519,7 +525,7 @@ pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, 
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
+pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response<NeutronMsg>, ContractError> {
     match msg.id {
         PROPOSAL_MODULE_REPLY_ID => {
             let res = parse_reply_instantiate_data(msg)?;

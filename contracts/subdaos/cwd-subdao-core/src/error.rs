@@ -1,5 +1,7 @@
 use cosmwasm_std::{Addr, StdError};
 use cw_utils::ParseReplyError;
+use exec_control::pause::PauseError;
+use neutron_subdao_core::error::ContractError as BaseContractError;
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]
@@ -10,11 +12,14 @@ pub enum ContractError {
     #[error(transparent)]
     ParseReplyError(#[from] ParseReplyError),
 
+    #[error(transparent)]
+    PauseError(#[from] PauseError),
+
+    #[error(transparent)]
+    BaseContractError(#[from] BaseContractError),
+
     #[error("Unauthorized.")]
     Unauthorized {},
-
-    #[error("The contract is paused.")]
-    Paused {},
 
     #[error("Execution would result in no proposal modules being active.")]
     NoActiveProposalModules {},

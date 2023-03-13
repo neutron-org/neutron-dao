@@ -1,6 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "ListBondersResponse",
+  "description": "Represents a response model for voting vault's ListBonders calls.",
   "type": "object",
   "required": [
     "bonders"
@@ -15,6 +16,7 @@
   },
   "definitions": {
     "BonderBalanceResponse": {
+      "description": "Represents a single bonder balance model for voting vault's ListBonders calls.",
       "type": "object",
       "required": [
         "address",

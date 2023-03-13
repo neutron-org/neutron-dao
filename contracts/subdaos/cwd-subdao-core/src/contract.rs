@@ -5,18 +5,25 @@ use cosmwasm_std::{
     StdError, StdResult, SubMsg,
 };
 use cw2::{get_contract_version, set_contract_version};
-use cw_utils::{parse_reply_instantiate_data, Duration};
-
 use cw_paginate::{paginate_map, paginate_map_values};
+use cw_utils::parse_reply_instantiate_data;
 use cwd_interface::{voting, ModuleInstantiateInfo};
+use cwd_voting::pre_propose::ProposalCreationPolicy;
+use exec_control::pause::{
+    can_pause, can_unpause, validate_duration, PauseError, PauseInfoResponse,
+};
 use neutron_bindings::bindings::msg::NeutronMsg;
+use neutron_subdao_core::msg::{ExecuteMsg, InitialItem, InstantiateMsg, MigrateMsg, QueryMsg};
+use neutron_subdao_core::types::{
+    Config, DumpStateResponse, GetItemResponse, ProposalModule, ProposalModuleStatus, SubDao,
+};
+use neutron_subdao_pre_propose_single::msg::QueryMsg as PreProposeQueryMsg;
+use neutron_subdao_proposal_single::msg::QueryMsg as ProposeQueryMsg;
 
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InitialItem, InstantiateMsg, MigrateMsg, QueryMsg};
-use crate::query::{DumpStateResponse, GetItemResponse, PauseInfoResponse, SubDao};
 use crate::state::{
-    Config, ProposalModule, ProposalModuleStatus, ACTIVE_PROPOSAL_MODULE_COUNT, CONFIG, ITEMS,
-    PAUSED, PROPOSAL_MODULES, SUBDAO_LIST, TOTAL_PROPOSAL_MODULE_COUNT, VOTE_MODULE,
+    ACTIVE_PROPOSAL_MODULE_COUNT, CONFIG, ITEMS, PAUSED_UNTIL, PROPOSAL_MODULES, SUBDAO_LIST,
+    TOTAL_PROPOSAL_MODULE_COUNT, VOTE_MODULE,
 };
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:cwd-subdao-core";
@@ -39,8 +46,12 @@ pub fn instantiate(
         name: msg.name,
         description: msg.description,
         dao_uri: msg.dao_uri,
+        main_dao: deps.api.addr_validate(&msg.main_dao)?,
+        security_dao: deps.api.addr_validate(&msg.security_dao)?,
     };
+    config.validate()?;
     CONFIG.save(deps.storage, &config)?;
+    PAUSED_UNTIL.save(deps.storage, &None)?;
 
     let vote_module_msg = msg
         .vote_module_instantiate_info
@@ -79,11 +90,15 @@ pub fn execute(
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response<NeutronMsg>, ContractError> {
-    // No actions can be performed while the DAO is paused.
-    if let Some(expiration) = PAUSED.may_load(deps.storage)? {
-        if !expiration.is_expired(&env.block) {
-            return Err(ContractError::Paused {});
+    match get_pause_info(deps.as_ref(), &env)? {
+        PauseInfoResponse::Paused { .. } => {
+            return match msg {
+                ExecuteMsg::Pause { duration } => execute_pause(deps, env, info.sender, duration),
+                ExecuteMsg::Unpause {} => execute_unpause(deps, info.sender),
+                _ => Err(ContractError::PauseError(PauseError::Paused {})),
+            };
         }
+        PauseInfoResponse::Unpaused {} => (),
     }
 
     match msg {
@@ -91,19 +106,22 @@ pub fn execute(
             execute_proposal_hook(deps.as_ref(), info.sender, msgs)
         }
         ExecuteMsg::Pause { duration } => execute_pause(deps, env, info.sender, duration),
-        ExecuteMsg::RemoveItem { key } => execute_remove_item(deps, env, info.sender, key),
-        ExecuteMsg::SetItem { key, addr } => execute_set_item(deps, env, info.sender, key, addr),
-        ExecuteMsg::UpdateConfig { config } => {
-            execute_update_config(deps, env, info.sender, config)
-        }
+        ExecuteMsg::Unpause {} => execute_unpause(deps, info.sender),
+        ExecuteMsg::RemoveItem { key } => execute_remove_item(deps, info.sender, key),
+        ExecuteMsg::SetItem { key, addr } => execute_set_item(deps, info.sender, key, addr),
+        ExecuteMsg::UpdateConfig {
+            name,
+            description,
+            dao_uri,
+        } => execute_update_config(deps, info.sender, name, description, dao_uri),
         ExecuteMsg::UpdateVotingModule { module } => {
-            execute_update_voting_module(env, info.sender, module)
+            execute_update_voting_module(deps, env, info.sender, module)
         }
         ExecuteMsg::UpdateProposalModules { to_add, to_disable } => {
             execute_update_proposal_modules(deps, env, info.sender, to_add, to_disable)
         }
         ExecuteMsg::UpdateSubDaos { to_add, to_remove } => {
-            execute_update_sub_daos_list(deps, env, info.sender, to_add, to_remove)
+            execute_update_sub_daos_list(deps, info.sender, to_add, to_remove)
         }
     }
 }
@@ -112,20 +130,40 @@ pub fn execute_pause(
     deps: DepsMut,
     env: Env,
     sender: Addr,
-    pause_duration: Duration,
+    duration: u64,
 ) -> Result<Response<NeutronMsg>, ContractError> {
-    if sender != env.contract.address {
-        return Err(ContractError::Unauthorized {});
+    let config: Config = CONFIG.load(deps.storage)?;
+
+    can_pause(&sender, &config.main_dao, &config.security_dao)?;
+    validate_duration(duration)?;
+
+    let paused_until_height: u64 = env.block.height + duration;
+
+    let already_paused_until = PAUSED_UNTIL.load(deps.storage)?;
+    if already_paused_until.unwrap_or(0u64) >= paused_until_height {
+        return Err(ContractError::PauseError(PauseError::InvalidDuration(
+            "contracts are already paused for a greater or equal duration".to_string(),
+        )));
     }
 
-    let until = pause_duration.after(&env.block);
-
-    PAUSED.save(deps.storage, &until)?;
+    PAUSED_UNTIL.save(deps.storage, &Some(paused_until_height))?;
 
     Ok(Response::new()
         .add_attribute("action", "execute_pause")
         .add_attribute("sender", sender)
-        .add_attribute("until", until.to_string()))
+        .add_attribute("paused_until_height", paused_until_height.to_string()))
+}
+
+pub fn execute_unpause(deps: DepsMut, sender: Addr) -> Result<Response<NeutronMsg>, ContractError> {
+    let config: Config = CONFIG.load(deps.storage)?;
+
+    can_unpause(&sender, &config.main_dao)?;
+
+    PAUSED_UNTIL.save(deps.storage, &None)?;
+
+    Ok(Response::new()
+        .add_attribute("action", "execute_unpause")
+        .add_attribute("sender", sender))
 }
 
 pub fn execute_proposal_hook(
@@ -149,34 +187,46 @@ pub fn execute_proposal_hook(
 
 pub fn execute_update_config(
     deps: DepsMut,
-    env: Env,
     sender: Addr,
-    config: Config,
+    name: Option<String>,
+    description: Option<String>,
+    dao_uri: Option<String>,
 ) -> Result<Response<NeutronMsg>, ContractError> {
-    if env.contract.address != sender {
-        return Err(ContractError::Unauthorized {});
+    execution_access_check(deps.as_ref(), sender)?;
+
+    let mut config: Config = CONFIG.load(deps.storage)?;
+    if let Some(name) = name {
+        config.name = name;
+    }
+    if let Some(description) = description {
+        config.description = description;
+    }
+    if let Some(dao_uri) = dao_uri {
+        config.dao_uri = Some(dao_uri);
     }
 
+    config.validate()?;
     CONFIG.save(deps.storage, &config)?;
-    // We incur some gas costs by having the config's fields in the
-    // response. This has the benefit that it makes it reasonably
-    // simple to ask "when did this field in the config change" by
-    // running something like `junod query txs --events
-    // 'wasm._contract_address=core&wasm.name=name'`.
+
     Ok(Response::default()
         .add_attribute("action", "execute_update_config")
         .add_attribute("name", config.name)
-        .add_attribute("description", config.description))
+        .add_attribute("description", config.description)
+        .add_attribute(
+            "dao_uri",
+            config.dao_uri.unwrap_or_else(|| String::from("None")),
+        )
+        .add_attribute("main_dao", config.main_dao)
+        .add_attribute("security_dao", config.security_dao))
 }
 
 pub fn execute_update_voting_module(
+    deps: DepsMut,
     env: Env,
     sender: Addr,
     module: ModuleInstantiateInfo,
 ) -> Result<Response<NeutronMsg>, ContractError> {
-    if env.contract.address != sender {
-        return Err(ContractError::Unauthorized {});
-    }
+    execution_access_check(deps.as_ref(), sender)?;
 
     let wasm = module.into_wasm_msg(env.contract.address);
     let submessage = SubMsg::reply_on_success(wasm, VOTE_MODULE_UPDATE_REPLY_ID);
@@ -193,9 +243,7 @@ pub fn execute_update_proposal_modules(
     to_add: Vec<ModuleInstantiateInfo>,
     to_disable: Vec<String>,
 ) -> Result<Response<NeutronMsg>, ContractError> {
-    if env.contract.address != sender {
-        return Err(ContractError::Unauthorized {});
-    }
+    execution_access_check(deps.as_ref(), sender)?;
 
     let disable_count = to_disable.len() as u32;
     for addr in to_disable {
@@ -239,14 +287,11 @@ pub fn execute_update_proposal_modules(
 
 pub fn execute_set_item(
     deps: DepsMut,
-    env: Env,
     sender: Addr,
     key: String,
     value: String,
 ) -> Result<Response<NeutronMsg>, ContractError> {
-    if env.contract.address != sender {
-        return Err(ContractError::Unauthorized {});
-    }
+    execution_access_check(deps.as_ref(), sender)?;
 
     ITEMS.save(deps.storage, key.clone(), &value)?;
     Ok(Response::default()
@@ -257,13 +302,10 @@ pub fn execute_set_item(
 
 pub fn execute_remove_item(
     deps: DepsMut,
-    env: Env,
     sender: Addr,
     key: String,
 ) -> Result<Response<NeutronMsg>, ContractError> {
-    if env.contract.address != sender {
-        return Err(ContractError::Unauthorized {});
-    }
+    execution_access_check(deps.as_ref(), sender)?;
 
     if ITEMS.has(deps.storage, key.clone()) {
         ITEMS.remove(deps.storage, key.clone());
@@ -277,14 +319,11 @@ pub fn execute_remove_item(
 
 pub fn execute_update_sub_daos_list(
     deps: DepsMut,
-    env: Env,
     sender: Addr,
     to_add: Vec<SubDao>,
     to_remove: Vec<String>,
 ) -> Result<Response<NeutronMsg>, ContractError> {
-    if env.contract.address != sender {
-        return Err(ContractError::Unauthorized {});
-    }
+    execution_access_check(deps.as_ref(), sender.clone())?;
 
     for addr in to_remove {
         let addr = deps.api.addr_validate(&addr)?;
@@ -325,6 +364,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
             query_list_sub_daos(deps, start_after, limit)
         }
         QueryMsg::DaoURI {} => query_dao_uri(deps),
+        QueryMsg::MainDao {} => query_main_dao(deps),
     }
 }
 
@@ -395,13 +435,15 @@ pub fn query_active_proposal_modules(
     )
 }
 
-fn get_pause_info(deps: Deps, env: Env) -> StdResult<PauseInfoResponse> {
-    Ok(match PAUSED.may_load(deps.storage)? {
-        Some(expiration) => {
-            if expiration.is_expired(&env.block) {
+fn get_pause_info(deps: Deps, env: &Env) -> StdResult<PauseInfoResponse> {
+    Ok(match PAUSED_UNTIL.may_load(deps.storage)?.unwrap_or(None) {
+        Some(paused_until_height) => {
+            if env.block.height.ge(&paused_until_height) {
                 PauseInfoResponse::Unpaused {}
             } else {
-                PauseInfoResponse::Paused { expiration }
+                PauseInfoResponse::Paused {
+                    until_height: paused_until_height,
+                }
             }
         }
         None => PauseInfoResponse::Unpaused {},
@@ -409,7 +451,7 @@ fn get_pause_info(deps: Deps, env: Env) -> StdResult<PauseInfoResponse> {
 }
 
 pub fn query_paused(deps: Deps, env: Env) -> StdResult<Binary> {
-    to_binary(&get_pause_info(deps, env)?)
+    to_binary(&get_pause_info(deps, &env)?)
 }
 
 pub fn query_dump_state(deps: Deps, env: Env) -> StdResult<Binary> {
@@ -419,7 +461,7 @@ pub fn query_dump_state(deps: Deps, env: Env) -> StdResult<Binary> {
         .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
         .map(|kv| Ok(kv?.1))
         .collect::<StdResult<Vec<ProposalModule>>>()?;
-    let pause_info = get_pause_info(deps, env)?;
+    let pause_info = get_pause_info(deps, &env)?;
     let version = get_contract_version(deps.storage)?;
     let active_proposal_module_count = ACTIVE_PROPOSAL_MODULE_COUNT.load(deps.storage)?;
     let total_proposal_module_count = TOTAL_PROPOSAL_MODULE_COUNT.load(deps.storage)?;
@@ -513,6 +555,11 @@ pub fn query_dao_uri(deps: Deps) -> StdResult<Binary> {
     to_binary(&config.dao_uri)
 }
 
+pub fn query_main_dao(deps: Deps) -> StdResult<Binary> {
+    let config = CONFIG.load(deps.storage)?;
+    to_binary(&config.main_dao)
+}
+
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     Ok(Response::default())
@@ -568,6 +615,30 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
         }
         _ => Err(ContractError::UnknownReplyID {}),
     }
+}
+
+/// Validates the sender permissions to execute contract's messages. Valid senders are timelock
+/// contracts behind proposal modules of the DAO.
+pub(crate) fn execution_access_check(deps: Deps, sender: Addr) -> Result<(), ContractError> {
+    let proposal_modules = PROPOSAL_MODULES
+        .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
+        .map(|kv| Ok(kv?.1))
+        .collect::<StdResult<Vec<ProposalModule>>>()?;
+    for proposal_module in proposal_modules.iter() {
+        let policy: ProposalCreationPolicy = deps.querier.query_wasm_smart(
+            &proposal_module.address,
+            &ProposeQueryMsg::ProposalCreationPolicy {},
+        )?;
+        if let ProposalCreationPolicy::Module { addr } = policy {
+            let timelock_contract: Addr = deps
+                .querier
+                .query_wasm_smart(&addr, &PreProposeQueryMsg::TimelockAddress {})?;
+            if sender == timelock_contract {
+                return Ok(());
+            }
+        };
+    }
+    Err(ContractError::Unauthorized {})
 }
 
 pub(crate) fn derive_proposal_module_prefix(mut dividend: usize) -> StdResult<String> {

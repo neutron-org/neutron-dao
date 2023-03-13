@@ -16,7 +16,7 @@ backtraces = ["cosmwasm-std/backtraces"]
 library = []
 
 [dependencies]
-neutron_bindings = { package = "neutron-sdk", version = "0.1.0" }
+neutron_bindings = { package = "neutron-sdk", git = "https://github.com/neutron-org/neutron-sdk.git", rev = "c19b40c024eeaa8733af9ddee94a52798d78f469" }
 cosmwasm-std = { version = "1.0.0" }
 cosmwasm-storage = { version = "1.0.0" }
 cw-storage-plus = "0.13"
@@ -28,8 +28,10 @@ serde = { version = "1.0.147", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0" }
 cwd-interface = { path = "../../../packages/cwd-interface" }
 cwd-macros = { path = "../../../packages/cwd-macros" }
-neutron-timelock = { path = "../../../packages/neutron-timelock" }
+neutron-subdao-pre-propose-single = { path = "../../../packages/neutron-subdao-pre-propose-single" }
+neutron-subdao-timelock-single = { path = "../../../packages/neutron-subdao-timelock-single" }
 cwd-pre-propose-base = { path = "../../../packages/cwd-pre-propose-base" }
+neutron-subdao-core = { path = "../../../packages/neutron-subdao-core" }
 
 [dev-dependencies]
 cosmwasm-schema = { version = "1.0.0" }

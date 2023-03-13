@@ -27,27 +27,6 @@
       "additionalProperties": false
     },
     {
-      "description": "Pauses the DAO for a set duration. When paused the DAO is unable to execute proposals",
-      "type": "object",
-      "required": [
-        "pause"
-      ],
-      "properties": {
-        "pause": {
-          "type": "object",
-          "required": [
-            "duration"
-          ],
-          "properties": {
-            "duration": {
-              "$ref": "#/definitions/Duration"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
       "description": "Removes an item from the governance contract's item map.",
       "type": "object",
       "required": [
@@ -102,12 +81,24 @@
       "properties": {
         "update_config": {
           "type": "object",
-          "required": [
-            "config"
-          ],
           "properties": {
-            "config": {
-              "$ref": "#/definitions/Config"
+            "dao_uri": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "description": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "name": {
+              "type": [
+                "string",
+                "null"
+              ]
             }
           }
         }
@@ -196,6 +187,40 @@
         }
       },
       "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "pause"
+      ],
+      "properties": {
+        "pause": {
+          "type": "object",
+          "required": [
+            "duration"
+          ],
+          "properties": {
+            "duration": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "unpause"
+      ],
+      "properties": {
+        "unpause": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
     }
   ],
   "definitions": {
@@ -239,21 +264,48 @@
       ]
     },
     "AdminProposal": {
-      "description": "AdminProposal defines the struct for various proposals which Neutron's Admin Module may accept. Currently only parameter change proposals are implemented, new types of admin proposals may be implemented in future.",
-      "type": "object",
-      "properties": {
-        "param_change_proposal": {
-          "description": "*param_change_proposal** is a parameter change proposal field.",
-          "anyOf": [
-            {
+      "description": "AdminProposal defines the struct for various proposals which Neutron's Admin Module may accept.",
+      "oneOf": [
+        {
+          "description": "*ParamChangeProposal** is a parameter change proposal field.",
+          "type": "object",
+          "required": [
+            "param_change_proposal"
+          ],
+          "properties": {
+            "param_change_proposal": {
               "$ref": "#/definitions/ParamChangeProposal"
-            },
-            {
-              "type": "null"
             }
-          ]
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "*SoftwareUpgradeProposal** is a software upgrade proposal field.",
+          "type": "object",
+          "required": [
+            "software_upgrade_proposal"
+          ],
+          "properties": {
+            "software_upgrade_proposal": {
+              "$ref": "#/definitions/SoftwareUpgradeProposal"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "*CancelSoftwareUpgradeProposal** is a cancel software upgrade proposal field.",
+          "type": "object",
+          "required": [
+            "cancel_software_upgrade_proposal"
+          ],
+          "properties": {
+            "cancel_software_upgrade_proposal": {
+              "$ref": "#/definitions/CancelSoftwareUpgradeProposal"
+            }
+          },
+          "additionalProperties": false
         }
-      }
+      ]
     },
     "BankMsg": {
       "description": "The message types of the bank module.\n\nSee https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/bank/v1beta1/tx.proto",
@@ -316,6 +368,24 @@
       "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization with serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>. See also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
       "type": "string"
     },
+    "CancelSoftwareUpgradeProposal": {
+      "description": "CancelSoftwareUpgradeProposal defines the struct for cancel software upgrade proposal.",
+      "type": "object",
+      "required": [
+        "description",
+        "title"
+      ],
+      "properties": {
+        "description": {
+          "description": "*description** is a text description of proposal. Non unique.",
+          "type": "string"
+        },
+        "title": {
+          "description": "*title** is a text title of proposal. Non unique.",
+          "type": "string"
+        }
+      }
+    },
     "Coin": {
       "type": "object",
       "required": [
@@ -327,31 +397,6 @@
           "$ref": "#/definitions/Uint128"
         },
         "denom": {
-          "type": "string"
-        }
-      }
-    },
-    "Config": {
-      "description": "Top level config type for core module.",
-      "type": "object",
-      "required": [
-        "description",
-        "name"
-      ],
-      "properties": {
-        "dao_uri": {
-          "description": "The URI for the DAO as defined by the DAOstar standard https://daostar.one/EIP",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "description": {
-          "description": "A description of the contract.",
-          "type": "string"
-        },
-        "name": {
-          "description": "The name of the contract.",
           "type": "string"
         }
       }
@@ -512,40 +557,6 @@
                   "type": "string"
                 }
               }
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
-    "Duration": {
-      "description": "Duration is a delta of time. You can add it to a BlockInfo or Expiration to move that further in the future. Note that an height-based Duration and a time-based Expiration cannot be combined",
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "height"
-          ],
-          "properties": {
-            "height": {
-              "type": "integer",
-              "format": "uint64",
-              "minimum": 0.0
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "description": "Time in seconds",
-          "type": "object",
-          "required": [
-            "time"
-          ],
-          "properties": {
-            "time": {
-              "type": "integer",
-              "format": "uint64",
-              "minimum": 0.0
             }
           },
           "additionalProperties": false
@@ -781,7 +792,7 @@
           ]
         },
         "path": {
-          "description": "*path** is a path to the storage (storage prefix) where you want to read value by key (usually name of cosmos-sdk module: 'staking', 'bank', etc.)",
+          "description": "*path** is a path to the storage (storage prefix) where you want to read value by key (usually name of cosmos-packages module: 'staking', 'bank', etc.)",
           "type": "string"
         }
       }
@@ -1140,7 +1151,7 @@
       ],
       "properties": {
         "description": {
-          "description": "*descriptionr** is a text description of proposal. Non unique.",
+          "description": "*description** is a text description of proposal. Non unique.",
           "type": "string"
         },
         "param_changes": {
@@ -1152,6 +1163,30 @@
         },
         "title": {
           "description": "*title** is a text title of proposal. Non unique.",
+          "type": "string"
+        }
+      }
+    },
+    "Plan": {
+      "description": "Plan defines the struct for planned upgrade.",
+      "type": "object",
+      "required": [
+        "height",
+        "info",
+        "name"
+      ],
+      "properties": {
+        "height": {
+          "description": "*height** is a height at which the upgrade must be performed",
+          "type": "integer",
+          "format": "int64"
+        },
+        "info": {
+          "description": "*info** is any application specific upgrade info to be included on-chain",
+          "type": "string"
+        },
+        "name": {
+          "description": "*name** is a name for the upgrade",
           "type": "string"
         }
       }
@@ -1196,6 +1231,33 @@
           ],
           "format": "uint64",
           "minimum": 0.0
+        }
+      }
+    },
+    "SoftwareUpgradeProposal": {
+      "description": "SoftwareUpgradeProposal defines the struct for software upgrade proposal.",
+      "type": "object",
+      "required": [
+        "description",
+        "plan",
+        "title"
+      ],
+      "properties": {
+        "description": {
+          "description": "*description** is a text description of proposal. Non unique.",
+          "type": "string"
+        },
+        "plan": {
+          "description": "*plan** is a plan of upgrade.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Plan"
+            }
+          ]
+        },
+        "title": {
+          "description": "*title** is a text title of proposal. Non unique.",
+          "type": "string"
         }
       }
     },

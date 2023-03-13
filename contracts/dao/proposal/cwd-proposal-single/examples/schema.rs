@@ -28,7 +28,7 @@ fn main() {
     export_schema(&schema_for!(VoteResponse), &out_dir);
 
     // Auto TS code generation expects the query return type as QueryNameResponse
-    // Here we map query resonses to the correct name
+    // Here we map query responses to the correct name
     export_schema_with_title(&schema_for!(Config), &out_dir, "ConfigResponse");
     export_schema_with_title(
         &schema_for!(Vec<Addr>),

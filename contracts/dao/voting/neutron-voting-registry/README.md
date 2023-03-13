@@ -1,7 +1,3 @@
-# CW Native Staked Balance Voting
+### Voting Power Registry
 
-Simple native token voting contract which assumes the native denom
-provided is not used for staking for securing the network e.g. IBC
-denoms or secondary tokens (ION). Staked balances may be queried at an
-arbitrary height. This contract implements the interface needed to be
-a DAO DAO voting module.
+Instead of a single voting power module, Neutron DAO core contract interacts with the *Voting Power Registry* contract that keeps track of multiple *Voting Vaults*. There can be many Voting Vault implementations, but at the launch Neutron will only have one vault implementation for bonding native NTRN tokens.

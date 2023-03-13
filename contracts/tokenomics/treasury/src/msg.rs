@@ -1,10 +1,11 @@
 use cosmwasm_std::{Decimal, Uint128};
+use cwd_macros::{pausable, pausable_query};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct InstantiateMsg {
-    pub owner: String,
+    pub main_dao_address: String,
     pub denom: String,
     /// Distribution rate (0-1) which goes to distribution contract
     pub distribution_rate: Decimal,
@@ -14,8 +15,13 @@ pub struct InstantiateMsg {
     pub distribution_contract: String,
     /// Address of reserve contract
     pub reserve_contract: String,
+    /// Address of security DAO contract
+    pub security_dao_address: String,
+    /// Vesting release function denominator
+    pub vesting_denominator: u128,
 }
 
+#[pausable]
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
@@ -31,9 +37,12 @@ pub enum ExecuteMsg {
         min_period: Option<u64>,
         distribution_contract: Option<String>,
         reserve_contract: Option<String>,
+        security_dao_address: Option<String>,
+        vesting_denominator: Option<u128>,
     },
 }
 
+#[pausable_query]
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
@@ -45,9 +54,9 @@ pub enum QueryMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct StatsResponse {
-    pub total_received: Uint128,
     pub total_distributed: Uint128,
     pub total_reserved: Uint128,
+    pub total_processed_burned_coins: Uint128,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]

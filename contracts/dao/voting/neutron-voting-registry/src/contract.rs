@@ -9,7 +9,7 @@ use cwd_interface::{voting, Admin};
 use neutron_vault::msg::QueryMsg as VaultQueryMsg;
 
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, VotingVault};
 use crate::state::{Config, CONFIG, DAO};
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-voting-registry";
@@ -37,12 +37,15 @@ pub fn instantiate(
         .map(|manager| deps.api.addr_validate(&manager))
         .transpose()?;
 
-    let voting_vault = deps.api.addr_validate(&msg.voting_vault)?;
+    let mut voting_vaults: Vec<Addr> = vec![];
+    for vault in msg.voting_vaults.iter() {
+        voting_vaults.push(deps.api.addr_validate(vault)?);
+    }
 
     let config = Config {
         owner,
         manager,
-        voting_vaults: vec![voting_vault],
+        voting_vaults,
     };
 
     CONFIG.save(deps.storage, &config)?;
@@ -192,20 +195,28 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::Info {} => query_info(deps),
         QueryMsg::Dao {} => query_dao(deps),
         QueryMsg::GetConfig {} => to_binary(&CONFIG.load(deps.storage)?),
-        QueryMsg::VotingVaults {} => query_voting_vaults(deps),
+        QueryMsg::VotingVaults {} => to_binary(&query_voting_vaults(deps)?),
     }
 }
 
-pub fn query_voting_vaults(deps: Deps) -> StdResult<Binary> {
-    let mut voting_vaults: Vec<(Addr, String)> = vec![];
+pub fn query_voting_vaults(deps: Deps) -> StdResult<Vec<VotingVault>> {
+    let mut voting_vaults: Vec<VotingVault> = vec![];
     for vault in CONFIG.load(deps.storage)?.voting_vaults.iter() {
         let vault_description: String = deps
             .querier
             .query_wasm_smart(vault, &VaultQueryMsg::Description {})?;
-        voting_vaults.push((vault.clone(), vault_description));
+        let vault_name: String = deps
+            .querier
+            .query_wasm_smart(vault, &VaultQueryMsg::Name {})?;
+
+        voting_vaults.push(VotingVault {
+            address: vault.to_string(),
+            name: vault_name,
+            description: vault_description,
+        });
     }
 
-    to_binary(&voting_vaults)
+    Ok(voting_vaults)
 }
 
 pub fn query_voting_power_at_height(
