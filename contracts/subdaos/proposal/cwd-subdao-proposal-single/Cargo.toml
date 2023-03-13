@@ -16,7 +16,7 @@ backtraces = ["cosmwasm-std/backtraces"]
 library = []
 
 [dependencies]
-neutron_bindings = { package = "neutron-sdk", git = "https://github.com/neutron-org/neutron-sdk.git", rev = "7be02a42212ad160432c827a431936d6e01b90cf" }
+neutron_bindings = { package = "neutron-sdk", git = "https://github.com/neutron-org/neutron-sdk.git", rev = "5b181ffdebb7181ba931ac8ed4ced57553061add" }
 cosmwasm-std = { version = "1.0.0", features = ["ibc3"] }
 cosmwasm-storage = { version = "1.0.0" }
 cw-storage-plus = "0.13"
