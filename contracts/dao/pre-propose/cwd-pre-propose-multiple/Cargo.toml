@@ -21,7 +21,7 @@ cw2 = "0.13.2"
 serde = { version = "1.0.147", default-features = false, features = ["derive"] }
 cwd-pre-propose-base = { version = "*", path = "../../../../packages/cwd-pre-propose-base" }
 cwd-voting = { path = "../../../../packages/cwd-voting" }
-neutron_bindings = { package = "neutron-sdk", git = "https://github.com/neutron-org/neutron-sdk.git", rev = "5b181ffdebb7181ba931ac8ed4ced57553061add" }
+neutron_bindings = { package = "neutron-sdk", git = "https://github.com/neutron-org/neutron-sdk.git", rev = "8c1792af25daec6884c01691b5448bbe990af100" }
 schemars = "0.8.8"
 cosmwasm-schema = "1.0.0"
 
