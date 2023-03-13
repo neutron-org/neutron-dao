@@ -52,32 +52,3 @@ pub fn pre_propose_multiple_contract() -> Box<dyn Contract<Empty>> {
     );
     Box::new(contract)
 }
-
-// pub fn native_staked_balances_voting_contract() -> Box<dyn Contract<Empty>> {
-//     let contract = ContractWrapper::new(
-//         cwd_voting_native_staked::contract::execute,
-//         cwd_voting_native_staked::contract::instantiate,
-//         cwd_voting_native_staked::contract::query,
-//     );
-//     Box::new(contract)
-// }
-
-// pub fn cwd_core_contract() -> Box<dyn Contract<Empty>> {
-//     let contract = ContractWrapper::new(
-//         cwd_core::contract::execute,
-//         cwd_core::contract::instantiate,
-//         cwd_core::contract::query,
-//     )
-//     .with_reply(cwd_core::contract::reply);
-//     Box::new(contract)
-// }
-
-// pub fn cwd_voting_cw4_contract() -> Box<dyn Contract<Empty>> {
-//     let contract = ContractWrapper::new(
-//         cwd_voting_cw4::contract::execute,
-//         cwd_voting_cw4::contract::instantiate,
-//         cwd_voting_cw4::contract::query,
-//     )
-//     .with_reply(cwd_voting_cw4::contract::reply);
-//     Box::new(contract)
-// }
