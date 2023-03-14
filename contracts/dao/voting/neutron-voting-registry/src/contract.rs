@@ -220,7 +220,9 @@ pub fn query_voting_power_at_height(
                 address: address.clone(),
             },
         )?;
-        total_power.power += total_power_single_vault.power;
+        total_power.power = total_power
+            .power
+            .checked_add(total_power_single_vault.power)?;
         total_power.height = total_power_single_vault.height;
     }
 
@@ -242,7 +244,9 @@ pub fn query_total_power_at_height(
         let total_power_single_vault: TotalPowerAtHeightResponse = deps
             .querier
             .query_wasm_smart(vault, &voting::Query::TotalPowerAtHeight { height })?;
-        total_power.power += total_power_single_vault.power;
+        total_power.power = total_power
+            .power
+            .checked_add(total_power_single_vault.power)?;
         total_power.height = total_power_single_vault.height;
     }
 
