@@ -10,7 +10,7 @@ pub struct InstantiateMsg {
     // Description contains information that characterizes the vault.
     pub description: String,
     // Owner can update all configs including changing the owner. This will generally be a DAO.
-    pub owner: Option<Admin>,
+    pub owner: Admin,
     // Manager can update all configs except changing the owner. This will generally be an operations multisig for a DAO.
     pub manager: Option<String>,
 }
@@ -20,7 +20,7 @@ pub struct InstantiateMsg {
 pub enum ExecuteMsg {
     UpdateConfig {
         credits_contract_address: Option<String>,
-        owner: Option<Admin>,
+        owner: String,
         manager: Option<String>,
         description: Option<String>,
     },

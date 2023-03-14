@@ -94,7 +94,7 @@ fn update_config(
     contract_addr: Addr,
     sender: &str,
     credits_contract_address: Option<String>,
-    owner: Option<Admin>,
+    owner: String,
     manager: Option<String>,
     description: Option<String>,
 ) -> anyhow::Result<AppResponse> {
@@ -154,9 +154,9 @@ fn test_instantiate() {
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::Address {
+            owner: Admin::Address {
                 addr: DAO_ADDR.to_string(),
-            }),
+            },
             manager: Some(ADDR1.to_string()),
         },
     );
@@ -168,7 +168,9 @@ fn test_instantiate() {
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: None,
+            owner: Admin::Address {
+                addr: DAO_ADDR.to_string(),
+            },
             manager: None,
         },
     );
@@ -187,14 +189,14 @@ fn test_instantiate_dao_owner() {
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
         },
     );
 
     let config = get_config(&mut app, addr);
 
-    assert_eq!(config.owner, Some(Addr::unchecked(DAO_ADDR)))
+    assert_eq!(config.owner, Addr::unchecked(DAO_ADDR))
 }
 
 #[test]
@@ -210,7 +212,7 @@ fn test_update_config_invalid_sender() {
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
         },
     );
@@ -221,9 +223,7 @@ fn test_update_config_invalid_sender() {
         addr,
         ADDR2,
         Some(credits_contract.to_string()),
-        Some(Admin::Address {
-            addr: ADDR1.to_string(),
-        }),
+        ADDR1.to_string(),
         Some(DAO_ADDR.to_string()),
         Some(NEW_DESCRIPTION.to_string()),
     )
@@ -243,7 +243,7 @@ fn test_update_config_non_owner_changes_owner() {
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
         },
     );
@@ -254,9 +254,7 @@ fn test_update_config_non_owner_changes_owner() {
         addr,
         ADDR1,
         Some(credits_contract.to_string()),
-        Some(Admin::Address {
-            addr: ADDR2.to_string(),
-        }),
+        ADDR2.to_string(),
         None,
         None,
     )
@@ -275,7 +273,7 @@ fn test_update_config_as_owner() {
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
         },
     );
@@ -286,9 +284,7 @@ fn test_update_config_as_owner() {
         addr.clone(),
         DAO_ADDR,
         Some(credits_contract.to_string()),
-        Some(Admin::Address {
-            addr: ADDR1.to_string(),
-        }),
+        ADDR1.to_string(),
         Some(DAO_ADDR.to_string()),
         Some(NEW_DESCRIPTION.to_string()),
     )
@@ -299,7 +295,7 @@ fn test_update_config_as_owner() {
         Config {
             credits_contract_address: Addr::unchecked(credits_contract),
             description: NEW_DESCRIPTION.to_string(),
-            owner: Some(Addr::unchecked(ADDR1)),
+            owner: Addr::unchecked(ADDR1),
             manager: Some(Addr::unchecked(DAO_ADDR)),
         },
         config
@@ -318,7 +314,7 @@ fn test_update_config_as_manager() {
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
         },
     );
@@ -329,9 +325,7 @@ fn test_update_config_as_manager() {
         addr.clone(),
         ADDR1,
         Some(credits_contract.to_string()),
-        Some(Admin::Address {
-            addr: DAO_ADDR.to_string(),
-        }),
+        DAO_ADDR.to_string(),
         Some(ADDR2.to_string()),
         Some(NEW_DESCRIPTION.to_string()),
     )
@@ -342,7 +336,7 @@ fn test_update_config_as_manager() {
         Config {
             credits_contract_address: Addr::unchecked(credits_contract),
             description: NEW_DESCRIPTION.to_string(),
-            owner: Some(Addr::unchecked(DAO_ADDR)),
+            owner: Addr::unchecked(DAO_ADDR),
             manager: Some(Addr::unchecked(ADDR2)),
         },
         config
@@ -362,7 +356,7 @@ fn test_update_config_invalid_description() {
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
         },
     );
@@ -373,9 +367,7 @@ fn test_update_config_invalid_description() {
         addr,
         ADDR1,
         Some(credits_contract.to_string()),
-        Some(Admin::Address {
-            addr: DAO_ADDR.to_string(),
-        }),
+        DAO_ADDR.to_string(),
         Some(ADDR2.to_string()),
         Some(String::from("")),
     )
@@ -394,7 +386,7 @@ fn test_query_dao() {
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
         },
     );
@@ -416,7 +408,7 @@ fn test_query_info() {
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
         },
     );
@@ -438,7 +430,7 @@ fn test_query_get_config() {
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
         },
     );
@@ -449,7 +441,7 @@ fn test_query_get_config() {
         Config {
             credits_contract_address: Addr::unchecked(credits_contract),
             description: DESCRIPTION.to_string(),
-            owner: Some(Addr::unchecked(DAO_ADDR)),
+            owner: Addr::unchecked(DAO_ADDR),
             manager: Some(Addr::unchecked(ADDR1)),
         }
     )
@@ -467,7 +459,7 @@ fn test_voting_power_queries() {
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
         },
     );
