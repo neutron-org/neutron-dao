@@ -13,10 +13,7 @@ use serde::{Deserialize, Serialize};
 use serde::de::Unexpected::Map;
 
 use crate::error;
-use crate::msg::{
-    ExecuteMsg, InstantiateMsg, ProposeMessage, ProposeMessageInternal, QueryMsg,
-    TimelockExecuteMsg,
-};
+use crate::msg::{DaoProposalQueryMsg, ExecuteMsg, InstantiateMsg, MainDaoQueryMsg, ProposeMessage, ProposeMessageInternal, QueryMsg, SubDao, TimelockConfig, TimelockExecuteMsg, TimelockQueryMsg};
 // use crate::state::{Config, CONFIG};
 use cwd_pre_propose_base::{
     error::PreProposeError,
@@ -31,85 +28,12 @@ use neutron_subdao_timelock_single::types as TimelockTypes;
 use neutron_subdao_proposal_single::types as SubdaoProposalTypes;
 use neutron_subdao_proposal_single::msg as SubdaoProposalMsg;
 use cwd_voting::pre_propose::ProposalCreationPolicy;
+use neutron_subdao_pre_propose_single::msg::QueryMsg as SubdaoPreProposeQueryMsg;
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:cwd-pre-propose-single-overrule";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 type PrePropose = PreProposeContract<ProposeMessageInternal>;
-
-// EXTERNAL TYPES SECTION BEGIN
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum MainDaoQueryMsg {
-    ListSubDaos {
-        start_after: Option<String>,
-        limit: Option<u32>,
-    },
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-pub struct SubDao {
-    /// The contract address of the SubDAO
-    pub addr: String,
-    /// The purpose/constitution for the SubDAO
-    pub charter: Option<String>,
-}
-
-#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
-#[serde(rename_all = "snake_case")]
-pub enum TimelockQueryMsg {
-    /// Gets the config. Returns `state::Config`.
-    Config {},
-
-    /// Gets information about a proposal. Returns
-    /// `proposals::Proposal`.
-    Proposal { proposal_id: u64 },
-}
-
-#[derive(Serialize, Deserialize, Clone, JsonSchema, Debug, Eq, PartialEq)]
-pub struct SingleChoiceProposal {
-    /// The ID of the proposal being returned.
-    pub id: u64,
-
-    /// The timestamp at which the proposal was submitted to the timelock contract.
-    pub timelock_ts: Timestamp,
-
-    /// The messages that will be executed should this proposal be executed.
-    pub msgs: Vec<CosmosMsg<NeutronMsg>>,
-
-    pub status: ProposalStatus,
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug, Copy)]
-#[serde(rename_all = "snake_case")]
-#[repr(u8)]
-pub enum ProposalStatus {
-    /// The proposal is open for voting.
-    Timelocked,
-    /// The proposal has been overruled.
-    Overruled,
-    /// The proposal has been executed.
-    Executed,
-    /// The proposal's execution failed.
-    ExecutionFailed,
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
-pub struct TimelockConfig {
-    pub owner: Addr,
-    pub timelock_duration: u64,
-    // subDAO core module can timelock proposals.
-    pub subdao: Addr,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum DaoProposalQueryMsg {
-    Dao {}
-}
-
-// EXTERNAL TYPES SECTION END
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -161,15 +85,15 @@ pub fn execute(
 
             // we need this check since the timelock contract might be an impostor
             if get_timelock_from_subdao(&subdao_address, &deps)? != timelock_contract {
-                return Err(PreProposeOverruleError::MessageUnsupported {})
+                return Err(PreProposeOverruleError::SudaoMisconfured {})
             }
 
             if !check_if_subdao_legit(&subdao_address, &deps)? {
-                return Err(PreProposeOverruleError::MessageUnsupported {})
+                return Err(PreProposeOverruleError::ForbiddenSubdao {})
             }
 
-            if !check_is_proposal_timelocked(&subdao_address, proposal_id, &deps)? {
-                return Err(PreProposeOverruleError::MessageUnsupported {})
+            if !check_is_proposal_timelocked(&Addr::unchecked(timelock_contract_addr.clone()), proposal_id, &deps)? {
+                return Err(PreProposeOverruleError::ProposalWrongState {})
             }
 
             let overrule_msg = CosmosMsg::Wasm(WasmMsg::Execute {
@@ -213,18 +137,21 @@ fn get_timelock_from_subdao(subdao_core: &Addr, deps: &DepsMut) -> Result<Addr, 
         .query_wasm_smart(subdao_core, &SubdaoQueryMsg::ProposalModules { start_after: None, limit: Some(1) })?;
 
     if proposal_modules.is_empty(){
-        return Err(PreProposeOverruleError::MessageUnsupported {});
+        return Err(PreProposeOverruleError::SudaoMisconfured {});
     }
 
-    let prop_policy: cwd_voting::pre_propose::ProposalCreationPolicy = deps
+    let prop_policy: ProposalCreationPolicy = deps
         .querier
         .query_wasm_smart(proposal_modules.first().unwrap().address.clone(), &SubdaoProposalMsg::QueryMsg::ProposalCreationPolicy{})?;
     match prop_policy {
         ProposalCreationPolicy::Anyone {} => {
-            Err(PreProposeOverruleError::MessageUnsupported {})
+            Err(PreProposeOverruleError::SudaoMisconfured {})
         }
         ProposalCreationPolicy::Module { addr } => {
-            Ok(addr)
+            let timelock: Addr = deps
+                .querier
+                .query_wasm_smart(addr, &SubdaoPreProposeQueryMsg::TimelockAddress{})?;
+            Ok(timelock)
         }
     }
 }
@@ -233,6 +160,7 @@ fn check_if_subdao_legit(subdao_core: &Addr, deps: &DepsMut) -> Result<bool, Pre
     let main_dao = get_main_dao_address(&deps)?;
 
     let mut start_after: Option<&SubDao> = None;
+    let query_limit = 10;
 
     loop {
         let query_msg_2 = MainDaoQueryMsg::ListSubDaos {
@@ -240,7 +168,7 @@ fn check_if_subdao_legit(subdao_core: &Addr, deps: &DepsMut) -> Result<bool, Pre
                 None => {None}
                 Some(a) => {Some(a.clone().addr)}
             },
-            limit: Some(10),
+            limit: Some(query_limit),
         };
 
         let subdao_list: Vec<SubDao> = deps
@@ -258,8 +186,12 @@ fn check_if_subdao_legit(subdao_core: &Addr, deps: &DepsMut) -> Result<bool, Pre
             .find(|x1| x1.addr == subdao_core.clone().into_string())
             .is_some()
         {
-            return Ok(true);
+            return Ok(true)
         };
+
+        // if subdao_list.len() < query_limit as usize {
+        //     return Ok(false)
+        // }
     }
 }
 
@@ -270,10 +202,10 @@ fn get_main_dao_address(deps: &DepsMut) -> Result<Addr, PreProposeOverruleError>
     Ok(dao)
 }
 
-fn check_is_proposal_timelocked(subdao_core: &Addr, proposal_id: u64, deps: &DepsMut) -> Result<bool, PreProposeOverruleError>{
+fn check_is_proposal_timelocked(timelock: &Addr, proposal_id: u64, deps: &DepsMut) -> Result<bool, PreProposeOverruleError>{
     let proposal: TimelockTypes::SingleChoiceProposal  = deps
         .querier
-        .query_wasm_smart(subdao_core, &TimelockQueryMsg::Proposal { proposal_id })?;
+        .query_wasm_smart(timelock, &TimelockQueryMsg::Proposal { proposal_id })?;
     return Ok(proposal.status == TimelockTypes::ProposalStatus::Timelocked);
 }
 

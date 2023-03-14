@@ -12,4 +12,13 @@ pub enum PreProposeOverruleError {
 
     #[error("Base pre propose messages aren't supported.")]
     MessageUnsupported {},
+
+    #[error("Subdao is wrongly configured.")]
+    SudaoMisconfured {},
+
+    #[error("Subdao isn't in the list.")]
+    ForbiddenSubdao {},
+
+    #[error("")]
+    ProposalWrongState {},
 }

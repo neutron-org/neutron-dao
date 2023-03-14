@@ -11,18 +11,19 @@ use crate::{
         TimelockExecuteMsg,
     },
     testing::mock_querier::{
-        mock_dependencies, MOCK_CORE_MODULE, MOCK_PROPOSE_MODULE, MOCK_TIMELOCK_CONTRACT,
+        mock_dependencies, MOCK_DAO_CORE, MOCK_SUBDAO_PROPOSE_MODULE, MOCK_TIMELOCK_CONTRACT,
     },
 };
 
 use crate::error::PreProposeOverruleError;
 use cwd_pre_propose_base::state::Config;
+use crate::testing::mock_querier::{MOCK_SUBDAO_CORE, SUBDAO_NAME};
 
 pub fn init_base_contract(deps: DepsMut<Empty>) {
     let msg = InstantiateMsg {
-        main_dao: MOCK_CORE_MODULE.to_string(),
+        main_dao: MOCK_DAO_CORE.to_string(),
     };
-    let info = mock_info(MOCK_PROPOSE_MODULE, &[]);
+    let info = mock_info(MOCK_SUBDAO_PROPOSE_MODULE, &[]);
     instantiate(deps, mock_env(), info, msg).unwrap();
 }
 
@@ -46,13 +47,15 @@ fn test_create_overrule_proposal() {
     );
     println!("{:?}", res);
     assert!(res.is_ok());
+    let prop_desc: String = format!("Reject the decision made by the {} subdao", SUBDAO_NAME);
+    let prop_name: String = format!("Overrule proposal {} of {}", PROPOSAL_ID, SUBDAO_NAME);
     assert_eq!(
         res.unwrap().messages,
         vec![SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
-            contract_addr: MOCK_PROPOSE_MODULE.to_string(),
+            contract_addr: MOCK_SUBDAO_PROPOSE_MODULE.to_string(),
             msg: to_binary(&ProposeMessageInternal::Propose {
-                title: "Overrule proposal".to_string(),
-                description: "Reject the decision made by subdao".to_string(),
+                title: prop_name,
+                description: prop_desc,
                 msgs: vec![CosmosMsg::Wasm(WasmMsg::Execute {
                     contract_addr: MOCK_TIMELOCK_CONTRACT.to_string(),
                     msg: to_binary(&TimelockExecuteMsg::OverruleProposal {

@@ -1,8 +1,8 @@
 use std::marker::PhantomData;
 
-use crate::contract::{
-    MainDaoQueryMsg, ProposalStatus, SingleChoiceProposal, SubDao, TimelockConfig, TimelockQueryMsg,
-};
+// use crate::contract::{
+//     MainDaoQueryMsg, ProposalStatus, SingleChoiceProposal, SubDao, TimelockConfig, TimelockQueryMsg,
+// };
 use cosmwasm_std::{
     from_binary, from_slice,
     testing::{MockApi, MockQuerier, MockStorage},
@@ -10,11 +10,19 @@ use cosmwasm_std::{
     SystemError, SystemResult, WasmQuery,
 };
 use cwd_pre_propose_base::msg::QueryMsg as PreProposeQuery;
+use crate::msg::{DaoProposalQueryMsg, MainDaoQueryMsg, ProposalStatus, SingleChoiceProposal, SubDao, TimelockConfig, TimelockQueryMsg};
+use neutron_subdao_core::msg::{QueryMsg as SubdaoQueryMsg, QueryMsg};
+use neutron_subdao_core::types as SubdaoTypes;
+use neutron_subdao_proposal_single::msg as SubdaoProposalMsg;
+use neutron_subdao_pre_propose_single::msg::QueryMsg as SubdaoPreProposeQueryMsg;
 
-pub const MOCK_CORE_MODULE: &str = "neutron1dao_core_contract";
-pub const MOCK_PROPOSE_MODULE: &str = "neutron1propose_module";
+pub const MOCK_DAO_CORE: &str = "neutron1dao_core_contract";
+pub const MOCK_SUBDAO_PROPOSE_MODULE: &str = "neutron1subdao_propose_module";
+pub const MOCK_SUBDAO_PREPROPOSE_MODULE: &str = "neutron1subdao_prepropose_module";
+pub const MOCK_DAO_PROPOSE_MODULE: &str = "neutron1propose_module";
 pub const MOCK_TIMELOCK_CONTRACT: &str = "neutron1timelock_contract";
 pub const MOCK_SUBDAO_CORE: &str = "neutron1subdao_core";
+pub const SUBDAO_NAME: &str = "Based DAO";
 
 pub fn mock_dependencies() -> OwnedDeps<MockStorage, MockApi, WasmMockQuerier> {
     let custom_querier = WasmMockQuerier::new(MockQuerier::new(&[]));
@@ -50,17 +58,14 @@ impl WasmMockQuerier {
     pub fn handle_query(&self, request: &QueryRequest<Empty>) -> QuerierResult {
         match &request {
             QueryRequest::Wasm(WasmQuery::Smart { contract_addr, msg }) => {
-                if contract_addr == MOCK_PROPOSE_MODULE {
-                    let q: PreProposeQuery = from_binary(msg).unwrap();
+                if contract_addr == MOCK_SUBDAO_PROPOSE_MODULE {
+                    let q: DaoProposalQueryMsg = from_binary(msg).unwrap();
                     let addr = match q {
-                        PreProposeQuery::ProposalModule {} => todo!(),
-                        PreProposeQuery::Dao {} => MOCK_CORE_MODULE,
-                        PreProposeQuery::Config {} => todo!(),
-                        PreProposeQuery::DepositInfo { proposal_id: _ } => todo!(),
+                        DaoProposalQueryMsg::Dao {} => MOCK_DAO_CORE,
                     };
                     return SystemResult::Ok(ContractResult::from(to_binary(addr)));
                 }
-                if contract_addr == MOCK_CORE_MODULE {
+                if contract_addr == MOCK_DAO_CORE {
                     let q: MainDaoQueryMsg = from_binary(msg).unwrap();
                     return match q {
                         MainDaoQueryMsg::ListSubDaos { start_after: _, limit: _ } => {
@@ -76,7 +81,7 @@ impl WasmMockQuerier {
                     return match q {
                         TimelockQueryMsg::Config {} => {
                             SystemResult::Ok(ContractResult::from(to_binary(&TimelockConfig {
-                                owner: Addr::unchecked(MOCK_CORE_MODULE),
+                                owner: Addr::unchecked(MOCK_DAO_CORE),
                                 timelock_duration: 0,
                                 subdao: Addr::unchecked(MOCK_SUBDAO_CORE),
                             })))
@@ -89,6 +94,48 @@ impl WasmMockQuerier {
                                 status: ProposalStatus::Timelocked,
                             })),
                         ),
+                    };
+                }
+                if contract_addr == MOCK_SUBDAO_CORE {
+                    let q: SubdaoQueryMsg = from_binary(msg).unwrap();
+                    return match q {
+                        SubdaoQueryMsg::ProposalModules { start_after: _, limit: _ } => {
+                            SystemResult::Ok(ContractResult::from(to_binary(&vec![SubdaoTypes::ProposalModule {
+                                address: Addr::unchecked(MOCK_DAO_PROPOSE_MODULE),
+                                prefix: "".to_string(),
+                                status: SubdaoTypes::ProposalModuleStatus::Enabled,
+                            }])))
+                        }
+                        SubdaoQueryMsg::Config {} => {
+                            SystemResult::Ok(ContractResult::from(to_binary(&SubdaoTypes::Config {
+                                name: SUBDAO_NAME.to_string(),
+                                description: "".to_string(),
+                                dao_uri: None,
+                                main_dao: Addr::unchecked(MOCK_DAO_CORE),
+                                security_dao: Addr::unchecked("111"),
+                            })))
+                        }
+                        _ => todo!()
+                    };
+                }
+                if contract_addr == MOCK_DAO_PROPOSE_MODULE {
+                    let q: SubdaoProposalMsg::QueryMsg = from_binary(msg).unwrap();
+                    return match q {
+                        SubdaoProposalMsg::QueryMsg::ProposalCreationPolicy { } => {
+                            SystemResult::Ok(ContractResult::from(to_binary(&cwd_voting::pre_propose::ProposalCreationPolicy::Module {
+                                addr: Addr::unchecked(MOCK_SUBDAO_PREPROPOSE_MODULE)
+                            })))
+                        }
+                        _ => todo!()
+                    };
+                }
+                if contract_addr == MOCK_SUBDAO_PREPROPOSE_MODULE {
+                    let q: SubdaoPreProposeQueryMsg = from_binary(msg).unwrap();
+                    return match q {
+                        SubdaoPreProposeQueryMsg::TimelockAddress { } => {
+                            SystemResult::Ok(ContractResult::from(to_binary(&Addr::unchecked(MOCK_TIMELOCK_CONTRACT))))
+                        }
+                        _ => todo!()
                     };
                 }
                 SystemResult::Err(SystemError::NoSuchContract {

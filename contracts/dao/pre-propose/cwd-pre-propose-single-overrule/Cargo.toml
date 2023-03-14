@@ -28,6 +28,7 @@ thiserror = { version = "1.0.31" }
 neutron-subdao-core = { version = "*", path = "../../../../packages/neutron-subdao-core" }
 neutron-subdao-timelock-single = { version = "*", path = "../../../../packages/neutron-subdao-timelock-single" }
 neutron-subdao-proposal-single = { version = "*", path = "../../../../packages/neutron-subdao-proposal-single" }
+neutron-subdao-pre-propose-single = { version = "*", path = "../../../../packages/neutron-subdao-pre-propose-single" }
 
 [dev-dependencies]
 cosmwasm-schema = "1.0.0"
