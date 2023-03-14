@@ -741,6 +741,9 @@ dependencies = [
  "cwd-proposal-single",
  "cwd-voting",
  "neutron-sdk",
+ "neutron-subdao-core",
+ "neutron-subdao-proposal-single",
+ "neutron-subdao-timelock-single",
  "schemars",
  "serde",
  "thiserror",
@@ -1285,6 +1288,19 @@ dependencies = [
  "schemars",
  "serde",
  "thiserror",
+]
+
+[[package]]
+name = "neutron-dao-pre-propose-overrule"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-std",
+ "cwd-interface",
+ "cwd-pre-propose-base",
+ "cwd-voting",
+ "neutron-sdk",
+ "schemars",
+ "serde",
 ]
 
 [[package]]
