@@ -19,6 +19,7 @@ use neutron_subdao_pre_propose_single::msg::QueryMsg as SubdaoPreProposeQueryMsg
 use neutron_subdao_proposal_single::msg as SubdaoProposalMsg;
 
 pub const MOCK_DAO_CORE: &str = "neutron1dao_core_contract";
+pub const MOCK_DAO_CORE_MANY_SUBDAOS: &str = "neutron1dao_core_contract_many_subdaos";
 pub const MOCK_SUBDAO_PROPOSE_MODULE: &str = "neutron1subdao_propose_module";
 pub const MOCK_SUBDAO_PREPROPOSE_MODULE: &str = "neutron1subdao_prepropose_module";
 pub const MOCK_DAO_PROPOSE_MODULE: &str = "neutron1propose_module";
@@ -118,10 +119,10 @@ impl WasmMockQuerier {
                                 description: "".to_string(),
                                 dao_uri: None,
                                 main_dao: Addr::unchecked(MOCK_DAO_CORE),
-                                security_dao: Addr::unchecked("111"),
+                                security_dao: Addr::unchecked(""),
                             }),
                         )),
-                        _ => todo!(),
+                        _ => SystemResult::Err(SystemError::Unknown {}),
                     };
                 }
                 if contract_addr == MOCK_DAO_PROPOSE_MODULE {
@@ -134,7 +135,7 @@ impl WasmMockQuerier {
                                 },
                             )))
                         }
-                        _ => todo!(),
+                        _ => SystemResult::Err(SystemError::Unknown {}),
                     };
                 }
                 if contract_addr == MOCK_SUBDAO_PREPROPOSE_MODULE {
@@ -145,7 +146,7 @@ impl WasmMockQuerier {
                                 MOCK_TIMELOCK_CONTRACT,
                             ))))
                         }
-                        _ => todo!(),
+                        _ => SystemResult::Err(SystemError::Unknown {}),
                     };
                 }
                 SystemResult::Err(SystemError::NoSuchContract {

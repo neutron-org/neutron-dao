@@ -970,6 +970,7 @@ dependencies = [
  "cwd-interface",
  "cwd-macros",
  "cwd-pre-propose-base",
+ "neutron-dao-pre-propose-overrule",
  "neutron-sdk",
  "neutron-subdao-core",
  "neutron-subdao-pre-propose-single",

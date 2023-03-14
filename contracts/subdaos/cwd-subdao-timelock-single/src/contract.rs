@@ -2,12 +2,14 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply, Response,
-    StdResult, SubMsg,
+    StdResult, SubMsg, WasmMsg,
 };
 use cw2::set_contract_version;
 use cw_storage_plus::Bound;
 use cwd_pre_propose_base::msg::QueryMsg as PreProposeQueryBase;
 use neutron_bindings::bindings::msg::NeutronMsg;
+use neutron_dao_pre_propose_overrule::msg::ExecuteMsg as OverruleExecuteMsg;
+use neutron_dao_pre_propose_overrule::types::ProposeMessage as OverruleProposeMessage;
 use neutron_subdao_core::msg::QueryMsg as SubdaoQuery;
 use neutron_subdao_pre_propose_single::msg::QueryMsg as PreProposeQuery;
 use neutron_subdao_timelock_single::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
@@ -99,9 +101,19 @@ pub fn execute_timelock_proposal(
 
     PROPOSALS.save(deps.storage, proposal_id, &proposal)?;
 
-    // todo!(oldremez) send overrule creation proposal message
+    let create_overrule_proposal = WasmMsg::Execute {
+        contract_addr: todo!(oldremes),
+        msg: to_binary(&OverruleExecuteMsg::Propose {
+            msg: OverruleProposeMessage::ProposeOverrule {
+                timelock_contract: env.contract.address.to_string(),
+                proposal_id,
+            },
+        })?,
+        funds: vec![],
+    };
 
     Ok(Response::default()
+        .add_message(create_overrule_proposal)
         .add_attribute("action", "timelock_proposal")
         .add_attribute("sender", info.sender)
         .add_attribute("proposal_id", proposal_id.to_string())

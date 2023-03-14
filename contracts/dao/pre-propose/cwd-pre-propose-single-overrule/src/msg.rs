@@ -1,17 +1,9 @@
 use cosmwasm_std::{Addr, CosmosMsg, Timestamp};
 use cwd_pre_propose_base::msg::{ExecuteMsg as ExecuteBase, QueryMsg as QueryBase};
 use neutron_bindings::bindings::msg::NeutronMsg;
+use neutron_subdao_pre_propose_single::types::ProposeMessage;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-
-#[derive(Serialize, JsonSchema, Deserialize, Debug, Clone)]
-#[serde(rename_all = "snake_case")]
-pub enum ProposeMessage {
-    ProposeOverrule {
-        timelock_contract: String,
-        proposal_id: u64,
-    },
-}
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 #[serde(rename_all = "snake_case")]
@@ -111,7 +103,7 @@ pub struct TimelockConfig {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum DaoProposalQueryMsg {
-    Dao {}
+    Dao {},
 }
 
 // EXTERNAL TYPES SECTION END

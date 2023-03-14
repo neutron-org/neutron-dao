@@ -32,6 +32,7 @@ neutron-subdao-pre-propose-single = { path = "../../../packages/neutron-subdao-p
 neutron-subdao-timelock-single = { path = "../../../packages/neutron-subdao-timelock-single" }
 cwd-pre-propose-base = { path = "../../../packages/cwd-pre-propose-base" }
 neutron-subdao-core = { path = "../../../packages/neutron-subdao-core" }
+neutron-dao-pre-propose-overrule = { path = "../../../packages/neutron-dao-pre-propose-overrule" }
 
 [dev-dependencies]
 cosmwasm-schema = { version = "1.0.0" }

@@ -6,9 +6,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, JsonSchema, Deserialize, Debug, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum ProposeMessage {
-    Propose {
-        title: String,
-        description: String,
-        msgs: Vec<CosmosMsg<NeutronMsg>>,
+    ProposeOverrule {
+        timelock_contract: String,
+        proposal_id: u64,
     },
 }
