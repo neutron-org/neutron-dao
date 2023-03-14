@@ -163,7 +163,9 @@ pub fn execute_fund(deps: DepsMut, info: MessageInfo) -> Result<Response, Contra
     if shares.is_empty() {
         return Err(ContractError::NoSharesSent {});
     }
-    let total_shares = shares.iter().fold(Uint128::zero(), |acc, (_, s)| acc + s);
+    let total_shares = shares
+        .iter()
+        .try_fold(Uint128::zero(), |acc, (_, s)| acc.checked_add(*s))?;
     let mut spent = Uint128::zero();
     let mut resp = Response::new().add_attribute("action", "neutron/distribution/fund");
 
