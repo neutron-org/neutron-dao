@@ -130,7 +130,7 @@ pub(crate) fn instantiate_with_native_bonded_balances_governance(
             msg: to_binary(&neutron_voting_registry::msg::InstantiateMsg {
                 owner: Some(Admin::CoreModule {}),
                 manager: None,
-                voting_vaults: vec![vault_addr.to_string()]
+                voting_vaults: vec![vault_addr.to_string()],
             })
             .unwrap(),
             admin: None,
