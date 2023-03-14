@@ -16,8 +16,8 @@ use crate::{
 };
 
 use crate::error::PreProposeOverruleError;
+use crate::testing::mock_querier::SUBDAO_NAME;
 use cwd_pre_propose_base::state::Config;
-use crate::testing::mock_querier::{MOCK_SUBDAO_CORE, SUBDAO_NAME};
 
 pub fn init_base_contract(deps: DepsMut<Empty>) {
     let msg = InstantiateMsg {
@@ -45,7 +45,6 @@ fn test_create_overrule_proposal() {
         mock_info(PROPOSER_ADDR, &[]),
         msg,
     );
-    println!("{:?}", res);
     assert!(res.is_ok());
     let prop_desc: String = format!("Reject the decision made by the {} subdao", SUBDAO_NAME);
     let prop_name: String = format!("Overrule proposal {} of {}", PROPOSAL_ID, SUBDAO_NAME);
