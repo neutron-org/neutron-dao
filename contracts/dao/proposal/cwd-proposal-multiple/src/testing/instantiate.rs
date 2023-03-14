@@ -72,6 +72,7 @@ pub(crate) fn instantiate_with_native_bonded_balances_governance(
     let voting_vault_code_id = app.store_code(neutron_vault_contract());
 
     let vault_intantiate = neutron_vault::msg::InstantiateMsg {
+        name: "Test vault".to_string(),
         description: "based neutron vault".to_string(),
         owner: None,
         manager: None,
@@ -126,7 +127,7 @@ pub(crate) fn instantiate_with_native_bonded_balances_governance(
             msg: to_binary(&neutron_voting_registry::msg::InstantiateMsg {
                 owner: Some(Admin::CoreModule {}),
                 manager: None,
-                voting_vault: vault_addr.to_string(),
+                voting_vaults: vec![vault_addr.to_string()],
             })
             .unwrap(),
             admin: None,
