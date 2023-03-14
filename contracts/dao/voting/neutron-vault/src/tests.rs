@@ -125,7 +125,7 @@ fn update_config(
     app: &mut App,
     contract_addr: Addr,
     sender: &str,
-    owner: Option<String>,
+    owner: String,
     manager: Option<String>,
     name: String,
     description: String,
@@ -212,9 +212,9 @@ fn test_instantiate() {
         InstantiateMsg {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::Address {
+            owner: Admin::Address {
                 addr: DAO_ADDR.to_string(),
-            }),
+            },
             manager: Some(ADDR1.to_string()),
             denom: DENOM.to_string(),
         },
@@ -228,7 +228,9 @@ fn test_instantiate() {
         InstantiateMsg {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: None,
+            owner: Admin::Address {
+                addr: DAO_ADDR.to_string(),
+            },
             manager: None,
             denom: DENOM.to_string(),
         },
@@ -247,7 +249,7 @@ fn test_instantiate_dao_owner() {
         InstantiateMsg {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
             denom: DENOM.to_string(),
         },
@@ -255,7 +257,7 @@ fn test_instantiate_dao_owner() {
 
     let config = get_config(&mut app, addr);
 
-    assert_eq!(config.owner, Some(Addr::unchecked(DAO_ADDR)))
+    assert_eq!(config.owner, Addr::unchecked(DAO_ADDR))
 }
 
 #[test]
@@ -269,7 +271,7 @@ fn test_bond_invalid_denom() {
         InstantiateMsg {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
             denom: DENOM.to_string(),
         },
@@ -289,7 +291,7 @@ fn test_bond_valid_denom() {
         InstantiateMsg {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
             denom: DENOM.to_string(),
         },
@@ -319,7 +321,7 @@ fn test_unbond_none_bonded() {
         InstantiateMsg {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
             denom: DENOM.to_string(),
         },
@@ -339,7 +341,7 @@ fn test_unbond_invalid_balance() {
         InstantiateMsg {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
             denom: DENOM.to_string(),
         },
@@ -363,7 +365,7 @@ fn test_unbond() {
         InstantiateMsg {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
             denom: DENOM.to_string(),
         },
@@ -409,7 +411,7 @@ fn test_update_config_invalid_sender() {
         InstantiateMsg {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
             denom: DENOM.to_string(),
         },
@@ -420,7 +422,7 @@ fn test_update_config_invalid_sender() {
         &mut app,
         addr,
         ADDR2,
-        Some(ADDR1.to_string()),
+        ADDR1.to_string(),
         Some(DAO_ADDR.to_string()),
         NEW_NAME.to_string(),
         NEW_DESCRIPTION.to_string(),
@@ -439,7 +441,7 @@ fn test_update_config_non_owner_changes_owner() {
         InstantiateMsg {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
             denom: DENOM.to_string(),
         },
@@ -450,7 +452,7 @@ fn test_update_config_non_owner_changes_owner() {
         &mut app,
         addr,
         ADDR1,
-        Some(ADDR2.to_string()),
+        ADDR2.to_string(),
         None,
         NEW_NAME.to_string(),
         NEW_DESCRIPTION.to_string(),
@@ -468,7 +470,7 @@ fn test_update_config_as_owner() {
         InstantiateMsg {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
             denom: DENOM.to_string(),
         },
@@ -479,7 +481,7 @@ fn test_update_config_as_owner() {
         &mut app,
         addr.clone(),
         DAO_ADDR,
-        Some(ADDR1.to_string()),
+        ADDR1.to_string(),
         Some(DAO_ADDR.to_string()),
         NEW_NAME.to_string(),
         NEW_DESCRIPTION.to_string(),
@@ -491,7 +493,7 @@ fn test_update_config_as_owner() {
         Config {
             name: NEW_NAME.to_string(),
             description: NEW_DESCRIPTION.to_string(),
-            owner: Some(Addr::unchecked(ADDR1)),
+            owner: Addr::unchecked(ADDR1),
             manager: Some(Addr::unchecked(DAO_ADDR)),
             denom: DENOM.to_string(),
         },
@@ -509,7 +511,7 @@ fn test_update_config_as_manager() {
         InstantiateMsg {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
             denom: DENOM.to_string(),
         },
@@ -522,7 +524,7 @@ fn test_update_config_as_manager() {
         &mut app,
         addr.clone(),
         ADDR1,
-        Some(DAO_ADDR.to_string()),
+        DAO_ADDR.to_string(),
         Some(ADDR2.to_string()),
         NEW_NAME.to_string(),
         NEW_DESCRIPTION.to_string(),
@@ -537,7 +539,7 @@ fn test_update_config_as_manager() {
         Config {
             name: NEW_NAME.to_string(),
             description: NEW_DESCRIPTION.to_string(),
-            owner: Some(Addr::unchecked(DAO_ADDR)),
+            owner: Addr::unchecked(DAO_ADDR),
             manager: Some(Addr::unchecked(ADDR2)),
             denom: DENOM.to_string(),
         },
@@ -556,7 +558,7 @@ fn test_update_config_invalid_description() {
         InstantiateMsg {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
             denom: DENOM.to_string(),
         },
@@ -567,7 +569,7 @@ fn test_update_config_invalid_description() {
         &mut app,
         addr,
         ADDR1,
-        Some(DAO_ADDR.to_string()),
+        DAO_ADDR.to_string(),
         Some(ADDR2.to_string()),
         NEW_NAME.to_string(),
         String::from(""),
@@ -586,7 +588,7 @@ fn test_update_config_invalid_name() {
         InstantiateMsg {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
             denom: DENOM.to_string(),
         },
@@ -597,7 +599,7 @@ fn test_update_config_invalid_name() {
         &mut app,
         addr,
         ADDR1,
-        Some(DAO_ADDR.to_string()),
+        DAO_ADDR.to_string(),
         Some(ADDR2.to_string()),
         String::from(""),
         NEW_DESCRIPTION.to_string(),
@@ -615,7 +617,7 @@ fn test_query_dao() {
         InstantiateMsg {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
             denom: DENOM.to_string(),
         },
@@ -636,7 +638,7 @@ fn test_query_info() {
         InstantiateMsg {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
             denom: DENOM.to_string(),
         },
@@ -657,7 +659,7 @@ fn test_query_get_config() {
         InstantiateMsg {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
             denom: DENOM.to_string(),
         },
@@ -669,7 +671,7 @@ fn test_query_get_config() {
         Config {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Addr::unchecked(DAO_ADDR)),
+            owner: Addr::unchecked(DAO_ADDR),
             manager: Some(Addr::unchecked(ADDR1)),
             denom: DENOM.to_string(),
         }
@@ -686,7 +688,7 @@ fn test_voting_power_queries() {
         InstantiateMsg {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
             denom: DENOM.to_string(),
         },
@@ -793,7 +795,7 @@ fn test_query_list_bonders() {
         InstantiateMsg {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
             denom: DENOM.to_string(),
         },

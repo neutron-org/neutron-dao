@@ -74,7 +74,7 @@ pub(crate) fn instantiate_with_native_bonded_balances_governance(
     let vault_intantiate = neutron_vault::msg::InstantiateMsg {
         name: "Test vault".to_string(),
         description: "based neutron vault".to_string(),
-        owner: None,
+        owner: Admin::CoreModule {},
         manager: None,
         denom: "ujuno".to_string(),
     };
