@@ -125,7 +125,7 @@ pub(crate) fn instantiate_with_native_bonded_balances_governance(
         voting_registry_module_instantiate_info: ModuleInstantiateInfo {
             code_id: voting_registry_id,
             msg: to_binary(&neutron_voting_registry::msg::InstantiateMsg {
-                owner: Some(Admin::CoreModule {}),
+                owner: Admin::CoreModule {},
                 manager: None,
                 voting_vaults: vec![vault_addr.to_string()],
             })
