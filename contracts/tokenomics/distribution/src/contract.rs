@@ -5,7 +5,7 @@ use crate::state::{Config, CONFIG, FUND_COUNTER, PAUSED_UNTIL, PENDING_DISTRIBUT
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_binary, Addr, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Order,
-    Response, StdError, StdResult, Storage, Uint128,
+    Response, StdResult, Storage, Uint128,
 };
 use exec_control::pause::{
     can_pause, can_unpause, validate_duration, PauseError, PauseInfoResponse,
@@ -166,14 +166,14 @@ pub fn execute_fund(deps: DepsMut, info: MessageInfo) -> Result<Response, Contra
     let total_shares = shares
         .iter()
         .try_fold(Uint128::zero(), |acc, (_, s)| acc.checked_add(*s))?;
+    if total_shares.is_zero() {
+        return Err(ContractError::NoSharesSent {});
+    }
+
     let mut spent = Uint128::zero();
     let mut resp = Response::new().add_attribute("action", "neutron/distribution/fund");
-
     for (addr, share) in shares.iter() {
-        let amount = funds
-            .checked_mul(*share)?
-            .checked_div(total_shares)
-            .map_err(|e| StdError::DivideByZero { source: e })?;
+        let amount = funds.checked_mul(*share)?.checked_div(total_shares)?;
         let pending = PENDING_DISTRIBUTION
             .may_load(deps.storage, addr.clone())?
             .unwrap_or(Uint128::zero());
