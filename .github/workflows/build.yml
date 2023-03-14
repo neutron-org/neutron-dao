@@ -11,7 +11,7 @@ on:
     inputs:
       toolchain:
         description: 'Default Rust Toolchain'
-        default: "stable"
+        default: "1.63.0"
         required: true
         type: string
       target:
@@ -31,7 +31,7 @@ on:
         type: string
 
 env:
-  TOOLCHAIN: ${{ inputs.toolchain || 'stable' }}
+  TOOLCHAIN: ${{ inputs.toolchain || '1.63.0' }}
   TARGET: ${{ inputs.target || 'wasm32-unknown-unknown' }}
   REF: ${{ inputs.branch || 'main' }}
   ID: ${{ inputs.id || 'scheduled' }}
@@ -97,7 +97,7 @@ jobs:
       - name: Skip Workflow if Artifacts exist
         if: ${{ env.ARTIFACTS_EXIST == 'true' }}
         run: echo "::notice::Artifacts already exist in GCP Bucket, skipping workflow."
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@master
         if: ${{ env.ARTIFACTS_EXIST == 'false' }}
         with:
           toolchain: ${{ env.TOOLCHAIN }}
