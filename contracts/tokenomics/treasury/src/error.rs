@@ -16,11 +16,11 @@ pub enum ContractError {
     #[error("No funds to distribute")]
     NoFundsToDistribute {},
 
-    #[error("Invalid distribution rate")]
-    InvalidDistributionRate(String),
+    #[error("distribution_rate must be between 0 and 1")]
+    InvalidDistributionRate {},
 
-    #[error("Invalid vesting denominator")]
-    InvalidVestingDenominator(String),
+    #[error("vesting_denominator must be more than zero")]
+    InvalidVestingDenominator {},
 
     #[error("Too soon to distribute")]
     TooSoonToDistribute {},
