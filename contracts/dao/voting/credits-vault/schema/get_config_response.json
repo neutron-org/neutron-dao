@@ -4,7 +4,8 @@
   "type": "object",
   "required": [
     "credits_contract_address",
-    "description"
+    "description",
+    "owner"
   ],
   "properties": {
     "credits_contract_address": {
@@ -24,14 +25,7 @@
       ]
     },
     "owner": {
-      "anyOf": [
-        {
-          "$ref": "#/definitions/Addr"
-        },
-        {
-          "type": "null"
-        }
-      ]
+      "$ref": "#/definitions/Addr"
     }
   },
   "definitions": {

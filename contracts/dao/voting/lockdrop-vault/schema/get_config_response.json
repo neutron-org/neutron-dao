@@ -5,7 +5,8 @@
   "required": [
     "description",
     "lockdrop_contract",
-    "name"
+    "name",
+    "owner"
   ],
   "properties": {
     "description": {
@@ -28,14 +29,7 @@
       "type": "string"
     },
     "owner": {
-      "anyOf": [
-        {
-          "$ref": "#/definitions/Addr"
-        },
-        {
-          "type": "null"
-        }
-      ]
+      "$ref": "#/definitions/Addr"
     }
   },
   "definitions": {

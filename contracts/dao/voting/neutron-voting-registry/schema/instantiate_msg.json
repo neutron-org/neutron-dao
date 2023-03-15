@@ -3,6 +3,7 @@
   "title": "InstantiateMsg",
   "type": "object",
   "required": [
+    "owner",
     "voting_vaults"
   ],
   "properties": {
@@ -13,14 +14,7 @@
       ]
     },
     "owner": {
-      "anyOf": [
-        {
-          "$ref": "#/definitions/Admin"
-        },
-        {
-          "type": "null"
-        }
-      ]
+      "$ref": "#/definitions/Admin"
     },
     "voting_vaults": {
       "type": "array",
