@@ -1,15 +1,18 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128,
+    to_binary, Binary, Deps, DepsMut, Env, Fraction, MessageInfo, Response, StdResult, Uint128,
 };
 use cw2::set_contract_version;
 use cwd_interface::voting::{
     BondingStatusResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
 use cwd_interface::Admin;
+use neutron_lockdrop_vault::voting_power::{get_voting_power_for_address, get_voting_power_total};
 
 use crate::state::{CONFIG, DAO};
+
+use astroport_periphery::lockdrop::PoolType;
 use cwd_voting::vault::ListBondersResponse;
 use neutron_lockdrop_vault::error::ContractError;
 use neutron_lockdrop_vault::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
@@ -40,6 +43,7 @@ pub fn instantiate(
         name: msg.name,
         description: msg.description,
         lockdrop_contract: deps.api.addr_validate(&msg.lockdrop_contract)?,
+        oracle_contract: deps.api.addr_validate(&msg.oracle_contract)?,
         owner,
         manager,
     };
@@ -53,6 +57,7 @@ pub fn instantiate(
         .add_attribute("description", config.description)
         .add_attribute("owner", config.owner)
         .add_attribute("lockdrop_contract", config.lockdrop_contract)
+        .add_attribute("oracle_contract", config.oracle_contract)
         .add_attribute(
             "manager",
             config
@@ -75,6 +80,7 @@ pub fn execute(
         ExecuteMsg::UpdateConfig {
             owner,
             lockdrop_contract,
+            oracle_contract,
             manager,
             name,
             description,
@@ -83,6 +89,7 @@ pub fn execute(
             info,
             owner,
             lockdrop_contract,
+            oracle_contract,
             manager,
             name,
             description,
@@ -107,38 +114,69 @@ pub fn execute_unbond(
     Err(ContractError::DirectUnbondingDisabled {})
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn execute_update_config(
     deps: DepsMut,
     info: MessageInfo,
-    new_owner: String,
-    new_lockdrop_contract: String,
+    new_owner: Option<String>,
+    new_lockdrop_contract: Option<String>,
+    new_oracle_contract: Option<String>,
     new_manager: Option<String>,
-    new_name: String,
-    new_description: String,
+    new_name: Option<String>,
+    new_description: Option<String>,
 ) -> Result<Response, ContractError> {
     let mut config: Config = CONFIG.load(deps.storage)?;
     if info.sender != config.owner && Some(info.sender.clone()) != config.manager {
         return Err(ContractError::Unauthorized {});
     }
 
-    let new_owner = deps.api.addr_validate(&new_owner)?;
-    let new_lockdrop_contract = deps.api.addr_validate(&new_lockdrop_contract)?;
+    let new_owner = new_owner
+        .map(|new_owner| deps.api.addr_validate(&new_owner))
+        .transpose()?;
+
+    let new_lockdrop_contract = new_lockdrop_contract
+        .map(|new_lockdrop_contract| deps.api.addr_validate(&new_lockdrop_contract))
+        .transpose()?;
+
+    let new_oracle_contract = new_oracle_contract
+        .map(|new_oracle_contract| deps.api.addr_validate(&new_oracle_contract))
+        .transpose()?;
+
     let new_manager = new_manager
         .map(|new_manager| deps.api.addr_validate(&new_manager))
         .transpose()?;
 
-    if info.sender != config.owner && new_owner != config.owner {
+    if info.sender != config.owner && new_owner != Some(config.owner.clone()) {
         return Err(ContractError::OnlyOwnerCanChangeOwner {});
     };
-    if info.sender != config.owner && new_lockdrop_contract != config.clone().lockdrop_contract {
+    if info.sender != config.owner
+        && Some(config.lockdrop_contract.clone()) != new_lockdrop_contract
+    {
         return Err(ContractError::OnlyOwnerCanChangeLockdropContract {});
     };
+    if info.sender != config.owner && Some(config.oracle_contract.clone()) != new_oracle_contract {
+        return Err(ContractError::OnlyOwnerCanChangeOracleContract {});
+    };
 
-    config.owner = new_owner;
-    config.lockdrop_contract = new_lockdrop_contract;
     config.manager = new_manager;
-    config.name = new_name;
-    config.description = new_description;
+
+    if let Some(owner) = new_owner {
+        config.owner = owner;
+    }
+
+    if let Some(lockdrop_contract) = new_lockdrop_contract {
+        config.lockdrop_contract = lockdrop_contract;
+    }
+    if let Some(oracle_contract) = new_oracle_contract {
+        config.oracle_contract = oracle_contract;
+    }
+    if let Some(name) = new_name {
+        config.name = name;
+    }
+    if let Some(description) = new_description {
+        config.description = description;
+    }
+
     config.validate()?;
     CONFIG.save(deps.storage, &config)?;
 
@@ -147,6 +185,7 @@ pub fn execute_update_config(
         .add_attribute("description", config.description)
         .add_attribute("owner", config.owner)
         .add_attribute("lockdrop_contract", config.lockdrop_contract)
+        .add_attribute("oracle_contract", config.oracle_contract)
         .add_attribute(
             "manager",
             config
@@ -180,27 +219,69 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 pub fn query_voting_power_at_height(
-    _deps: Deps,
+    deps: Deps,
     env: Env,
-    _address: String,
+    address: String,
     height: Option<u64>,
 ) -> StdResult<VotingPowerAtHeightResponse> {
-    // TODO: implement once the lockdrop contract is implemented.
+    let config = CONFIG.load(deps.storage)?;
+
+    let height = height.unwrap_or(env.block.height);
+
+    let atom_power = get_voting_power_for_address(
+        deps,
+        config.lockdrop_contract.clone(),
+        config.oracle_contract.clone(),
+        PoolType::ATOM,
+        address.clone(),
+        height,
+    )?;
+    let usdc_power = get_voting_power_for_address(
+        deps,
+        config.lockdrop_contract,
+        config.oracle_contract,
+        PoolType::USDC,
+        address,
+        height,
+    )?;
+
+    let power = atom_power + usdc_power;
+
     Ok(VotingPowerAtHeightResponse {
-        power: Uint128::zero(),
-        height: height.unwrap_or(env.block.height),
+        power: power.numerator().try_into()?,
+        height,
     })
 }
 
 pub fn query_total_power_at_height(
-    _deps: Deps,
+    deps: Deps,
     env: Env,
     height: Option<u64>,
 ) -> StdResult<TotalPowerAtHeightResponse> {
-    // TODO: implement once the lockdrop contract is implemented.
+    let config = CONFIG.load(deps.storage)?;
+
+    let height = height.unwrap_or(env.block.height);
+
+    let atom_power = get_voting_power_total(
+        deps,
+        config.lockdrop_contract.clone(),
+        config.oracle_contract.clone(),
+        PoolType::ATOM,
+        height,
+    )?;
+    let usdc_power = get_voting_power_total(
+        deps,
+        config.lockdrop_contract,
+        config.oracle_contract,
+        PoolType::USDC,
+        height,
+    )?;
+
+    let power = atom_power + usdc_power;
+
     Ok(TotalPowerAtHeightResponse {
-        power: Uint128::zero(),
-        height: height.unwrap_or(env.block.height),
+        power: power.numerator().try_into()?,
+        height,
     })
 }
 

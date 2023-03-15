@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 pub struct InstantiateMsg {
-    // Description contains information that characterizes the vault.
+    // Credits contract address.
     pub credits_contract_address: String,
     // Description contains information that characterizes the vault.
     pub description: String,
