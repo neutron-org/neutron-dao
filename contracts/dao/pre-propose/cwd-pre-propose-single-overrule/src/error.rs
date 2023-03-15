@@ -21,4 +21,7 @@ pub enum PreProposeOverruleError {
 
     #[error("")]
     ProposalWrongState {},
+
+    #[error("")]
+    AlreadyExists {},
 }

@@ -1,13 +1,13 @@
-use cosmwasm_std::CosmosMsg;
+use cosmwasm_std::{Addr, CosmosMsg};
+use cw_utils::{Duration, Threshold};
 use neutron_bindings::bindings::msg::NeutronMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 pub struct InstantiateMsg {
-    // Timelock duration for all proposals (starts when TimelockProposal message handler is executed).
-    // In seconds.
-    pub timelock_duration: u64,
+    // Overrule pre proposal module from the main DAO
+    pub overrule_pre_propose: String,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
@@ -25,7 +25,7 @@ pub enum ExecuteMsg {
     },
     UpdateConfig {
         owner: Option<String>,
-        timelock_duration: Option<u64>,
+        overrule_pre_propose: Option<String>,
     },
 }
 
@@ -55,3 +55,34 @@ pub enum QueryMsg {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct MigrateMsg {}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct ProposalConfig {
+    /// The threshold a proposal must reach to complete.
+    pub threshold: Threshold,
+    /// The default maximum amount of time a proposal may be voted on
+    /// before expiring.
+    pub max_voting_period: Duration,
+    /// The minimum amount of time a proposal must be open before
+    /// passing. A proposal may fail before this amount of time has
+    /// elapsed, but it will not pass. This can be useful for
+    /// preventing governance attacks wherein an attacker aquires a
+    /// large number of tokens and forces a proposal through.
+    pub min_voting_period: Option<Duration>,
+    /// Allows changing votes before the proposal expires. If this is
+    /// enabled proposals will not be able to complete early as final
+    /// vote information is not known until the time of proposal
+    /// expiration.
+    pub allow_revoting: bool,
+    /// The address of the DAO that this governance module is
+    /// associated with.
+    pub dao: Addr,
+    /// If set to true proposals will be closed if their execution
+    /// fails. Otherwise, proposals will remain open after execution
+    /// failure. For example, with this enabled a proposal to send 5
+    /// tokens out of a DAO's treasury with 4 tokens would be closed when
+    /// it is executed. With this disabled, that same proposal would
+    /// remain open until the DAO's treasury was large enough for it to be
+    /// executed.
+    pub close_proposal_on_execution_failure: bool,
+}

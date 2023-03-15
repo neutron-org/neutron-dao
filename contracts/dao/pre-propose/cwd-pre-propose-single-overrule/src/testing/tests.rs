@@ -1,23 +1,24 @@
 use cosmwasm_std::{
     from_binary,
     testing::{mock_env, mock_info},
-    to_binary, CosmosMsg, DepsMut, Empty, SubMsg, WasmMsg,
+    to_binary, CosmosMsg, DepsMut, Empty, Response, SubMsg, WasmMsg,
 };
 
 use crate::{
     contract::{execute, instantiate, query},
-    msg::{
-        ExecuteMsg, InstantiateMsg, ProposeMessage, ProposeMessageInternal, QueryMsg,
-        TimelockExecuteMsg,
-    },
     testing::mock_querier::{
         mock_dependencies, MOCK_DAO_CORE, MOCK_SUBDAO_PROPOSE_MODULE, MOCK_TIMELOCK_CONTRACT,
     },
+};
+use neutron_dao_pre_propose_overrule::msg::{
+    ExecuteMsg, InstantiateMsg, ProposeMessageInternal, QueryMsg,
 };
 
 use crate::error::PreProposeOverruleError;
 use crate::testing::mock_querier::SUBDAO_NAME;
 use cwd_pre_propose_base::state::Config;
+use neutron_dao_pre_propose_overrule::types::ProposeMessage;
+use neutron_subdao_timelock_single::{msg as TimelockMsg, types as TimelockTypes};
 
 pub fn init_base_contract(deps: DepsMut<Empty>) {
     let msg = InstantiateMsg {
@@ -45,6 +46,7 @@ fn test_create_overrule_proposal() {
         mock_info(PROPOSER_ADDR, &[]),
         msg,
     );
+    println!("{:?}", res);
     assert!(res.is_ok());
     let prop_desc: String = format!("Reject the decision made by the {} subdao", SUBDAO_NAME);
     let prop_name: String = format!("Overrule proposal {} of {}", PROPOSAL_ID, SUBDAO_NAME);
@@ -57,7 +59,7 @@ fn test_create_overrule_proposal() {
                 description: prop_desc,
                 msgs: vec![CosmosMsg::Wasm(WasmMsg::Execute {
                     contract_addr: MOCK_TIMELOCK_CONTRACT.to_string(),
-                    msg: to_binary(&TimelockExecuteMsg::OverruleProposal {
+                    msg: to_binary(&TimelockMsg::ExecuteMsg::OverruleProposal {
                         proposal_id: PROPOSAL_ID
                     })
                     .unwrap(),
@@ -105,4 +107,60 @@ fn test_base_prepropose_methods() {
         res.err().unwrap(),
         PreProposeOverruleError::MessageUnsupported {}
     )
+}
+
+#[test]
+fn test_impostor_subdao() {
+    // test where timelock contract returns subdao that is not in list
+}
+
+#[test]
+fn test_impostor_timelock() {
+    // test where timelock points to subdao but subdao doesn't point to timelock
+}
+
+#[test]
+fn test_proposal_is_not_timelocked() {
+    // test where the proposal we're to create overrule for isn't timelocked already/yet
+}
+
+#[test]
+fn test_long_subdao_list() {
+    // test where we check if out pagination handling works properly
+}
+
+#[test]
+fn test_double_creation() {
+    let mut deps = mock_dependencies();
+    init_base_contract(deps.as_mut());
+    const PROPOSAL_ID: u64 = 47;
+    const PROPOSER_ADDR: &str = "whatever";
+    let msg = ExecuteMsg::Propose {
+        msg: ProposeMessage::ProposeOverrule {
+            timelock_contract: MOCK_TIMELOCK_CONTRACT.to_string(),
+            proposal_id: PROPOSAL_ID,
+        },
+    };
+    let res_ok = execute(
+        deps.as_mut(),
+        mock_env(),
+        mock_info(PROPOSER_ADDR, &[]),
+        msg.clone(),
+    );
+    assert!(res_ok.is_ok());
+    let res_not_ok = execute(
+        deps.as_mut(),
+        mock_env(),
+        mock_info(PROPOSER_ADDR, &[]),
+        msg,
+    );
+    assert!(res_not_ok.is_err());
+    match res_not_ok {
+        Ok(_) => {
+            assert!(false)
+        }
+        Err(err) => {
+            assert_eq!(err, PreProposeOverruleError::AlreadyExists {})
+        }
+    }
 }

@@ -6,16 +6,21 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 use cw_storage_plus::Bound;
+use cw_utils::{Duration, Threshold};
 use cwd_pre_propose_base::msg::QueryMsg as PreProposeQueryBase;
 use neutron_bindings::bindings::msg::NeutronMsg;
 use neutron_dao_pre_propose_overrule::msg::ExecuteMsg as OverruleExecuteMsg;
+use neutron_dao_pre_propose_overrule::msg::QueryMsg as OverruleQueryMsg;
 use neutron_dao_pre_propose_overrule::types::ProposeMessage as OverruleProposeMessage;
 use neutron_subdao_core::msg::QueryMsg as SubdaoQuery;
 use neutron_subdao_pre_propose_single::msg::QueryMsg as PreProposeQuery;
-use neutron_subdao_timelock_single::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
+use neutron_subdao_timelock_single::msg::{
+    ExecuteMsg, InstantiateMsg, MigrateMsg, ProposalConfig, QueryMsg,
+};
 use neutron_subdao_timelock_single::types::{
     Config, ProposalListResponse, ProposalStatus, SingleChoiceProposal,
 };
+use std::ops::Add;
 
 use crate::error::ContractError;
 use crate::state::{CONFIG, DEFAULT_LIMIT, PROPOSALS};
@@ -41,9 +46,11 @@ pub fn instantiate(
         .querier
         .query_wasm_smart(subdao_core.clone(), &SubdaoQuery::MainDao {})?;
 
+    let overrule_pre_propose = deps.api.addr_validate(&msg.overrule_pre_propose)?;
+
     let config = Config {
         owner: main_dao,
-        timelock_duration: msg.timelock_duration,
+        overrule_pre_propose,
         subdao: subdao_core,
     };
 
@@ -52,7 +59,10 @@ pub fn instantiate(
     Ok(Response::new()
         .add_attribute("action", "instantiate")
         .add_attribute("owner", config.owner)
-        .add_attribute("timelock_duration", config.timelock_duration.to_string()))
+        .add_attribute(
+            "overrule_pre_propose",
+            config.overrule_pre_propose.to_string(),
+        ))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -74,8 +84,8 @@ pub fn execute(
         }
         ExecuteMsg::UpdateConfig {
             owner,
-            timelock_duration,
-        } => execute_update_config(deps, info, owner, timelock_duration),
+            overrule_pre_propose,
+        } => execute_update_config(deps, info, owner, overrule_pre_propose),
     }
 }
 
@@ -102,7 +112,7 @@ pub fn execute_timelock_proposal(
     PROPOSALS.save(deps.storage, proposal_id, &proposal)?;
 
     let create_overrule_proposal = WasmMsg::Execute {
-        contract_addr: todo!(oldremes),
+        contract_addr: config.overrule_pre_propose.to_string(),
         msg: to_binary(&OverruleExecuteMsg::Propose {
             msg: OverruleProposeMessage::ProposeOverrule {
                 timelock_contract: env.contract.address.to_string(),
@@ -112,6 +122,8 @@ pub fn execute_timelock_proposal(
         funds: vec![],
     };
 
+    // NOTE: we don't handle an error that might appear during overrule proposal creation.
+    // Thus, we expect for proposal to get execution error status on proposal module level.
     Ok(Response::default()
         .add_message(create_overrule_proposal)
         .add_attribute("action", "timelock_proposal")
@@ -137,8 +149,10 @@ pub fn execute_execute_proposal(
         });
     }
 
+    let timelock_duration = get_timelock_duration(&config.overrule_pre_propose, &deps)?;
+
     // Check if timelock has passed
-    if env.block.time.seconds() < (config.timelock_duration + proposal.timelock_ts.seconds()) {
+    if env.block.time.seconds() < (timelock_duration + proposal.timelock_ts.seconds()) {
         return Err(ContractError::TimeLocked {});
     }
 
@@ -196,7 +210,7 @@ pub fn execute_update_config(
     deps: DepsMut,
     info: MessageInfo,
     new_owner: Option<String>,
-    new_timelock_duration: Option<u64>,
+    new_overrule_pre_propose: Option<String>,
 ) -> Result<Response<NeutronMsg>, ContractError> {
     let mut config: Config = CONFIG.load(deps.storage)?;
     if info.sender != config.owner {
@@ -211,8 +225,8 @@ pub fn execute_update_config(
         config.owner = owner;
     }
 
-    if let Some(timelock_duration) = new_timelock_duration {
-        config.timelock_duration = timelock_duration;
+    if let Some(overrule_pre_propose) = new_overrule_pre_propose {
+        config.overrule_pre_propose = deps.api.addr_validate(&overrule_pre_propose)?;
     }
 
     // TODO(oopcode): implement updating the .sudbao parameter.
@@ -221,7 +235,10 @@ pub fn execute_update_config(
     Ok(Response::new()
         .add_attribute("action", "update_config")
         .add_attribute("owner", config.owner)
-        .add_attribute("timelock_duration", config.timelock_duration.to_string()))
+        .add_attribute(
+            "overrule_pre_propose",
+            config.overrule_pre_propose.to_string(),
+        ))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -263,6 +280,24 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
     // Set contract to version to latest
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     Ok(Response::default())
+}
+
+fn get_timelock_duration(
+    overrule_pre_propose: &Addr,
+    deps: &DepsMut,
+) -> Result<u64, ContractError> {
+    let propose: Addr = deps.querier.query_wasm_smart(
+        overrule_pre_propose,
+        &OverruleQueryMsg::QueryBase(PreProposeQueryBase::ProposalModule {}),
+    )?;
+    let config: ProposalConfig = deps.querier.query_wasm_smart(
+        overrule_pre_propose,
+        &OverruleQueryMsg::QueryBase(PreProposeQueryBase::ProposalModule {}),
+    )?;
+    match config.max_voting_period {
+        Duration::Height(_) => Err(ContractError::CantCreateOverrule {}),
+        Duration::Time(duration) => Ok(duration),
+    }
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

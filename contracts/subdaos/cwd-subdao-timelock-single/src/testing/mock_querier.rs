@@ -12,6 +12,7 @@ use neutron_subdao_pre_propose_single::msg::QueryMsg as PreProposeQuery;
 pub const MOCK_SUBDAO_CORE_ADDR: &str = "neutron1subdao_core_contract";
 pub const MOCK_TIMELOCK_INITIALIZER: &str = "neutron1timelock_initializer";
 pub const MOCK_MAIN_DAO_ADDR: &str = "neutron1main_dao_core_contract";
+pub const MOCK_OVERRULE_PREPROPOSAL: &str = "neutron1main_dao_overrule_preproposal";
 
 pub fn mock_dependencies() -> OwnedDeps<MockStorage, MockApi, WasmMockQuerier> {
     let custom_querier = WasmMockQuerier::new(MockQuerier::new(&[]));

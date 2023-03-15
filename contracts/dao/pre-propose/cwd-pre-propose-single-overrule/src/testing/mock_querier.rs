@@ -3,20 +3,23 @@ use std::marker::PhantomData;
 // use crate::contract::{
 //     MainDaoQueryMsg, ProposalStatus, SingleChoiceProposal, SubDao, TimelockConfig, TimelockQueryMsg,
 // };
-use crate::msg::{
-    DaoProposalQueryMsg, MainDaoQueryMsg, ProposalStatus, SingleChoiceProposal, SubDao,
-    TimelockConfig, TimelockQueryMsg,
-};
 use cosmwasm_std::{
     from_binary, from_slice,
     testing::{MockApi, MockQuerier, MockStorage},
     to_binary, Addr, ContractResult, Empty, OwnedDeps, Querier, QuerierResult, QueryRequest,
     SystemError, SystemResult, WasmQuery,
 };
-use neutron_subdao_core::msg::QueryMsg as SubdaoQueryMsg;
-use neutron_subdao_core::types as SubdaoTypes;
+use cwd_core::{msg::QueryMsg as MainDaoQueryMsg, query::SubDao};
+use cwd_proposal_single::msg::QueryMsg as ProposalSingleQueryMsg;
+
+use neutron_dao_pre_propose_overrule::msg::{
+    ExecuteMsg, InstantiateMsg, ProposeMessageInternal, QueryMsg,
+};
+use neutron_subdao_core::{msg::QueryMsg as SubdaoQueryMsg, types as SubdaoTypes};
 use neutron_subdao_pre_propose_single::msg::QueryMsg as SubdaoPreProposeQueryMsg;
 use neutron_subdao_proposal_single::msg as SubdaoProposalMsg;
+use neutron_subdao_timelock_single::types::{ProposalStatus, SingleChoiceProposal};
+use neutron_subdao_timelock_single::{msg as TimelockMsg, types as TimelockTypes};
 
 pub const MOCK_DAO_CORE: &str = "neutron1dao_core_contract";
 pub const MOCK_DAO_CORE_MANY_SUBDAOS: &str = "neutron1dao_core_contract_many_subdaos";
@@ -62,11 +65,16 @@ impl WasmMockQuerier {
         match &request {
             QueryRequest::Wasm(WasmQuery::Smart { contract_addr, msg }) => {
                 if contract_addr == MOCK_SUBDAO_PROPOSE_MODULE {
-                    let q: DaoProposalQueryMsg = from_binary(msg).unwrap();
-                    let addr = match q {
-                        DaoProposalQueryMsg::Dao {} => MOCK_DAO_CORE,
+                    let q: ProposalSingleQueryMsg = from_binary(msg).unwrap();
+                    return match q {
+                        ProposalSingleQueryMsg::Dao {} => {
+                            SystemResult::Ok(ContractResult::from(to_binary(MOCK_DAO_CORE)))
+                        }
+                        ProposalSingleQueryMsg::ProposalCount {} => {
+                            SystemResult::Ok(ContractResult::from(to_binary(&(0 as u64))))
+                        }
+                        _ => SystemResult::Err(SystemError::Unknown {}),
                     };
-                    return SystemResult::Ok(ContractResult::from(to_binary(addr)));
                 }
                 if contract_addr == MOCK_DAO_CORE {
                     let q: MainDaoQueryMsg = from_binary(msg).unwrap();
@@ -78,19 +86,20 @@ impl WasmMockQuerier {
                             addr: MOCK_SUBDAO_CORE.to_string(),
                             charter: None,
                         }]))),
+                        _ => SystemResult::Err(SystemError::Unknown {}),
                     };
                 }
                 if contract_addr == MOCK_TIMELOCK_CONTRACT {
-                    let q: TimelockQueryMsg = from_binary(msg).unwrap();
+                    let q: TimelockMsg::QueryMsg = from_binary(msg).unwrap();
                     return match q {
-                        TimelockQueryMsg::Config {} => {
-                            SystemResult::Ok(ContractResult::from(to_binary(&TimelockConfig {
+                        TimelockMsg::QueryMsg::Config {} => SystemResult::Ok(ContractResult::from(
+                            to_binary(&TimelockTypes::Config {
                                 owner: Addr::unchecked(MOCK_DAO_CORE),
-                                timelock_duration: 0,
+                                overrule_pre_propose: Addr::unchecked(""),
                                 subdao: Addr::unchecked(MOCK_SUBDAO_CORE),
-                            })))
-                        }
-                        TimelockQueryMsg::Proposal { proposal_id } => SystemResult::Ok(
+                            }),
+                        )),
+                        TimelockMsg::QueryMsg::Proposal { proposal_id } => SystemResult::Ok(
                             ContractResult::from(to_binary(&SingleChoiceProposal {
                                 id: proposal_id,
                                 timelock_ts: Default::default(),
@@ -98,6 +107,7 @@ impl WasmMockQuerier {
                                 status: ProposalStatus::Timelocked,
                             })),
                         ),
+                        _ => SystemResult::Err(SystemError::Unknown {}),
                     };
                 }
                 if contract_addr == MOCK_SUBDAO_CORE {

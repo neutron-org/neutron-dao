@@ -1,31 +1,31 @@
 use crate::types::ProposeMessage;
+use cosmwasm_std::{Addr, CosmosMsg, Timestamp};
 use cwd_interface::ModuleInstantiateInfo;
 use cwd_pre_propose_base::msg::{ExecuteMsg as ExecuteBase, QueryMsg as QueryBase};
 use cwd_voting::deposit::UncheckedDepositInfo;
+use neutron_bindings::bindings::msg::NeutronMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+
+pub type ExecuteMsg = ExecuteBase<ProposeMessage>;
+pub type QueryMsg = QueryBase;
 
 #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct InstantiateMsg {
-    /// Information about the deposit requirements for this
-    /// module. None if no deposit.
-    pub deposit_info: Option<UncheckedDepositInfo>,
-    /// If false, only members (addresses with voting power) may create
-    /// proposals in the DAO. Otherwise, any address may create a
-    /// proposal so long as they pay the deposit.
-    pub open_proposal_submission: bool,
-
-    /// Instantiate information for timelock module.
-    pub timelock_module_instantiate_info: ModuleInstantiateInfo,
+    pub main_dao: String,
 }
 
-pub type ExecuteMsg = ExecuteBase<ProposeMessage>;
-
-#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
+/// Internal version of the propose message that includes the
+/// `proposer` field. The module will fill this in based on the sender
+/// of the external message.
+#[derive(Serialize, JsonSchema, Deserialize, Debug, Clone)]
 #[serde(rename_all = "snake_case")]
-pub enum QueryMsg {
-    QueryBase(QueryBase),
-    /// Gets the address of the timelock contract.
-    TimelockAddress {},
+pub enum ProposeMessageInternal {
+    Propose {
+        title: String,
+        description: String,
+        msgs: Vec<CosmosMsg<NeutronMsg>>,
+        proposer: Option<String>,
+    },
 }

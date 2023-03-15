@@ -16,3 +16,9 @@ cosmwasm-std = "1.0.0"
 neutron_bindings = { package = "neutron-sdk", git = "https://github.com/neutron-org/neutron-sdk.git", rev = "c19b40c024eeaa8733af9ddee94a52798d78f469" }
 cwd-voting = { path = "../cwd-voting" }
 cwd-interface = { path = "../cwd-interface" }
+thiserror = { version = "1.0.31" }
+neutron-subdao-core = { version = "*", path = "../neutron-subdao-core" }
+cwd-core = { version = "*", path = "../../contracts/dao/cwd-core" }
+neutron-subdao-timelock-single = { version = "*", path = "../neutron-subdao-timelock-single" }
+neutron-subdao-proposal-single = { version = "*", path = "../neutron-subdao-proposal-single" }
+neutron-subdao-pre-propose-single = { version = "*", path = "../neutron-subdao-pre-propose-single" }
