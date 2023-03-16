@@ -1,7 +1,7 @@
 use cosmwasm_std::{
     from_binary,
     testing::{mock_env, mock_info},
-    to_binary, CosmosMsg, DepsMut, Empty, SubMsg, WasmMsg,
+    to_binary, Addr, CosmosMsg, DepsMut, Empty, SubMsg, WasmMsg,
 };
 use std::collections::HashMap;
 
@@ -78,18 +78,31 @@ fn test_create_overrule_proposal() {
 }
 
 #[test]
-fn test_query_config() {
+fn test_base_queries() {
     let contracts: HashMap<String, Box<dyn ContractQuerier>> = get_properly_initialized_dao();
     let mut deps = mock_dependencies(contracts);
     init_base_contract(deps.as_mut());
-    let query_msg = QueryMsg::Config {};
-    let res = query(deps.as_ref(), mock_env(), query_msg).unwrap();
-    let queried_prop = from_binary(&res).unwrap();
-    let expected_prop = Config {
+
+    let res_config = query(deps.as_ref(), mock_env(), QueryMsg::Config {}).unwrap();
+    let queried_config = from_binary(&res_config).unwrap();
+    let expected_config = Config {
         deposit_info: None,
         open_proposal_submission: true,
     };
-    assert_eq!(expected_prop, queried_prop);
+    assert_eq!(expected_config, queried_config);
+
+    let res_dao = query(deps.as_ref(), mock_env(), QueryMsg::Dao {}).unwrap();
+    let queried_dao: Addr = from_binary(&res_dao).unwrap();
+    let expected_dao = Addr::unchecked(MOCK_DAO_CORE);
+    assert_eq!(expected_dao, queried_dao);
+
+    let res_proposal_module =
+        query(deps.as_ref(), mock_env(), QueryMsg::ProposalModule {}).unwrap();
+    let queried_proposal_module: Addr = from_binary(&res_proposal_module).unwrap();
+    let expected_proposal_module = Addr::unchecked(MOCK_DAO_PROPOSE_MODULE);
+    assert_eq!(expected_proposal_module, queried_proposal_module);
+
+    assert_eq!(expected_config, queried_config);
 }
 
 #[test]
