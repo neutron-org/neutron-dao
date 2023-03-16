@@ -10,14 +10,14 @@ use crate::{
     testing::mock_querier::{mock_dependencies, MOCK_DAO_CORE, MOCK_TIMELOCK_CONTRACT},
 };
 use neutron_dao_pre_propose_overrule::msg::{
-    ExecuteMsg, InstantiateMsg, ProposeMessageInternal, QueryMsg,
+    ExecuteMsg, InstantiateMsg, ProposeMessageInternal, QueryExt, QueryMsg,
 };
 
 use crate::error::PreProposeOverruleError;
 use crate::testing::mock_querier::{
     get_dao_with_impostor_subdao, get_dao_with_impostor_timelock, get_dao_with_many_subdaos,
     get_properly_initialized_dao, ContractQuerier, MOCK_DAO_PROPOSE_MODULE,
-    MOCK_IMPOSTOR_TIMELOCK_CONTRACT, NON_TIMELOCKED_PROPOSAL_ID, SUBDAO_NAME,
+    MOCK_IMPOSTOR_TIMELOCK_CONTRACT, NON_TIMELOCKED_PROPOSAL_ID, PROPOSALS_COUNT, SUBDAO_NAME,
     TIMELOCKED_PROPOSAL_ID,
 };
 use cwd_pre_propose_base::state::Config;
@@ -103,6 +103,43 @@ fn test_base_queries() {
     assert_eq!(expected_proposal_module, queried_proposal_module);
 
     assert_eq!(expected_config, queried_config);
+}
+
+#[test]
+fn test_proposal_id_query() {
+    let contracts: HashMap<String, Box<dyn ContractQuerier>> = get_properly_initialized_dao();
+    let mut deps = mock_dependencies(contracts);
+    init_base_contract(deps.as_mut());
+    const PROPOSAL_ID: u64 = TIMELOCKED_PROPOSAL_ID;
+    const PROPOSER_ADDR: &str = "whatever";
+    let msg = ExecuteMsg::Propose {
+        msg: ProposeMessage::ProposeOverrule {
+            timelock_contract: MOCK_TIMELOCK_CONTRACT.to_string(),
+            proposal_id: PROPOSAL_ID,
+        },
+    };
+    let res = execute(
+        deps.as_mut(),
+        mock_env(),
+        mock_info(PROPOSER_ADDR, &[]),
+        msg,
+    );
+    assert!(res.is_ok());
+
+    let res_id = query(
+        deps.as_ref(),
+        mock_env(),
+        QueryMsg::QueryExtension {
+            msg: QueryExt::OverruleProposalId {
+                subdao_proposal_id: PROPOSAL_ID,
+                timelock_address: MOCK_TIMELOCK_CONTRACT.to_string(),
+            },
+        },
+    )
+    .unwrap();
+    let queried_id: u64 = from_binary(&res_id).unwrap();
+    let expected_id = PROPOSALS_COUNT + 1;
+    assert_eq!(expected_id, queried_id);
 }
 
 #[test]

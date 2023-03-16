@@ -30,6 +30,7 @@ pub const MOCK_IMPOSTOR_TIMELOCK_CONTRACT: &str = "neutron1timelock_contract_imp
 pub const SUBDAO_NAME: &str = "Based DAO";
 pub const TIMELOCKED_PROPOSAL_ID: u64 = 42;
 pub const NON_TIMELOCKED_PROPOSAL_ID: u64 = 24;
+pub const PROPOSALS_COUNT: u64 = 61;
 
 pub fn mock_dependencies(
     contracts: HashMap<String, Box<dyn ContractQuerier>>,
@@ -154,7 +155,7 @@ impl ContractQuerier for MockDaoProposalQueries {
                 SystemResult::Ok(ContractResult::from(to_binary(&self.dao_core)))
             }
             ProposalSingleQueryMsg::ProposalCount {} => {
-                SystemResult::Ok(ContractResult::from(to_binary(&(0 as u64))))
+                SystemResult::Ok(ContractResult::from(to_binary(&PROPOSALS_COUNT)))
             }
             _ => SystemResult::Err(SystemError::Unknown {}),
         };
