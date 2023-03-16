@@ -10,7 +10,9 @@ use cw_utils::{Duration, Threshold};
 use cwd_pre_propose_base::msg::QueryMsg as PreProposeQueryBase;
 use neutron_bindings::bindings::msg::NeutronMsg;
 use neutron_dao_pre_propose_overrule::msg::ExecuteMsg as OverruleExecuteMsg;
-use neutron_dao_pre_propose_overrule::msg::QueryMsg as OverruleQueryMsg;
+use neutron_dao_pre_propose_overrule::msg::{
+    QueryExt as OverruleQueryExt, QueryMsg as OverruleQueryMsg,
+};
 use neutron_dao_pre_propose_overrule::types::ProposeMessage as OverruleProposeMessage;
 use neutron_subdao_core::msg::QueryMsg as SubdaoQuery;
 use neutron_subdao_pre_propose_single::msg::QueryMsg as PreProposeQuery;
@@ -39,7 +41,7 @@ pub fn instantiate(
 
     let subdao_core: Addr = deps.querier.query_wasm_smart(
         info.sender, // sender is meant to be the pre-propose module
-        &PreProposeQuery::QueryBase(PreProposeQueryBase::Dao {}),
+        &PreProposeQuery::Dao {},
     )?;
 
     let main_dao: Addr = deps
@@ -149,7 +151,7 @@ pub fn execute_execute_proposal(
         });
     }
 
-    let timelock_duration = get_timelock_duration(&config.overrule_pre_propose, &deps)?;
+    let timelock_duration = get_timelock_duration(&deps, &config.overrule_pre_propose)?;
 
     // Check if timelock has passed
     if env.block.time.seconds() < (timelock_duration + proposal.timelock_ts.seconds()) {
@@ -283,17 +285,15 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
 }
 
 fn get_timelock_duration(
-    overrule_pre_propose: &Addr,
     deps: &DepsMut,
+    overrule_pre_propose: &Addr,
 ) -> Result<u64, ContractError> {
-    let propose: Addr = deps.querier.query_wasm_smart(
-        overrule_pre_propose,
-        &OverruleQueryMsg::QueryBase(PreProposeQueryBase::ProposalModule {}),
-    )?;
-    let config: ProposalConfig = deps.querier.query_wasm_smart(
-        propose,
-        &OverruleQueryMsg::QueryBase(PreProposeQueryBase::ProposalModule {}),
-    )?;
+    let propose: Addr = deps
+        .querier
+        .query_wasm_smart(overrule_pre_propose, &OverruleQueryMsg::ProposalModule {})?;
+    let config: ProposalConfig = deps
+        .querier
+        .query_wasm_smart(propose, &OverruleQueryMsg::ProposalModule {})?;
     match config.max_voting_period {
         Duration::Height(_) => Err(ContractError::CantCreateOverrule {}),
         Duration::Time(duration) => Ok(duration),

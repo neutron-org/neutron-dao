@@ -9,7 +9,7 @@ use neutron_subdao_timelock_single::types::{
     Config, ProposalListResponse, ProposalStatus, SingleChoiceProposal,
 };
 
-use crate::testing::mock_querier::MOCK_MAIN_DAO_ADDR;
+use crate::testing::mock_querier::{MOCK_MAIN_DAO_ADDR, MOCK_OVERRULE_PROPOSAL};
 use crate::{
     contract::{execute, instantiate, query, reply},
     state::{CONFIG, DEFAULT_LIMIT, PROPOSALS},
@@ -24,7 +24,7 @@ fn test_instantiate_test() {
     let env = mock_env();
     let info = mock_info("neutron1unknownsender", &[]);
     let msg = InstantiateMsg {
-        timelock_duration: 10,
+        overrule_pre_propose: MOCK_OVERRULE_PROPOSAL.to_string(),
     };
     let res = instantiate(deps.as_mut(), env.clone(), info, msg);
     assert_eq!(
@@ -35,7 +35,7 @@ fn test_instantiate_test() {
     let info = mock_info(MOCK_TIMELOCK_INITIALIZER, &[]);
 
     let msg = InstantiateMsg {
-        timelock_duration: 10,
+        overrule_pre_propose: MOCK_OVERRULE_PROPOSAL.to_string(),
     };
     let res = instantiate(deps.as_mut(), env.clone(), info.clone(), msg.clone());
     let res_ok = res.unwrap();
@@ -48,13 +48,13 @@ fn test_instantiate_test() {
     let config = CONFIG.load(&deps.storage).unwrap();
     let expected_config = Config {
         owner: Addr::unchecked(MOCK_MAIN_DAO_ADDR),
-        timelock_duration: msg.timelock_duration,
+        overrule_pre_propose: Addr::unchecked(msg.overrule_pre_propose),
         subdao: Addr::unchecked(MOCK_SUBDAO_CORE_ADDR),
     };
     assert_eq!(expected_config, config);
 
     let msg = InstantiateMsg {
-        timelock_duration: 10,
+        overrule_pre_propose: MOCK_OVERRULE_PROPOSAL.to_string(),
     };
     let res = instantiate(deps.as_mut(), env, info, msg.clone());
     let res_ok = res.unwrap();
@@ -67,7 +67,7 @@ fn test_instantiate_test() {
     let config = CONFIG.load(&deps.storage).unwrap();
     let expected_config = Config {
         owner: Addr::unchecked(MOCK_MAIN_DAO_ADDR),
-        timelock_duration: msg.timelock_duration,
+        overrule_pre_propose: Addr::unchecked(msg.overrule_pre_propose),
         subdao: Addr::unchecked(MOCK_SUBDAO_CORE_ADDR),
     };
     assert_eq!(expected_config, config);
@@ -92,7 +92,7 @@ fn test_execute_timelock_proposal() {
 
     let config = Config {
         owner: Addr::unchecked("owner"),
-        timelock_duration: 10,
+        overrule_pre_propose: Addr::unchecked(MOCK_OVERRULE_PROPOSAL),
         subdao: Addr::unchecked(MOCK_SUBDAO_CORE_ADDR),
     };
     CONFIG.save(deps.as_mut().storage, &config).unwrap();
@@ -136,7 +136,7 @@ fn test_execute_proposal() {
 
     let config = Config {
         owner: Addr::unchecked("owner"),
-        timelock_duration: 10,
+        overrule_pre_propose: Addr::unchecked(MOCK_OVERRULE_PROPOSAL),
         subdao: Addr::unchecked(MOCK_SUBDAO_CORE_ADDR),
     };
     CONFIG.save(deps.as_mut().storage, &config).unwrap();
@@ -216,7 +216,7 @@ fn test_overrule_proposal() {
 
     let config = Config {
         owner: Addr::unchecked("owner"),
-        timelock_duration: 10,
+        overrule_pre_propose: Addr::unchecked(MOCK_OVERRULE_PROPOSAL),
         subdao: Addr::unchecked(MOCK_SUBDAO_CORE_ADDR),
     };
     CONFIG.save(deps.as_mut().storage, &config).unwrap();
@@ -276,7 +276,7 @@ fn execute_update_config() {
 
     let msg = ExecuteMsg::UpdateConfig {
         owner: None,
-        timelock_duration: Some(20),
+        overrule_pre_propose: Some("neutron1someotheroverrule".to_string()),
     };
 
     let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone());
@@ -287,7 +287,7 @@ fn execute_update_config() {
 
     let config = Config {
         owner: Addr::unchecked("owner"),
-        timelock_duration: 10,
+        overrule_pre_propose: Addr::unchecked(MOCK_OVERRULE_PROPOSAL),
         subdao: Addr::unchecked(MOCK_SUBDAO_CORE_ADDR),
     };
     CONFIG.save(deps.as_mut().storage, &config).unwrap();
@@ -297,7 +297,7 @@ fn execute_update_config() {
     let info = mock_info("owner", &[]);
     let config = Config {
         owner: Addr::unchecked("none"),
-        timelock_duration: 10,
+        overrule_pre_propose: Addr::unchecked(MOCK_OVERRULE_PROPOSAL),
         subdao: Addr::unchecked(MOCK_SUBDAO_CORE_ADDR),
     };
     CONFIG.save(deps.as_mut().storage, &config).unwrap();
@@ -306,7 +306,7 @@ fn execute_update_config() {
 
     let config = Config {
         owner: Addr::unchecked("owner"),
-        timelock_duration: 10,
+        overrule_pre_propose: Addr::unchecked(MOCK_OVERRULE_PROPOSAL),
         subdao: Addr::unchecked(MOCK_SUBDAO_CORE_ADDR),
     };
     CONFIG.save(deps.as_mut().storage, &config).unwrap();
@@ -319,18 +319,19 @@ fn execute_update_config() {
     ];
     assert_eq!(expected_attributes, res_ok.attributes);
     let updated_config = CONFIG.load(deps.as_mut().storage).unwrap();
+    let some_other_prepropose = "neutron1some_other_prepropose";
     assert_eq!(
         updated_config,
         Config {
             owner: Addr::unchecked("owner"),
-            timelock_duration: 20,
+            overrule_pre_propose: Addr::unchecked(some_other_prepropose),
             subdao: Addr::unchecked(MOCK_SUBDAO_CORE_ADDR)
         }
     );
 
     let msg = ExecuteMsg::UpdateConfig {
         owner: Some("neutron1newowner".to_string()),
-        timelock_duration: None,
+        overrule_pre_propose: None,
     };
 
     let res_ok = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
@@ -346,7 +347,7 @@ fn execute_update_config() {
         updated_config,
         Config {
             owner: Addr::unchecked("neutron1newowner"),
-            timelock_duration: 20,
+            overrule_pre_propose: Addr::unchecked(some_other_prepropose),
             subdao: Addr::unchecked(MOCK_SUBDAO_CORE_ADDR)
         }
     );
@@ -361,7 +362,7 @@ fn test_query_config() {
     let mut deps = mock_dependencies();
     let config = Config {
         owner: Addr::unchecked("owner"),
-        timelock_duration: 20,
+        overrule_pre_propose: Addr::unchecked(MOCK_OVERRULE_PROPOSAL),
         subdao: Addr::unchecked(MOCK_SUBDAO_CORE_ADDR),
     };
     CONFIG.save(deps.as_mut().storage, &config).unwrap();
