@@ -19,7 +19,6 @@ use neutron_subdao_proposal_single::msg as SubdaoProposalMsg;
 use neutron_subdao_timelock_single::types::{ProposalStatus, SingleChoiceProposal};
 use neutron_subdao_timelock_single::{msg as TimelockMsg, types as TimelockTypes};
 
-// set of contracts that are set up properly
 pub const MOCK_DAO_CORE: &str = "neutron1dao_core_contract";
 pub const MOCK_SUBDAO_PROPOSE_MODULE: &str = "neutron1subdao_propose_module";
 pub const MOCK_SUBDAO_PREPROPOSE_MODULE: &str = "neutron1subdao_prepropose_module";
@@ -27,19 +26,8 @@ pub const MOCK_DAO_PROPOSE_MODULE: &str = "neutron1propose_module";
 pub const MOCK_TIMELOCK_CONTRACT: &str = "neutron1timelock_contract";
 pub const MOCK_SUBDAO_CORE: &str = "neutron1subdao_core";
 
-pub const MOCK_IMPOSTOR_SUBDAO_CORE: &str = "neutron1subdao_core_impostor";
-pub const MOCK_IMPOSTOR_SUBDAO_PROPOSE_MODULE: &str = "neutron1subdao_propose_module_impostor";
-pub const MOCK_IMPOSTOR_SUBDAO_PRE_PROPOSE_MODULE: &str =
-    "neutron1subdao_prepropose_module_impostor";
-
-pub const MOCK_TIMELOCK_CONTRACT_IMPOSTOR_SUBDAO: &str = "neutron1timelock_contract_wrong_subdao";
-
 pub const MOCK_IMPOSTOR_TIMELOCK_CONTRACT: &str = "neutron1timelock_contract_impostor";
 
-// the dao core that has so many subdao that pagination is required to process them
-pub const MOCK_DAO_CORE_MANY_SUBDAOS: &str = "neutron1dao_core_contract_many_subdaos";
-
-// other
 pub const SUBDAO_NAME: &str = "Based DAO";
 pub const TIMELOCKED_PROPOSAL_ID: u64 = 42;
 pub const NON_TIMELOCKED_PROPOSAL_ID: u64 = 24;
@@ -328,7 +316,7 @@ pub fn get_dao_with_many_subdaos() -> HashMap<String, Box<dyn ContractQuerier>> 
             sub_dao_list_pages: HashMap::from([
                 (
                     None,
-                    (1..10)
+                    (0..crate::contract::SUBDAOS_QUERY_LIMIT)
                         .map(|_| SubDao {
                             addr: "bla_bla".to_string(),
                             charter: None,

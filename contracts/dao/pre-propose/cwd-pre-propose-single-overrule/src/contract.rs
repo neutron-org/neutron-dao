@@ -31,6 +31,8 @@ use neutron_subdao_timelock_single::{msg as TimelockMsg, types as TimelockTypes}
 pub(crate) const CONTRACT_NAME: &str = "crates.io:cwd-pre-propose-single-overrule";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
+pub(crate) const SUBDAOS_QUERY_LIMIT: u32 = 10;
+
 type PrePropose = PreProposeContract<ProposeMessageInternal>;
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -193,8 +195,7 @@ fn check_if_subdao_legit(
 ) -> Result<bool, PreProposeOverruleError> {
     let main_dao = get_main_dao_address(&deps)?;
 
-    let mut start_after: Option<&SubDao> = None;
-    let query_limit = 10;
+    let mut start_after: Option<SubDao> = None;
 
     // unfortunately, there is no way to get the total subdao number so we do infinite loop here
     loop {
@@ -203,17 +204,19 @@ fn check_if_subdao_legit(
             &MainDaoQueryMsg::ListSubDaos {
                 start_after: match start_after.clone() {
                     None => None,
-                    Some(a) => Some(a.clone().addr),
+                    Some(a) => Some(a.addr),
                 },
-                limit: Some(query_limit),
+                limit: Some(SUBDAOS_QUERY_LIMIT),
             },
         )?;
+
+        let results_number = subdao_list.len();
 
         if subdao_list.is_empty() {
             return Ok(false);
         }
 
-        start_after = subdao_list.last();
+        start_after = Some(subdao_list.last().unwrap().clone());
 
         if subdao_list
             .into_iter()
@@ -223,7 +226,7 @@ fn check_if_subdao_legit(
             return Ok(true);
         };
 
-        if subdao_list.len() < query_limit as usize {
+        if results_number < SUBDAOS_QUERY_LIMIT as usize {
             return Ok(false);
         }
     }

@@ -3,14 +3,11 @@ use cosmwasm_std::{
     testing::{mock_env, mock_info},
     to_binary, CosmosMsg, DepsMut, Empty, SubMsg, WasmMsg,
 };
-use cwd_core::query::SubDao;
 use std::collections::HashMap;
 
 use crate::{
     contract::{execute, instantiate, query},
-    testing::mock_querier::{
-        mock_dependencies, MOCK_DAO_CORE, MOCK_SUBDAO_PROPOSE_MODULE, MOCK_TIMELOCK_CONTRACT,
-    },
+    testing::mock_querier::{mock_dependencies, MOCK_DAO_CORE, MOCK_TIMELOCK_CONTRACT},
 };
 use neutron_dao_pre_propose_overrule::msg::{
     ExecuteMsg, InstantiateMsg, ProposeMessageInternal, QueryMsg,
@@ -19,11 +16,9 @@ use neutron_dao_pre_propose_overrule::msg::{
 use crate::error::PreProposeOverruleError;
 use crate::testing::mock_querier::{
     get_dao_with_impostor_subdao, get_dao_with_impostor_timelock, get_dao_with_many_subdaos,
-    get_properly_initialized_dao, ContractQuerier, MockDaoProposalQueries, MockDaoQueries,
-    MockSubaoPreProposalQueries, MockSubdaoCoreQueries, MockSubdaoProposalQueries,
-    MockTimelockQueries, MOCK_DAO_PROPOSE_MODULE, MOCK_IMPOSTOR_TIMELOCK_CONTRACT,
-    MOCK_SUBDAO_CORE, MOCK_SUBDAO_PREPROPOSE_MODULE, MOCK_TIMELOCK_CONTRACT_IMPOSTOR_SUBDAO,
-    NON_TIMELOCKED_PROPOSAL_ID, SUBDAO_NAME, TIMELOCKED_PROPOSAL_ID,
+    get_properly_initialized_dao, ContractQuerier, MOCK_DAO_PROPOSE_MODULE,
+    MOCK_IMPOSTOR_TIMELOCK_CONTRACT, NON_TIMELOCKED_PROPOSAL_ID, SUBDAO_NAME,
+    TIMELOCKED_PROPOSAL_ID,
 };
 use cwd_pre_propose_base::state::Config;
 use neutron_dao_pre_propose_overrule::types::ProposeMessage;
@@ -56,7 +51,6 @@ fn test_create_overrule_proposal() {
         mock_info(PROPOSER_ADDR, &[]),
         msg,
     );
-    println!("{:?}", res);
     assert!(res.is_ok());
     let prop_desc: String = format!("Reject the decision made by the {} subdao", SUBDAO_NAME);
     let prop_name: String = format!("Overrule proposal {} of {}", PROPOSAL_ID, SUBDAO_NAME);
@@ -175,7 +169,7 @@ fn test_impostor_timelock() {
 #[test]
 fn test_proposal_is_not_timelocked() {
     // test where the proposal we're to create overrule for isn't timelocked already/yet
-    let contracts: HashMap<String, Box<dyn ContractQuerier>> = HashMap::new();
+    let contracts: HashMap<String, Box<dyn ContractQuerier>> = get_properly_initialized_dao();
     let mut deps = mock_dependencies(contracts);
     init_base_contract(deps.as_mut());
     const PROPOSAL_ID: u64 = NON_TIMELOCKED_PROPOSAL_ID;
@@ -219,7 +213,6 @@ fn test_long_subdao_list() {
         mock_info(PROPOSER_ADDR, &[]),
         msg,
     );
-    println!("{:?}", res);
     assert!(res.is_ok());
 }
 
