@@ -24,9 +24,7 @@ use cwd_proposal_single::msg::QueryMsg as ProposalSingleQueryMsg;
 use cwd_voting::pre_propose::ProposalCreationPolicy;
 use neutron_dao_pre_propose_overrule::types::ProposeMessage;
 use neutron_subdao_core::{msg::QueryMsg as SubdaoQueryMsg, types as SubdaoTypes};
-use neutron_subdao_pre_propose_single::{
-    msg::QueryMsg as SubdaoPreProposeQueryMsg, types::ProposeMessage as SubdaoPreProposeMessage,
-};
+use neutron_subdao_pre_propose_single::msg::QueryMsg as SubdaoPreProposeQueryMsg;
 use neutron_subdao_proposal_single::msg as SubdaoProposalMsg;
 use neutron_subdao_timelock_single::{msg as TimelockMsg, types as TimelockTypes};
 
@@ -163,7 +161,7 @@ fn get_timelock_from_subdao(
         subdao_core,
         &SubdaoQueryMsg::ProposalModules {
             start_after: None,
-            // we assume any subdao proposal module has pre-propose module with timelock
+            // we assume any subdao proposal module has pre-propose module with timelock.
             // thus, we need only single module
             limit: Some(1),
         },
@@ -198,11 +196,12 @@ fn check_if_subdao_legit(
     let mut start_after: Option<&SubDao> = None;
     let query_limit = 10;
 
+    // unfortunately, there is no way to get the total subdao number so we do infinite loop here
     loop {
         let subdao_list: Vec<SubDao> = deps.querier.query_wasm_smart(
             main_dao.clone(),
             &MainDaoQueryMsg::ListSubDaos {
-                start_after: match start_after {
+                start_after: match start_after.clone() {
                     None => None,
                     Some(a) => Some(a.clone().addr),
                 },
@@ -214,19 +213,19 @@ fn check_if_subdao_legit(
             return Ok(false);
         }
 
-        // start_after = subdao_list.last();
+        start_after = subdao_list.last();
 
         if subdao_list
             .into_iter()
-            .find(|x1| x1.addr == subdao_core.clone().into_string())
+            .find(|subdao| subdao.addr == subdao_core.clone().into_string())
             .is_some()
         {
             return Ok(true);
         };
 
-        // if subdao_list.len() < query_limit as usize {
-        //     return Ok(false)
-        // }
+        if subdao_list.len() < query_limit as usize {
+            return Ok(false);
+        }
     }
 }
 
