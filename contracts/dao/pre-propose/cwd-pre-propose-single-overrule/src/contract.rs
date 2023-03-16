@@ -9,7 +9,7 @@ use error::PreProposeOverruleError;
 
 use crate::error;
 use neutron_dao_pre_propose_overrule::msg::{
-    ExecuteMsg, InstantiateMsg, ProposeMessageInternal, QueryMsg,
+    ExecuteMsg, InstantiateMsg, ProposeMessageInternal, QueryExt, QueryMsg,
 };
 // use crate::state::{Config, CONFIG};
 use cwd_pre_propose_base::{
@@ -24,7 +24,9 @@ use cwd_proposal_single::msg::QueryMsg as ProposalSingleQueryMsg;
 use cwd_voting::pre_propose::ProposalCreationPolicy;
 use neutron_dao_pre_propose_overrule::types::ProposeMessage;
 use neutron_subdao_core::{msg::QueryMsg as SubdaoQueryMsg, types as SubdaoTypes};
-use neutron_subdao_pre_propose_single::msg::QueryMsg as SubdaoPreProposeQueryMsg;
+use neutron_subdao_pre_propose_single::msg::{
+    QueryExt as SubdaoPreProposeQueryExt, QueryMsg as SubdaoPreProposeQueryMsg,
+};
 use neutron_subdao_proposal_single::msg as SubdaoProposalMsg;
 use neutron_subdao_timelock_single::{msg as TimelockMsg, types as TimelockTypes};
 
@@ -33,7 +35,7 @@ pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub(crate) const SUBDAOS_QUERY_LIMIT: u32 = 10;
 
-type PrePropose = PreProposeContract<ProposeMessageInternal>;
+type PrePropose = PreProposeContract<ProposeMessageInternal, QueryExt>;
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -181,9 +183,12 @@ fn get_timelock_from_subdao(
     match prop_policy {
         ProposalCreationPolicy::Anyone {} => Err(PreProposeOverruleError::SubdaoMisconfured {}),
         ProposalCreationPolicy::Module { addr } => {
-            let timelock: Addr = deps
-                .querier
-                .query_wasm_smart(addr, &SubdaoPreProposeQueryMsg::TimelockAddress {})?;
+            let timelock: Addr = deps.querier.query_wasm_smart(
+                addr,
+                &SubdaoPreProposeQueryMsg::QueryExtension {
+                    msg: SubdaoPreProposeQueryExt::TimelockAddress {},
+                },
+            )?;
             Ok(timelock)
         }
     }
@@ -268,5 +273,23 @@ fn get_subdao_name(deps: &DepsMut, subdao: &Addr) -> Result<String, PreProposeOv
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
-    PrePropose::default().query(deps, env, msg)
+    match msg {
+        QueryMsg::QueryExtension {
+            msg:
+                QueryExt::OverruleProposalId {
+                    timelock_address,
+                    subdao_proposal_id,
+                },
+        } => {
+            let overrule_proposal_id = PROPOSALS.load(
+                deps.storage,
+                (
+                    subdao_proposal_id,
+                    deps.api.addr_validate(&timelock_address)?,
+                ),
+            )?;
+            to_binary(&overrule_proposal_id)
+        }
+        _ => PrePropose::default().query(deps, env, msg),
+    }
 }

@@ -85,7 +85,10 @@ pub enum ExecuteMsg<ProposalMessage> {
 
 #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub enum QueryMsg {
+pub enum QueryMsg<QueryExt>
+where
+    QueryExt: JsonSchema,
+{
     /// Gets the proposal module that this pre propose module is
     /// associated with. Returns `Addr`.
     ProposalModule {},
@@ -97,6 +100,9 @@ pub enum QueryMsg {
     /// Gets the deposit info for the proposal identified by
     /// PROPOSAL_ID. Returns `DepositInfoResponse`.
     DepositInfo { proposal_id: u64 },
+    /// Extension for queries. The default implementation will do
+    /// nothing if queried for will return `Binary::default()`.
+    QueryExtension { msg: QueryExt },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]

@@ -11,7 +11,9 @@ use cwd_core::{msg::QueryMsg as MainDaoQueryMsg, query::SubDao};
 use cwd_proposal_single::msg::QueryMsg as ProposalSingleQueryMsg;
 
 use neutron_subdao_core::{msg::QueryMsg as SubdaoQueryMsg, types as SubdaoTypes};
-use neutron_subdao_pre_propose_single::msg::QueryMsg as SubdaoPreProposeQueryMsg;
+use neutron_subdao_pre_propose_single::msg::{
+    QueryExt as SubdaoPreProposeQueryExt, QueryMsg as SubdaoPreProposeQueryMsg,
+};
 use neutron_subdao_proposal_single::msg as SubdaoProposalMsg;
 use neutron_subdao_timelock_single::types::{ProposalStatus, SingleChoiceProposal};
 use neutron_subdao_timelock_single::{msg as TimelockMsg, types as TimelockTypes};
@@ -187,9 +189,11 @@ impl ContractQuerier for MockSubaoPreProposalQueries {
     fn query(&self, msg: &Binary) -> QuerierResult {
         let q: SubdaoPreProposeQueryMsg = from_binary(msg).unwrap();
         return match q {
-            SubdaoPreProposeQueryMsg::TimelockAddress {} => SystemResult::Ok(ContractResult::from(
-                to_binary(&Addr::unchecked(self.timelock.clone())),
-            )),
+            SubdaoPreProposeQueryMsg::QueryExtension {
+                msg: SubdaoPreProposeQueryExt::TimelockAddress {},
+            } => SystemResult::Ok(ContractResult::from(to_binary(&Addr::unchecked(
+                self.timelock.clone(),
+            )))),
             _ => SystemResult::Err(SystemError::Unknown {}),
         };
     }

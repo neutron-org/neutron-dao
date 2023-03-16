@@ -6,7 +6,6 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 pub type ExecuteMsg = ExecuteBase<ProposeMessage>;
-pub type QueryMsg = QueryBase;
 
 #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -27,3 +26,14 @@ pub enum ProposeMessageInternal {
         proposer: Option<String>,
     },
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum QueryExt {
+    OverruleProposalId {
+        timelock_address: String,
+        subdao_proposal_id: u64,
+    },
+}
+
+pub type QueryMsg = QueryBase<QueryExt>;

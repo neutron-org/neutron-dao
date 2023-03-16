@@ -17,7 +17,7 @@ use cwd_pre_propose_base::{
     state::PreProposeContract,
 };
 use neutron_subdao_pre_propose_single::{
-    msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
+    msg::{ExecuteMsg, InstantiateMsg, QueryExt, QueryMsg},
     types::ProposeMessage,
 };
 use neutron_subdao_proposal_single::msg::QueryMsg as ProposalQueryMsg;
@@ -42,7 +42,7 @@ enum ProposeMessageInternal {
     },
 }
 
-type PrePropose = PreProposeContract<ProposeMessageInternal>;
+type PrePropose = PreProposeContract<ProposeMessageInternal, QueryExt>;
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -152,8 +152,10 @@ pub fn execute(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::QueryBase(msg) => PrePropose::default().query(deps, env, msg),
-        QueryMsg::TimelockAddress {} => query_timelock_address(deps),
+        QueryMsg::QueryExtension {
+            msg: QueryExt::TimelockAddress {},
+        } => query_timelock_address(deps),
+        _ => PrePropose::default().query(deps, env, msg),
     }
 }
 

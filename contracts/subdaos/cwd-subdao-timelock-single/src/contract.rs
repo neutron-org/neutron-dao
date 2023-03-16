@@ -291,7 +291,7 @@ fn get_timelock_duration(
         &OverruleQueryMsg::QueryBase(PreProposeQueryBase::ProposalModule {}),
     )?;
     let config: ProposalConfig = deps.querier.query_wasm_smart(
-        overrule_pre_propose,
+        propose,
         &OverruleQueryMsg::QueryBase(PreProposeQueryBase::ProposalModule {}),
     )?;
     match config.max_voting_period {

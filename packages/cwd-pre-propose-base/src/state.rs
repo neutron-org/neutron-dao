@@ -17,7 +17,7 @@ pub struct Config {
     pub open_proposal_submission: bool,
 }
 
-pub struct PreProposeContract<ProposalMessage> {
+pub struct PreProposeContract<ProposalMessage, QueryExt> {
     /// The proposal module that this module is associated with.
     pub proposal_module: Item<'static, Addr>,
     /// The DAO (cw-dao-core module) that this module is associated
@@ -32,9 +32,10 @@ pub struct PreProposeContract<ProposalMessage> {
     // assocaited data. To stop the compiler complaining about unused
     // generics, we build this phantom data.
     proposal_type: PhantomData<ProposalMessage>,
+    query_type: PhantomData<QueryExt>,
 }
 
-impl<ProposalMessage> PreProposeContract<ProposalMessage> {
+impl<ProposalMessage, QueryExt> PreProposeContract<ProposalMessage, QueryExt> {
     const fn new(
         proposal_key: &'static str,
         dao_key: &'static str,
@@ -47,11 +48,12 @@ impl<ProposalMessage> PreProposeContract<ProposalMessage> {
             config: Item::new(config_key),
             deposits: Map::new(deposits_key),
             proposal_type: PhantomData,
+            query_type: PhantomData,
         }
     }
 }
 
-impl<ProposalMessage> Default for PreProposeContract<ProposalMessage> {
+impl<ProposalMessage, QueryExt> Default for PreProposeContract<ProposalMessage, QueryExt> {
     fn default() -> Self {
         // Call into constant function here. Presumably, the compiler
         // is clever enough to inline this. This gives us
