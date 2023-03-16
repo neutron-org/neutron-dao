@@ -1,9 +1,6 @@
 use std::collections::HashMap;
 use std::marker::PhantomData;
 
-// use crate::contract::{
-//     MainDaoQueryMsg, ProposalStatus, SingleChoiceProposal, SubDao, TimelockConfig, TimelockQueryMsg,
-// };
 use cosmwasm_std::{
     from_binary, from_slice,
     testing::{MockApi, MockQuerier, MockStorage},
@@ -93,7 +90,7 @@ pub trait ContractQuerier {
 }
 
 pub struct MockDaoQueries {
-    pub(crate) sub_dao_list_pages: HashMap<Option<String>, Vec<SubDao>>,
+    sub_dao_list_pages: HashMap<Option<String>, Vec<SubDao>>,
 }
 
 impl ContractQuerier for MockDaoQueries {
@@ -112,8 +109,8 @@ impl ContractQuerier for MockDaoQueries {
 }
 
 pub struct MockTimelockQueries {
-    pub(crate) owner: String,
-    pub(crate) subdao: String,
+    owner: String,
+    subdao: String,
 }
 
 impl ContractQuerier for MockTimelockQueries {
@@ -144,7 +141,7 @@ impl ContractQuerier for MockTimelockQueries {
 }
 
 pub struct MockDaoProposalQueries {
-    pub(crate) dao_core: String,
+    dao_core: String,
 }
 
 impl ContractQuerier for MockDaoProposalQueries {
@@ -163,7 +160,7 @@ impl ContractQuerier for MockDaoProposalQueries {
 }
 
 pub struct MockSubdaoProposalQueries {
-    pub(crate) pre_propose: String,
+    pre_propose: String,
 }
 
 impl ContractQuerier for MockSubdaoProposalQueries {
@@ -183,7 +180,7 @@ impl ContractQuerier for MockSubdaoProposalQueries {
 }
 
 pub struct MockSubaoPreProposalQueries {
-    pub(crate) timelock: String,
+    timelock: String,
 }
 
 impl ContractQuerier for MockSubaoPreProposalQueries {
@@ -199,8 +196,8 @@ impl ContractQuerier for MockSubaoPreProposalQueries {
 }
 
 pub struct MockSubdaoCoreQueries {
-    pub(crate) proposal_module: String,
-    pub(crate) dao_core: String,
+    proposal_module: String,
+    dao_core: String,
 }
 
 impl ContractQuerier for MockSubdaoCoreQueries {

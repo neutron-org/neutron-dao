@@ -109,10 +109,7 @@ fn test_base_prepropose_methods() {
         msg,
     );
     assert!(res.is_err());
-    assert_eq!(
-        res.err().unwrap(),
-        PreProposeOverruleError::MessageUnsupported {}
-    )
+    assert_eq!(res, Err(PreProposeOverruleError::MessageUnsupported {}))
 }
 
 #[test]
@@ -129,14 +126,14 @@ fn test_impostor_subdao() {
             proposal_id: PROPOSAL_ID,
         },
     };
-    let res_not_ok = execute(
+    let res = execute(
         deps.as_mut(),
         mock_env(),
         mock_info(PROPOSER_ADDR, &[]),
         msg,
     );
-    assert!(res_not_ok.is_err());
-    assert_eq!(res_not_ok, Err(PreProposeOverruleError::ForbiddenSubdao {}));
+    assert!(res.is_err());
+    assert_eq!(res, Err(PreProposeOverruleError::ForbiddenSubdao {}));
 }
 
 #[test]
@@ -153,17 +150,14 @@ fn test_impostor_timelock() {
             proposal_id: PROPOSAL_ID,
         },
     };
-    let res_not_ok = execute(
+    let res = execute(
         deps.as_mut(),
         mock_env(),
         mock_info(PROPOSER_ADDR, &[]),
         msg,
     );
-    assert!(res_not_ok.is_err());
-    assert_eq!(
-        res_not_ok,
-        Err(PreProposeOverruleError::SubdaoMisconfured {})
-    );
+    assert!(res.is_err());
+    assert_eq!(res, Err(PreProposeOverruleError::SubdaoMisconfured {}));
 }
 
 #[test]
@@ -180,17 +174,14 @@ fn test_proposal_is_not_timelocked() {
             proposal_id: PROPOSAL_ID,
         },
     };
-    let res_not_ok = execute(
+    let res = execute(
         deps.as_mut(),
         mock_env(),
         mock_info(PROPOSER_ADDR, &[]),
         msg,
     );
-    assert!(res_not_ok.is_err());
-    assert_eq!(
-        res_not_ok,
-        Err(PreProposeOverruleError::ProposalWrongState {})
-    );
+    assert!(res.is_err());
+    assert_eq!(res, Err(PreProposeOverruleError::ProposalWrongState {}));
 }
 
 #[test]
@@ -243,12 +234,5 @@ fn test_double_creation() {
         msg,
     );
     assert!(res_not_ok.is_err());
-    match res_not_ok {
-        Ok(_) => {
-            assert!(false)
-        }
-        Err(err) => {
-            assert_eq!(err, PreProposeOverruleError::AlreadyExists {})
-        }
-    }
+    assert_eq!(res_not_ok, Err(PreProposeOverruleError::AlreadyExists {}));
 }
