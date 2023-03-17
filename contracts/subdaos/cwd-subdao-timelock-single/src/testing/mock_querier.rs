@@ -82,7 +82,7 @@ impl WasmMockQuerier {
                     let q: PreProposeOverruleQuery = from_binary(msg).unwrap();
                     let reply = match q {
                         PreProposeOverruleQuery::ProposalModule {} => {
-                            todo!()
+                            MOCK_OVERRULE_PROPOSAL.to_string()
                         }
                         PreProposeOverruleQuery::Dao {} => MOCK_MAIN_DAO_ADDR.to_string(),
                         PreProposeOverruleQuery::Config {} => todo!(),

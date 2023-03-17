@@ -1,7 +1,8 @@
+use cosmwasm_std::testing::MOCK_CONTRACT_ADDR;
 use cosmwasm_std::{
     from_binary,
     testing::{mock_env, mock_info},
-    Addr, Attribute, Reply, SubMsg, SubMsgResult,
+    to_binary, Addr, Attribute, CosmosMsg, Reply, SubMsg, SubMsgResult, WasmMsg,
 };
 use neutron_bindings::bindings::msg::NeutronMsg;
 use neutron_subdao_timelock_single::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
@@ -9,12 +10,14 @@ use neutron_subdao_timelock_single::types::{
     Config, ProposalListResponse, ProposalStatus, SingleChoiceProposal,
 };
 
-use crate::testing::mock_querier::{MOCK_MAIN_DAO_ADDR, MOCK_OVERRULE_PROPOSAL};
+use crate::testing::mock_querier::{MOCK_MAIN_DAO_ADDR, MOCK_OVERRULE_PREPROPOSAL};
 use crate::{
     contract::{execute, instantiate, query, reply},
     state::{CONFIG, DEFAULT_LIMIT, PROPOSALS},
     testing::mock_querier::MOCK_TIMELOCK_INITIALIZER,
 };
+use neutron_dao_pre_propose_overrule::msg::ExecuteMsg as OverruleExecuteMsg;
+use neutron_dao_pre_propose_overrule::types::ProposeMessage as OverruleProposeMessage;
 
 use super::mock_querier::{mock_dependencies, MOCK_SUBDAO_CORE_ADDR};
 
@@ -24,7 +27,7 @@ fn test_instantiate_test() {
     let env = mock_env();
     let info = mock_info("neutron1unknownsender", &[]);
     let msg = InstantiateMsg {
-        overrule_pre_propose: MOCK_OVERRULE_PROPOSAL.to_string(),
+        overrule_pre_propose: MOCK_OVERRULE_PREPROPOSAL.to_string(),
     };
     let res = instantiate(deps.as_mut(), env.clone(), info, msg);
     assert_eq!(
@@ -35,14 +38,14 @@ fn test_instantiate_test() {
     let info = mock_info(MOCK_TIMELOCK_INITIALIZER, &[]);
 
     let msg = InstantiateMsg {
-        overrule_pre_propose: MOCK_OVERRULE_PROPOSAL.to_string(),
+        overrule_pre_propose: MOCK_OVERRULE_PREPROPOSAL.to_string(),
     };
     let res = instantiate(deps.as_mut(), env.clone(), info.clone(), msg.clone());
     let res_ok = res.unwrap();
     let expected_attributes = vec![
         Attribute::new("action", "instantiate"),
         Attribute::new("owner", MOCK_MAIN_DAO_ADDR),
-        Attribute::new("timelock_duration", "10"),
+        Attribute::new("overrule_pre_propose", MOCK_OVERRULE_PREPROPOSAL),
     ];
     assert_eq!(expected_attributes, res_ok.attributes);
     let config = CONFIG.load(&deps.storage).unwrap();
@@ -54,14 +57,14 @@ fn test_instantiate_test() {
     assert_eq!(expected_config, config);
 
     let msg = InstantiateMsg {
-        overrule_pre_propose: MOCK_OVERRULE_PROPOSAL.to_string(),
+        overrule_pre_propose: MOCK_OVERRULE_PREPROPOSAL.to_string(),
     };
     let res = instantiate(deps.as_mut(), env, info, msg.clone());
     let res_ok = res.unwrap();
     let expected_attributes = vec![
         Attribute::new("action", "instantiate"),
         Attribute::new("owner", MOCK_MAIN_DAO_ADDR),
-        Attribute::new("timelock_duration", "10"),
+        Attribute::new("overrule_pre_propose", MOCK_OVERRULE_PREPROPOSAL),
     ];
     assert_eq!(expected_attributes, res_ok.attributes);
     let config = CONFIG.load(&deps.storage).unwrap();
@@ -92,7 +95,7 @@ fn test_execute_timelock_proposal() {
 
     let config = Config {
         owner: Addr::unchecked("owner"),
-        overrule_pre_propose: Addr::unchecked(MOCK_OVERRULE_PROPOSAL),
+        overrule_pre_propose: Addr::unchecked(MOCK_OVERRULE_PREPROPOSAL),
         subdao: Addr::unchecked(MOCK_SUBDAO_CORE_ADDR),
     };
     CONFIG.save(deps.as_mut().storage, &config).unwrap();
@@ -108,7 +111,22 @@ fn test_execute_timelock_proposal() {
         Attribute::new("status", "timelocked"),
     ];
     assert_eq!(expected_attributes, res_ok.attributes);
-    assert_eq!(0, res_ok.messages.len());
+    assert_eq!(1, res_ok.messages.len());
+
+    assert_eq!(
+        res_ok.messages,
+        vec![SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr: MOCK_OVERRULE_PREPROPOSAL.to_string(),
+            msg: to_binary(&OverruleExecuteMsg::Propose {
+                msg: OverruleProposeMessage::ProposeOverrule {
+                    timelock_contract: MOCK_CONTRACT_ADDR.to_string(),
+                    proposal_id: 10,
+                },
+            })
+            .unwrap(),
+            funds: vec![],
+        }))]
+    );
 
     let expected_proposal = SingleChoiceProposal {
         id: 10,
@@ -136,7 +154,7 @@ fn test_execute_proposal() {
 
     let config = Config {
         owner: Addr::unchecked("owner"),
-        overrule_pre_propose: Addr::unchecked(MOCK_OVERRULE_PROPOSAL),
+        overrule_pre_propose: Addr::unchecked(MOCK_OVERRULE_PREPROPOSAL),
         subdao: Addr::unchecked(MOCK_SUBDAO_CORE_ADDR),
     };
     CONFIG.save(deps.as_mut().storage, &config).unwrap();
@@ -216,7 +234,7 @@ fn test_overrule_proposal() {
 
     let config = Config {
         owner: Addr::unchecked("owner"),
-        overrule_pre_propose: Addr::unchecked(MOCK_OVERRULE_PROPOSAL),
+        overrule_pre_propose: Addr::unchecked(MOCK_OVERRULE_PREPROPOSAL),
         subdao: Addr::unchecked(MOCK_SUBDAO_CORE_ADDR),
     };
     CONFIG.save(deps.as_mut().storage, &config).unwrap();
@@ -287,7 +305,7 @@ fn execute_update_config() {
 
     let config = Config {
         owner: Addr::unchecked("owner"),
-        overrule_pre_propose: Addr::unchecked(MOCK_OVERRULE_PROPOSAL),
+        overrule_pre_propose: Addr::unchecked(MOCK_OVERRULE_PREPROPOSAL),
         subdao: Addr::unchecked(MOCK_SUBDAO_CORE_ADDR),
     };
     CONFIG.save(deps.as_mut().storage, &config).unwrap();
@@ -297,7 +315,7 @@ fn execute_update_config() {
     let info = mock_info("owner", &[]);
     let config = Config {
         owner: Addr::unchecked("none"),
-        overrule_pre_propose: Addr::unchecked(MOCK_OVERRULE_PROPOSAL),
+        overrule_pre_propose: Addr::unchecked(MOCK_OVERRULE_PREPROPOSAL),
         subdao: Addr::unchecked(MOCK_SUBDAO_CORE_ADDR),
     };
     CONFIG.save(deps.as_mut().storage, &config).unwrap();
@@ -306,7 +324,7 @@ fn execute_update_config() {
 
     let config = Config {
         owner: Addr::unchecked("owner"),
-        overrule_pre_propose: Addr::unchecked(MOCK_OVERRULE_PROPOSAL),
+        overrule_pre_propose: Addr::unchecked(MOCK_OVERRULE_PREPROPOSAL),
         subdao: Addr::unchecked(MOCK_SUBDAO_CORE_ADDR),
     };
     CONFIG.save(deps.as_mut().storage, &config).unwrap();
@@ -315,11 +333,11 @@ fn execute_update_config() {
     let expected_attributes = vec![
         Attribute::new("action", "update_config"),
         Attribute::new("owner", "owner"),
-        Attribute::new("timelock_duration", "20"),
+        Attribute::new("overrule_pre_propose", "neutron1someotheroverrule"),
     ];
     assert_eq!(expected_attributes, res_ok.attributes);
     let updated_config = CONFIG.load(deps.as_mut().storage).unwrap();
-    let some_other_prepropose = "neutron1some_other_prepropose";
+    let some_other_prepropose = "neutron1someotheroverrule";
     assert_eq!(
         updated_config,
         Config {
@@ -339,7 +357,7 @@ fn execute_update_config() {
     let expected_attributes = vec![
         Attribute::new("action", "update_config"),
         Attribute::new("owner", "neutron1newowner"),
-        Attribute::new("timelock_duration", "20"),
+        Attribute::new("overrule_pre_propose", some_other_prepropose),
     ];
     assert_eq!(expected_attributes, res_ok.attributes);
     let updated_config = CONFIG.load(deps.as_mut().storage).unwrap();
@@ -362,7 +380,7 @@ fn test_query_config() {
     let mut deps = mock_dependencies();
     let config = Config {
         owner: Addr::unchecked("owner"),
-        overrule_pre_propose: Addr::unchecked(MOCK_OVERRULE_PROPOSAL),
+        overrule_pre_propose: Addr::unchecked(MOCK_OVERRULE_PREPROPOSAL),
         subdao: Addr::unchecked(MOCK_SUBDAO_CORE_ADDR),
     };
     CONFIG.save(deps.as_mut().storage, &config).unwrap();

@@ -8,6 +8,8 @@ use cw2::set_contract_version;
 use cw_storage_plus::Bound;
 use cw_utils::{Duration, Threshold};
 use cwd_pre_propose_base::msg::QueryMsg as PreProposeQueryBase;
+use cwd_proposal_single::msg::QueryMsg as MainDaoProposalModuleQueryMsg;
+use cwd_proposal_single::state::Config as MainDaoProposalModuleConfig;
 use neutron_bindings::bindings::msg::NeutronMsg;
 use neutron_dao_pre_propose_overrule::msg::ExecuteMsg as OverruleExecuteMsg;
 use neutron_dao_pre_propose_overrule::msg::{
@@ -16,9 +18,7 @@ use neutron_dao_pre_propose_overrule::msg::{
 use neutron_dao_pre_propose_overrule::types::ProposeMessage as OverruleProposeMessage;
 use neutron_subdao_core::msg::QueryMsg as SubdaoQuery;
 use neutron_subdao_pre_propose_single::msg::QueryMsg as PreProposeQuery;
-use neutron_subdao_timelock_single::msg::{
-    ExecuteMsg, InstantiateMsg, MigrateMsg, ProposalConfig, QueryMsg,
-};
+use neutron_subdao_timelock_single::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use neutron_subdao_timelock_single::types::{
     Config, ProposalListResponse, ProposalStatus, SingleChoiceProposal,
 };
@@ -291,9 +291,9 @@ fn get_timelock_duration(
     let propose: Addr = deps
         .querier
         .query_wasm_smart(overrule_pre_propose, &OverruleQueryMsg::ProposalModule {})?;
-    let config: ProposalConfig = deps
+    let config: MainDaoProposalModuleConfig = deps
         .querier
-        .query_wasm_smart(propose, &OverruleQueryMsg::ProposalModule {})?;
+        .query_wasm_smart(propose, &MainDaoProposalModuleQueryMsg::Config {})?;
     match config.max_voting_period {
         Duration::Height(_) => Err(ContractError::CantCreateOverrule {}),
         Duration::Time(duration) => Ok(duration),
