@@ -70,12 +70,12 @@ impl WasmMockQuerier {
         match &request {
             QueryRequest::Wasm(WasmQuery::Smart { contract_addr, msg }) => {
                 let mock = self.contracts.get(contract_addr);
-                return match mock {
+                match mock {
                     None => SystemResult::Err(SystemError::NoSuchContract {
                         addr: contract_addr.to_string(),
                     }),
                     Some(m) => m.query(msg),
-                };
+                }
             }
             _ => self.base.handle_query(request),
         }
@@ -99,7 +99,7 @@ pub struct MockDaoQueries {
 impl ContractQuerier for MockDaoQueries {
     fn query(&self, msg: &Binary) -> QuerierResult {
         let q: MainDaoQueryMsg = from_binary(msg).unwrap();
-        return match q {
+        match q {
             MainDaoQueryMsg::ListSubDaos {
                 start_after,
                 limit: _,
@@ -107,7 +107,7 @@ impl ContractQuerier for MockDaoQueries {
                 &self.sub_dao_list_pages.get(&start_after).unwrap(),
             ))),
             _ => SystemResult::Err(SystemError::Unknown {}),
-        };
+        }
     }
 }
 
@@ -119,7 +119,7 @@ pub struct MockTimelockQueries {
 impl ContractQuerier for MockTimelockQueries {
     fn query(&self, msg: &Binary) -> QuerierResult {
         let q: TimelockMsg::QueryMsg = from_binary(msg).unwrap();
-        return match q {
+        match q {
             TimelockMsg::QueryMsg::Config {} => {
                 SystemResult::Ok(ContractResult::from(to_binary(&TimelockTypes::Config {
                     owner: Addr::unchecked(self.owner.clone()),
@@ -139,7 +139,7 @@ impl ContractQuerier for MockTimelockQueries {
                 })))
             }
             _ => SystemResult::Err(SystemError::Unknown {}),
-        };
+        }
     }
 }
 
@@ -150,7 +150,7 @@ pub struct MockDaoProposalQueries {
 impl ContractQuerier for MockDaoProposalQueries {
     fn query(&self, msg: &Binary) -> QuerierResult {
         let q: ProposalSingleQueryMsg = from_binary(msg).unwrap();
-        return match q {
+        match q {
             ProposalSingleQueryMsg::Dao {} => {
                 SystemResult::Ok(ContractResult::from(to_binary(&self.dao_core)))
             }
@@ -158,7 +158,7 @@ impl ContractQuerier for MockDaoProposalQueries {
                 SystemResult::Ok(ContractResult::from(to_binary(&PROPOSALS_COUNT)))
             }
             _ => SystemResult::Err(SystemError::Unknown {}),
-        };
+        }
     }
 }
 
@@ -169,7 +169,7 @@ pub struct MockSubdaoProposalQueries {
 impl ContractQuerier for MockSubdaoProposalQueries {
     fn query(&self, msg: &Binary) -> QuerierResult {
         let q: SubdaoProposalMsg::QueryMsg = from_binary(msg).unwrap();
-        return match q {
+        match q {
             SubdaoProposalMsg::QueryMsg::ProposalCreationPolicy {} => {
                 SystemResult::Ok(ContractResult::from(to_binary(
                     &cwd_voting::pre_propose::ProposalCreationPolicy::Module {
@@ -178,7 +178,7 @@ impl ContractQuerier for MockSubdaoProposalQueries {
                 )))
             }
             _ => SystemResult::Err(SystemError::Unknown {}),
-        };
+        }
     }
 }
 
@@ -189,14 +189,14 @@ pub struct MockSubaoPreProposalQueries {
 impl ContractQuerier for MockSubaoPreProposalQueries {
     fn query(&self, msg: &Binary) -> QuerierResult {
         let q: SubdaoPreProposeQueryMsg = from_binary(msg).unwrap();
-        return match q {
+        match q {
             SubdaoPreProposeQueryMsg::QueryExtension {
                 msg: SubdaoPreProposeQueryExt::TimelockAddress {},
             } => SystemResult::Ok(ContractResult::from(to_binary(&Addr::unchecked(
                 self.timelock.clone(),
             )))),
             _ => SystemResult::Err(SystemError::Unknown {}),
-        };
+        }
     }
 }
 
@@ -208,7 +208,7 @@ pub struct MockSubdaoCoreQueries {
 impl ContractQuerier for MockSubdaoCoreQueries {
     fn query(&self, msg: &Binary) -> QuerierResult {
         let q: SubdaoQueryMsg = from_binary(msg).unwrap();
-        return match q {
+        match q {
             SubdaoQueryMsg::ProposalModules {
                 start_after: _,
                 limit: _,
@@ -229,7 +229,7 @@ impl ContractQuerier for MockSubdaoCoreQueries {
                 })))
             }
             _ => SystemResult::Err(SystemError::Unknown {}),
-        };
+        }
     }
 }
 
@@ -279,7 +279,7 @@ pub fn get_properly_initialized_dao() -> HashMap<String, Box<dyn ContractQuerier
             timelock: MOCK_TIMELOCK_CONTRACT.to_string(),
         }),
     );
-    return contracts;
+    contracts
 }
 
 pub fn get_dao_with_impostor_timelock() -> HashMap<String, Box<dyn ContractQuerier>> {
@@ -292,7 +292,7 @@ pub fn get_dao_with_impostor_timelock() -> HashMap<String, Box<dyn ContractQueri
             subdao: MOCK_SUBDAO_CORE.to_string(),
         }),
     );
-    return contracts;
+    contracts
 }
 
 pub fn get_dao_with_impostor_subdao() -> HashMap<String, Box<dyn ContractQuerier>> {
@@ -305,7 +305,7 @@ pub fn get_dao_with_impostor_subdao() -> HashMap<String, Box<dyn ContractQuerier
             sub_dao_list_pages: HashMap::from([(None, vec![])]),
         }),
     );
-    return contracts;
+    contracts
 }
 
 pub fn get_dao_with_many_subdaos() -> HashMap<String, Box<dyn ContractQuerier>> {
@@ -335,5 +335,5 @@ pub fn get_dao_with_many_subdaos() -> HashMap<String, Box<dyn ContractQuerier>> 
             ]),
         }),
     );
-    return contracts;
+    contracts
 }

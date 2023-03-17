@@ -134,13 +134,13 @@ pub fn execute(
 
             PROPOSALS.save(
                 deps.storage,
-                (proposal_id, timelock_contract_addr.clone()),
+                (proposal_id, timelock_contract_addr),
                 next_proposal_id,
             )?;
 
             PrePropose::default()
                 .execute(deps, env, info, internal_msg)
-                .map_err(|e| PreProposeOverruleError::PreProposeBase(e))
+                .map_err(PreProposeOverruleError::PreProposeBase)
         }
         _ => Err(PreProposeOverruleError::MessageUnsupported {}),
     }
@@ -198,7 +198,7 @@ fn check_if_subdao_legit(
     deps: &DepsMut,
     subdao_core: &Addr,
 ) -> Result<bool, PreProposeOverruleError> {
-    let main_dao = get_main_dao_address(&deps)?;
+    let main_dao = get_main_dao_address(deps)?;
 
     let mut start_after: Option<SubDao> = None;
 
@@ -225,8 +225,7 @@ fn check_if_subdao_legit(
 
         if subdao_list
             .into_iter()
-            .find(|subdao| subdao.addr == subdao_core.clone().into_string())
-            .is_some()
+            .any(|subdao| subdao.addr == subdao_core.clone().into_string())
         {
             return Ok(true);
         };
@@ -261,7 +260,7 @@ fn check_is_proposal_timelocked(
     let proposal: TimelockTypes::SingleChoiceProposal = deps
         .querier
         .query_wasm_smart(timelock, &TimelockMsg::QueryMsg::Proposal { proposal_id })?;
-    return Ok(proposal.status == TimelockTypes::ProposalStatus::Timelocked);
+    Ok(proposal.status == TimelockTypes::ProposalStatus::Timelocked)
 }
 
 fn get_subdao_name(deps: &DepsMut, subdao: &Addr) -> Result<String, PreProposeOverruleError> {
