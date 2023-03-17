@@ -3,21 +3,19 @@
   "title": "ConfigResponse",
   "type": "object",
   "required": [
+    "overrule_pre_propose",
     "owner",
-    "subdao",
-    "timelock_duration"
+    "subdao"
   ],
   "properties": {
+    "overrule_pre_propose": {
+      "$ref": "#/definitions/Addr"
+    },
     "owner": {
       "$ref": "#/definitions/Addr"
     },
     "subdao": {
       "$ref": "#/definitions/Addr"
-    },
-    "timelock_duration": {
-      "type": "integer",
-      "format": "uint64",
-      "minimum": 0.0
     }
   },
   "definitions": {
