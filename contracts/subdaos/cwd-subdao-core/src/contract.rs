@@ -17,6 +17,7 @@ use neutron_subdao_core::msg::{ExecuteMsg, InitialItem, InstantiateMsg, MigrateM
 use neutron_subdao_core::types::{
     Config, DumpStateResponse, GetItemResponse, ProposalModule, ProposalModuleStatus, SubDao,
 };
+use neutron_subdao_pre_propose_single::msg::QueryExt as PreProposeQueryExt;
 use neutron_subdao_pre_propose_single::msg::QueryMsg as PreProposeQueryMsg;
 use neutron_subdao_proposal_single::msg::QueryMsg as ProposeQueryMsg;
 
@@ -630,9 +631,12 @@ pub(crate) fn execution_access_check(deps: Deps, sender: Addr) -> Result<(), Con
             &ProposeQueryMsg::ProposalCreationPolicy {},
         )?;
         if let ProposalCreationPolicy::Module { addr } = policy {
-            let timelock_contract: Addr = deps
-                .querier
-                .query_wasm_smart(&addr, &PreProposeQueryMsg::TimelockAddress {})?;
+            let timelock_contract: Addr = deps.querier.query_wasm_smart(
+                &addr,
+                &PreProposeQueryMsg::QueryExtension {
+                    msg: PreProposeQueryExt::TimelockAddress {},
+                },
+            )?;
             if sender == timelock_contract {
                 return Ok(());
             }

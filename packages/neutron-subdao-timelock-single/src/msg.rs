@@ -1,5 +1,4 @@
-use cosmwasm_std::{Addr, CosmosMsg};
-use cw_utils::{Duration, Threshold};
+use cosmwasm_std::CosmosMsg;
 use neutron_bindings::bindings::msg::NeutronMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
