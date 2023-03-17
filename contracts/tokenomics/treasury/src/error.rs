@@ -19,8 +19,11 @@ pub enum ContractError {
     #[error("distribution_rate must be between 0 and 1")]
     InvalidDistributionRate {},
 
-    #[error("vesting_denominator must be more than zero")]
+    #[error("vesting_denominator must be greater than zero")]
     InvalidVestingDenominator {},
+
+    #[error("min_period must be greater than zero")]
+    InvalidMinPeriod {},
 
     #[error("Too soon to distribute")]
     TooSoonToDistribute {},

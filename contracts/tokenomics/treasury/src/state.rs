@@ -22,7 +22,7 @@ pub struct Config {
     /// Address of the security DAO contract
     pub security_dao_address: Addr,
 
-    // Denomintator used in the vesting release function
+    // Denominator used in the vesting release function
     pub vesting_denominator: u128,
 }
 
@@ -35,6 +35,11 @@ impl Config {
         if self.vesting_denominator == 0 {
             return Err(ContractError::InvalidVestingDenominator {});
         }
+
+        if self.min_period == 0 {
+            return Err(ContractError::InvalidMinPeriod {});
+        }
+
         Ok(())
     }
 }
@@ -100,6 +105,21 @@ mod tests {
         assert_eq!(
             cfg_invalid_vesting_denom.validate(),
             Err(ContractError::InvalidVestingDenominator {})
+        );
+
+        let cfg_invalid_min_period = Config {
+            distribution_rate: Decimal::from_str("0.11").unwrap(),
+            distribution_contract: Addr::unchecked("owner"),
+            reserve_contract: Addr::unchecked("owner"),
+            min_period: 0,
+            denom: String::from("untrn"),
+            main_dao_address: Addr::unchecked("owner"),
+            security_dao_address: Addr::unchecked("owner"),
+            vesting_denominator: 100_000_000_000u128,
+        };
+        assert_eq!(
+            cfg_invalid_min_period.validate(),
+            Err(ContractError::InvalidMinPeriod {})
         );
     }
 }
