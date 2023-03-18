@@ -5,7 +5,8 @@
   "required": [
     "denom",
     "description",
-    "name"
+    "name",
+    "owner"
   ],
   "properties": {
     "denom": {
@@ -28,14 +29,7 @@
       "type": "string"
     },
     "owner": {
-      "anyOf": [
-        {
-          "$ref": "#/definitions/Addr"
-        },
-        {
-          "type": "null"
-        }
-      ]
+      "$ref": "#/definitions/Addr"
     }
   },
   "definitions": {

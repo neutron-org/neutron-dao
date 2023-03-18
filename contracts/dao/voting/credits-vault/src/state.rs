@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 pub struct Config {
     pub credits_contract_address: Addr,
     pub description: String,
-    pub owner: Option<Addr>,
+    pub owner: Addr,
     pub manager: Option<Addr>,
 }
 

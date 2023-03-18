@@ -3,6 +3,7 @@
   "title": "GetConfigResponse",
   "type": "object",
   "required": [
+    "owner",
     "voting_vaults"
   ],
   "properties": {
@@ -17,14 +18,7 @@
       ]
     },
     "owner": {
-      "anyOf": [
-        {
-          "$ref": "#/definitions/Addr"
-        },
-        {
-          "type": "null"
-        }
-      ]
+      "$ref": "#/definitions/Addr"
     },
     "voting_vaults": {
       "type": "array",

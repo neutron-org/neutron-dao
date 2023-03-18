@@ -21,15 +21,10 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    let owner = msg
-        .owner
-        .as_ref()
-        .map(|owner| match owner {
-            Admin::Address { addr } => deps.api.addr_validate(addr),
-            Admin::CoreModule {} => Ok(info.sender.clone()),
-        })
-        .transpose()?;
-
+    let owner = match msg.owner {
+        Admin::Address { addr } => deps.api.addr_validate(addr.as_str())?,
+        Admin::CoreModule {} => info.sender.clone(),
+    };
     let manager = msg
         .manager
         .map(|manager| deps.api.addr_validate(&manager))
@@ -51,13 +46,7 @@ pub fn instantiate(
         .add_attribute("action", "instantiate")
         .add_attribute("description", config.description)
         .add_attribute("credits_contract_address", config.credits_contract_address)
-        .add_attribute(
-            "owner",
-            config
-                .owner
-                .map(|a| a.to_string())
-                .unwrap_or_else(|| "None".to_string()),
-        )
+        .add_attribute("owner", config.owner)
         .add_attribute(
             "manager",
             config
@@ -95,12 +84,12 @@ pub fn execute_update_config(
     deps: DepsMut,
     info: MessageInfo,
     new_credits_contract_address: Option<String>,
-    new_owner: Option<Admin>,
+    new_owner: String,
     new_manager: Option<String>,
     new_description: Option<String>,
 ) -> Result<Response, ContractError> {
     let mut config: Config = CONFIG.load(deps.storage)?;
-    if Some(info.sender.clone()) != config.owner && Some(info.sender.clone()) != config.manager {
+    if info.sender != config.owner && Some(info.sender.clone()) != config.manager {
         return Err(ContractError::Unauthorized {});
     }
 
@@ -108,19 +97,12 @@ pub fn execute_update_config(
         .map(|new_credits_contract_address| deps.api.addr_validate(&new_credits_contract_address))
         .transpose()?;
 
-    let new_owner = new_owner
-        .as_ref()
-        .map(|owner| match owner {
-            Admin::Address { addr } => deps.api.addr_validate(addr),
-            Admin::CoreModule {} => Ok(info.sender.clone()),
-        })
-        .transpose()?;
-
+    let new_owner = deps.api.addr_validate(&new_owner)?;
     let new_manager = new_manager
         .map(|new_manager| deps.api.addr_validate(&new_manager))
         .transpose()?;
 
-    if Some(info.sender) != config.owner && new_owner != config.owner {
+    if info.sender != config.owner && new_owner != config.owner {
         return Err(ContractError::OnlyOwnerCanChangeOwner {});
     };
 
@@ -138,13 +120,7 @@ pub fn execute_update_config(
         .add_attribute("action", "update_config")
         .add_attribute("description", config.description)
         .add_attribute("credits_contract_address", config.credits_contract_address)
-        .add_attribute(
-            "owner",
-            config
-                .owner
-                .map(|a| a.to_string())
-                .unwrap_or_else(|| "None".to_string()),
-        )
+        .add_attribute("owner", config.owner)
         .add_attribute(
             "manager",
             config

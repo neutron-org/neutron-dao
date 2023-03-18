@@ -106,7 +106,7 @@ fn update_config(
     app: &mut App,
     contract_addr: Addr,
     sender: &str,
-    owner: Option<String>,
+    owner: String,
     lockdrop_contract: String,
     manager: Option<String>,
     name: String,
@@ -179,9 +179,9 @@ fn test_instantiate() {
         InstantiateMsg {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::Address {
+            owner: Admin::Address {
                 addr: DAO_ADDR.to_string(),
-            }),
+            },
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
         },
@@ -195,7 +195,9 @@ fn test_instantiate() {
         InstantiateMsg {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: None,
+            owner: Admin::Address {
+                addr: DAO_ADDR.to_string(),
+            },
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
             manager: None,
         },
@@ -214,7 +216,7 @@ fn test_instantiate_dao_owner() {
         InstantiateMsg {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
         },
@@ -222,7 +224,7 @@ fn test_instantiate_dao_owner() {
 
     let config = get_config(&mut app, addr);
 
-    assert_eq!(config.owner, Some(Addr::unchecked(DAO_ADDR)))
+    assert_eq!(config.owner, Addr::unchecked(DAO_ADDR))
 }
 
 #[test]
@@ -236,7 +238,7 @@ fn test_bond() {
         InstantiateMsg {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
         },
@@ -257,7 +259,7 @@ fn test_unbond() {
         InstantiateMsg {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
         },
@@ -277,7 +279,7 @@ fn test_update_config_invalid_sender() {
         InstantiateMsg {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
         },
@@ -288,7 +290,7 @@ fn test_update_config_invalid_sender() {
         &mut app,
         addr,
         ADDR2,
-        Some(ADDR1.to_string()),
+        ADDR1.to_string(),
         NEW_LOCKDROP_ADDR.to_string(),
         Some(DAO_ADDR.to_string()),
         NEW_NAME.to_string(),
@@ -308,7 +310,7 @@ fn test_update_config_non_owner_changes_owner() {
         InstantiateMsg {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
         },
@@ -319,7 +321,7 @@ fn test_update_config_non_owner_changes_owner() {
         &mut app,
         addr,
         ADDR1,
-        Some(ADDR2.to_string()),
+        ADDR2.to_string(),
         LOCKDROP_ADDR.to_string(),
         None,
         NAME.to_string(),
@@ -339,7 +341,7 @@ fn test_update_config_non_owner_changes_lockdrop() {
         InstantiateMsg {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
         },
@@ -350,7 +352,7 @@ fn test_update_config_non_owner_changes_lockdrop() {
         &mut app,
         addr,
         ADDR1,
-        Some(DAO_ADDR.to_string()),
+        DAO_ADDR.to_string(),
         NEW_LOCKDROP_ADDR.to_string(),
         None,
         NAME.to_string(),
@@ -369,7 +371,7 @@ fn test_update_config_as_owner() {
         InstantiateMsg {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
         },
@@ -380,7 +382,7 @@ fn test_update_config_as_owner() {
         &mut app,
         addr.clone(),
         DAO_ADDR,
-        Some(ADDR1.to_string()),
+        ADDR1.to_string(),
         NEW_LOCKDROP_ADDR.to_string(),
         Some(DAO_ADDR.to_string()),
         NEW_NAME.to_string(),
@@ -393,7 +395,7 @@ fn test_update_config_as_owner() {
         Config {
             name: NEW_NAME.to_string(),
             description: NEW_DESCRIPTION.to_string(),
-            owner: Some(Addr::unchecked(ADDR1)),
+            owner: Addr::unchecked(ADDR1),
             lockdrop_contract: Addr::unchecked(NEW_LOCKDROP_ADDR),
             manager: Some(Addr::unchecked(DAO_ADDR)),
         },
@@ -411,7 +413,7 @@ fn test_update_config_as_manager() {
         InstantiateMsg {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
         },
@@ -424,7 +426,7 @@ fn test_update_config_as_manager() {
         &mut app,
         addr.clone(),
         ADDR1,
-        Some(DAO_ADDR.to_string()),
+        DAO_ADDR.to_string(),
         LOCKDROP_ADDR.to_string(),
         Some(ADDR2.to_string()),
         NEW_NAME.to_string(),
@@ -440,7 +442,7 @@ fn test_update_config_as_manager() {
         Config {
             name: NEW_NAME.to_string(),
             description: NEW_DESCRIPTION.to_string(),
-            owner: Some(Addr::unchecked(DAO_ADDR)),
+            owner: Addr::unchecked(DAO_ADDR),
             lockdrop_contract: Addr::unchecked(LOCKDROP_ADDR),
             manager: Some(Addr::unchecked(ADDR2)),
         },
@@ -459,7 +461,7 @@ fn test_update_config_invalid_description() {
         InstantiateMsg {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
         },
@@ -470,7 +472,7 @@ fn test_update_config_invalid_description() {
         &mut app,
         addr,
         ADDR1,
-        Some(DAO_ADDR.to_string()),
+        DAO_ADDR.to_string(),
         LOCKDROP_ADDR.to_string(),
         Some(ADDR2.to_string()),
         NEW_NAME.to_string(),
@@ -490,7 +492,7 @@ fn test_update_config_invalid_name() {
         InstantiateMsg {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
         },
@@ -501,7 +503,7 @@ fn test_update_config_invalid_name() {
         &mut app,
         addr,
         ADDR1,
-        Some(DAO_ADDR.to_string()),
+        DAO_ADDR.to_string(),
         LOCKDROP_ADDR.to_string(),
         Some(ADDR2.to_string()),
         String::from(""),
@@ -520,7 +522,7 @@ fn test_query_dao() {
         InstantiateMsg {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
         },
@@ -541,7 +543,7 @@ fn test_query_info() {
         InstantiateMsg {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
         },
@@ -562,7 +564,7 @@ fn test_query_get_config() {
         InstantiateMsg {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
         },
@@ -574,7 +576,7 @@ fn test_query_get_config() {
         Config {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Addr::unchecked(DAO_ADDR)),
+            owner: Addr::unchecked(DAO_ADDR),
             lockdrop_contract: Addr::unchecked(LOCKDROP_ADDR),
             manager: Some(Addr::unchecked(ADDR1)),
         }
@@ -591,7 +593,7 @@ fn test_voting_power_at_height() {
         InstantiateMsg {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
         },
@@ -612,7 +614,7 @@ fn test_total_power_at_height() {
         InstantiateMsg {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
         },

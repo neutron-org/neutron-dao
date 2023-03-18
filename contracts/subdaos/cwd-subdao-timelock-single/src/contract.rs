@@ -201,8 +201,6 @@ pub fn execute_update_config(
         config.timelock_duration = timelock_duration;
     }
 
-    // TODO(oopcode): implement updating the .sudbao parameter.
-
     CONFIG.save(deps.storage, &config)?;
     Ok(Response::new()
         .add_attribute("action", "update_config")

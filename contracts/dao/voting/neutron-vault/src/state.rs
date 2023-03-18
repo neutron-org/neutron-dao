@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 pub struct Config {
     pub name: String,
     pub description: String,
-    pub owner: Option<Addr>,
+    pub owner: Addr,
     pub manager: Option<Addr>,
     pub denom: String,
 }
@@ -56,7 +56,7 @@ mod tests {
         let cfg_ok = Config {
             name: String::from("name"),
             description: String::from("description"),
-            owner: Some(Addr::unchecked("owner")),
+            owner: Addr::unchecked("owner"),
             manager: Some(Addr::unchecked("manager")),
             denom: String::from("denom"),
         };
@@ -65,7 +65,7 @@ mod tests {
         let cfg_empty_name = Config {
             name: String::from(""),
             description: String::from("description"),
-            owner: Some(Addr::unchecked("owner")),
+            owner: Addr::unchecked("owner"),
             manager: Some(Addr::unchecked("manager")),
             denom: String::from("denom"),
         };
@@ -77,7 +77,7 @@ mod tests {
         let cfg_empty_description = Config {
             name: String::from("name"),
             description: String::from(""),
-            owner: Some(Addr::unchecked("owner")),
+            owner: Addr::unchecked("owner"),
             manager: Some(Addr::unchecked("manager")),
             denom: String::from("denom"),
         };
@@ -89,7 +89,7 @@ mod tests {
         let cfg_empty_denom = Config {
             name: String::from("name"),
             description: String::from("description"),
-            owner: Some(Addr::unchecked("owner")),
+            owner: Addr::unchecked("owner"),
             manager: Some(Addr::unchecked("manager")),
             denom: String::from(""),
         };

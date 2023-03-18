@@ -5,7 +5,8 @@
   "required": [
     "description",
     "lockdrop_contract",
-    "name"
+    "name",
+    "owner"
   ],
   "properties": {
     "description": {
@@ -29,12 +30,9 @@
     },
     "owner": {
       "description": "Owner can update all configs including changing the owner. This will generally be a DAO.",
-      "anyOf": [
+      "allOf": [
         {
           "$ref": "#/definitions/Admin"
-        },
-        {
-          "type": "null"
         }
       ]
     }
