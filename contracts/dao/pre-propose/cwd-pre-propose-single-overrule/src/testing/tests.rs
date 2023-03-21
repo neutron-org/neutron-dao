@@ -10,7 +10,7 @@ use crate::{
     testing::mock_querier::{mock_dependencies, MOCK_DAO_CORE, MOCK_TIMELOCK_CONTRACT},
 };
 use neutron_dao_pre_propose_overrule::msg::{
-    ExecuteMsg, InstantiateMsg, ProposeMessageInternal, QueryExt, QueryMsg,
+    ExecuteMsg, InstantiateMsg, ProposeMessage, QueryExt, QueryMsg,
 };
 
 use crate::error::PreProposeOverruleError;
@@ -21,7 +21,7 @@ use crate::testing::mock_querier::{
     TIMELOCKED_PROPOSAL_ID,
 };
 use cwd_pre_propose_base::state::Config;
-use neutron_dao_pre_propose_overrule::types::ProposeMessage;
+use cwd_proposal_single::msg::ExecuteMsg as ProposeMessageInternal;
 use neutron_subdao_timelock_single::msg as TimelockMsg;
 
 pub fn init_base_contract(deps: DepsMut<Empty>) {

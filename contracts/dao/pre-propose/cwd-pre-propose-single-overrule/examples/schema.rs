@@ -4,8 +4,7 @@ use std::fs::create_dir_all;
 use cosmwasm_schema::{export_schema, export_schema_with_title, remove_schemas, schema_for};
 use cosmwasm_std::Addr;
 use cwd_pre_propose_base::msg::{DepositInfoResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
-use neutron_dao_pre_propose_overrule::msg::QueryExt;
-use neutron_dao_pre_propose_overrule::types::ProposeMessage;
+use neutron_dao_pre_propose_overrule::msg::{ProposeMessage, QueryExt};
 
 fn main() {
     let mut out_dir = current_dir().unwrap();

@@ -1300,7 +1300,6 @@ name = "neutron-dao-pre-propose-overrule"
 version = "0.1.0"
 dependencies = [
  "cosmwasm-std",
- "cwd-core",
  "cwd-interface",
  "cwd-pre-propose-base",
  "cwd-voting",
@@ -1308,7 +1307,6 @@ dependencies = [
  "neutron-subdao-core",
  "neutron-subdao-pre-propose-single",
  "neutron-subdao-proposal-single",
- "neutron-subdao-timelock-single",
  "schemars",
  "serde",
  "thiserror",

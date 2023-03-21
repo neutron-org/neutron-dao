@@ -8,21 +8,21 @@ use cw2::set_contract_version;
 use error::PreProposeOverruleError;
 
 use crate::error;
-use neutron_dao_pre_propose_overrule::msg::{
-    ExecuteMsg, InstantiateMsg, ProposeMessageInternal, QueryExt, QueryMsg,
-};
-// use crate::state::{Config, CONFIG};
 use cwd_pre_propose_base::{
     error::PreProposeError,
     msg::{ExecuteMsg as ExecuteBase, InstantiateMsg as InstantiateBase},
     state::PreProposeContract,
 };
+use neutron_dao_pre_propose_overrule::msg::{
+    ExecuteMsg, InstantiateMsg, ProposeMessage, QueryExt, QueryMsg,
+};
 
 use crate::state::PROPOSALS;
 use cwd_core::{msg::QueryMsg as MainDaoQueryMsg, query::SubDao};
-use cwd_proposal_single::msg::QueryMsg as ProposalSingleQueryMsg;
+use cwd_proposal_single::{
+    msg::ExecuteMsg as ProposeMessageInternal, msg::QueryMsg as ProposalSingleQueryMsg,
+};
 use cwd_voting::pre_propose::ProposalCreationPolicy;
-use neutron_dao_pre_propose_overrule::types::ProposeMessage;
 use neutron_subdao_core::{msg::QueryMsg as SubdaoQueryMsg, types as SubdaoTypes};
 use neutron_subdao_pre_propose_single::msg::{
     QueryExt as SubdaoPreProposeQueryExt, QueryMsg as SubdaoPreProposeQueryMsg,

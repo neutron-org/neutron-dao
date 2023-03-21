@@ -18,7 +18,5 @@ cwd-voting = { path = "../cwd-voting" }
 cwd-interface = { path = "../cwd-interface" }
 thiserror = { version = "1.0.31" }
 neutron-subdao-core = { version = "*", path = "../neutron-subdao-core" }
-cwd-core = { version = "*", path = "../../contracts/dao/cwd-core" }
-neutron-subdao-timelock-single = { version = "*", path = "../neutron-subdao-timelock-single" }
 neutron-subdao-proposal-single = { version = "*", path = "../neutron-subdao-proposal-single" }
 neutron-subdao-pre-propose-single = { version = "*", path = "../neutron-subdao-pre-propose-single" }

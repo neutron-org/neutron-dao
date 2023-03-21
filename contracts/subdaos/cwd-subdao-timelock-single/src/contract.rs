@@ -7,17 +7,19 @@ use cosmwasm_std::{
 use cw2::set_contract_version;
 use cw_storage_plus::Bound;
 use cw_utils::Duration;
-use cwd_proposal_single::msg::QueryMsg as MainDaoProposalModuleQueryMsg;
-use cwd_proposal_single::state::Config as MainDaoProposalModuleConfig;
+use cwd_proposal_single::{
+    msg::QueryMsg as MainDaoProposalModuleQueryMsg, state::Config as MainDaoProposalModuleConfig,
+};
 use neutron_bindings::bindings::msg::NeutronMsg;
-use neutron_dao_pre_propose_overrule::msg::ExecuteMsg as OverruleExecuteMsg;
-use neutron_dao_pre_propose_overrule::msg::QueryMsg as OverruleQueryMsg;
-use neutron_dao_pre_propose_overrule::types::ProposeMessage as OverruleProposeMessage;
+use neutron_dao_pre_propose_overrule::msg::{
+    ExecuteMsg as OverruleExecuteMsg, ProposeMessage as OverruleProposeMessage,
+    QueryMsg as OverruleQueryMsg,
+};
 use neutron_subdao_core::msg::QueryMsg as SubdaoQuery;
 use neutron_subdao_pre_propose_single::msg::QueryMsg as PreProposeQuery;
-use neutron_subdao_timelock_single::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
-use neutron_subdao_timelock_single::types::{
-    Config, ProposalListResponse, ProposalStatus, SingleChoiceProposal,
+use neutron_subdao_timelock_single::{
+    msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg},
+    types::{Config, ProposalListResponse, ProposalStatus, SingleChoiceProposal},
 };
 
 use crate::error::ContractError;

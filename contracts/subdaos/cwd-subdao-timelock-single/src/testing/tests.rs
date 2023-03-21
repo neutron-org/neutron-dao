@@ -5,9 +5,9 @@ use cosmwasm_std::{
     to_binary, Addr, Attribute, CosmosMsg, Reply, SubMsg, SubMsgResult, WasmMsg,
 };
 use neutron_bindings::bindings::msg::NeutronMsg;
-use neutron_subdao_timelock_single::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
-use neutron_subdao_timelock_single::types::{
-    Config, ProposalListResponse, ProposalStatus, SingleChoiceProposal,
+use neutron_subdao_timelock_single::{
+    msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
+    types::{Config, ProposalListResponse, ProposalStatus, SingleChoiceProposal},
 };
 
 use crate::testing::mock_querier::{MOCK_MAIN_DAO_ADDR, MOCK_OVERRULE_PREPROPOSAL};
@@ -16,8 +16,9 @@ use crate::{
     state::{CONFIG, DEFAULT_LIMIT, PROPOSALS},
     testing::mock_querier::MOCK_TIMELOCK_INITIALIZER,
 };
-use neutron_dao_pre_propose_overrule::msg::ExecuteMsg as OverruleExecuteMsg;
-use neutron_dao_pre_propose_overrule::types::ProposeMessage as OverruleProposeMessage;
+use neutron_dao_pre_propose_overrule::msg::{
+    ExecuteMsg as OverruleExecuteMsg, ProposeMessage as OverruleProposeMessage,
+};
 
 use super::mock_querier::{mock_dependencies, MOCK_SUBDAO_CORE_ADDR};
 
