@@ -20,7 +20,7 @@ cosmwasm-std = "1.0.0"
 cw2 = "0.13.2"
 serde = { version = "1.0.147", default-features = false, features = ["derive"] }
 cwd-pre-propose-base = { version = "*", path = "../../../../packages/cwd-pre-propose-base" }
-neutron_bindings = { package = "neutron-sdk", git = "https://github.com/neutron-org/neutron-sdk.git", rev = "95e51dfbedd71b08bf1a7cb7315f7cabeb335e55" }
+neutron_bindings = { package = "neutron-sdk", git = "https://github.com/neutron-org/neutron-sdk.git", rev = "e7f6e72d7c5683e06e2dde4ba29eef9036f49e9c" }
 schemars = "0.8.8"
 
 [dev-dependencies]
