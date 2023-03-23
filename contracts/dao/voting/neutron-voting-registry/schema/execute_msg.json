@@ -50,6 +50,9 @@
       "properties": {
         "update_config": {
           "type": "object",
+          "required": [
+            "owner"
+          ],
           "properties": {
             "manager": {
               "type": [
@@ -58,10 +61,7 @@
               ]
             },
             "owner": {
-              "type": [
-                "string",
-                "null"
-              ]
+              "type": "string"
             }
           }
         }

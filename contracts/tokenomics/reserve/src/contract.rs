@@ -65,7 +65,7 @@ pub fn execute(
             execute_transfer_ownership(deps, info, api.addr_validate(&new_owner)?)
         }
         ExecuteMsg::Payout { amount, recipient } => {
-            execute_payout(deps, info, env, amount, recipient)
+            execute_payout(deps, info, env, amount, api.addr_validate(&recipient)?)
         }
     }
 }
@@ -142,7 +142,7 @@ pub fn execute_payout(
     info: MessageInfo,
     env: Env,
     amount: Uint128,
-    recipient: String,
+    recipient: Addr,
 ) -> Result<Response, ContractError> {
     let config: Config = CONFIG.load(deps.storage)?;
     let denom = config.denom;
@@ -161,7 +161,7 @@ pub fn execute_payout(
 
     Ok(Response::new()
         .add_message(CosmosMsg::Bank(BankMsg::Send {
-            to_address: recipient.clone(),
+            to_address: recipient.clone().into_string(),
             amount: coins(amount.u128(), denom),
         }))
         .add_attribute("action", "neutron/treasury/payout")

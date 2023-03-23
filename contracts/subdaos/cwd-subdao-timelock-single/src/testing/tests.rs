@@ -9,6 +9,7 @@ use neutron_subdao_timelock_single::types::{
     Config, ProposalListResponse, ProposalStatus, SingleChoiceProposal,
 };
 
+use crate::testing::mock_querier::MOCK_MAIN_DAO_ADDR;
 use crate::{
     contract::{execute, instantiate, query, reply},
     state::{CONFIG, DEFAULT_LIMIT, PROPOSALS},
@@ -23,7 +24,6 @@ fn test_instantiate_test() {
     let env = mock_env();
     let info = mock_info("neutron1unknownsender", &[]);
     let msg = InstantiateMsg {
-        owner: Addr::unchecked("dao"),
         timelock_duration: 10,
     };
     let res = instantiate(deps.as_mut(), env.clone(), info, msg);
@@ -35,40 +35,38 @@ fn test_instantiate_test() {
     let info = mock_info(MOCK_TIMELOCK_INITIALIZER, &[]);
 
     let msg = InstantiateMsg {
-        owner: Addr::unchecked("dao"),
         timelock_duration: 10,
     };
     let res = instantiate(deps.as_mut(), env.clone(), info.clone(), msg.clone());
     let res_ok = res.unwrap();
     let expected_attributes = vec![
         Attribute::new("action", "instantiate"),
-        Attribute::new("owner", "dao"),
+        Attribute::new("owner", MOCK_MAIN_DAO_ADDR),
         Attribute::new("timelock_duration", "10"),
     ];
     assert_eq!(expected_attributes, res_ok.attributes);
     let config = CONFIG.load(&deps.storage).unwrap();
     let expected_config = Config {
-        owner: msg.owner,
+        owner: Addr::unchecked(MOCK_MAIN_DAO_ADDR),
         timelock_duration: msg.timelock_duration,
         subdao: Addr::unchecked(MOCK_SUBDAO_CORE_ADDR),
     };
     assert_eq!(expected_config, config);
 
     let msg = InstantiateMsg {
-        owner: Addr::unchecked("none"),
         timelock_duration: 10,
     };
     let res = instantiate(deps.as_mut(), env, info, msg.clone());
     let res_ok = res.unwrap();
     let expected_attributes = vec![
         Attribute::new("action", "instantiate"),
-        Attribute::new("owner", "none"),
+        Attribute::new("owner", MOCK_MAIN_DAO_ADDR),
         Attribute::new("timelock_duration", "10"),
     ];
     assert_eq!(expected_attributes, res_ok.attributes);
     let config = CONFIG.load(&deps.storage).unwrap();
     let expected_config = Config {
-        owner: msg.owner,
+        owner: Addr::unchecked(MOCK_MAIN_DAO_ADDR),
         timelock_duration: msg.timelock_duration,
         subdao: Addr::unchecked(MOCK_SUBDAO_CORE_ADDR),
     };

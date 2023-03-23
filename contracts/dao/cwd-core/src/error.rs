@@ -10,6 +10,15 @@ pub enum ContractError {
     #[error(transparent)]
     ParseReplyError(#[from] ParseReplyError),
 
+    #[error("config name cannot be empty.")]
+    NameIsEmpty {},
+
+    #[error("config description cannot be empty.")]
+    DescriptionIsEmpty {},
+
+    #[error("config DAO URI cannot be empty.")]
+    DaoUriIsEmpty {},
+
     #[error("Unauthorized.")]
     Unauthorized {},
 

@@ -1,7 +1,5 @@
 use crate::contract::{migrate, CONTRACT_NAME, CONTRACT_VERSION};
-use crate::msg::{
-    BonderBalanceResponse, ExecuteMsg, InstantiateMsg, ListBondersResponse, MigrateMsg, QueryMsg,
-};
+use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::state::Config;
 use cosmwasm_std::testing::{mock_dependencies, mock_env};
 use cosmwasm_std::{coins, Addr, Coin, Empty, Uint128};
@@ -9,11 +7,14 @@ use cw_multi_test::{
     custom_app, next_block, App, AppResponse, Contract, ContractWrapper, Executor,
 };
 use cwd_interface::voting::{
-    InfoResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
+    BondingStatusResponse, InfoResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
 use cwd_interface::Admin;
+use cwd_voting::vault::{BonderBalanceResponse, ListBondersResponse};
 
 const DAO_ADDR: &str = "dao";
+const NAME: &str = "name";
+const NEW_NAME: &str = "new_name";
 const DESCRIPTION: &str = "description";
 const NEW_DESCRIPTION: &str = "new description";
 const ADDR1: &str = "addr1";
@@ -124,9 +125,10 @@ fn update_config(
     app: &mut App,
     contract_addr: Addr,
     sender: &str,
-    owner: Option<String>,
+    owner: String,
     manager: Option<String>,
-    description: Option<String>,
+    name: String,
+    description: String,
 ) -> anyhow::Result<AppResponse> {
     app.execute_contract(
         Addr::unchecked(sender),
@@ -134,6 +136,7 @@ fn update_config(
         &ExecuteMsg::UpdateConfig {
             owner,
             manager,
+            name,
             description,
         },
         &[],
@@ -170,8 +173,32 @@ fn get_config(app: &mut App, contract_addr: Addr) -> Config {
         .unwrap()
 }
 
+fn get_description(app: &App, contract_addr: &Addr) -> String {
+    app.wrap()
+        .query_wasm_smart(contract_addr, &QueryMsg::Description {})
+        .unwrap()
+}
+
+fn get_dao(app: &App, contract_addr: &Addr) -> String {
+    app.wrap()
+        .query_wasm_smart(contract_addr, &QueryMsg::Dao {})
+        .unwrap()
+}
+
 fn get_balance(app: &mut App, address: &str, denom: &str) -> Uint128 {
     app.wrap().query_balance(address, denom).unwrap().amount
+}
+
+fn get_bonding_status(app: &App, contract_addr: &Addr, address: &str) -> BondingStatusResponse {
+    app.wrap()
+        .query_wasm_smart(
+            contract_addr,
+            &QueryMsg::BondingStatus {
+                address: address.to_string(),
+                height: None,
+            },
+        )
+        .unwrap()
 }
 
 #[test]
@@ -179,30 +206,36 @@ fn test_instantiate() {
     let mut app = mock_app();
     let vault_id = app.store_code(vault_contract());
     // Populated fields
-    let _addr = instantiate_vault(
+    let addr = instantiate_vault(
         &mut app,
         vault_id,
         InstantiateMsg {
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::Address {
+            owner: Admin::Address {
                 addr: DAO_ADDR.to_string(),
-            }),
+            },
             manager: Some(ADDR1.to_string()),
             denom: DENOM.to_string(),
         },
     );
+    assert_eq!(get_dao(&app, &addr), String::from(DAO_ADDR));
 
     // Non populated fields
-    let _addr = instantiate_vault(
+    let addr = instantiate_vault(
         &mut app,
         vault_id,
         InstantiateMsg {
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: None,
+            owner: Admin::Address {
+                addr: DAO_ADDR.to_string(),
+            },
             manager: None,
             denom: DENOM.to_string(),
         },
     );
+    assert_eq!(get_dao(&app, &addr), String::from(DAO_ADDR));
 }
 
 #[test]
@@ -214,8 +247,9 @@ fn test_instantiate_dao_owner() {
         &mut app,
         vault_id,
         InstantiateMsg {
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
             denom: DENOM.to_string(),
         },
@@ -223,7 +257,7 @@ fn test_instantiate_dao_owner() {
 
     let config = get_config(&mut app, addr);
 
-    assert_eq!(config.owner, Some(Addr::unchecked(DAO_ADDR)))
+    assert_eq!(config.owner, Addr::unchecked(DAO_ADDR))
 }
 
 #[test]
@@ -235,8 +269,9 @@ fn test_bond_invalid_denom() {
         &mut app,
         vault_id,
         InstantiateMsg {
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
             denom: DENOM.to_string(),
         },
@@ -254,16 +289,25 @@ fn test_bond_valid_denom() {
         &mut app,
         vault_id,
         InstantiateMsg {
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
             denom: DENOM.to_string(),
         },
     );
 
+    let mut bonding_status: BondingStatusResponse = get_bonding_status(&app, &addr, ADDR1);
+    assert!(bonding_status.bonding_enabled);
+    assert_eq!(bonding_status.unbondable_abount, Uint128::zero());
+
     // Try and bond an valid denom
-    bond_tokens(&mut app, addr, ADDR1, 100, DENOM).unwrap();
+    bond_tokens(&mut app, addr.clone(), ADDR1, 100, DENOM).unwrap();
     app.update_block(next_block);
+
+    bonding_status = get_bonding_status(&app, &addr, ADDR1);
+    assert!(bonding_status.bonding_enabled);
+    assert_eq!(bonding_status.unbondable_abount, Uint128::from(100u32));
 }
 
 #[test]
@@ -275,8 +319,9 @@ fn test_unbond_none_bonded() {
         &mut app,
         vault_id,
         InstantiateMsg {
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
             denom: DENOM.to_string(),
         },
@@ -294,8 +339,9 @@ fn test_unbond_invalid_balance() {
         &mut app,
         vault_id,
         InstantiateMsg {
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
             denom: DENOM.to_string(),
         },
@@ -317,8 +363,9 @@ fn test_unbond() {
         &mut app,
         vault_id,
         InstantiateMsg {
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
             denom: DENOM.to_string(),
         },
@@ -330,13 +377,27 @@ fn test_unbond() {
     app.update_block(next_block);
     assert_eq!(get_balance(&mut app, ADDR1, DENOM), Uint128::new(9900));
 
+    let mut bonding_status: BondingStatusResponse = get_bonding_status(&app, &addr, ADDR1);
+    assert!(bonding_status.bonding_enabled);
+    assert_eq!(bonding_status.unbondable_abount, Uint128::from(100u32));
+
     // Unbond some
     unbond_tokens(&mut app, addr.clone(), ADDR1, 75).unwrap();
     assert_eq!(get_balance(&mut app, ADDR1, DENOM), Uint128::new(9975));
+    app.update_block(next_block);
+
+    bonding_status = get_bonding_status(&app, &addr, ADDR1);
+    assert!(bonding_status.bonding_enabled);
+    assert_eq!(bonding_status.unbondable_abount, Uint128::from(25u32));
 
     // Unbond the rest
-    unbond_tokens(&mut app, addr, ADDR1, 25).unwrap();
+    unbond_tokens(&mut app, addr.clone(), ADDR1, 25).unwrap();
     assert_eq!(get_balance(&mut app, ADDR1, DENOM), INIT_BALANCE);
+    app.update_block(next_block);
+
+    bonding_status = get_bonding_status(&app, &addr, ADDR1);
+    assert!(bonding_status.bonding_enabled);
+    assert_eq!(bonding_status.unbondable_abount, Uint128::zero());
 }
 
 #[test]
@@ -348,8 +409,9 @@ fn test_update_config_invalid_sender() {
         &mut app,
         vault_id,
         InstantiateMsg {
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
             denom: DENOM.to_string(),
         },
@@ -360,9 +422,10 @@ fn test_update_config_invalid_sender() {
         &mut app,
         addr,
         ADDR2,
-        Some(ADDR1.to_string()),
+        ADDR1.to_string(),
         Some(DAO_ADDR.to_string()),
-        Some(NEW_DESCRIPTION.to_string()),
+        NEW_NAME.to_string(),
+        NEW_DESCRIPTION.to_string(),
     )
     .unwrap();
 }
@@ -376,15 +439,25 @@ fn test_update_config_non_owner_changes_owner() {
         &mut app,
         vault_id,
         InstantiateMsg {
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
             denom: DENOM.to_string(),
         },
     );
 
     // ADDR1 is the manager so cannot change the owner
-    update_config(&mut app, addr, ADDR1, Some(ADDR2.to_string()), None, None).unwrap();
+    update_config(
+        &mut app,
+        addr,
+        ADDR1,
+        ADDR2.to_string(),
+        None,
+        NEW_NAME.to_string(),
+        NEW_DESCRIPTION.to_string(),
+    )
+    .unwrap();
 }
 
 #[test]
@@ -395,29 +468,32 @@ fn test_update_config_as_owner() {
         &mut app,
         vault_id,
         InstantiateMsg {
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
             denom: DENOM.to_string(),
         },
     );
 
-    // Swap owner and manager, change description
+    // Swap owner and manager, change description and name
     update_config(
         &mut app,
         addr.clone(),
         DAO_ADDR,
-        Some(ADDR1.to_string()),
+        ADDR1.to_string(),
         Some(DAO_ADDR.to_string()),
-        Some(NEW_DESCRIPTION.to_string()),
+        NEW_NAME.to_string(),
+        NEW_DESCRIPTION.to_string(),
     )
     .unwrap();
 
     let config = get_config(&mut app, addr);
     assert_eq!(
         Config {
+            name: NEW_NAME.to_string(),
             description: NEW_DESCRIPTION.to_string(),
-            owner: Some(Addr::unchecked(ADDR1)),
+            owner: Addr::unchecked(ADDR1),
             manager: Some(Addr::unchecked(DAO_ADDR)),
             denom: DENOM.to_string(),
         },
@@ -433,29 +509,37 @@ fn test_update_config_as_manager() {
         &mut app,
         vault_id,
         InstantiateMsg {
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
             denom: DENOM.to_string(),
         },
     );
 
-    // Change description and manager as manager cannot change owner
+    let description_before = get_description(&app, &addr);
+
+    // Change description, name and manager as manager cannot change owner
     update_config(
         &mut app,
         addr.clone(),
         ADDR1,
-        Some(DAO_ADDR.to_string()),
+        DAO_ADDR.to_string(),
         Some(ADDR2.to_string()),
-        Some(NEW_DESCRIPTION.to_string()),
+        NEW_NAME.to_string(),
+        NEW_DESCRIPTION.to_string(),
     )
     .unwrap();
+
+    let description_after = get_description(&app, &addr);
+    assert_ne!(description_before, description_after);
 
     let config = get_config(&mut app, addr);
     assert_eq!(
         Config {
+            name: NEW_NAME.to_string(),
             description: NEW_DESCRIPTION.to_string(),
-            owner: Some(Addr::unchecked(DAO_ADDR)),
+            owner: Addr::unchecked(DAO_ADDR),
             manager: Some(Addr::unchecked(ADDR2)),
             denom: DENOM.to_string(),
         },
@@ -464,7 +548,7 @@ fn test_update_config_as_manager() {
 }
 
 #[test]
-#[should_panic(expected = "Empty attribute value. Key: description")]
+#[should_panic(expected = "config description cannot be empty.")]
 fn test_update_config_invalid_description() {
     let mut app = mock_app();
     let vault_id = app.store_code(vault_contract());
@@ -472,21 +556,53 @@ fn test_update_config_invalid_description() {
         &mut app,
         vault_id,
         InstantiateMsg {
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
             denom: DENOM.to_string(),
         },
     );
 
-    // Change duration and manager as manager cannot change owner
+    // Change name and manager as manager cannot change owner
     update_config(
         &mut app,
         addr,
         ADDR1,
-        Some(DAO_ADDR.to_string()),
+        DAO_ADDR.to_string(),
         Some(ADDR2.to_string()),
-        Some(String::from("")),
+        NEW_NAME.to_string(),
+        String::from(""),
+    )
+    .unwrap();
+}
+
+#[test]
+#[should_panic(expected = "config name cannot be empty.")]
+fn test_update_config_invalid_name() {
+    let mut app = mock_app();
+    let vault_id = app.store_code(vault_contract());
+    let addr = instantiate_vault(
+        &mut app,
+        vault_id,
+        InstantiateMsg {
+            name: NAME.to_string(),
+            description: DESCRIPTION.to_string(),
+            owner: Admin::CoreModule {},
+            manager: Some(ADDR1.to_string()),
+            denom: DENOM.to_string(),
+        },
+    );
+
+    // Change description and manager as manager cannot change owner
+    update_config(
+        &mut app,
+        addr,
+        ADDR1,
+        DAO_ADDR.to_string(),
+        Some(ADDR2.to_string()),
+        String::from(""),
+        NEW_DESCRIPTION.to_string(),
     )
     .unwrap();
 }
@@ -499,8 +615,9 @@ fn test_query_dao() {
         &mut app,
         vault_id,
         InstantiateMsg {
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
             denom: DENOM.to_string(),
         },
@@ -519,8 +636,9 @@ fn test_query_info() {
         &mut app,
         vault_id,
         InstantiateMsg {
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
             denom: DENOM.to_string(),
         },
@@ -528,7 +646,7 @@ fn test_query_info() {
 
     let msg = QueryMsg::Info {};
     let resp: InfoResponse = app.wrap().query_wasm_smart(addr, &msg).unwrap();
-    assert_eq!(resp.info.contract, "crates.io:neutron-voting-registry");
+    assert_eq!(resp.info.contract, "crates.io:neutron-voting-vault");
 }
 
 #[test]
@@ -539,8 +657,9 @@ fn test_query_get_config() {
         &mut app,
         vault_id,
         InstantiateMsg {
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
             denom: DENOM.to_string(),
         },
@@ -550,8 +669,9 @@ fn test_query_get_config() {
     assert_eq!(
         config,
         Config {
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Addr::unchecked(DAO_ADDR)),
+            owner: Addr::unchecked(DAO_ADDR),
             manager: Some(Addr::unchecked(ADDR1)),
             denom: DENOM.to_string(),
         }
@@ -566,8 +686,9 @@ fn test_voting_power_queries() {
         &mut app,
         vault_id,
         InstantiateMsg {
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
             denom: DENOM.to_string(),
         },
@@ -672,8 +793,9 @@ fn test_query_list_bonders() {
         &mut app,
         vault_id,
         InstantiateMsg {
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Some(Admin::CoreModule {}),
+            owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
             denom: DENOM.to_string(),
         },

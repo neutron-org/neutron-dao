@@ -1,0 +1,33 @@
+[package]
+name = "lockdrop-vault"
+version = "0.1.0"
+authors = ["Sergei Sotnikov <sergei.s@p2p.org>"]
+edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/neutron/neutron-dao"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+# for more explicit tests, cargo test --features=backtraces
+backtraces = ["cosmwasm-std/backtraces"]
+# use library feature to disable all instantiate/execute/query exports
+library = []
+
+[dependencies]
+cosmwasm-std = { version = "1.0.0" }
+cw-storage-plus = "0.13"
+cw2 = "0.13"
+schemars = "0.8"
+serde = { version = "1.0.147", default-features = false, features = ["derive"] }
+thiserror = { version = "1.0" }
+cwd-macros = { path = "../../../../packages/cwd-macros" }
+cwd-interface = { path = "../../../../packages/cwd-interface" }
+cwd-voting = { path = "../../../../packages/cwd-voting" }
+neutron-lockdrop-vault = { path = "../../../../packages/neutron-lockdrop-vault" }
+
+[dev-dependencies]
+cosmwasm-schema = { version = "1.0.0" }
+cw-multi-test = "0.13"
+anyhow = "1.0.57"

@@ -9,7 +9,7 @@ use cwd_interface::{voting, Admin};
 use neutron_vault::msg::QueryMsg as VaultQueryMsg;
 
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, VotingVault};
 use crate::state::{Config, CONFIG, DAO};
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-voting-registry";
@@ -24,25 +24,24 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    let owner = msg
-        .owner
-        .as_ref()
-        .map(|owner| match owner {
-            Admin::Address { addr } => deps.api.addr_validate(addr),
-            Admin::CoreModule {} => Ok(info.sender.clone()),
-        })
-        .transpose()?;
+    let owner = match msg.owner {
+        Admin::Address { addr } => deps.api.addr_validate(addr.as_str())?,
+        Admin::CoreModule {} => info.sender.clone(),
+    };
     let manager = msg
         .manager
         .map(|manager| deps.api.addr_validate(&manager))
         .transpose()?;
 
-    let voting_vault = deps.api.addr_validate(&msg.voting_vault)?;
+    let mut voting_vaults: Vec<Addr> = vec![];
+    for vault in msg.voting_vaults.iter() {
+        voting_vaults.push(deps.api.addr_validate(vault)?);
+    }
 
     let config = Config {
         owner,
         manager,
-        voting_vaults: vec![voting_vault],
+        voting_vaults,
     };
 
     CONFIG.save(deps.storage, &config)?;
@@ -50,13 +49,7 @@ pub fn instantiate(
 
     Ok(Response::new()
         .add_attribute("action", "instantiate")
-        .add_attribute(
-            "owner",
-            config
-                .owner
-                .map(|a| a.to_string())
-                .unwrap_or_else(|| "None".to_string()),
-        )
+        .add_attribute("owner", config.owner)
         .add_attribute(
             "manager",
             config
@@ -94,7 +87,7 @@ pub fn execute_add_voting_vault(
 ) -> Result<Response, ContractError> {
     let mut config: Config = CONFIG.load(deps.storage)?;
 
-    if Some(info.sender) != config.owner {
+    if info.sender != config.owner {
         return Err(ContractError::Unauthorized {});
     }
 
@@ -117,7 +110,7 @@ pub fn execute_remove_voting_vault(
 ) -> Result<Response, ContractError> {
     let mut config: Config = CONFIG.load(deps.storage)?;
 
-    if Some(info.sender) != config.owner {
+    if info.sender != config.owner {
         return Err(ContractError::Unauthorized {});
     }
 
@@ -139,22 +132,20 @@ pub fn execute_remove_voting_vault(
 pub fn execute_update_config(
     deps: DepsMut,
     info: MessageInfo,
-    new_owner: Option<String>,
+    new_owner: String,
     new_manager: Option<String>,
 ) -> Result<Response, ContractError> {
     let mut config: Config = CONFIG.load(deps.storage)?;
-    if Some(info.sender.clone()) != config.owner && Some(info.sender.clone()) != config.manager {
+    if info.sender != config.owner && Some(info.sender.clone()) != config.manager {
         return Err(ContractError::Unauthorized {});
     }
 
-    let new_owner = new_owner
-        .map(|new_owner| deps.api.addr_validate(&new_owner))
-        .transpose()?;
+    let new_owner = deps.api.addr_validate(&new_owner)?;
     let new_manager = new_manager
         .map(|new_manager| deps.api.addr_validate(&new_manager))
         .transpose()?;
 
-    if Some(info.sender) != config.owner && new_owner != config.owner {
+    if info.sender != config.owner && new_owner != config.owner {
         return Err(ContractError::OnlyOwnerCanChangeOwner {});
     };
 
@@ -164,13 +155,7 @@ pub fn execute_update_config(
     CONFIG.save(deps.storage, &config)?;
     Ok(Response::new()
         .add_attribute("action", "update_config")
-        .add_attribute(
-            "owner",
-            config
-                .owner
-                .map(|a| a.to_string())
-                .unwrap_or_else(|| "None".to_string()),
-        )
+        .add_attribute("owner", config.owner)
         .add_attribute(
             "manager",
             config
@@ -192,20 +177,28 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::Info {} => query_info(deps),
         QueryMsg::Dao {} => query_dao(deps),
         QueryMsg::GetConfig {} => to_binary(&CONFIG.load(deps.storage)?),
-        QueryMsg::VotingVaults {} => query_voting_vaults(deps),
+        QueryMsg::VotingVaults {} => to_binary(&query_voting_vaults(deps)?),
     }
 }
 
-pub fn query_voting_vaults(deps: Deps) -> StdResult<Binary> {
-    let mut voting_vaults: Vec<(Addr, String)> = vec![];
+pub fn query_voting_vaults(deps: Deps) -> StdResult<Vec<VotingVault>> {
+    let mut voting_vaults: Vec<VotingVault> = vec![];
     for vault in CONFIG.load(deps.storage)?.voting_vaults.iter() {
         let vault_description: String = deps
             .querier
             .query_wasm_smart(vault, &VaultQueryMsg::Description {})?;
-        voting_vaults.push((vault.clone(), vault_description));
+        let vault_name: String = deps
+            .querier
+            .query_wasm_smart(vault, &VaultQueryMsg::Name {})?;
+
+        voting_vaults.push(VotingVault {
+            address: vault.to_string(),
+            name: vault_name,
+            description: vault_description,
+        });
     }
 
-    to_binary(&voting_vaults)
+    Ok(voting_vaults)
 }
 
 pub fn query_voting_power_at_height(
@@ -227,7 +220,9 @@ pub fn query_voting_power_at_height(
                 address: address.clone(),
             },
         )?;
-        total_power.power += total_power_single_vault.power;
+        total_power.power = total_power
+            .power
+            .checked_add(total_power_single_vault.power)?;
         total_power.height = total_power_single_vault.height;
     }
 
@@ -249,7 +244,9 @@ pub fn query_total_power_at_height(
         let total_power_single_vault: TotalPowerAtHeightResponse = deps
             .querier
             .query_wasm_smart(vault, &voting::Query::TotalPowerAtHeight { height })?;
-        total_power.power += total_power_single_vault.power;
+        total_power.power = total_power
+            .power
+            .checked_add(total_power_single_vault.power)?;
         total_power.height = total_power_single_vault.height;
     }
 

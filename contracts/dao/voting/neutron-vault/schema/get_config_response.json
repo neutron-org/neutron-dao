@@ -4,7 +4,9 @@
   "type": "object",
   "required": [
     "denom",
-    "description"
+    "description",
+    "name",
+    "owner"
   ],
   "properties": {
     "denom": {
@@ -23,15 +25,11 @@
         }
       ]
     },
+    "name": {
+      "type": "string"
+    },
     "owner": {
-      "anyOf": [
-        {
-          "$ref": "#/definitions/Addr"
-        },
-        {
-          "type": "null"
-        }
-      ]
+      "$ref": "#/definitions/Addr"
     }
   },
   "definitions": {

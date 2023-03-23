@@ -41,6 +41,13 @@ pub struct IsActiveResponse {
     pub active: bool,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+pub struct BondingStatusResponse {
+    pub bonding_enabled: bool,
+    pub unbondable_abount: Uint128,
+    pub height: u64,
+}
+
 mod tests {
     /// Make sure the enum has all of the fields we expect. This will
     /// fail to compile if not.

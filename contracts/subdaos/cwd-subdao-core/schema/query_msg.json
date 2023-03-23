@@ -192,6 +192,19 @@
       "additionalProperties": false
     },
     {
+      "description": "Gets main dao address",
+      "type": "object",
+      "required": [
+        "main_dao"
+      ],
+      "properties": {
+        "main_dao": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
       "type": "object",
       "required": [
         "pause_info"

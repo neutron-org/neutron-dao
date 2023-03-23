@@ -21,7 +21,7 @@ PRE_PROPOSE_MULTIPLE_ADDRESS=neutron10qt8wg0n7z740ssvf3urmvgtjhxpyp74hxqvqt7z226
 
 #
 # send funds to contract to send them back
-RES=$(${BIN} tx bank send ${USERNAME_1} ${CORE_ADDRESS}  1000stake  -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
+RES=$(${BIN} tx bank send ${USERNAME_1} ${CORE_ADDRESS}  1000untrn  -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025untrn --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
 
 echo "
 
@@ -31,8 +31,8 @@ bank->send from wallet 1:
 echo $RES
 
 # STAKING
-# stake funds from wallet 1
-RES=$(${BIN} tx wasm execute $VAULT_ADDRESS "{\"bond\": {}}" --amount 1000stake --from ${USERNAME_1} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
+# bond funds from wallet 1
+RES=$(${BIN} tx wasm execute $VAULT_ADDRESS "{\"bond\": {}}" --amount 1000untrn --from ${USERNAME_1} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025untrn --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
 echo "
 
 
@@ -40,8 +40,8 @@ staking from wallet 1:
 "
 echo $RES
 
-#stake funds from wallet 2
-RES=$(${BIN} tx wasm execute $VAULT_ADDRESS "{\"bond\": {}}" --amount 1000stake --from ${USERNAME_2} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
+# bond funds from wallet 2
+RES=$(${BIN} tx wasm execute $VAULT_ADDRESS "{\"bond\": {}}" --amount 1000untrn --from ${USERNAME_2} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025untrn --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
 echo "
 
 
@@ -49,8 +49,8 @@ staking from wallet 2:
 "
 echo $RES
 
-#stake funds from wallet 3
-RES=$(${BIN} tx wasm execute $VAULT_ADDRESS "{\"bond\": {}}" --amount 1000stake --from ${USERNAME_3} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
+# bond funds from wallet 3
+RES=$(${BIN} tx wasm execute $VAULT_ADDRESS "{\"bond\": {}}" --amount 1000untrn --from ${USERNAME_3} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025untrn --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
 echo "
 
 
@@ -71,7 +71,7 @@ CHOICES="{\"options\": [{\"description\": \"choice1\", \"msgs\": $MSGS}, {\"desc
 PROPOSE="{\"title\": \"TEST\", \"description\": \"BOTTOMTTEXT\", \"choices\": $CHOICES}"
 PROP="{\"propose\": {\"msg\": {\"propose\": $PROPOSE}}}"
 
-RES=$(${BIN} tx wasm execute $PRE_PROPOSE_MULTIPLE_ADDRESS "$PROP" --amount 1000stake --from ${USERNAME_1} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
+RES=$(${BIN} tx wasm execute $PRE_PROPOSE_MULTIPLE_ADDRESS "$PROP" --amount 1000untrn --from ${USERNAME_1} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025untrn --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
 echo "
 
 propose proposal to be passed:
@@ -79,7 +79,7 @@ propose proposal to be passed:
 echo $RES
 
 #### vote option 1 from wallet 1
-RES=$(${BIN} tx wasm execute $PROPOSE_MULTIPLE_ADDRESS "{\"vote\": {\"proposal_id\": 1, \"vote\": {\"option_id\": 1}}}"  --from ${USERNAME_1} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
+RES=$(${BIN} tx wasm execute $PROPOSE_MULTIPLE_ADDRESS "{\"vote\": {\"proposal_id\": 1, \"vote\": {\"option_id\": 1}}}"  --from ${USERNAME_1} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025untrn --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
 echo "
 
 
@@ -88,7 +88,7 @@ vote option 1 from wallet1:
 echo $RES
 
 #### vote option 0 from wallet 2
-RES=$(${BIN} tx wasm execute $PROPOSE_MULTIPLE_ADDRESS "{\"vote\": {\"proposal_id\": 1, \"vote\": {\"option_id\": 0}}}" --from ${USERNAME_2} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
+RES=$(${BIN} tx wasm execute $PROPOSE_MULTIPLE_ADDRESS "{\"vote\": {\"proposal_id\": 1, \"vote\": {\"option_id\": 0}}}" --from ${USERNAME_2} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025untrn --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
 echo "
 
 
@@ -97,7 +97,7 @@ vote option 0 from wallet 2:
 echo $RES
 
 #### vote option 1 from wallet 3
-RES=$(${BIN} tx wasm execute $PROPOSE_MULTIPLE_ADDRESS "{\"vote\": {\"proposal_id\": 1, \"vote\": {\"option_id\": 1}}}" --from ${USERNAME_3} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
+RES=$(${BIN} tx wasm execute $PROPOSE_MULTIPLE_ADDRESS "{\"vote\": {\"proposal_id\": 1, \"vote\": {\"option_id\": 1}}}" --from ${USERNAME_3} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025untrn --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
 echo "
 
 
@@ -105,7 +105,7 @@ vote option 1 from wallet 3:
 "
 echo $RES
 
-RES=$(${BIN} tx wasm execute $PROPOSE_MULTIPLE_ADDRESS "{\"execute\": {\"proposal_id\": 1}}"  --from ${USERNAME_1} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
+RES=$(${BIN} tx wasm execute $PROPOSE_MULTIPLE_ADDRESS "{\"execute\": {\"proposal_id\": 1}}"  --from ${USERNAME_1} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025untrn --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
 echo "
 
 
@@ -130,7 +130,7 @@ CHOICES="{\"options\": [{\"description\": \"choice1\", \"msgs\": $MSGS}, {\"desc
 PROPOSE="{\"title\": \"TEST\", \"description\": \"BOTTOMTTEXT\", \"choices\": $CHOICES}"
 PROP="{\"propose\": {\"msg\": {\"propose\": $PROPOSE}}}"
 
-RES=$(${BIN} tx wasm execute $PRE_PROPOSE_MULTIPLE_ADDRESS "$PROP" --amount 1000stake --from ${USERNAME_1} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
+RES=$(${BIN} tx wasm execute $PRE_PROPOSE_MULTIPLE_ADDRESS "$PROP" --amount 1000untrn --from ${USERNAME_1} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025untrn --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
 echo "
 
 propose proposal to be not passed:
@@ -138,7 +138,7 @@ propose proposal to be not passed:
 echo $RES
 
 #### vote option 2 from wallet 1
-RES=$(${BIN} tx wasm execute $PROPOSE_MULTIPLE_ADDRESS "{\"vote\": {\"proposal_id\": 2, \"vote\": {\"option_id\": 2}}}"  --from ${USERNAME_1} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
+RES=$(${BIN} tx wasm execute $PROPOSE_MULTIPLE_ADDRESS "{\"vote\": {\"proposal_id\": 2, \"vote\": {\"option_id\": 2}}}"  --from ${USERNAME_1} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025untrn --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
 echo "
 
 
@@ -147,7 +147,7 @@ vote option 2 from wallet1:
 echo $RES
 
 #### vote option 0 from wallet 2
-RES=$(${BIN} tx wasm execute $PROPOSE_MULTIPLE_ADDRESS "{\"vote\": {\"proposal_id\": 2, \"vote\": {\"option_id\": 0}}}" --from ${USERNAME_2} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
+RES=$(${BIN} tx wasm execute $PROPOSE_MULTIPLE_ADDRESS "{\"vote\": {\"proposal_id\": 2, \"vote\": {\"option_id\": 0}}}" --from ${USERNAME_2} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025untrn --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
 echo "
 
 
@@ -156,7 +156,7 @@ vote option 0 from wallet 2:
 echo $RES
 
 #### vote option 2 from wallet 3
-RES=$(${BIN} tx wasm execute $PROPOSE_MULTIPLE_ADDRESS "{\"vote\": {\"proposal_id\": 2, \"vote\": {\"option_id\": 2}}}" --from ${USERNAME_3} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
+RES=$(${BIN} tx wasm execute $PROPOSE_MULTIPLE_ADDRESS "{\"vote\": {\"proposal_id\": 2, \"vote\": {\"option_id\": 2}}}" --from ${USERNAME_3} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025untrn --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
 echo "
 
 
@@ -164,7 +164,7 @@ vote option 2 from wallet 3:
 "
 echo $RES
 
-RES=$(${BIN} tx wasm execute $PROPOSE_MULTIPLE_ADDRESS "{\"execute\": {\"proposal_id\": 2}}"  --from ${USERNAME_1} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
+RES=$(${BIN} tx wasm execute $PROPOSE_MULTIPLE_ADDRESS "{\"execute\": {\"proposal_id\": 2}}"  --from ${USERNAME_1} -y --chain-id ${CHAIN_ID_1} --output json --broadcast-mode=block --gas-prices 0.0025untrn --gas 1000000 --keyring-backend test --home ${HOME_1} --node tcp://127.0.0.1:16657)
 echo "
 
 

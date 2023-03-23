@@ -49,6 +49,7 @@ pub fn instantiate(
         main_dao: deps.api.addr_validate(&msg.main_dao)?,
         security_dao: deps.api.addr_validate(&msg.security_dao)?,
     };
+    config.validate()?;
     CONFIG.save(deps.storage, &config)?;
     PAUSED_UNTIL.save(deps.storage, &None)?;
 
@@ -204,13 +205,17 @@ pub fn execute_update_config(
         config.dao_uri = Some(dao_uri);
     }
 
+    config.validate()?;
     CONFIG.save(deps.storage, &config)?;
 
     Ok(Response::default()
         .add_attribute("action", "execute_update_config")
         .add_attribute("name", config.name)
         .add_attribute("description", config.description)
-        .add_attribute("dao_uri", config.dao_uri.unwrap_or_default())
+        .add_attribute(
+            "dao_uri",
+            config.dao_uri.unwrap_or_else(|| String::from("None")),
+        )
         .add_attribute("main_dao", config.main_dao)
         .add_attribute("security_dao", config.security_dao))
 }
@@ -359,6 +364,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
             query_list_sub_daos(deps, start_after, limit)
         }
         QueryMsg::DaoURI {} => query_dao_uri(deps),
+        QueryMsg::MainDao {} => query_main_dao(deps),
     }
 }
 
@@ -547,6 +553,11 @@ pub fn query_list_sub_daos(
 pub fn query_dao_uri(deps: Deps) -> StdResult<Binary> {
     let config = CONFIG.load(deps.storage)?;
     to_binary(&config.dao_uri)
+}
+
+pub fn query_main_dao(deps: Deps) -> StdResult<Binary> {
+    let config = CONFIG.load(deps.storage)?;
+    to_binary(&config.main_dao)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
