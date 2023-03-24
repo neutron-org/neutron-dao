@@ -5,7 +5,8 @@
   "required": [
     "denom",
     "description",
-    "name"
+    "name",
+    "owner"
   ],
   "properties": {
     "denom": {
@@ -25,14 +26,7 @@
       "type": "string"
     },
     "owner": {
-      "anyOf": [
-        {
-          "$ref": "#/definitions/Admin"
-        },
-        {
-          "type": "null"
-        }
-      ]
+      "$ref": "#/definitions/Admin"
     }
   },
   "definitions": {

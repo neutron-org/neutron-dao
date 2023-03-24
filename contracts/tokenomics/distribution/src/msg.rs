@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, Uint128};
+use cosmwasm_std::Uint128;
 use cwd_macros::{pausable, pausable_query};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -39,18 +39,4 @@ pub enum QueryMsg {
     Config {},
     Pending {},
     Shares {},
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct StatsResponse {
-    pub total_distributed: Uint128,
-    pub last_balance: Uint128,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct ShareResponse {
-    address: Addr,
-    shares: Uint128,
 }
