@@ -23,7 +23,7 @@ pub enum ExecuteMsg {
         shares: Vec<(String, Uint128)>,
     },
 
-    /// Distribute funds between share holders. It is called from treasury contract only
+    /// Distribute funds between share holders. It is called from reserve contract only
     /// when part of the fund is going to distribution betrween share holders.
     Fund {},
 

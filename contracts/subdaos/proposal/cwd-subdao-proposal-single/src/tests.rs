@@ -230,7 +230,7 @@ fn test_close_failed_proposal() {
         govmod_single.clone(),
         &ExecuteMsg::Propose {
             title: "A simple burn tokens proposal".to_string(),
-            description: "Burning more tokens, than dao treasury have".to_string(),
+            description: "Burning more tokens, than dao reserve have".to_string(),
             msgs: vec![WasmMsg::Execute {
                 contract_addr: token_contract.to_string(),
                 msg: binary_msg.clone(),
@@ -339,7 +339,7 @@ fn test_close_failed_proposal() {
         govmod_single.clone(),
         &ExecuteMsg::Propose {
             title: "A simple burn tokens proposal".to_string(),
-            description: "Burning more tokens, than dao treasury have".to_string(),
+            description: "Burning more tokens, than dao reserve have".to_string(),
             msgs: vec![WasmMsg::Execute {
                 contract_addr: token_contract.to_string(),
                 msg: binary_msg,
@@ -418,7 +418,7 @@ fn test_no_double_refund_on_execute_fail_and_close() {
         instantiate,
         Some(vec![Cw20Coin {
             address: CREATOR_ADDR.to_string(),
-            // One token for sending to the DAO treasury, one token
+            // One token for sending to the DAO reserve, one token
             // for staking, one token for paying the proposal deposit.
             amount: Uint128::new(3),
         }]),
@@ -515,7 +515,7 @@ fn test_no_double_refund_on_execute_fail_and_close() {
         proposal_single.clone(),
         &ExecuteMsg::Propose {
             title: "A simple burn tokens proposal".to_string(),
-            description: "Burning more tokens, than dao treasury have".to_string(),
+            description: "Burning more tokens, than dao reserve have".to_string(),
             msgs: vec![WasmMsg::Execute {
                 contract_addr: token_contract.to_string(),
                 msg: binary_msg,

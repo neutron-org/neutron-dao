@@ -3,13 +3,25 @@
   "title": "QueryMsg",
   "oneOf": [
     {
-      "description": "The contract's configuration",
+      "description": "The contract's configurations; returns [`ConfigResponse`]",
       "type": "object",
       "required": [
         "config"
       ],
       "properties": {
         "config": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "stats"
+      ],
+      "properties": {
+        "stats": {
           "type": "object"
         }
       },

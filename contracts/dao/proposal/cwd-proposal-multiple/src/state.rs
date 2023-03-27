@@ -38,9 +38,9 @@ pub struct Config {
     /// If set to true proposals will be closed if their execution
     /// fails. Otherwise, proposals will remain open after execution
     /// failure. For example, with this enabled a proposal to send 5
-    /// tokens out of a DAO's treasury with 4 tokens would be closed when
+    /// tokens out of a DAO's reserve with 4 tokens would be closed when
     /// it is executed. With this disabled, that same proposal would
-    /// remain open until the DAO's treasury was large enough for it to be
+    /// remain open until the DAO's reserve was large enough for it to be
     /// executed.
     pub close_proposal_on_execution_failure: bool,
 }
