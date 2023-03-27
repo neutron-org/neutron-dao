@@ -22,7 +22,7 @@ cw-storage-plus = "0.13"
 serde = { version = "1.0.147", default-features = false, features = ["derive"] }
 cwd-pre-propose-base = { version = "*", path = "../../../../packages/cwd-pre-propose-base" }
 cwd-voting = { path = "../../../../packages/cwd-voting" }
-neutron_bindings = { package = "neutron-sdk", git = "https://github.com/neutron-org/neutron-sdk.git", rev = "e7f6e72d7c5683e06e2dde4ba29eef9036f49e9c" }
+neutron_bindings = { package = "neutron-sdk", git = "https://github.com/neutron-org/neutron-sdk.git", branch = "main" }
 schemars = "0.8.8"
 thiserror = { version = "1.0.31" }
 

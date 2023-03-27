@@ -27,7 +27,6 @@
       "description": "AdminProposal defines the struct for various proposals which Neutron's Admin Module may accept.",
       "oneOf": [
         {
-          "description": "*ParamChangeProposal** is a parameter change proposal field.",
           "type": "object",
           "required": [
             "param_change_proposal"
@@ -40,7 +39,6 @@
           "additionalProperties": false
         },
         {
-          "description": "*SoftwareUpgradeProposal** is a software upgrade proposal field.",
           "type": "object",
           "required": [
             "software_upgrade_proposal"
@@ -53,7 +51,6 @@
           "additionalProperties": false
         },
         {
-          "description": "*CancelSoftwareUpgradeProposal** is a cancel software upgrade proposal field.",
           "type": "object",
           "required": [
             "cancel_software_upgrade_proposal"
@@ -240,15 +237,15 @@
       ],
       "properties": {
         "contract": {
-          "description": "*contract** is a address of contract admin will be removed. Unique",
+          "description": "*contract** is a address of contract admin will be removed.",
           "type": "string"
         },
         "description": {
-          "description": "*description** is a text description of proposal. Non unique.",
+          "description": "*description** is a text description of proposal.",
           "type": "string"
         },
         "title": {
-          "description": "*title** is a text title of proposal. Non unique.",
+          "description": "*title** is a text title of proposal.",
           "type": "string"
         }
       }
@@ -268,15 +265,15 @@
           "type": "string"
         },
         "subject_client_id": {
-          "description": "*subject_client_id**",
+          "description": "*subject_client_id** is a subject client id.",
           "type": "string"
         },
         "substitute_client_id": {
-          "description": "*updated_client_state**",
+          "description": "*substitute_client_id** is a substitute client id.",
           "type": "string"
         },
         "title": {
-          "description": "*title** is a text title of proposal. Non unique.",
+          "description": "*title** is a text title of proposal.",
           "type": "string"
         }
       }
@@ -509,7 +506,6 @@
       ]
     },
     "GovMsg": {
-      "description": "This message type allows the contract interact with the [x/gov] module in order to cast votes.\n\n[x/gov]: https://github.com/cosmos/cosmos-sdk/tree/v0.45.12/x/gov\n\n## Examples\n\nCast a simple vote:\n\n``` # use cosmwasm_std::{ #     HexBinary, #     Storage, Api, Querier, DepsMut, Deps, entry_point, Env, StdError, MessageInfo, #     Response, QueryResponse, # }; # type ExecuteMsg = (); use cosmwasm_std::{GovMsg, VoteOption};\n\n#[entry_point] pub fn execute( deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg, ) -> Result<Response, StdError> { // ... Ok(Response::new().add_message(GovMsg::Vote { proposal_id: 4, vote: VoteOption::Yes, })) } ```\n\nCast a weighted vote:\n\n``` # use cosmwasm_std::{ #     HexBinary, #     Storage, Api, Querier, DepsMut, Deps, entry_point, Env, StdError, MessageInfo, #     Response, QueryResponse, # }; # type ExecuteMsg = (); # #[cfg(feature = \"cosmwasm_1_2\")] use cosmwasm_std::{Decimal, GovMsg, VoteOption, WeightedVoteOption};\n\n# #[cfg(feature = \"cosmwasm_1_2\")] #[entry_point] pub fn execute( deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg, ) -> Result<Response, StdError> { // ... Ok(Response::new().add_message(GovMsg::VoteWeighted { proposal_id: 4, options: vec![ WeightedVoteOption { option: VoteOption::Yes, weight: Decimal::percent(65), }, WeightedVoteOption { option: VoteOption::Abstain, weight: Decimal::percent(35), }, ], })) } ```",
       "oneOf": [
         {
           "description": "This maps directly to [MsgVote](https://github.com/cosmos/cosmos-sdk/blob/v0.42.5/proto/cosmos/gov/v1beta1/tx.proto#L46-L56) in the Cosmos SDK with voter set to the contract address.",
@@ -531,12 +527,7 @@
                   "minimum": 0.0
                 },
                 "vote": {
-                  "description": "The vote option.\n\nThis should be called \"option\" for consistency with Cosmos SDK. Sorry for that. See <https://github.com/CosmWasm/cosmwasm/issues/1571>.",
-                  "allOf": [
-                    {
-                      "$ref": "#/definitions/VoteOption"
-                    }
-                  ]
+                  "$ref": "#/definitions/VoteOption"
                 }
               }
             }
@@ -546,6 +537,7 @@
       ]
     },
     "IbcFee": {
+      "description": "IbcFee defines struct for fees that refund the relayer for `SudoMsg` messages submission. Unused fee kind will be returned back to message sender. Please refer to these links for more information: IBC transaction structure - https://docs.neutron.org/neutron/interchain-txs/messages/#msgsubmittx General mechanics of fee payments - https://docs.neutron.org/neutron/feerefunder/overview/#general-mechanics",
       "type": "object",
       "required": [
         "ack_fee",
@@ -554,18 +546,21 @@
       ],
       "properties": {
         "ack_fee": {
+          "description": "*ack_fee** is an amount of coins to refund relayer for submitting ack message for a particular IBC packet.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/Coin"
           }
         },
         "recv_fee": {
+          "description": "**recv_fee** currently is used for compatibility with ICS-29 interface only and must be set to zero (i.e. 0untrn), because Neutron's fee module can't refund relayer for submission of Recv IBC packets due to compatibility with target chains.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/Coin"
           }
         },
         "timeout_fee": {
+          "description": "*timeout_fee** amount of coins to refund relayer for submitting timeout message for a particular IBC packet.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/Coin"
@@ -1119,7 +1114,7 @@
       ],
       "properties": {
         "code_ids": {
-          "description": "*subject_client_id**",
+          "description": "*code_ids** is an array of codes to be pined.",
           "type": "array",
           "items": {
             "type": "integer",
@@ -1128,11 +1123,11 @@
           }
         },
         "description": {
-          "description": "*description** is a text description of proposal. Non unique.",
+          "description": "*description** is a text description of proposal.",
           "type": "string"
         },
         "title": {
-          "description": "*title** is a text title of proposal. Non unique.",
+          "description": "*title** is a text title of proposal.",
           "type": "string"
         }
       }
@@ -1461,15 +1456,15 @@
       ],
       "properties": {
         "contract": {
-          "description": "*contract** is an address of contract to be executed. Unique",
+          "description": "*contract** is an address of contract to be executed.",
           "type": "string"
         },
         "description": {
-          "description": "*description** is a text description of proposal. Non unique.",
+          "description": "*description** is a text description of proposal.",
           "type": "string"
         },
         "msg": {
-          "description": "**msg*** is a sudo message. Non unique.",
+          "description": "**msg*** is a sudo message.",
           "allOf": [
             {
               "$ref": "#/definitions/Binary"
@@ -1477,7 +1472,7 @@
           ]
         },
         "title": {
-          "description": "*title** is a text title of proposal. Non unique.",
+          "description": "*title** is a text title of proposal.",
           "type": "string"
         }
       }
@@ -1580,7 +1575,7 @@
       ],
       "properties": {
         "code_ids": {
-          "description": "*subject_client_id**",
+          "description": "*code_ids** is an array of codes to be unpined.",
           "type": "array",
           "items": {
             "type": "integer",
@@ -1589,11 +1584,11 @@
           }
         },
         "description": {
-          "description": "*description** is a text description of proposal. Non unique.",
+          "description": "*description** is a text description of proposal.",
           "type": "string"
         },
         "title": {
-          "description": "*title** is a text title of proposal. Non unique.",
+          "description": "*title** is a text title of proposal.",
           "type": "string"
         }
       }
@@ -1609,11 +1604,11 @@
       ],
       "properties": {
         "contract": {
-          "description": "*contract** is an address of contract to update admin. Unique.",
+          "description": "*contract** is an address of contract to update admin.",
           "type": "string"
         },
         "description": {
-          "description": "*description** is a text description of proposal. Non unique.",
+          "description": "*description** is a text description of proposal.",
           "type": "string"
         },
         "new_admin": {
@@ -1621,7 +1616,7 @@
           "type": "string"
         },
         "title": {
-          "description": "*title** is a text title of proposal. Non unique.",
+          "description": "*title** is a text title of proposal.",
           "type": "string"
         }
       }
@@ -1637,7 +1632,7 @@
       ],
       "properties": {
         "description": {
-          "description": "*description** is a text description of proposal. Non unique.",
+          "description": "*description** is a text description of proposal.",
           "type": "string"
         },
         "plan": {
@@ -1649,11 +1644,11 @@
           ]
         },
         "title": {
-          "description": "*title** is a text title of proposal. Non unique.",
+          "description": "*title** is a text title of proposal.",
           "type": "string"
         },
         "upgraded_client_state": {
-          "description": "*upgraded_client_state** TODO",
+          "description": "*upgraded_client_state** is an upgraded client state.",
           "allOf": [
             {
               "$ref": "#/definitions/ProtobufAny"
@@ -1731,7 +1726,7 @@
           "additionalProperties": false
         },
         {
-          "description": "Instantiates a new contracts from previously uploaded Wasm code.\n\nThe contract address is non-predictable. But it is guaranteed that when emitting the same Instantiate message multiple times, multiple instances on different addresses will be generated. See also Instantiate2.\n\nThis is translated to a [MsgInstantiateContract](https://github.com/CosmWasm/wasmd/blob/v0.29.2/proto/cosmwasm/wasm/v1/tx.proto#L53-L71). `sender` is automatically filled with the current contract's address.",
+          "description": "Instantiates a new contracts from previously uploaded Wasm code.\n\nThis is translated to a [MsgInstantiateContract](https://github.com/CosmWasm/wasmd/blob/v0.16.0-alpha1/x/wasm/internal/types/tx.proto#L47-L61). `sender` is automatically filled with the current contract's address.",
           "type": "object",
           "required": [
             "instantiate"
