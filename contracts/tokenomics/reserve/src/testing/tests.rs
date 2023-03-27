@@ -326,7 +326,7 @@ fn test_update_config_unauthorized() {
     init_base_contract(deps.as_mut(), "1");
     let msg = ExecuteMsg::UpdateConfig {
         distribution_contract: None,
-        reserve_contract: None,
+        treasury_contract: None,
         distribution_rate: None,
         vesting_denominator: None,
         min_period: None,
@@ -343,7 +343,7 @@ fn test_update_config_success() {
     init_base_contract(deps.as_mut(), "1");
     let msg = ExecuteMsg::UpdateConfig {
         distribution_contract: Some("new_contract".to_string()),
-        reserve_contract: Some("new_reserve_contract".to_string()),
+        treasury_contract: Some("new_reserve_contract".to_string()),
         distribution_rate: Some(Decimal::from_str("0.11").unwrap()),
         vesting_denominator: Some(1000u128),
         min_period: Some(3000),
@@ -353,7 +353,7 @@ fn test_update_config_success() {
     assert!(res.is_ok());
     let config = CONFIG.load(deps.as_ref().storage).unwrap();
     assert_eq!(config.distribution_contract, "new_contract");
-    assert_eq!(config.reserve_contract, "new_reserve_contract");
+    assert_eq!(config.treasury_contract, "new_reserve_contract");
     assert_eq!(config.distribution_rate, Decimal::from_str("0.11").unwrap());
     assert_eq!(config.vesting_denominator, 1000u128);
     assert_eq!(config.min_period, 3000);
@@ -366,7 +366,7 @@ fn test_update_distribution_rate_below_the_limit() {
     init_base_contract(deps.as_mut(), "1");
     let msg = ExecuteMsg::UpdateConfig {
         distribution_contract: None,
-        reserve_contract: None,
+        treasury_contract: None,
         distribution_rate: Some(Decimal::from_str("2").unwrap()),
         vesting_denominator: None,
         min_period: None,

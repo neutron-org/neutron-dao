@@ -261,7 +261,7 @@ fn test_instantiate_dao_owner() {
 }
 
 #[test]
-#[should_panic(expected = "Must send treasury token 'ujuno'")]
+#[should_panic(expected = "Must send reserve token 'ujuno'")]
 fn test_bond_invalid_denom() {
     let mut app = mock_app();
     let vault_id = app.store_code(vault_contract());
