@@ -35,7 +35,7 @@ pub fn instantiate(
         denom: msg.denom,
         min_period: msg.min_period,
         distribution_contract: deps.api.addr_validate(msg.distribution_contract.as_str())?,
-        reserve_contract: deps.api.addr_validate(msg.reserve_contract.as_str())?,
+        treasury_contract: deps.api.addr_validate(msg.treasury_contract.as_str())?,
         distribution_rate: msg.distribution_rate,
         main_dao_address: deps.api.addr_validate(&msg.main_dao_address)?,
         security_dao_address: deps.api.addr_validate(&msg.security_dao_address)?,
@@ -151,14 +151,14 @@ pub fn execute(
             distribution_rate,
             min_period,
             distribution_contract,
-            reserve_contract,
+            treasury_contract,
             security_dao_address,
             vesting_denominator,
         } => execute_update_config(
             deps,
             info,
             distribution_contract,
-            reserve_contract,
+            treasury_contract,
             security_dao_address,
             DistributionParams {
                 distribution_rate,
@@ -198,7 +198,7 @@ pub fn execute_update_config(
     deps: DepsMut<InterchainQueries>,
     info: MessageInfo,
     distribution_contract: Option<String>,
-    reserve_contract: Option<String>,
+    treasury_contract: Option<String>,
     security_dao_address: Option<String>,
     distribution_params: DistributionParams,
 ) -> Result<Response, ContractError> {
@@ -213,8 +213,8 @@ pub fn execute_update_config(
     if let Some(distribution_contract) = distribution_contract {
         config.distribution_contract = deps.api.addr_validate(distribution_contract.as_str())?;
     }
-    if let Some(reserve_contract) = reserve_contract {
-        config.reserve_contract = deps.api.addr_validate(reserve_contract.as_str())?;
+    if let Some(reserve_contract) = treasury_contract {
+        config.treasury_contract = deps.api.addr_validate(reserve_contract.as_str())?;
     }
     if let Some(security_dao_address) = security_dao_address {
         config.security_dao_address = deps.api.addr_validate(security_dao_address.as_str())?;
@@ -351,7 +351,7 @@ pub fn create_distribution_response(
 
     if !to_reserve.is_zero() {
         let msg = CosmosMsg::Bank(BankMsg::Send {
-            to_address: config.reserve_contract.to_string(),
+            to_address: config.treasury_contract.to_string(),
             amount: coins(to_reserve.u128(), denom),
         });
         resp = resp.add_message(msg);

@@ -14,7 +14,7 @@ pub struct InstantiateMsg {
     /// Address of distribution contract
     pub distribution_contract: String,
     /// Address of treasury contract
-    pub reserve_contract: String,
+    pub treasury_contract: String,
     /// Address of security DAO contract
     pub security_dao_address: String,
     /// Vesting release function denominator
@@ -36,7 +36,7 @@ pub enum ExecuteMsg {
         distribution_rate: Option<Decimal>,
         min_period: Option<u64>,
         distribution_contract: Option<String>,
-        reserve_contract: Option<String>,
+        treasury_contract: Option<String>,
         security_dao_address: Option<String>,
         vesting_denominator: Option<u128>,
     },

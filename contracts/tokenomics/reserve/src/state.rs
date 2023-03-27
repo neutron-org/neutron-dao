@@ -11,7 +11,7 @@ pub struct Config {
     /// Address of distribution contract, which will receive funds defined but distribution_rate %
     pub distribution_contract: Addr,
     /// Address of treasury contract, which will receive funds defined by 100-distribution_rate %
-    pub reserve_contract: Addr,
+    pub treasury_contract: Addr,
     /// Minimum period between distribution calls
     pub min_period: u64,
     pub denom: String,
@@ -68,7 +68,7 @@ mod tests {
         let cfg_ok = Config {
             distribution_rate: Decimal::from_str("0.11").unwrap(),
             distribution_contract: Addr::unchecked("owner"),
-            reserve_contract: Addr::unchecked("owner"),
+            treasury_contract: Addr::unchecked("owner"),
             min_period: 3600,
             denom: String::from("untrn"),
             main_dao_address: Addr::unchecked("owner"),
@@ -80,7 +80,7 @@ mod tests {
         let cfg_invalid_distr = Config {
             distribution_rate: Decimal::from_str("111.11").unwrap(),
             distribution_contract: Addr::unchecked("owner"),
-            reserve_contract: Addr::unchecked("owner"),
+            treasury_contract: Addr::unchecked("owner"),
             min_period: 3600,
             denom: String::from("untrn"),
             main_dao_address: Addr::unchecked("owner"),
@@ -95,7 +95,7 @@ mod tests {
         let cfg_invalid_vesting_denom = Config {
             distribution_rate: Decimal::from_str("0.11").unwrap(),
             distribution_contract: Addr::unchecked("owner"),
-            reserve_contract: Addr::unchecked("owner"),
+            treasury_contract: Addr::unchecked("owner"),
             min_period: 3600,
             denom: String::from("untrn"),
             main_dao_address: Addr::unchecked("owner"),
@@ -110,7 +110,7 @@ mod tests {
         let cfg_invalid_min_period = Config {
             distribution_rate: Decimal::from_str("0.11").unwrap(),
             distribution_contract: Addr::unchecked("owner"),
-            reserve_contract: Addr::unchecked("owner"),
+            treasury_contract: Addr::unchecked("owner"),
             min_period: 0,
             denom: String::from("untrn"),
             main_dao_address: Addr::unchecked("owner"),

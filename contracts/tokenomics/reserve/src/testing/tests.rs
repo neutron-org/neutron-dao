@@ -27,7 +27,7 @@ pub fn init_base_contract(deps: DepsMut<InterchainQueries>, distribution_rate: &
         denom: DENOM.to_string(),
         min_period: 1000,
         distribution_contract: "distribution_contract".to_string(),
-        reserve_contract: "reserve_contract".to_string(),
+        treasury_contract: "reserve_contract".to_string(),
         distribution_rate: Decimal::from_str(distribution_rate).unwrap(),
         main_dao_address: "main_dao".to_string(),
         security_dao_address: "security_dao_address".to_string(),
