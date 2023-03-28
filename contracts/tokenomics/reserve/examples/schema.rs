@@ -17,7 +17,7 @@ use std::fs::create_dir_all;
 
 use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
 
-use neutron_treasury::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use neutron_reserve::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 
 fn main() {
     let mut out_dir = current_dir().unwrap();
