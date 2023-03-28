@@ -25,9 +25,7 @@ use cwd_proposal_single::msg::ExecuteMsg as ProposeMessageInternal;
 use neutron_subdao_timelock_single::msg as TimelockMsg;
 
 pub fn init_base_contract(deps: DepsMut<Empty>) {
-    let msg = InstantiateMsg {
-        main_dao: MOCK_DAO_CORE.to_string(),
-    };
+    let msg = InstantiateMsg {};
     let info = mock_info(MOCK_DAO_PROPOSE_MODULE, &[]);
     instantiate(deps, mock_env(), info, msg).unwrap();
 }
