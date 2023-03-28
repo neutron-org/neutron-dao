@@ -23,7 +23,6 @@
       "description": "AdminProposal defines the struct for various proposals which Neutron's Admin Module may accept.",
       "oneOf": [
         {
-          "description": "*ParamChangeProposal** is a parameter change proposal field.",
           "type": "object",
           "required": [
             "param_change_proposal"
@@ -36,7 +35,6 @@
           "additionalProperties": false
         },
         {
-          "description": "*SoftwareUpgradeProposal** is a software upgrade proposal field.",
           "type": "object",
           "required": [
             "software_upgrade_proposal"
@@ -49,7 +47,6 @@
           "additionalProperties": false
         },
         {
-          "description": "*CancelSoftwareUpgradeProposal** is a cancel software upgrade proposal field.",
           "type": "object",
           "required": [
             "cancel_software_upgrade_proposal"
@@ -57,6 +54,90 @@
           "properties": {
             "cancel_software_upgrade_proposal": {
               "$ref": "#/definitions/CancelSoftwareUpgradeProposal"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "upgrade_proposal"
+          ],
+          "properties": {
+            "upgrade_proposal": {
+              "$ref": "#/definitions/UpgradeProposal"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "client_update_proposal"
+          ],
+          "properties": {
+            "client_update_proposal": {
+              "$ref": "#/definitions/ClientUpdateProposal"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "pin_codes_proposal"
+          ],
+          "properties": {
+            "pin_codes_proposal": {
+              "$ref": "#/definitions/PinCodesProposal"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "unpin_codes_proposal"
+          ],
+          "properties": {
+            "unpin_codes_proposal": {
+              "$ref": "#/definitions/UnpinCodesProposal"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "sudo_contract_proposal"
+          ],
+          "properties": {
+            "sudo_contract_proposal": {
+              "$ref": "#/definitions/SudoContractProposal"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "update_admin_proposal"
+          ],
+          "properties": {
+            "update_admin_proposal": {
+              "$ref": "#/definitions/UpdateAdminProposal"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "clear_admin_proposal"
+          ],
+          "properties": {
+            "clear_admin_proposal": {
+              "$ref": "#/definitions/ClearAdminProposal"
             }
           },
           "additionalProperties": false
@@ -174,6 +255,57 @@
         },
         "vote_count": {
           "$ref": "#/definitions/Uint128"
+        }
+      }
+    },
+    "ClearAdminProposal": {
+      "description": "SudoContractProposal defines the struct for clear admin proposal.",
+      "type": "object",
+      "required": [
+        "contract",
+        "description",
+        "title"
+      ],
+      "properties": {
+        "contract": {
+          "description": "*contract** is a address of contract admin will be removed.",
+          "type": "string"
+        },
+        "description": {
+          "description": "*description** is a text description of proposal.",
+          "type": "string"
+        },
+        "title": {
+          "description": "*title** is a text title of proposal.",
+          "type": "string"
+        }
+      }
+    },
+    "ClientUpdateProposal": {
+      "description": "ClientUpdateProposal defines the struct for client update proposal.",
+      "type": "object",
+      "required": [
+        "description",
+        "subject_client_id",
+        "substitute_client_id",
+        "title"
+      ],
+      "properties": {
+        "description": {
+          "description": "*description** is a text description of proposal. Non unique.",
+          "type": "string"
+        },
+        "subject_client_id": {
+          "description": "*subject_client_id** is a subject client id.",
+          "type": "string"
+        },
+        "substitute_client_id": {
+          "description": "*substitute_client_id** is a substitute client id.",
+          "type": "string"
+        },
+        "title": {
+          "description": "*title** is a text title of proposal.",
+          "type": "string"
         }
       }
     },
@@ -436,6 +568,7 @@
       ]
     },
     "IbcFee": {
+      "description": "IbcFee defines struct for fees that refund the relayer for `SudoMsg` messages submission. Unused fee kind will be returned back to message sender. Please refer to these links for more information: IBC transaction structure - https://docs.neutron.org/neutron/interchain-txs/messages/#msgsubmittx General mechanics of fee payments - https://docs.neutron.org/neutron/feerefunder/overview/#general-mechanics",
       "type": "object",
       "required": [
         "ack_fee",
@@ -444,18 +577,21 @@
       ],
       "properties": {
         "ack_fee": {
+          "description": "*ack_fee** is an amount of coins to refund relayer for submitting ack message for a particular IBC packet.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/Coin"
           }
         },
         "recv_fee": {
+          "description": "**recv_fee** currently is used for compatibility with ICS-29 interface only and must be set to zero (i.e. 0untrn), because Neutron's fee module can't refund relayer for submission of Recv IBC packets due to compatibility with target chains.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/Coin"
           }
         },
         "timeout_fee": {
+          "description": "*timeout_fee** amount of coins to refund relayer for submitting timeout message for a particular IBC packet.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/Coin"
@@ -1132,6 +1268,34 @@
         }
       ]
     },
+    "PinCodesProposal": {
+      "description": "PinCodesProposal defines the struct for pin contract codes proposal.",
+      "type": "object",
+      "required": [
+        "code_ids",
+        "description",
+        "title"
+      ],
+      "properties": {
+        "code_ids": {
+          "description": "*code_ids** is an array of codes to be pined.",
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        },
+        "description": {
+          "description": "*description** is a text description of proposal.",
+          "type": "string"
+        },
+        "title": {
+          "description": "*title** is a text title of proposal.",
+          "type": "string"
+        }
+      }
+    },
     "Plan": {
       "description": "Plan defines the struct for planned upgrade.",
       "type": "object",
@@ -1375,6 +1539,38 @@
         }
       ]
     },
+    "SudoContractProposal": {
+      "description": "SudoContractProposal defines the struct for sudo execution proposal.",
+      "type": "object",
+      "required": [
+        "contract",
+        "description",
+        "msg",
+        "title"
+      ],
+      "properties": {
+        "contract": {
+          "description": "*contract** is an address of contract to be executed.",
+          "type": "string"
+        },
+        "description": {
+          "description": "*description** is a text description of proposal.",
+          "type": "string"
+        },
+        "msg": {
+          "description": "**msg*** is a sudo message.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Binary"
+            }
+          ]
+        },
+        "title": {
+          "description": "*title** is a text title of proposal.",
+          "type": "string"
+        }
+      }
+    },
     "Timestamp": {
       "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n``` # use cosmwasm_std::Timestamp; let ts = Timestamp::from_nanos(1_000_000_202); assert_eq!(ts.nanos(), 1_000_000_202); assert_eq!(ts.seconds(), 1); assert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2); assert_eq!(ts.nanos(), 3_000_000_202); assert_eq!(ts.seconds(), 3); assert_eq!(ts.subsec_nanos(), 202); ```",
       "allOf": [
@@ -1390,6 +1586,98 @@
     "Uint64": {
       "description": "A thin wrapper around u64 that is using strings for JSON encoding/decoding, such that the full u64 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u64` to get the value out:\n\n``` # use cosmwasm_std::Uint64; let a = Uint64::from(42u64); assert_eq!(a.u64(), 42);\n\nlet b = Uint64::from(70u32); assert_eq!(b.u64(), 70); ```",
       "type": "string"
+    },
+    "UnpinCodesProposal": {
+      "description": "UnpinCodesProposal defines the struct for unpin contract codes proposal.",
+      "type": "object",
+      "required": [
+        "code_ids",
+        "description",
+        "title"
+      ],
+      "properties": {
+        "code_ids": {
+          "description": "*code_ids** is an array of codes to be unpined.",
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        },
+        "description": {
+          "description": "*description** is a text description of proposal.",
+          "type": "string"
+        },
+        "title": {
+          "description": "*title** is a text title of proposal.",
+          "type": "string"
+        }
+      }
+    },
+    "UpdateAdminProposal": {
+      "description": "UpdateAdminProposal defines the struct for  update admin proposal.",
+      "type": "object",
+      "required": [
+        "contract",
+        "description",
+        "new_admin",
+        "title"
+      ],
+      "properties": {
+        "contract": {
+          "description": "*contract** is an address of contract to update admin.",
+          "type": "string"
+        },
+        "description": {
+          "description": "*description** is a text description of proposal.",
+          "type": "string"
+        },
+        "new_admin": {
+          "description": "**new_admin*** is an address of new admin",
+          "type": "string"
+        },
+        "title": {
+          "description": "*title** is a text title of proposal.",
+          "type": "string"
+        }
+      }
+    },
+    "UpgradeProposal": {
+      "description": "UpgradeProposal defines the struct for  upgrade proposal.",
+      "type": "object",
+      "required": [
+        "description",
+        "plan",
+        "title",
+        "upgraded_client_state"
+      ],
+      "properties": {
+        "description": {
+          "description": "*description** is a text description of proposal.",
+          "type": "string"
+        },
+        "plan": {
+          "description": "*plan** is a plan of upgrade.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Plan"
+            }
+          ]
+        },
+        "title": {
+          "description": "*title** is a text title of proposal.",
+          "type": "string"
+        },
+        "upgraded_client_state": {
+          "description": "*upgraded_client_state** is an upgraded client state.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/ProtobufAny"
+            }
+          ]
+        }
+      }
     },
     "VoteOption": {
       "type": "string",

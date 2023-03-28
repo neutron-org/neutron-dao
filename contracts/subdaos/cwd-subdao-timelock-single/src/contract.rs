@@ -229,8 +229,6 @@ pub fn execute_update_config(
         config.overrule_pre_propose = deps.api.addr_validate(&overrule_pre_propose)?;
     }
 
-    // TODO(oopcode): implement updating the .sudbao parameter.
-
     CONFIG.save(deps.storage, &config)?;
     Ok(Response::new()
         .add_attribute("action", "update_config")

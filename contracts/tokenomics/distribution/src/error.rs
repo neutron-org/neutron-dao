@@ -1,4 +1,4 @@
-use cosmwasm_std::{OverflowError, StdError};
+use cosmwasm_std::{DivideByZeroError, OverflowError, StdError};
 use exec_control::pause::PauseError;
 use thiserror::Error;
 
@@ -10,21 +10,21 @@ pub enum ContractError {
     #[error(transparent)]
     PauseError(#[from] PauseError),
 
+    #[error(transparent)]
+    OverflowError(#[from] OverflowError),
+
+    #[error(transparent)]
+    DivideByZeroError(#[from] DivideByZeroError),
+
     #[error("Unauthorized.")]
     Unauthorized {},
 
     #[error("No funds sent.")]
     NoFundsSent {},
 
-    #[error("No shares set.")]
+    #[error("No shares sent.")]
     NoSharesSent {},
 
     #[error("No pending distribution.")]
     NoPendingDistribution {},
-}
-
-impl From<OverflowError> for ContractError {
-    fn from(o: OverflowError) -> Self {
-        StdError::from(o).into()
-    }
 }
