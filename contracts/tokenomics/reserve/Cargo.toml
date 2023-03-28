@@ -1,5 +1,5 @@
 [package]
-name = "neutron-treasury"
+name = "neutron-reserve"
 version = "0.1.0"
 authors = ["Sergey Ratiashvili <sergey.r@p2p.org>"]
 edition = "2021"
@@ -13,7 +13,7 @@ crate-type = ["cdylib", "rlib"]
 backtraces = ["cosmwasm-std/backtraces"]
 
 [dependencies]
-neutron_bindings = { package = "neutron-sdk", git = "https://github.com/neutron-org/neutron-sdk.git", rev = "c19b40c024eeaa8733af9ddee94a52798d78f469" }
+neutron_bindings = { package = "neutron-sdk", git = "https://github.com/neutron-org/neutron-sdk.git", branch = "main" }
 cosmwasm-std = { version = "1.0" }
 cw-storage-plus = "1.0.1"
 schemars = "0.8.1"
