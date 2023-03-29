@@ -1410,7 +1410,6 @@ dependencies = [
  "cw-storage-plus 1.0.1",
  "cwd-macros",
  "exec-control",
- "neutron-sdk",
  "schemars",
  "serde",
  "thiserror",
