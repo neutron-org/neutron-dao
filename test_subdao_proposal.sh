@@ -18,6 +18,43 @@ ADMIN=demowallet1
 ADMIN_ADDR=$(${BIN} keys show ${ADMIN} -a --keyring-backend test --home ${HOME})
 
 
+USERNAME_1=demowallet1
+USERNAME_2=demowallet3
+USERNAME_3=rly1
+
+PROPOSE_ADDRESS=neutron1eyfccmjm6732k7wp4p6gdjwhxjwsvje44j0hfx8nkgrm8fs7vqfs8hrpdj
+PRE_PROPOSE_ADDRESS=neutron18v47nqmhvejx3vc498pantg8vr435xa0rt6x0m6kzhp6yuqmcp8s7t5v3x
+VOTING=neutron1aaf9r6s7nxhysuegqrxv0wpm27ypyv4886medd3mrkrw6t4yfcnsu2zdzj
+# DAO addresses
+VAULT_ADDRESS=neutron1qeyjez6a9dwlghf9d6cy44fxmsajztw257586akk6xn6k88x0gus5djz4e
+CORE_ADDRESS=neutron1yyca08xqdgvjz0psg56z67ejh9xms6l436u8y58m82npdqqhmmtqxfjftn
+
+RES=$(${BIN} q wasm contract-state smart $CORE_ADDRESS '{"proposal_modules": {}}' \
+  --chain-id ${CHAIN_ID} --output json  --home ${HOME} --node tcp://127.0.0.1:26657)
+echo $RES
+
+# STAKING
+# untrn funds from wallet 1
+RES=$(${BIN} tx wasm execute $VAULT_ADDRESS "{\"bond\": {}}" --amount 1000untrn --from ${USERNAME_1} -y \
+  --chain-id ${CHAIN_ID} --output json --broadcast-mode=block --gas-prices 0.0025untrn --gas 1000000 \
+  --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:26657)
+echo "staking from wallet 1:"
+echo $RES
+
+#untrn funds from wallet 2
+RES=$(${BIN} tx wasm execute $VAULT_ADDRESS "{\"bond\": {}}" --amount 1000untrn --from ${USERNAME_2} -y \
+  --chain-id ${CHAIN_ID} --output json --broadcast-mode=block --gas-prices 0.0025untrn --gas 1000000 \
+  --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:26657)
+echo "staking from wallet 2:"
+echo $RES
+
+#untrn funds from wallet 3
+RES=$(${BIN} tx wasm execute $VAULT_ADDRESS "{\"bond\": {}}" --amount 1000untrn --from ${USERNAME_3} -y \
+  --chain-id ${CHAIN_ID} --output json --broadcast-mode=block --gas-prices 0.0025untrn --gas 1000000 \
+  --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:26657)
+echo "staking from wallet 3:"
+echo $RES
+
 CORE_CONTRACT_ADDR=neutron1k95lcrdzamyeu882dtuclrzqmv6ay0axfa3wng8jla0ty52tzn4qsvxcpk
 PROPOSAL_SINGLE_CONTRACT_ADDR=neutron1qyl0j7a24amk8k8gcmvv07y2zjx7nkcwpk73js24euh64hkja6esg9jar3
 PRE_PROPOSE_SINGLE_CONTRACT_ADDR=neutron1ell22k43hs2jtx8x50jz96agaqju5jwn87ued0mzcfglzlw6um0ssqx6x5
@@ -272,3 +309,4 @@ RES=$(${BIN} tx wasm execute $TIMELOCK_SINGLE_CONTRACT_ADDR '{"execute_proposal"
   --gas 1000000 --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:26657) > /dev/null 2>&1
 echo "> Tried to execute the overruled proposal, should return an error"
 grep -q 'Wrong proposal status (overruled)' <<< $RES && echo "> Received an error, all good" || echo "ERROR: proposal execution did not fail"
+
