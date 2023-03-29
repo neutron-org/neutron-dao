@@ -8,8 +8,8 @@
     "distribution_rate",
     "main_dao_address",
     "min_period",
-    "reserve_contract",
     "security_dao_address",
+    "treasury_contract",
     "vesting_denominator"
   ],
   "properties": {
@@ -37,12 +37,12 @@
       "format": "uint64",
       "minimum": 0.0
     },
-    "reserve_contract": {
-      "description": "Address of reserve contract",
-      "type": "string"
-    },
     "security_dao_address": {
       "description": "Address of security DAO contract",
+      "type": "string"
+    },
+    "treasury_contract": {
+      "description": "Address of treasury contract",
       "type": "string"
     },
     "vesting_denominator": {

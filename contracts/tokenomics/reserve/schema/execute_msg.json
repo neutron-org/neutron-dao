@@ -61,13 +61,13 @@
               "format": "uint64",
               "minimum": 0.0
             },
-            "reserve_contract": {
+            "security_dao_address": {
               "type": [
                 "string",
                 "null"
               ]
             },
-            "security_dao_address": {
+            "treasury_contract": {
               "type": [
                 "string",
                 "null"
