@@ -13,4 +13,4 @@ Cargo.lock
 
 .DS_Store
 
-artifacts/checksums_intermediate.txt
+artifacts/
