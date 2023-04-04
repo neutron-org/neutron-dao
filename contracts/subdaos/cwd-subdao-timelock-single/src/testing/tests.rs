@@ -11,13 +11,10 @@ use neutron_subdao_timelock_single::{
     types::{Config, ProposalListResponse, ProposalStatus, SingleChoiceProposal},
 };
 
-
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use crate::testing::mock_querier::{
-    MOCK_MAIN_DAO_ADDR, MOCK_OVERRULE_PREPROPOSAL,
-};
+use crate::testing::mock_querier::{MOCK_MAIN_DAO_ADDR, MOCK_OVERRULE_PREPROPOSAL};
 use crate::{
     contract::{execute, instantiate, query, reply},
     state::{CONFIG, DEFAULT_LIMIT, PROPOSALS},
