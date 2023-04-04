@@ -1,21 +1,23 @@
-use std::any::Any;
-use std::cell::RefCell;
-use std::rc::Rc;
 use cosmwasm_std::testing::MOCK_CONTRACT_ADDR;
 use cosmwasm_std::{
     from_binary,
     testing::{mock_env, mock_info},
     to_binary, Addr, Attribute, CosmosMsg, Reply, SubMsg, SubMsgResult, WasmMsg,
 };
-use neutron_bindings::bindings::msg::NeutronMsg;
-use schemars::schema::InstanceType::String;
 use cwd_voting::status::Status;
+use neutron_bindings::bindings::msg::NeutronMsg;
 use neutron_subdao_timelock_single::{
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
     types::{Config, ProposalListResponse, ProposalStatus, SingleChoiceProposal},
 };
+use schemars::schema::InstanceType::String;
+use std::any::Any;
+use std::cell::RefCell;
+use std::rc::Rc;
 
-use crate::testing::mock_querier::{MOCK_MAIN_DAO_ADDR, MOCK_OVERRULE_PREPROPOSAL, WasmMockQuerier};
+use crate::testing::mock_querier::{
+    WasmMockQuerier, MOCK_MAIN_DAO_ADDR, MOCK_OVERRULE_PREPROPOSAL,
+};
 use crate::{
     contract::{execute, instantiate, query, reply},
     state::{CONFIG, DEFAULT_LIMIT, PROPOSALS},

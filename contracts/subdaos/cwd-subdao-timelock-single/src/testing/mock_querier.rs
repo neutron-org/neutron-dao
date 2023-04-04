@@ -3,12 +3,17 @@ use std::cell::RefCell;
 use std::marker::PhantomData;
 use std::rc::Rc;
 
-use cosmwasm_std::{from_binary, from_slice, testing::{MockApi, MockQuerier, MockStorage}, to_binary, Addr, ContractResult, Empty, OwnedDeps, Querier, QuerierResult, QueryRequest, SystemError, SystemResult, WasmQuery, Uint128};
+use cosmwasm_std::{
+    from_binary, from_slice,
+    testing::{MockApi, MockQuerier, MockStorage},
+    to_binary, Addr, ContractResult, Empty, OwnedDeps, Querier, QuerierResult, QueryRequest,
+    SystemError, SystemResult, Uint128, WasmQuery,
+};
 use cw_utils::Duration;
 use cwd_proposal_single::{
     msg::{QueryMsg as ProposeQuery, QueryMsg},
+    proposal::SingleChoiceProposal as MainDaoSingleChoiceProposal,
     state::Config as OverrulProposalConfig,
-    proposal::SingleChoiceProposal as MainDaoSingleChoiceProposal
 };
 use cwd_voting::status::Status;
 use cwd_voting::threshold::Threshold;
@@ -26,7 +31,9 @@ pub const MOCK_MAIN_DAO_ADDR: &str = "neutron1main_dao_core_contract";
 pub const MOCK_OVERRULE_PROPOSAL: &str = "neutron1main_dao_overrule_proposal";
 pub const MOCK_OVERRULE_PREPROPOSAL: &str = "neutron1main_dao_overrule_preproposal";
 
-pub fn mock_dependencies(x: Rc<RefCell<Status>>) -> OwnedDeps<MockStorage, MockApi, WasmMockQuerier> {
+pub fn mock_dependencies(
+    x: Rc<RefCell<Status>>,
+) -> OwnedDeps<MockStorage, MockApi, WasmMockQuerier> {
     let custom_storage = MockStorage::default();
     let custom_querier = WasmMockQuerier::new(MockQuerier::new(&[]), x);
 
@@ -87,7 +94,9 @@ impl WasmMockQuerier {
                         PreProposeOverruleQuery::ProposalModule {} => {
                             to_binary(&MOCK_OVERRULE_PROPOSAL.to_string())
                         }
-                        PreProposeOverruleQuery::Dao {} => to_binary(&MOCK_MAIN_DAO_ADDR.to_string()),
+                        PreProposeOverruleQuery::Dao {} => {
+                            to_binary(&MOCK_MAIN_DAO_ADDR.to_string())
+                        }
                         PreProposeOverruleQuery::Config {} => todo!(),
                         PreProposeOverruleQuery::DepositInfo { proposal_id: _ } => todo!(),
                         PreProposeOverruleQuery::QueryExtension {
@@ -116,7 +125,9 @@ impl WasmMockQuerier {
                             start_height: 0,
                             min_voting_period: None,
                             expiration: Default::default(),
-                            threshold: Threshold::AbsoluteCount { threshold: Uint128::new(1) },
+                            threshold: Threshold::AbsoluteCount {
+                                threshold: Uint128::new(1),
+                            },
                             total_power: Default::default(),
                             msgs: vec![],
                             // status: Status::Rejected,
@@ -151,6 +162,9 @@ impl WasmMockQuerier {
 
 impl WasmMockQuerier {
     pub fn new(base: MockQuerier, x: Rc<RefCell<Status>>) -> WasmMockQuerier {
-        WasmMockQuerier { base, overrule_proposal_status: x }
+        WasmMockQuerier {
+            base,
+            overrule_proposal_status: x,
+        }
     }
 }

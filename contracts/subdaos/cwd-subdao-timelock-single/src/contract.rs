@@ -8,14 +8,15 @@ use cw2::set_contract_version;
 use cw_storage_plus::Bound;
 use cw_utils::Duration;
 use cwd_proposal_single::{
-    msg::QueryMsg as MainDaoProposalModuleQueryMsg, state::Config as MainDaoProposalModuleConfig, proposal::SingleChoiceProposal as MainDaoSingleChoiceProposal
+    msg::QueryMsg as MainDaoProposalModuleQueryMsg,
+    proposal::SingleChoiceProposal as MainDaoSingleChoiceProposal,
+    state::Config as MainDaoProposalModuleConfig,
 };
 use cwd_voting::status::Status;
 use neutron_bindings::bindings::msg::NeutronMsg;
 use neutron_dao_pre_propose_overrule::msg::{
     ExecuteMsg as OverruleExecuteMsg, ProposeMessage as OverruleProposeMessage,
-    QueryMsg as OverruleQueryMsg,
-    QueryExt as OverruleQueryExt,
+    QueryExt as OverruleQueryExt, QueryMsg as OverruleQueryMsg,
 };
 use neutron_subdao_core::msg::QueryMsg as SubdaoQuery;
 use neutron_subdao_pre_propose_single::msg::QueryMsg as PreProposeQuery;
@@ -284,15 +285,24 @@ fn is_overrule_proposal_rejected(
     overrule_pre_propose: &Addr,
     subdao_proposal_id: u64,
 ) -> Result<bool, ContractError> {
-    let overrule_proposal_id: u64 = deps
-        .querier
-        .query_wasm_smart(overrule_pre_propose, &OverruleQueryMsg::QueryExtension { msg: OverruleQueryExt::OverruleProposalId { timelock_address: env.contract.address.to_string(), subdao_proposal_id }})?;
+    let overrule_proposal_id: u64 = deps.querier.query_wasm_smart(
+        overrule_pre_propose,
+        &OverruleQueryMsg::QueryExtension {
+            msg: OverruleQueryExt::OverruleProposalId {
+                timelock_address: env.contract.address.to_string(),
+                subdao_proposal_id,
+            },
+        },
+    )?;
     let propose: Addr = deps
         .querier
         .query_wasm_smart(overrule_pre_propose, &OverruleQueryMsg::ProposalModule {})?;
-    let overrule_proposal: MainDaoSingleChoiceProposal = deps
-        .querier
-        .query_wasm_smart(propose, &MainDaoProposalModuleQueryMsg::Proposal { proposal_id: overrule_proposal_id })?;
+    let overrule_proposal: MainDaoSingleChoiceProposal = deps.querier.query_wasm_smart(
+        propose,
+        &MainDaoProposalModuleQueryMsg::Proposal {
+            proposal_id: overrule_proposal_id,
+        },
+    )?;
     Ok(overrule_proposal.status == Status::Rejected)
 }
 
