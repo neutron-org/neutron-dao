@@ -6,11 +6,9 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 use cw_storage_plus::Bound;
-use cw_utils::Duration;
 use cwd_proposal_single::{
     msg::QueryMsg as MainDaoProposalModuleQueryMsg,
     proposal::SingleChoiceProposal as MainDaoSingleChoiceProposal,
-    state::Config as MainDaoProposalModuleConfig,
 };
 use cwd_voting::status::Status;
 use neutron_bindings::bindings::msg::NeutronMsg;
