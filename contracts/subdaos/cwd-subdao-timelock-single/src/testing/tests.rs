@@ -10,13 +10,13 @@ use neutron_subdao_timelock_single::{
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
     types::{Config, ProposalListResponse, ProposalStatus, SingleChoiceProposal},
 };
-use schemars::schema::InstanceType::String;
-use std::any::Any;
+
+
 use std::cell::RefCell;
 use std::rc::Rc;
 
 use crate::testing::mock_querier::{
-    WasmMockQuerier, MOCK_MAIN_DAO_ADDR, MOCK_OVERRULE_PREPROPOSAL,
+    MOCK_MAIN_DAO_ADDR, MOCK_OVERRULE_PREPROPOSAL,
 };
 use crate::{
     contract::{execute, instantiate, query, reply},
@@ -31,7 +31,7 @@ use super::mock_querier::{mock_dependencies, MOCK_SUBDAO_CORE_ADDR};
 
 #[test]
 fn test_instantiate_test() {
-    let mut overrule_proposal_status = Rc::new(RefCell::new(Status::Open));
+    let overrule_proposal_status = Rc::new(RefCell::new(Status::Open));
     let mut deps = mock_dependencies(Rc::clone(&overrule_proposal_status));
     let env = mock_env();
     let info = mock_info("neutron1unknownsender", &[]);
@@ -87,7 +87,7 @@ fn test_instantiate_test() {
 
 #[test]
 fn test_execute_timelock_proposal() {
-    let mut overrule_proposal_status = Rc::new(RefCell::new(Status::Open));
+    let overrule_proposal_status = Rc::new(RefCell::new(Status::Open));
     let mut deps = mock_dependencies(Rc::clone(&overrule_proposal_status));
     let env = mock_env();
     let info = mock_info("neutron1unknownsender", &[]);
@@ -113,7 +113,7 @@ fn test_execute_timelock_proposal() {
     assert_eq!("Unauthorized", res.unwrap_err().to_string());
 
     let info = mock_info(MOCK_SUBDAO_CORE_ADDR, &[]);
-    let res_ok = execute(deps.as_mut(), env.clone(), info, msg).unwrap();
+    let res_ok = execute(deps.as_mut(), env, info, msg).unwrap();
     let expected_attributes = vec![
         Attribute::new("action", "timelock_proposal"),
         Attribute::new("sender", MOCK_SUBDAO_CORE_ADDR),
@@ -149,9 +149,9 @@ fn test_execute_timelock_proposal() {
 
 #[test]
 fn test_execute_proposal() {
-    let mut overrule_proposal_status = Rc::new(RefCell::new(Status::Open));
+    let overrule_proposal_status = Rc::new(RefCell::new(Status::Open));
     let mut deps = mock_dependencies(Rc::clone(&overrule_proposal_status));
-    let mut env = mock_env();
+    let env = mock_env();
     let info = mock_info("neutron1unknownsender", &[]);
 
     let msg = ExecuteMsg::ExecuteProposal { proposal_id: 10 };
@@ -230,7 +230,7 @@ fn test_execute_proposal() {
 
 #[test]
 fn test_overrule_proposal() {
-    let mut overrule_proposal_status = Rc::new(RefCell::new(Status::Open));
+    let overrule_proposal_status = Rc::new(RefCell::new(Status::Open));
     let mut deps = mock_dependencies(Rc::clone(&overrule_proposal_status));
     let env = mock_env();
     let info = mock_info("neutron1unknownsender", &[]);
@@ -297,7 +297,7 @@ fn test_overrule_proposal() {
 
 #[test]
 fn execute_update_config() {
-    let mut overrule_proposal_status = Rc::new(RefCell::new(Status::Open));
+    let overrule_proposal_status = Rc::new(RefCell::new(Status::Open));
     let mut deps = mock_dependencies(Rc::clone(&overrule_proposal_status));
     let env = mock_env();
     let info = mock_info("neutron1unknownsender", &[]);
@@ -387,7 +387,7 @@ fn execute_update_config() {
 
 #[test]
 fn test_query_config() {
-    let mut overrule_proposal_status = Rc::new(RefCell::new(Status::Open));
+    let overrule_proposal_status = Rc::new(RefCell::new(Status::Open));
     let mut deps = mock_dependencies(Rc::clone(&overrule_proposal_status));
     let config = Config {
         owner: Addr::unchecked("owner"),
@@ -403,7 +403,7 @@ fn test_query_config() {
 
 #[test]
 fn test_query_proposals() {
-    let mut overrule_proposal_status = Rc::new(RefCell::new(Status::Open));
+    let overrule_proposal_status = Rc::new(RefCell::new(Status::Open));
     let mut deps = mock_dependencies(Rc::clone(&overrule_proposal_status));
     for i in 1..=100 {
         let prop = SingleChoiceProposal {
@@ -508,7 +508,7 @@ fn test_query_proposals() {
 
 #[test]
 fn test_reply() {
-    let mut overrule_proposal_status = Rc::new(RefCell::new(Status::Open));
+    let overrule_proposal_status = Rc::new(RefCell::new(Status::Open));
     let mut deps = mock_dependencies(Rc::clone(&overrule_proposal_status));
     let msg = Reply {
         id: 10,
