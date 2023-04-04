@@ -130,7 +130,6 @@ impl ContractQuerier for MockTimelockQueries {
             TimelockMsg::QueryMsg::Proposal { proposal_id } => {
                 SystemResult::Ok(ContractResult::from(to_binary(&SingleChoiceProposal {
                     id: proposal_id,
-                    timelock_ts: Default::default(),
                     msgs: vec![],
                     status: match proposal_id {
                         TIMELOCKED_PROPOSAL_ID => ProposalStatus::Timelocked,

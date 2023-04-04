@@ -8,12 +8,14 @@ use cw2::set_contract_version;
 use cw_storage_plus::Bound;
 use cw_utils::Duration;
 use cwd_proposal_single::{
-    msg::QueryMsg as MainDaoProposalModuleQueryMsg, state::Config as MainDaoProposalModuleConfig,
+    msg::QueryMsg as MainDaoProposalModuleQueryMsg, state::Config as MainDaoProposalModuleConfig, proposal::SingleChoiceProposal as MainDaoSingleChoiceProposal
 };
+use cwd_voting::status::Status;
 use neutron_bindings::bindings::msg::NeutronMsg;
 use neutron_dao_pre_propose_overrule::msg::{
     ExecuteMsg as OverruleExecuteMsg, ProposeMessage as OverruleProposeMessage,
     QueryMsg as OverruleQueryMsg,
+    QueryExt as OverruleQueryExt,
 };
 use neutron_subdao_core::msg::QueryMsg as SubdaoQuery;
 use neutron_subdao_pre_propose_single::msg::QueryMsg as PreProposeQuery;
@@ -105,7 +107,6 @@ pub fn execute_timelock_proposal(
     let proposal = SingleChoiceProposal {
         id: proposal_id,
         msgs,
-        timelock_ts: env.block.time,
         status: ProposalStatus::Timelocked,
     };
 
@@ -149,10 +150,7 @@ pub fn execute_execute_proposal(
         });
     }
 
-    let timelock_duration = get_timelock_duration(&deps, &config.overrule_pre_propose)?;
-
-    // Check if timelock has passed
-    if env.block.time.seconds() < (timelock_duration + proposal.timelock_ts.seconds()) {
+    if !is_overrule_proposal_rejected(&deps, &env, &config.overrule_pre_propose, proposal.id)? {
         return Err(ContractError::TimeLocked {});
     }
 
@@ -280,20 +278,22 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
     Ok(Response::default())
 }
 
-fn get_timelock_duration(
+fn is_overrule_proposal_rejected(
     deps: &DepsMut,
+    env: &Env,
     overrule_pre_propose: &Addr,
-) -> Result<u64, ContractError> {
+    subdao_proposal_id: u64,
+) -> Result<bool, ContractError> {
+    let overrule_proposal_id: u64 = deps
+        .querier
+        .query_wasm_smart(overrule_pre_propose, &OverruleQueryMsg::QueryExtension { msg: OverruleQueryExt::OverruleProposalId { timelock_address: env.contract.address.to_string(), subdao_proposal_id }})?;
     let propose: Addr = deps
         .querier
         .query_wasm_smart(overrule_pre_propose, &OverruleQueryMsg::ProposalModule {})?;
-    let config: MainDaoProposalModuleConfig = deps
+    let overrule_proposal: MainDaoSingleChoiceProposal = deps
         .querier
-        .query_wasm_smart(propose, &MainDaoProposalModuleQueryMsg::Config {})?;
-    match config.max_voting_period {
-        Duration::Height(_) => Err(ContractError::CantCreateOverrule {}),
-        Duration::Time(duration) => Ok(duration),
-    }
+        .query_wasm_smart(propose, &MainDaoProposalModuleQueryMsg::Proposal { proposal_id: overrule_proposal_id })?;
+    Ok(overrule_proposal.status == Status::Rejected)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

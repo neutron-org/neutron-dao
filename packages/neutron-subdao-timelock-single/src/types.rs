@@ -17,9 +17,6 @@ pub struct SingleChoiceProposal {
     /// The ID of the proposal being returned.
     pub id: u64,
 
-    /// The timestamp at which the proposal was submitted to the timelock contract.
-    pub timelock_ts: Timestamp,
-
     /// The messages that will be executed should this proposal be executed.
     pub msgs: Vec<CosmosMsg<NeutronMsg>>,
 
