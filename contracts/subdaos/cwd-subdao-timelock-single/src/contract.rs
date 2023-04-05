@@ -8,6 +8,7 @@ use cw2::set_contract_version;
 use cw_storage_plus::Bound;
 use cwd_proposal_single::{
     msg::QueryMsg as MainDaoProposalModuleQueryMsg,
+    query::ProposalResponse as MainDaoProposalResponse,
     proposal::SingleChoiceProposal as MainDaoSingleChoiceProposal,
 };
 use cwd_voting::status::Status;
@@ -295,13 +296,13 @@ fn is_overrule_proposal_rejected(
     let propose: Addr = deps
         .querier
         .query_wasm_smart(overrule_pre_propose, &OverruleQueryMsg::ProposalModule {})?;
-    let overrule_proposal: MainDaoSingleChoiceProposal = deps.querier.query_wasm_smart(
+    let overrule_proposal: MainDaoProposalResponse = deps.querier.query_wasm_smart(
         propose,
         &MainDaoProposalModuleQueryMsg::Proposal {
             proposal_id: overrule_proposal_id,
         },
     )?;
-    Ok(overrule_proposal.status == Status::Rejected)
+    Ok(overrule_proposal.proposal.status == Status::Rejected)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
