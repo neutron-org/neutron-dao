@@ -1,11 +1,4 @@
 BIN=neutrond
-#
-#CORE_CONTRACT=./artifacts/cwd_subdao_core.wasm
-#PROPOSAL_SINGLE_CONTRACT=./artifacts/cwd_subdao_proposal_single.wasm
-#TIMELOCK_SINGLE_CONTRACT=./artifacts/cwd_subdao_timelock_single.wasm
-#CW4_VOTING_CONTRACT=./artifacts/cw4_voting.wasm  # Vanilla DAO DAO contract, compiled from original repo
-#CW4_GROUP_CONTRACT=./artifacts/cw4_group.wasm # Vanilla cw-plus contract, compiled from original repo
-#PRE_PROPOSE_SINGLE_CONTRACT=./artifacts/cwd_subdao_pre_propose_single.wasm
 
 CHAIN_ID=test-1
 
