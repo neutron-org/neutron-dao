@@ -73,7 +73,7 @@ pub fn execute(
     // we transform an external message which omits that field into an
     // internal message which sets it.
     type ExecuteInternal = ExecuteBase<ProposeMessageInternal>;
-    match msg {
+    let internal_msg = match msg {
         ExecuteMsg::Propose {
             msg:
                 ProposeMessage::ProposeOverrule {
@@ -138,12 +138,31 @@ pub fn execute(
                 next_proposal_id,
             )?;
 
-            PrePropose::default()
-                .execute(deps, env, info, internal_msg)
-                .map_err(PreProposeOverruleError::PreProposeBase)
-        }
+            Ok(internal_msg)
+        },
+        ExecuteMsg::ProposalCreatedHook {
+            proposal_id,
+            proposer,
+        } => Ok(ExecuteInternal::ProposalCreatedHook {
+            proposal_id,
+            proposer,
+        }),
+        ExecuteMsg::ProposalCompletedHook {
+            proposal_id,
+            new_status,
+        } => Ok(ExecuteInternal::ProposalCompletedHook {
+            proposal_id,
+            new_status,
+        }),
+        // ExecuteMsg::Withdraw and ExecuteMsg::UpdateConfig are unsupported
+        // ExecuteMsg::Withdraw is unsupported because overrule proposals should have no deposits
+        // ExecuteMsg::UpdateConfig since the config has only the info about deposits,
+        // no custom fields are added.
         _ => Err(PreProposeOverruleError::MessageUnsupported {}),
-    }
+    };
+    PrePropose::default()
+        .execute(deps, env, info, internal_msg?)
+        .map_err(PreProposeOverruleError::PreProposeBase)
 }
 
 fn get_subdao_from_timelock(
