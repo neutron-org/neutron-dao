@@ -1011,6 +1011,7 @@
               "type": "object",
               "required": [
                 "fee",
+                "memo",
                 "receiver",
                 "sender",
                 "source_channel",
@@ -1022,6 +1023,9 @@
               "properties": {
                 "fee": {
                   "$ref": "#/definitions/IbcFee"
+                },
+                "memo": {
+                  "type": "string"
                 },
                 "receiver": {
                   "type": "string"
