@@ -139,7 +139,7 @@ pub fn execute(
             )?;
 
             Ok(internal_msg)
-        },
+        }
         ExecuteMsg::ProposalCreatedHook {
             proposal_id,
             proposer,

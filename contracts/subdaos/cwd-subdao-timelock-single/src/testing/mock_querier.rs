@@ -12,8 +12,8 @@ use cw_utils::Duration;
 use cwd_proposal_single::{
     msg::{QueryMsg as ProposeQuery, QueryMsg},
     proposal::SingleChoiceProposal as MainDaoSingleChoiceProposal,
-    state::Config as OverrulProposalConfig,
     query::ProposalResponse as MainDaoProposalResponse,
+    state::Config as OverrulProposalConfig,
 };
 use cwd_voting::status::Status;
 use cwd_voting::threshold::Threshold;
@@ -118,28 +118,30 @@ impl WasmMockQuerier {
                             dao: Addr::unchecked(MOCK_MAIN_DAO_ADDR),
                             close_proposal_on_execution_failure: false,
                         }),
-                        QueryMsg::Proposal { .. } => to_binary(&MainDaoProposalResponse{ id: 1, proposal:
-                        MainDaoSingleChoiceProposal {
-                            title: "".to_string(),
-                            description: "".to_string(),
-                            proposer: Addr::unchecked(""),
-                            start_height: 0,
-                            min_voting_period: None,
-                            expiration: Default::default(),
-                            threshold: Threshold::AbsoluteCount {
-                                threshold: Uint128::new(1),
+                        QueryMsg::Proposal { .. } => to_binary(&MainDaoProposalResponse {
+                            id: 1,
+                            proposal: MainDaoSingleChoiceProposal {
+                                title: "".to_string(),
+                                description: "".to_string(),
+                                proposer: Addr::unchecked(""),
+                                start_height: 0,
+                                min_voting_period: None,
+                                expiration: Default::default(),
+                                threshold: Threshold::AbsoluteCount {
+                                    threshold: Uint128::new(1),
+                                },
+                                total_power: Default::default(),
+                                msgs: vec![],
+                                // status: Status::Rejected,
+                                status: *(*self.overrule_proposal_status).borrow(),
+                                votes: Votes {
+                                    yes: Default::default(),
+                                    no: Default::default(),
+                                    abstain: Default::default(),
+                                },
+                                allow_revoting: false,
                             },
-                            total_power: Default::default(),
-                            msgs: vec![],
-                            // status: Status::Rejected,
-                            status: *(*self.overrule_proposal_status).borrow(),
-                            votes: Votes {
-                                yes: Default::default(),
-                                no: Default::default(),
-                                abstain: Default::default(),
-                            },
-                            allow_revoting: false,
-                        }}),
+                        }),
                         QueryMsg::ListProposals { .. } => todo!(),
                         QueryMsg::ReverseProposals { .. } => todo!(),
                         QueryMsg::ProposalCount { .. } => todo!(),
