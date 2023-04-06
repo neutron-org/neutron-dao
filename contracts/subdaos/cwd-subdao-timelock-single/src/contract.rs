@@ -8,7 +8,6 @@ use cw2::set_contract_version;
 use cw_storage_plus::Bound;
 use cwd_proposal_single::{
     msg::QueryMsg as MainDaoProposalModuleQueryMsg,
-    proposal::SingleChoiceProposal as MainDaoSingleChoiceProposal,
     query::ProposalResponse as MainDaoProposalResponse,
 };
 use cwd_voting::status::Status;
