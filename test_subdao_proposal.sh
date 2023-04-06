@@ -1,12 +1,5 @@
 BIN=neutrond
 
-CORE_CONTRACT=./artifacts/cwd_subdao_core.wasm
-PROPOSAL_SINGLE_CONTRACT=./artifacts/cwd_subdao_proposal_single.wasm
-TIMELOCK_SINGLE_CONTRACT=./artifacts/cwd_subdao_timelock_single.wasm
-CW4_VOTING_CONTRACT=./artifacts/cw4_voting.wasm  # Vanilla DAO DAO contract, compiled from original repo
-CW4_GROUP_CONTRACT=./artifacts/cw4_group.wasm # Vanilla cw-plus contract, compiled from original repo
-PRE_PROPOSE_SINGLE_CONTRACT=./artifacts/cwd_subdao_pre_propose_single.wasm
-
 CHAIN_ID=test-1
 
 NEUTRON_DIR=${NEUTRON_DIR:-../neutron}
@@ -17,203 +10,49 @@ HOME=${NEUTRON_DIR}/data/test-1/
 ADMIN=demowallet1
 ADMIN_ADDR=$(${BIN} keys show ${ADMIN} -a --keyring-backend test --home ${HOME})
 
-echo """
-#############################################################################
-#
-# Uploading the subDAO contracts
-#
-#############################################################################
-"""
-
-# Upload the core contract (1 / 6)
-RES=$(${BIN} tx wasm store ${CORE_CONTRACT} --from ${ADMIN} --gas 50000000 --chain-id ${CHAIN_ID} \
-  --broadcast-mode=block --gas-prices 0.0025stake -y --output json  --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:16657)
-CORE_CONTRACT_CODE_ID=$(echo $RES | jq -r '.logs[0].events[1].attributes[0].value')
-echo "CORE_CONTRACT_CODE_ID:" $CORE_CONTRACT_CODE_ID
-
-# Upload the cw4 voting contract (2 / 6)
-RES=$(${BIN} tx wasm store ${CW4_VOTING_CONTRACT} --from ${ADMIN} --gas 50000000 --chain-id ${CHAIN_ID} \
-  --broadcast-mode=block --gas-prices 0.0025stake -y --output json  --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:16657)
-CW4_VOTE_CONTRACT_CODE_ID=$(echo $RES | jq -r '.logs[0].events[1].attributes[0].value')
-echo "CW4_VOTE_CONTRACT_CODE_ID:" $CW4_VOTE_CONTRACT_CODE_ID
-
-# Upload the cw4 group contract (3 / 6)
-RES=$(${BIN} tx wasm store ${CW4_GROUP_CONTRACT} --from ${ADMIN} --gas 50000000 --chain-id ${CHAIN_ID} \
-  --broadcast-mode=block --gas-prices 0.0025stake -y --output json  --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:16657)
-CW4_GROUP_CONTRACT_CODE_ID=$(echo $RES | jq -r '.logs[0].events[1].attributes[0].value')
-echo "CW4_GROUP_CONTRACT_CODE_ID:" $CW4_GROUP_CONTRACT_CODE_ID
-
-# Upload the pre propose contract (4 / 6)
-RES=$(${BIN} tx wasm store ${PRE_PROPOSE_SINGLE_CONTRACT} --from ${ADMIN} --gas 50000000 --chain-id ${CHAIN_ID} \
-  --broadcast-mode=block --gas-prices 0.0025stake -y --output json  --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:16657)
-PRE_PROPOSE_SINGLE_CONTRACT_CODE_ID=$(echo $RES | jq -r '.logs[0].events[1].attributes[0].value')
-echo "PRE_PROPOSE_SINGLE_CONTRACT_CODE_ID:" $PRE_PROPOSE_SINGLE_CONTRACT_CODE_ID
-
-# Upload the proposal contract (5 / 6)
-RES=$(${BIN} tx wasm store ${PROPOSAL_SINGLE_CONTRACT} --from ${ADMIN} --gas 50000000 --chain-id ${CHAIN_ID} \
-  --broadcast-mode=block --gas-prices 0.0025stake -y --output json  --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:16657)
-PROPOSAL_SINGLE_CONTRACT_CODE_ID=$(echo $RES | jq -r '.logs[0].events[1].attributes[0].value')
-echo "PROPOSAL_SINGLE_CONTRACT_CODE_ID:" $PROPOSAL_SINGLE_CONTRACT_CODE_ID
-
-# Upload the timelock contract (6 / 6)
-RES=$(${BIN} tx wasm store ${TIMELOCK_SINGLE_CONTRACT} --from ${ADMIN} --gas 50000000 --chain-id ${CHAIN_ID} \
-  --broadcast-mode=block --gas-prices 0.0025stake -y --output json  --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:16657)
-TIMELOCK_SINGLE_CONTRACT_CODE_ID=$(echo $RES | jq -r '.logs[0].events[1].attributes[0].value')
-echo "TIMELOCK_SINGLE_CONTRACT_CODE_ID:" $TIMELOCK_SINGLE_CONTRACT_CODE_ID
-
-echo """
-#############################################################################
-#
-# Overrule preps for main DAO
-#
-#############################################################################
-"""
 
 USERNAME_1=demowallet1
 USERNAME_2=demowallet3
 USERNAME_3=rly1
 
+PROPOSE_ADDRESS=neutron1eyfccmjm6732k7wp4p6gdjwhxjwsvje44j0hfx8nkgrm8fs7vqfs8hrpdj
+PRE_PROPOSE_ADDRESS=neutron18v47nqmhvejx3vc498pantg8vr435xa0rt6x0m6kzhp6yuqmcp8s7t5v3x
+VOTING=neutron1aaf9r6s7nxhysuegqrxv0wpm27ypyv4886medd3mrkrw6t4yfcnsu2zdzj
 # DAO addresses
-VAULT_ADDRESS=neutron14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s5c2epq
-PROPOSE_ADDRESS=neutron1fzm6gzyccl8jvdv3qq6hp9vs6ylaruervs4m06c7k0ntzn2f8faqypzg9p
-PRE_PROPOSE_ADDRESS=neutron1fyr2mptjswz4w6xmgnpgm93x0q4s4wdl6srv3rtz3utc4f6fmxeqaqj22l
-CORE_ADDRESS=neutron1nc5tatafv6eyq7llkr2gv50ff9e22mnf70qgjlv737ktmt4eswrqcd0mrx
+VAULT_ADDRESS=neutron1qeyjez6a9dwlghf9d6cy44fxmsajztw257586akk6xn6k88x0gus5djz4e
+CORE_ADDRESS=neutron1yyca08xqdgvjz0psg56z67ejh9xms6l436u8y58m82npdqqhmmtqxfjftn
+
+RES=$(${BIN} q wasm contract-state smart $CORE_ADDRESS '{"proposal_modules": {}}' \
+  --chain-id ${CHAIN_ID} --output json  --home ${HOME} --node tcp://127.0.0.1:26657)
+echo $RES
 
 # STAKING
-# stake funds from wallet 1
-RES=$(${BIN} tx wasm execute $VAULT_ADDRESS "{\"bond\": {}}" --amount 1000stake --from ${USERNAME_1} -y \
-  --chain-id ${CHAIN_ID} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 \
-  --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:16657)
+# untrn funds from wallet 1
+RES=$(${BIN} tx wasm execute $VAULT_ADDRESS "{\"bond\": {}}" --amount 1000untrn --from ${USERNAME_1} -y \
+  --chain-id ${CHAIN_ID} --output json --broadcast-mode=block --gas-prices 0.0025untrn --gas 1000000 \
+  --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:26657)
 echo "staking from wallet 1:"
 echo $RES
 
-#stake funds from wallet 2
-RES=$(${BIN} tx wasm execute $VAULT_ADDRESS "{\"bond\": {}}" --amount 1000stake --from ${USERNAME_2} -y \
-  --chain-id ${CHAIN_ID} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 \
-  --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:16657)
+#untrn funds from wallet 2
+RES=$(${BIN} tx wasm execute $VAULT_ADDRESS "{\"bond\": {}}" --amount 1000untrn --from ${USERNAME_2} -y \
+  --chain-id ${CHAIN_ID} --output json --broadcast-mode=block --gas-prices 0.0025untrn --gas 1000000 \
+  --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:26657)
 echo "staking from wallet 2:"
 echo $RES
 
-#stake funds from wallet 3
-RES=$(${BIN} tx wasm execute $VAULT_ADDRESS "{\"bond\": {}}" --amount 1000stake --from ${USERNAME_3} -y \
-  --chain-id ${CHAIN_ID} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 \
-  --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:16657)
+#untrn funds from wallet 3
+RES=$(${BIN} tx wasm execute $VAULT_ADDRESS "{\"bond\": {}}" --amount 1000untrn --from ${USERNAME_3} -y \
+  --chain-id ${CHAIN_ID} --output json --broadcast-mode=block --gas-prices 0.0025untrn --gas 1000000 \
+  --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:26657)
 echo "staking from wallet 3:"
 echo $RES
 
-echo """
-#############################################################################
-#
-# Instantiating the core subDAO contract
-#
-#############################################################################
-"""
-
-# -------------------- PROPOSE { PRE-PROPOSE { TIMELOCK } } --------------------
-
-TIMELOCK_SINGLE_CONTRACT_INIT_MSG='{
-  "timelock_duration": 20,
-}'
-TIMELOCK_SINGLE_CONTRACT_INIT_MSG_BASE64=$(echo ${TIMELOCK_SINGLE_CONTRACT_INIT_MSG} | base64 | tr -d "\n")
-
-# PRE_PROPOSE_INIT_MSG will be put into the PROPOSAL_SINGLE_INIT_MSG
-PRE_PROPOSE_INIT_MSG='{
-  "deposit_info": {
-    "denom": {
-      "token": {
-        "denom": {
-          "native": "stake"
-        }
-      }
-    },
-    "amount": "10",
-    "refund_policy": "always"
-  },
-  "open_proposal_submission": false,
-  "timelock_module_instantiate_info": {
-    "code_id": '"${TIMELOCK_SINGLE_CONTRACT_CODE_ID}"',
-    "label": "Neutron subDAO timelock",
-    "msg": "'"${TIMELOCK_SINGLE_CONTRACT_INIT_MSG_BASE64}"'"
-  }
-}'
-PRE_PROPOSE_INIT_MSG_BASE64=$(echo ${PRE_PROPOSE_INIT_MSG} | base64 | tr -d "\n")
-
-PROPOSAL_SINGLE_INIT_MSG='{
-  "threshold": {
-    "absolute_count": {
-      "threshold": "1"
-    }
-  },
-  "max_voting_period": {
-    "time": 60
-  },
-  "allow_revoting": false,
-  "close_proposal_on_execution_failure": true,
-  "pre_propose_info": {
-    "ModuleMayPropose": {
-      "info": {
-        "code_id": '"${PRE_PROPOSE_SINGLE_CONTRACT_CODE_ID}"',
-        "label": "Neutron subDAO pre propose",
-        "msg": "'"${PRE_PROPOSE_INIT_MSG_BASE64}"'"
-      }
-    }
-  }
-}'
-PROPOSAL_SINGLE_INIT_MSG_BASE64=$(echo ${PROPOSAL_SINGLE_INIT_MSG} | base64 | tr -d "\n")
-
-# -------------------- VOTE MODULE --------------------
-
-CW4_VOTE_INIT_MSG='{
-  "cw4_group_code_id": '"${CW4_GROUP_CONTRACT_CODE_ID}"',
-  "initial_members": [
-    {
-      "addr": "'"${ADMIN_ADDR}"'",
-      "weight": 1
-    }
-  ]
-}'
-CW4_VOTE_INIT_MSG_BASE64=$(echo ${CW4_VOTE_INIT_MSG} | base64 | tr -d "\n")
-
-# -------------------- CORE MODULE --------------------
-
-CORE_CONTRACT_INIT_MSG='{
-  "name": "Neutron subDAO",
-  "description": "Neutron subDAO",
-  "initial_items": null,
-  "main_dao": "'"${CORE_ADDRESS}"'",
-  "security_dao": "'"${CORE_ADDRESS}"'",
-  "vote_module_instantiate_info": {
-    "code_id": '"${CW4_VOTE_CONTRACT_CODE_ID}"',
-    "label": "Neutron subDAO vote module",
-    "msg": "'"${CW4_VOTE_INIT_MSG_BASE64}"'"
-  },
-  "proposal_modules_instantiate_info": [
-    {
-      "code_id": '"${PROPOSAL_SINGLE_CONTRACT_CODE_ID}"',
-      "label": "Neutron DAO proposal",
-      "msg": "'"${PROPOSAL_SINGLE_INIT_MSG_BASE64}"'"
-    }
-  ]
-}'
-
-RES=$(${BIN} tx wasm instantiate $CORE_CONTRACT_CODE_ID "$CORE_CONTRACT_INIT_MSG" --from ${ADMIN} \
-  --admin ${ADMIN_ADDR} -y --chain-id ${CHAIN_ID} --output json --broadcast-mode=block --label "init" \
-  --keyring-backend test --gas-prices 0.0025stake --gas auto --gas-adjustment 1.4 --home ${HOME} --node tcp://127.0.0.1:16657)
-
-CORE_CONTRACT_ADDR=$(echo $RES | jq -r '.logs[0].events[0].attributes[0].value')
-echo "CORE_CONTRACT_ADDR:" $CORE_CONTRACT_ADDR
-
-CW4_VOTE_CONTRACT_ADDR=$(echo $RES | jq -r '.logs[0].events[4].attributes[16].value')
-echo "CW4_VOTE_CONTRACT_ADDR:" $CW4_VOTE_CONTRACT_ADDR
-
-PROPOSAL_SINGLE_CONTRACT_ADDR=$(echo $RES | jq -r '.logs[0].events[4].attributes[24].value')
-echo "PROPOSAL_SINGLE_CONTRACT_ADDR:" $PROPOSAL_SINGLE_CONTRACT_ADDR
-
-TIMELOCK_SINGLE_CONTRACT_ADDR=$(echo $RES | jq -r '.logs[0].events[4].attributes[30].value')
-echo "TIMELOCK_SINGLE_CONTRACT_ADDR:" $TIMELOCK_SINGLE_CONTRACT_ADDR
-
-PRE_PROPOSE_SINGLE_CONTRACT_ADDR=$(echo $RES | jq -r '.logs[0].events[4].attributes[32].value')
-echo "PRE_PROPOSE_SINGLE_CONTRACT_ADDR:" $PRE_PROPOSE_SINGLE_CONTRACT_ADDR
+CORE_CONTRACT_ADDR=neutron1k95lcrdzamyeu882dtuclrzqmv6ay0axfa3wng8jla0ty52tzn4qsvxcpk
+PROPOSAL_SINGLE_CONTRACT_ADDR=neutron1qyl0j7a24amk8k8gcmvv07y2zjx7nkcwpk73js24euh64hkja6esg9jar3
+PRE_PROPOSE_SINGLE_CONTRACT_ADDR=neutron1ell22k43hs2jtx8x50jz96agaqju5jwn87ued0mzcfglzlw6um0ssqx6x5
+CW4_VOTE_CONTRACT_ADDR=neutron15v8jqq6aqhsuykdgdevx3qqcj9lp4h27ypsycds4cmv6er9qv0vs99alac
+TIMELOCK_SINGLE_CONTRACT_ADDR=neutron1yev7tj6lm9lf6mc0y6sxvwscu8rq76zlr4t8s63c5wj4v8u847kssmkmny
 
 echo """
 #############################################################################
@@ -226,12 +65,12 @@ echo """
 #   5. Try to execute after timelock expires (status changes to \"executed\").
 #
 #############################################################################
-"""
+#"""
 
-RES=$(${BIN} tx bank send ${ADMIN_ADDR} ${TIMELOCK_SINGLE_CONTRACT_ADDR}  5000stake  -y --chain-id ${CHAIN_ID} --output json \
-  --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 --keyring-backend test \
-  --home ${HOME} --node tcp://127.0.0.1:16657)
-echo "> Sent 5000stake from ADMIN_ADDR to TIMELOCK_SINGLE_CONTRACT_ADDR, tx hash:" $(echo $RES | jq -r '.txhash')
+RES=$(${BIN} tx bank send ${ADMIN_ADDR} ${TIMELOCK_SINGLE_CONTRACT_ADDR}  5000untrn  -y --chain-id ${CHAIN_ID} --output json \
+  --broadcast-mode=block --gas-prices 0.0025untrn --gas 1000000 --keyring-backend test \
+  --home ${HOME} --node tcp://127.0.0.1:26657)
+echo "> Sent 5000untrn from ADMIN_ADDR to TIMELOCK_SINGLE_CONTRACT_ADDR, tx hash:" $(echo $RES | jq -r '.txhash')
 
 PROPOSAL_MSG='{
   "propose":{
@@ -246,7 +85,7 @@ PROPOSAL_MSG='{
                 "to_address":"'"${ADMIN_ADDR}"'",
                 "amount":[
                   {
-                    "denom":"stake",
+                    "denom":"untrn",
                     "amount":"10"
                   }
                 ]
@@ -260,18 +99,18 @@ PROPOSAL_MSG='{
 }
 '
 
-RES=$(${BIN} tx wasm execute $PRE_PROPOSE_SINGLE_CONTRACT_ADDR "$PROPOSAL_MSG" --amount 10stake --from ${ADMIN_ADDR} -y \
-  --chain-id ${CHAIN_ID} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 \
-  --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:16657)
+RES=$(${BIN} tx wasm execute $PRE_PROPOSE_SINGLE_CONTRACT_ADDR "$PROPOSAL_MSG" --amount 10untrn --from ${ADMIN_ADDR} -y \
+  --chain-id ${CHAIN_ID} --output json --broadcast-mode=block --gas-prices 0.0025untrn --gas 1000000 \
+  --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:26657)
 echo "> Submitted proposal, tx hash:" $(echo $RES | jq -r '.txhash')
 
 RES=$(${BIN} tx wasm execute $PROPOSAL_SINGLE_CONTRACT_ADDR '{"vote": {"proposal_id": 1, "vote":  "yes"}}' \
-  --from ${ADMIN_ADDR} -y --chain-id ${CHAIN_ID} --output json --broadcast-mode=block --gas-prices 0.0025stake \
-  --gas 1000000 --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:16657)
+  --from ${ADMIN_ADDR} -y --chain-id ${CHAIN_ID} --output json --broadcast-mode=block --gas-prices 0.0025untrn \
+  --gas 1000000 --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:26657)
 echo "> Submitted a YES vote (1 / 1 members), tx hash:" $(echo $RES | jq -r '.txhash')
 
 RES=$(${BIN} q wasm contract-state smart $PROPOSAL_SINGLE_CONTRACT_ADDR '{"proposal": {"proposal_id": 1}}' \
-  --chain-id ${CHAIN_ID} --output json  --home ${HOME} --node tcp://127.0.0.1:16657)
+  --chain-id ${CHAIN_ID} --output json  --home ${HOME} --node tcp://127.0.0.1:26657)
 PROPOSAL_STATUS=$(echo $RES | jq -r '.data.proposal.status')
 if [ $PROPOSAL_STATUS == "passed"  ]; then
   echo '> Proposal status (in proposal contract) is "passed", all good'
@@ -281,12 +120,12 @@ else
 fi
 
 RES=$(${BIN} tx wasm execute $PROPOSAL_SINGLE_CONTRACT_ADDR '{"execute": {"proposal_id": 1}}'  --from ${ADMIN_ADDR} \
-  -y --chain-id ${CHAIN_ID} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 \
-  --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:16657)
+  -y --chain-id ${CHAIN_ID} --output json --broadcast-mode=block --gas-prices 0.0025untrn --gas 1000000 \
+  --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:26657)
 echo "> Execute the proposal (should send it to timelock), tx hash:" $(echo $RES | jq -r '.txhash')
 
 RES=$(${BIN} q wasm contract-state smart $TIMELOCK_SINGLE_CONTRACT_ADDR '{"proposal": {"proposal_id": 1}}' \
-  --chain-id ${CHAIN_ID} --output json  --home ${HOME} --node tcp://127.0.0.1:16657)
+  --chain-id ${CHAIN_ID} --output json  --home ${HOME} --node tcp://127.0.0.1:26657)
 PROPOSAL_STATUS=$(echo $RES | jq -r '.data.status')
 if [ $PROPOSAL_STATUS == "timelocked"  ]; then
   echo '> Proposal status (in timelock contract) is "timelocked", all good'
@@ -296,12 +135,12 @@ else
 fi
 
 ${BIN} tx wasm execute $TIMELOCK_SINGLE_CONTRACT_ADDR '{"execute_proposal": {"proposal_id": 1}}'  --from ${ADMIN_ADDR} \
-  -y --chain-id ${CHAIN_ID} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 \
-  --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:16657 > /dev/null 2>&1
+  -y --chain-id ${CHAIN_ID} --output json --broadcast-mode=block --gas-prices 0.0025untrn --gas 1000000 \
+  --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:26657 > /dev/null 2>&1
 echo "> Tried to execute the proposal before timelock expires (suppressing output)"
 
 RES=$(${BIN} q wasm contract-state smart $TIMELOCK_SINGLE_CONTRACT_ADDR '{"proposal": {"proposal_id": 1}}' \
-  --chain-id ${CHAIN_ID} --output json  --home ${HOME} --node tcp://127.0.0.1:16657)
+  --chain-id ${CHAIN_ID} --output json  --home ${HOME} --node tcp://127.0.0.1:26657)
 PROPOSAL_STATUS=$(echo $RES | jq -r '.data.status')
 if [ $PROPOSAL_STATUS == "timelocked"  ]; then
   echo '> Proposal status (in timelock contract) is still "timelocked", all good'
@@ -314,11 +153,11 @@ echo "> Waiting for 20 seconds for the timelock to expire..."
 sleep 20
 
 RES=$(${BIN} tx wasm execute $TIMELOCK_SINGLE_CONTRACT_ADDR '{"execute_proposal": {"proposal_id": 1}}' \
-  --from ${ADMIN_ADDR} -y --chain-id ${CHAIN_ID} --output json --broadcast-mode=block --gas-prices 0.0025stake \
-  --gas 1000000 --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:16657)
+  --from ${ADMIN_ADDR} -y --chain-id ${CHAIN_ID} --output json --broadcast-mode=block --gas-prices 0.0025untrn \
+  --gas 1000000 --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:26657)
 echo "> Tried to execute the proposal *after* timelock expires, tx hash:" $(echo $RES | jq -r '.txhash')
 
-RES=$(${BIN} q wasm contract-state smart $TIMELOCK_SINGLE_CONTRACT_ADDR '{"proposal": {"proposal_id": 1}}'  --chain-id ${CHAIN_ID} --output json  --home ${HOME} --node tcp://127.0.0.1:16657)
+RES=$(${BIN} q wasm contract-state smart $TIMELOCK_SINGLE_CONTRACT_ADDR '{"proposal": {"proposal_id": 1}}'  --chain-id ${CHAIN_ID} --output json  --home ${HOME} --node tcp://127.0.0.1:26657)
 PROPOSAL_STATUS=$(echo $RES | jq -r '.data.status')
 if [ $PROPOSAL_STATUS == "executed"  ]; then
   echo '> Proposal status (in timelock contract) is "executed", all good'
@@ -340,10 +179,10 @@ echo """
 #############################################################################
 """
 
-RES=$(${BIN} tx bank send ${ADMIN_ADDR} ${TIMELOCK_SINGLE_CONTRACT_ADDR}  5000stake  -y --chain-id ${CHAIN_ID} --output json \
-  --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 --keyring-backend test \
-  --home ${HOME} --node tcp://127.0.0.1:16657)
-echo "> Sent 5000stake from ADMIN_ADDR to TIMELOCK_SINGLE_CONTRACT_ADDR, tx hash:" $(echo $RES | jq -r '.txhash')
+RES=$(${BIN} tx bank send ${ADMIN_ADDR} ${TIMELOCK_SINGLE_CONTRACT_ADDR}  5000untrn  -y --chain-id ${CHAIN_ID} --output json \
+  --broadcast-mode=block --gas-prices 0.0025untrn --gas 1000000 --keyring-backend test \
+  --home ${HOME} --node tcp://127.0.0.1:26657)
+echo "> Sent 5000untrn from ADMIN_ADDR to TIMELOCK_SINGLE_CONTRACT_ADDR, tx hash:" $(echo $RES | jq -r '.txhash')
 
 PROPOSAL_MSG='{
   "propose":{
@@ -358,7 +197,7 @@ PROPOSAL_MSG='{
                 "to_address":"'"${ADMIN_ADDR}"'",
                 "amount":[
                   {
-                    "denom":"stake",
+                    "denom":"untrn",
                     "amount":"10"
                   }
                 ]
@@ -372,18 +211,18 @@ PROPOSAL_MSG='{
 }
 '
 
-RES=$(${BIN} tx wasm execute $PRE_PROPOSE_SINGLE_CONTRACT_ADDR "$PROPOSAL_MSG" --amount 10stake --from ${ADMIN_ADDR} -y \
-  --chain-id ${CHAIN_ID} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 \
-  --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:16657)
+RES=$(${BIN} tx wasm execute $PRE_PROPOSE_SINGLE_CONTRACT_ADDR "$PROPOSAL_MSG" --amount 10untrn --from ${ADMIN_ADDR} -y \
+  --chain-id ${CHAIN_ID} --output json --broadcast-mode=block --gas-prices 0.0025untrn --gas 1000000 \
+  --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:26657)
 echo "> Submitted proposal, tx hash:" $(echo $RES | jq -r '.txhash')
 
 RES=$(${BIN} tx wasm execute $PROPOSAL_SINGLE_CONTRACT_ADDR '{"vote": {"proposal_id": 2, "vote":  "yes"}}' \
-  --from ${ADMIN_ADDR} -y --chain-id ${CHAIN_ID} --output json --broadcast-mode=block --gas-prices 0.0025stake \
-  --gas 1000000 --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:16657)
+  --from ${ADMIN_ADDR} -y --chain-id ${CHAIN_ID} --output json --broadcast-mode=block --gas-prices 0.0025untrn \
+  --gas 1000000 --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:26657)
 echo "> Submitted a YES vote (1 / 1 members), tx hash:" $(echo $RES | jq -r '.txhash')
 
 RES=$(${BIN} q wasm contract-state smart $PROPOSAL_SINGLE_CONTRACT_ADDR '{"proposal": {"proposal_id": 2}}' \
-  --chain-id ${CHAIN_ID} --output json  --home ${HOME} --node tcp://127.0.0.1:16657)
+  --chain-id ${CHAIN_ID} --output json  --home ${HOME} --node tcp://127.0.0.1:26657)
 PROPOSAL_STATUS=$(echo $RES | jq -r '.data.proposal.status')
 if [ $PROPOSAL_STATUS == "passed"  ]; then
   echo '> Proposal status (in proposal contract) is "passed", all good'
@@ -393,12 +232,12 @@ else
 fi
 
 RES=$(${BIN} tx wasm execute $PROPOSAL_SINGLE_CONTRACT_ADDR '{"execute": {"proposal_id": 2}}'  --from ${ADMIN_ADDR} \
-  -y --chain-id ${CHAIN_ID} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 \
-  --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:16657)
+  -y --chain-id ${CHAIN_ID} --output json --broadcast-mode=block --gas-prices 0.0025untrn --gas 1000000 \
+  --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:26657)
 echo "> Execute the proposal (should send it to timelock), tx hash:" $(echo $RES | jq -r '.txhash')
 
 RES=$(${BIN} q wasm contract-state smart $TIMELOCK_SINGLE_CONTRACT_ADDR '{"proposal": {"proposal_id": 2}}' \
-  --chain-id ${CHAIN_ID} --output json  --home ${HOME} --node tcp://127.0.0.1:16657)
+  --chain-id ${CHAIN_ID} --output json  --home ${HOME} --node tcp://127.0.0.1:26657)
 PROPOSAL_STATUS=$(echo $RES | jq -r '.data.status')
 if [ $PROPOSAL_STATUS == "timelocked"  ]; then
   echo '> Proposal status (in timelock contract) is "timelocked", all good'
@@ -421,35 +260,35 @@ PROP='{
 }'
 # PROPOSAL 1 (to pass)
 #propose proposal we're going to pass
-RES=$(${BIN} tx wasm execute $PRE_PROPOSE_ADDRESS "$PROP" --amount 1000stake --from ${USERNAME_1} -y \
-  --chain-id ${CHAIN_ID} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 \
-  --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:16657)
+RES=$(${BIN} tx wasm execute $PRE_PROPOSE_ADDRESS "$PROP" --amount 1000untrn --from ${USERNAME_1} -y \
+  --chain-id ${CHAIN_ID} --output json --broadcast-mode=block --gas-prices 0.0025untrn --gas 1000000 \
+  --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:26657)
 echo "propose proposal to be passed:"
 echo $RES
 
 #### vote YES from wallet 1
 RES=$(${BIN} tx wasm execute $PROPOSE_ADDRESS "{\"vote\": {\"proposal_id\": 1, \"vote\":  \"yes\"}}"  \
-  --from ${USERNAME_1} -y --chain-id ${CHAIN_ID} --output json --broadcast-mode=block --gas-prices 0.0025stake \
-  --gas 1000000 --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:16657)
+  --from ${USERNAME_1} -y --chain-id ${CHAIN_ID} --output json --broadcast-mode=block --gas-prices 0.0025untrn \
+  --gas 1000000 --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:26657)
 echo "vote YES from wallet1:"
 echo $RES
 
 #### vote YES from wallet 2
 RES=$(${BIN} tx wasm execute $PROPOSE_ADDRESS "{\"vote\": {\"proposal_id\": 1, \"vote\":  \"yes\"}}"  \
-  --from ${USERNAME_2} -y --chain-id ${CHAIN_ID} --output json --broadcast-mode=block --gas-prices 0.0025stake \
-  --gas 1000000 --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:16657)
+  --from ${USERNAME_2} -y --chain-id ${CHAIN_ID} --output json --broadcast-mode=block --gas-prices 0.0025untrn \
+  --gas 1000000 --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:26657)
 echo "vote YES from wallet2:"
 echo $RES
 
 RES=$(${BIN} tx wasm execute $PROPOSE_ADDRESS "{\"execute\": {\"proposal_id\": 1}}"  --from ${USERNAME_1} \
-  -y --chain-id ${CHAIN_ID} --output json --broadcast-mode=block --gas-prices 0.0025stake --gas 1000000 \
-  --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:16657)
+  -y --chain-id ${CHAIN_ID} --output json --broadcast-mode=block --gas-prices 0.0025untrn --gas 1000000 \
+  --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:26657)
 echo "execute proposal:"
 echo $RES
 
 # -------------------- TRYING TO EXECUTE --------------------
 
-RES=$(${BIN} q wasm contract-state smart $TIMELOCK_SINGLE_CONTRACT_ADDR '{"proposal": {"proposal_id": 2}}'  --chain-id ${CHAIN_ID} --output json  --home ${HOME} --node tcp://127.0.0.1:16657)
+RES=$(${BIN} q wasm contract-state smart $TIMELOCK_SINGLE_CONTRACT_ADDR '{"proposal": {"proposal_id": 2}}'  --chain-id ${CHAIN_ID} --output json  --home ${HOME} --node tcp://127.0.0.1:26657)
 PROPOSAL_STATUS=$(echo $RES | jq -r '.data.status')
 if [ $PROPOSAL_STATUS == "overruled"  ]; then
   echo '> Proposal status (in timelock contract) is "overruled", all good'
@@ -459,7 +298,8 @@ else
 fi
 
 RES=$(${BIN} tx wasm execute $TIMELOCK_SINGLE_CONTRACT_ADDR '{"execute_proposal": {"proposal_id": 2}}' \
-  --from ${ADMIN_ADDR} -y --chain-id ${CHAIN_ID} --output json --broadcast-mode=block --gas-prices 0.0025stake \
-  --gas 1000000 --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:16657) > /dev/null 2>&1
+  --from ${ADMIN_ADDR} -y --chain-id ${CHAIN_ID} --output json --broadcast-mode=block --gas-prices 0.0025untrn \
+  --gas 1000000 --keyring-backend test --home ${HOME} --node tcp://127.0.0.1:26657) > /dev/null 2>&1
 echo "> Tried to execute the overruled proposal, should return an error"
 grep -q 'Wrong proposal status (overruled)' <<< $RES && echo "> Received an error, all good" || echo "ERROR: proposal execution did not fail"
+
