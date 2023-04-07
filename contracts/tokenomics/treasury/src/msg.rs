@@ -1,24 +1,15 @@
-use cosmwasm_std::{Decimal, Uint128};
+use cosmwasm_std::Uint128;
 use cwd_macros::{pausable, pausable_query};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct InstantiateMsg {
-    pub main_dao_address: String,
     pub denom: String,
-    /// Distribution rate (0-1) which goes to distribution contract
-    pub distribution_rate: Decimal,
-    /// Minimum period between distribution calls
-    pub min_period: u64,
-    /// Address of distribution contract
-    pub distribution_contract: String,
-    /// Address of reserve contract
-    pub reserve_contract: String,
-    /// Address of security DAO contract
+    /// The address of the main DAO. It's capable of pausing and unpausing the contract
+    pub main_dao_address: String,
+    /// The address of the DAO guardian. The security DAO is capable only of pausing the contract.
     pub security_dao_address: String,
-    /// Vesting release function denominator
-    pub vesting_denominator: u128,
 }
 
 #[pausable]
@@ -27,18 +18,10 @@ pub struct InstantiateMsg {
 pub enum ExecuteMsg {
     /// Transfer the contract's ownership to another account
     TransferOwnership(String),
-
-    /// Distribute pending funds between Bank and Distribution accounts
-    Distribute {},
-
-    // //Update config
-    UpdateConfig {
-        distribution_rate: Option<Decimal>,
-        min_period: Option<u64>,
-        distribution_contract: Option<String>,
-        reserve_contract: Option<String>,
-        security_dao_address: Option<String>,
-        vesting_denominator: Option<u128>,
+    // Payout funds at DAO decision
+    Payout {
+        amount: Uint128,
+        recipient: String,
     },
 }
 
@@ -46,21 +29,6 @@ pub enum ExecuteMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    /// The contract's configurations; returns [`ConfigResponse`]
+    /// The contract's configuration
     Config {},
-    Stats {},
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct StatsResponse {
-    pub total_distributed: Uint128,
-    pub total_reserved: Uint128,
-    pub total_processed_burned_coins: Uint128,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum DistributeMsg {
-    Fund {},
 }
