@@ -230,8 +230,8 @@ pub fn query_voting_power_at_height(
 
     let atom_power = get_voting_power_for_address(
         deps,
-        config.lockdrop_contract.clone(),
-        config.oracle_contract.clone(),
+        config.lockdrop_contract.as_ref(),
+        config.oracle_contract.as_ref(),
         PoolType::ATOM,
         address.clone(),
         height,
@@ -264,8 +264,8 @@ pub fn query_total_power_at_height(
 
     let atom_power = get_voting_power_total(
         deps,
-        config.lockdrop_contract.clone(),
-        config.oracle_contract.clone(),
+        config.lockdrop_contract.as_ref(),
+        config.oracle_contract.as_ref(),
         PoolType::ATOM,
         height,
     )?;
