@@ -2,7 +2,7 @@
 //!
 //! This contract is the core module for all DAO DAO DAOs. It handles
 //! management of voting power and proposal modules, executes messages,
-//! and holds the DAO's treasury.
+//! and holds the DAO's reserve.
 //!
 //! For more information about how these modules fit together see
 //! [this](https://!github.com/DA0-DA0/dao-contracts/wiki/DAO-DAO-v1-Contracts-Design)

@@ -1986,7 +1986,7 @@ fn test_close_failed_proposal() {
         govmod.clone(),
         &ExecuteMsg::Propose {
             title: "A simple burn tokens proposal".to_string(),
-            description: "Burning more tokens, than dao treasury have".to_string(),
+            description: "Burning more tokens, than dao reserve have".to_string(),
             choices: mc_options.clone(),
             proposer: None,
         },
@@ -2093,7 +2093,7 @@ fn test_close_failed_proposal() {
         govmod.clone(),
         &ExecuteMsg::Propose {
             title: "A simple burn tokens proposal".to_string(),
-            description: "Burning more tokens, than dao treasury have".to_string(),
+            description: "Burning more tokens, than dao reserve have".to_string(),
             choices: mc_options,
             proposer: None,
         },

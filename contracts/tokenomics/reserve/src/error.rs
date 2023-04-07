@@ -1,4 +1,4 @@
-use cosmwasm_std::StdError;
+use cosmwasm_std::{OverflowError, StdError};
 use exec_control::pause::PauseError;
 use thiserror::Error;
 
@@ -10,9 +10,27 @@ pub enum ContractError {
     #[error(transparent)]
     PauseError(#[from] PauseError),
 
-    #[error("Unauthorized.")]
+    #[error("Unauthorized")]
     Unauthorized {},
 
-    #[error("Insufficient funds.")]
-    InsufficientFunds {},
+    #[error("No funds to distribute")]
+    NoFundsToDistribute {},
+
+    #[error("distribution_rate must be between 0 and 1")]
+    InvalidDistributionRate {},
+
+    #[error("vesting_denominator must be greater than zero")]
+    InvalidVestingDenominator {},
+
+    #[error("min_period must be greater than zero")]
+    InvalidMinPeriod {},
+
+    #[error("Too soon to distribute")]
+    TooSoonToDistribute {},
+
+    #[error("no coins were burned, nothing to distribute")]
+    NoBurnedCoins {},
+
+    #[error("Overflow")]
+    OverflowError(#[from] OverflowError),
 }
