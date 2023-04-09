@@ -19,9 +19,9 @@ pub enum PreProposeOverruleError {
     #[error("Subdao isn't in the list.")]
     ForbiddenSubdao {},
 
-    #[error("")]
+    #[error("Subdao proposal isn't timelocked")]
     ProposalWrongState {},
 
-    #[error("")]
+    #[error("Overrule proposal for this subdao proposal already created")]
     AlreadyExists {},
 }
