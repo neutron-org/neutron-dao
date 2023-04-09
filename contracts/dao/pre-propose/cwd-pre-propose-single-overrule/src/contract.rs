@@ -83,11 +83,10 @@ pub fn execute(
         } => {
             let timelock_contract_addr = deps.api.addr_validate(&timelock_contract)?;
 
-            if PROPOSALS
+            if let Ok(id) = PROPOSALS
                 .load(deps.storage, (proposal_id, timelock_contract_addr.clone()))
-                .is_ok()
             {
-                return Err(PreProposeOverruleError::AlreadyExists {});
+                return Err(PreProposeOverruleError::AlreadyExists {id});
             }
 
             let subdao_address = get_subdao_from_timelock(&deps, &timelock_contract)?;

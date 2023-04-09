@@ -282,5 +282,5 @@ fn test_double_creation() {
         msg,
     );
     assert!(res_not_ok.is_err());
-    assert_eq!(res_not_ok, Err(PreProposeOverruleError::AlreadyExists {}));
+    assert_eq!(res_not_ok, Err(PreProposeOverruleError::AlreadyExists { id: PROPOSALS_COUNT + 1 }));
 }

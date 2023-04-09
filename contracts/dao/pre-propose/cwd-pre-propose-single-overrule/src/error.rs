@@ -22,6 +22,6 @@ pub enum PreProposeOverruleError {
     #[error("Subdao proposal isn't timelocked")]
     ProposalWrongState {},
 
-    #[error("Overrule proposal for this subdao proposal already created")]
-    AlreadyExists {},
+    #[error("Overrule proposal for this subdao proposal already created with id ({id})")]
+    AlreadyExists { id: u64 },
 }
