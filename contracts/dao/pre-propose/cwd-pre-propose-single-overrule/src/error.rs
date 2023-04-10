@@ -14,7 +14,7 @@ pub enum PreProposeOverruleError {
     MessageUnsupported {},
 
     #[error("Subdao is wrongly configured.")]
-    SubdaoMisconfured {},
+    SubdaoMisconfigured {},
 
     #[error("Subdao isn't in the list.")]
     ForbiddenSubdao {},

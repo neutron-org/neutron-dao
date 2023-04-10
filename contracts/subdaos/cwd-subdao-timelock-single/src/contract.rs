@@ -47,6 +47,10 @@ pub fn instantiate(
         .querier
         .query_wasm_smart(subdao_core.clone(), &SubdaoQuery::MainDao {})?;
 
+    // We don't validate overrule pre propose address more than just as address.
+    // We could also query the DAO address of this module and check if it matches the main DAO set
+    // in the config. But we don't do that because it would require for the subdao to know much more
+    // about the main DAO than it should IMO. It also makes testing harder.
     let overrule_pre_propose = deps.api.addr_validate(&msg.overrule_pre_propose)?;
 
     let config = Config {

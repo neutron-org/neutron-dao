@@ -35,6 +35,9 @@ pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub(crate) const SUBDAOS_QUERY_LIMIT: u32 = 10;
 
+const PROPOSAL_DESCRIPTION_FORMAT: &str = "If this proposal will be accepted, the DAO is going to\
+overrule the proposal #{} of '{}' subdao (address {})";
+
 type PrePropose = PreProposeContract<ProposeMessageInternal, QueryExt>;
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -44,15 +47,16 @@ pub fn instantiate(
     info: MessageInfo,
     _msg: InstantiateMsg,
 ) -> Result<Response, PreProposeError> {
-    // the contract has no info for instantiation so far, so it just calls the init function of base
-    // deposit is set to zero because it makes no sense for overrule proposals
-    // for open submission it's tbd
+    // The contract has no info for instantiation so far, so it just calls the init function of base
     let resp = PrePropose::default().instantiate(
         deps.branch(),
         env,
         info,
         InstantiateBase {
+            // We restrict deposits since overrule proposals are supposed to be created automatically
             deposit_info: None,
+            // Actually, the overrule proposal is going to be created by the timelock contract which
+            // is not the DAO member and has no voting power.
             open_proposal_submission: true,
         },
     )?;
@@ -68,10 +72,6 @@ pub fn execute(
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, PreProposeOverruleError> {
-    // We don't want to expose the `proposer` field on the propose
-    // message externally as that is to be set by this module. Here,
-    // we transform an external message which omits that field into an
-    // internal message which sets it.
     type ExecuteInternal = ExecuteBase<ProposeMessageInternal>;
     let internal_msg = match msg {
         ExecuteMsg::Propose {
@@ -91,16 +91,18 @@ pub fn execute(
 
             let subdao_address = get_subdao_from_timelock(&deps, &timelock_contract)?;
 
-            // we need this check since the timelock contract might be an impostor
+            // We need this check since the timelock contract might be an impostor
+            // E.g. the timelock contract might be a malicious contract that is not a part of
+            // the subdao but pretends to be.
             if get_timelock_from_subdao(&deps, &subdao_address)? != timelock_contract {
-                return Err(PreProposeOverruleError::SubdaoMisconfured {});
+                return Err(PreProposeOverruleError::SubdaoMisconfigured {});
             }
 
-            if !check_if_subdao_legit(&deps, &subdao_address)? {
+            if !is_subdao_legit(&deps, &subdao_address)? {
                 return Err(PreProposeOverruleError::ForbiddenSubdao {});
             }
 
-            if !check_is_proposal_timelocked(
+            if !is_proposal_timelocked(
                 &deps,
                 &Addr::unchecked(timelock_contract_addr.clone()),
                 proposal_id,
@@ -115,9 +117,12 @@ pub fn execute(
             });
 
             let subdao_name = get_subdao_name(&deps, &subdao_address)?;
+            let prop_name: String = format!(
+                "Reject the proposal #{} of the '{}' subdao",
+                proposal_id, subdao_name
+            );
             let prop_desc: String =
-                format!("Reject the decision made by the {} subdao", subdao_name);
-            let prop_name: String = format!("Overrule proposal {} of {}", proposal_id, subdao_name);
+                format!(PROPOSAL_DESCRIPTION_FORMAT, proposal_id, subdao_name, subdao_address);
 
             let internal_msg = ExecuteInternal::Propose {
                 msg: ProposeMessageInternal::Propose {
@@ -139,6 +144,7 @@ pub fn execute(
 
             Ok(internal_msg)
         }
+        // The following messages are forwarded to the base contract
         ExecuteMsg::ProposalCreatedHook {
             proposal_id,
             proposer,
@@ -190,7 +196,7 @@ fn get_timelock_from_subdao(
     )?;
 
     if proposal_modules.is_empty() {
-        return Err(PreProposeOverruleError::SubdaoMisconfured {});
+        return Err(PreProposeOverruleError::SubdaoMisconfigured {});
     }
 
     let prop_policy: ProposalCreationPolicy = deps.querier.query_wasm_smart(
@@ -199,7 +205,7 @@ fn get_timelock_from_subdao(
     )?;
 
     match prop_policy {
-        ProposalCreationPolicy::Anyone {} => Err(PreProposeOverruleError::SubdaoMisconfured {}),
+        ProposalCreationPolicy::Anyone {} => Err(PreProposeOverruleError::SubdaoMisconfigured {}),
         ProposalCreationPolicy::Module { addr } => {
             let timelock: Addr = deps.querier.query_wasm_smart(
                 addr,
@@ -212,7 +218,7 @@ fn get_timelock_from_subdao(
     }
 }
 
-fn check_if_subdao_legit(
+fn is_subdao_legit(
     deps: &DepsMut,
     subdao_core: &Addr,
 ) -> Result<bool, PreProposeOverruleError> {
@@ -270,7 +276,7 @@ fn get_next_proposal_id(deps: &DepsMut) -> Result<u64, PreProposeOverruleError> 
     Ok(last_proposal_id + 1)
 }
 
-fn check_is_proposal_timelocked(
+fn is_proposal_timelocked(
     deps: &DepsMut,
     timelock: &Addr,
     proposal_id: u64,

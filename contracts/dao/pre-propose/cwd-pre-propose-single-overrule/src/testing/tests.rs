@@ -205,7 +205,7 @@ fn test_impostor_timelock() {
         msg,
     );
     assert!(res.is_err());
-    assert_eq!(res, Err(PreProposeOverruleError::SubdaoMisconfured {}));
+    assert_eq!(res, Err(PreProposeOverruleError::SubdaoMisconfigured {}));
 }
 
 #[test]
