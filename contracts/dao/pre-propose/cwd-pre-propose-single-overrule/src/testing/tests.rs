@@ -17,8 +17,8 @@ use crate::error::PreProposeOverruleError;
 use crate::testing::mock_querier::{
     get_dao_with_impostor_subdao, get_dao_with_impostor_timelock, get_dao_with_many_subdaos,
     get_properly_initialized_dao, ContractQuerier, MOCK_DAO_PROPOSE_MODULE,
-    MOCK_IMPOSTOR_TIMELOCK_CONTRACT, NON_TIMELOCKED_PROPOSAL_ID, PROPOSALS_COUNT, SUBDAO_NAME,
-    TIMELOCKED_PROPOSAL_ID,
+    MOCK_IMPOSTOR_TIMELOCK_CONTRACT, MOCK_SUBDAO_CORE, NON_TIMELOCKED_PROPOSAL_ID, PROPOSALS_COUNT,
+    SUBDAO_NAME, TIMELOCKED_PROPOSAL_ID,
 };
 use cwd_pre_propose_base::state::Config;
 use cwd_proposal_single::msg::ExecuteMsg as ProposeMessageInternal;
@@ -50,8 +50,15 @@ fn test_create_overrule_proposal() {
         msg,
     );
     assert!(res.is_ok());
-    let prop_desc: String = format!("Reject the decision made by the {} subdao", SUBDAO_NAME);
-    let prop_name: String = format!("Overrule proposal {} of {}", PROPOSAL_ID, SUBDAO_NAME);
+    let prop_name: String = format!(
+        "Reject the proposal #{} of the '{}' subdao",
+        PROPOSAL_ID, SUBDAO_NAME
+    );
+    let prop_desc: String = format!(
+        "If this proposal will be accepted, the DAO is going to \
+overrule the proposal #{} of '{}' subdao (address {})",
+        PROPOSAL_ID, SUBDAO_NAME, MOCK_SUBDAO_CORE
+    );
     assert_eq!(
         res.unwrap().messages,
         vec![SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
