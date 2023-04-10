@@ -3,20 +3,24 @@
   "title": "InstantiateMsg",
   "type": "object",
   "required": [
+    "atom_oracle_contract",
     "description",
-    "lockdrop_contract",
+    "lp_vesting_contract",
     "name",
-    "oracle_atom_contract",
-    "oracle_usdc_contract",
-    "owner"
+    "owner",
+    "usdc_oracle_contract"
   ],
   "properties": {
+    "atom_oracle_contract": {
+      "description": "The ATOM oracle contract behind the vault.",
+      "type": "string"
+    },
     "description": {
       "description": "Description contains information that characterizes the vault.",
       "type": "string"
     },
-    "lockdrop_contract": {
-      "description": "The lockdrop contract behind the vault.",
+    "lp_vesting_contract": {
+      "description": "The LP Vesting contract behind the vault.",
       "type": "string"
     },
     "manager": {
@@ -30,14 +34,6 @@
       "description": "Name contains the vault name which is used to ease the vault's recognition.",
       "type": "string"
     },
-    "oracle_atom_contract": {
-      "description": "The oracle ATOM/NTRN contract behind the vault.",
-      "type": "string"
-    },
-    "oracle_usdc_contract": {
-      "description": "The oracle USDC/NTRN contract behind the vault.",
-      "type": "string"
-    },
     "owner": {
       "description": "Owner can update all configs including changing the owner. This will generally be a DAO.",
       "allOf": [
@@ -45,6 +41,10 @@
           "$ref": "#/definitions/Admin"
         }
       ]
+    },
+    "usdc_oracle_contract": {
+      "description": "The USDC oracle contract behind the vault.",
+      "type": "string"
     }
   },
   "definitions": {

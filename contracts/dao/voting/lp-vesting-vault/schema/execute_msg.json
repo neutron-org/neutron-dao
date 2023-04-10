@@ -10,18 +10,23 @@
       "properties": {
         "update_config": {
           "type": "object",
+          "required": [
+            "atom_oracle_contract",
+            "description",
+            "lp_vesting_contract",
+            "name",
+            "owner",
+            "usdc_oracle_contract"
+          ],
           "properties": {
-            "description": {
-              "type": [
-                "string",
-                "null"
-              ]
+            "atom_oracle_contract": {
+              "type": "string"
             },
-            "lockdrop_contract": {
-              "type": [
-                "string",
-                "null"
-              ]
+            "description": {
+              "type": "string"
+            },
+            "lp_vesting_contract": {
+              "type": "string"
             },
             "manager": {
               "type": [
@@ -30,28 +35,13 @@
               ]
             },
             "name": {
-              "type": [
-                "string",
-                "null"
-              ]
-            },
-            "oracle_atom_contract": {
-              "type": [
-                "string",
-                "null"
-              ]
-            },
-            "oracle_usdc_contract": {
-              "type": [
-                "string",
-                "null"
-              ]
+              "type": "string"
             },
             "owner": {
-              "type": [
-                "string",
-                "null"
-              ]
+              "type": "string"
+            },
+            "usdc_oracle_contract": {
+              "type": "string"
             }
           }
         }

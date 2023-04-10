@@ -3,18 +3,21 @@
   "title": "GetConfigResponse",
   "type": "object",
   "required": [
+    "atom_oracle_contract",
     "description",
-    "lockdrop_contract",
+    "lp_vesting_contract",
     "name",
-    "oracle_atom_contract",
-    "oracle_usdc_contract",
-    "owner"
+    "owner",
+    "usdc_oracle_contract"
   ],
   "properties": {
+    "atom_oracle_contract": {
+      "$ref": "#/definitions/Addr"
+    },
     "description": {
       "type": "string"
     },
-    "lockdrop_contract": {
+    "lp_vesting_contract": {
       "$ref": "#/definitions/Addr"
     },
     "manager": {
@@ -30,13 +33,10 @@
     "name": {
       "type": "string"
     },
-    "oracle_atom_contract": {
-      "$ref": "#/definitions/Addr"
-    },
-    "oracle_usdc_contract": {
-      "$ref": "#/definitions/Addr"
-    },
     "owner": {
+      "$ref": "#/definitions/Addr"
+    },
+    "usdc_oracle_contract": {
       "$ref": "#/definitions/Addr"
     }
   },
