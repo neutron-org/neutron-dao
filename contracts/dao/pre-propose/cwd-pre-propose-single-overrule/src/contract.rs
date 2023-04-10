@@ -35,9 +35,6 @@ pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub(crate) const SUBDAOS_QUERY_LIMIT: u32 = 10;
 
-const PROPOSAL_DESCRIPTION_FORMAT: &str = "If this proposal will be accepted, the DAO is going to\
-overrule the proposal #{} of '{}' subdao (address {})";
-
 type PrePropose = PreProposeContract<ProposeMessageInternal, QueryExt>;
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -121,8 +118,11 @@ pub fn execute(
                 "Reject the proposal #{} of the '{}' subdao",
                 proposal_id, subdao_name
             );
-            let prop_desc: String =
-                format!(PROPOSAL_DESCRIPTION_FORMAT, proposal_id, subdao_name, subdao_address);
+            let prop_desc: String = format!(
+                "If this proposal will be accepted, the DAO is going to \
+overrule the proposal #{} of '{}' subdao (address {})",
+                proposal_id, subdao_name, subdao_address
+            );
 
             let internal_msg = ExecuteInternal::Propose {
                 msg: ProposeMessageInternal::Propose {
@@ -218,10 +218,7 @@ fn get_timelock_from_subdao(
     }
 }
 
-fn is_subdao_legit(
-    deps: &DepsMut,
-    subdao_core: &Addr,
-) -> Result<bool, PreProposeOverruleError> {
+fn is_subdao_legit(deps: &DepsMut, subdao_core: &Addr) -> Result<bool, PreProposeOverruleError> {
     let main_dao = get_main_dao_address(deps)?;
 
     let mut start_after: Option<SubDao> = None;
