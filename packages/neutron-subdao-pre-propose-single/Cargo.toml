@@ -13,6 +13,6 @@ cwd-pre-propose-base = { version = "*", path = "../cwd-pre-propose-base" }
 schemars = "0.8"
 serde = { version = "1.0.147", default-features = false, features = ["derive"] }
 cosmwasm-std = "1.0.0"
-neutron_bindings = { package = "neutron-sdk", git = "https://github.com/neutron-org/neutron-sdk.git", version = "0.4.0" }
+neutron_bindings = { package = "neutron-sdk", version = "0.4.0" }
 cwd-voting = { path = "../cwd-voting" }
 cwd-interface = { path = "../cwd-interface" }
