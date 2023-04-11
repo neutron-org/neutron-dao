@@ -13,3 +13,6 @@ cwd-interface = { path = "../cwd-interface" }
 schemars = "0.8"
 serde = { version = "1.0.147", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0" }
+astroport = { package="astroport", git = "https://github.com/neutron-org/neutron-tge-contracts.git", branch = "main" }
+astroport-periphery = { package="astroport-periphery", git = "https://github.com/neutron-org/neutron-tge-contracts.git", branch = "main" }
+

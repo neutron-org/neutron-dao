@@ -10,18 +10,18 @@
       "properties": {
         "update_config": {
           "type": "object",
-          "required": [
-            "description",
-            "lockdrop_contract",
-            "name",
-            "owner"
-          ],
           "properties": {
             "description": {
-              "type": "string"
+              "type": [
+                "string",
+                "null"
+              ]
             },
             "lockdrop_contract": {
-              "type": "string"
+              "type": [
+                "string",
+                "null"
+              ]
             },
             "manager": {
               "type": [
@@ -30,10 +30,22 @@
               ]
             },
             "name": {
-              "type": "string"
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "oracle_contract": {
+              "type": [
+                "string",
+                "null"
+              ]
             },
             "owner": {
-              "type": "string"
+              "type": [
+                "string",
+                "null"
+              ]
             }
           }
         }

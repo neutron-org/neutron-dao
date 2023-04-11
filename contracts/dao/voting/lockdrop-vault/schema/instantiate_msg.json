@@ -6,6 +6,7 @@
     "description",
     "lockdrop_contract",
     "name",
+    "oracle_contract",
     "owner"
   ],
   "properties": {
@@ -26,6 +27,10 @@
     },
     "name": {
       "description": "Name contains the vault name which is used to ease the vault's recognition.",
+      "type": "string"
+    },
+    "oracle_contract": {
+      "description": "The oracle contract behind the vault.",
       "type": "string"
     },
     "owner": {
