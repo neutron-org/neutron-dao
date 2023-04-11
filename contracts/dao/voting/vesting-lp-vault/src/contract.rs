@@ -13,14 +13,14 @@ use cwd_interface::Admin;
 use crate::state::{CONFIG, DAO};
 use cwd_voting::vault::{BonderBalanceResponse, ListBondersResponse};
 use neutron_lockdrop_vault::voting_power::get_voting_power;
-use neutron_lp_vesting_vault::{
+use neutron_vesting_lp_vault::{
     error::{ContractError, ContractResult},
     msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg},
     types::Config,
 };
 use vesting_lp::msg::QueryMsg as VestingLpQueryMsg;
 
-pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-lp-vesting-vault";
+pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-vesting-lp-vault";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -44,7 +44,7 @@ pub fn instantiate(
     let config = Config {
         name: msg.name,
         description: msg.description,
-        lp_vesting_contract: deps.api.addr_validate(&msg.lp_vesting_contract)?,
+        vesting_lp_contract: deps.api.addr_validate(&msg.vesting_lp_contract)?,
         atom_oracle_contract: deps.api.addr_validate(&msg.atom_oracle_contract)?,
         usdc_oracle_contract: deps.api.addr_validate(&msg.usdc_oracle_contract)?,
         owner,
@@ -59,7 +59,7 @@ pub fn instantiate(
         .add_attribute("name", config.name)
         .add_attribute("description", config.description)
         .add_attribute("owner", config.owner)
-        .add_attribute("lp_vesting_contract", config.lp_vesting_contract)
+        .add_attribute("vesting_lp_contract", config.vesting_lp_contract)
         .add_attribute("atom_oracle_contract", config.atom_oracle_contract)
         .add_attribute("usdc_oracle_contract", config.usdc_oracle_contract)
         .add_attribute(
@@ -83,7 +83,7 @@ pub fn execute(
         ExecuteMsg::Unbond { amount } => execute_unbond(deps, env, info, amount),
         ExecuteMsg::UpdateConfig {
             owner,
-            lp_vesting_contract,
+            vesting_lp_contract,
             atom_oracle_contract,
             usdc_oracle_contract,
             manager,
@@ -93,7 +93,7 @@ pub fn execute(
             deps,
             info,
             owner,
-            lp_vesting_contract,
+            vesting_lp_contract,
             atom_oracle_contract,
             usdc_oracle_contract,
             manager,
@@ -125,7 +125,7 @@ pub fn execute_update_config(
     deps: DepsMut,
     info: MessageInfo,
     new_owner: String,
-    new_lp_vesting_contract: String,
+    new_vesting_lp_contract: String,
     new_atom_oracle_contract: String,
     new_usdc_oracle_contract: String,
     new_manager: Option<String>,
@@ -138,7 +138,7 @@ pub fn execute_update_config(
     }
 
     let new_owner = deps.api.addr_validate(&new_owner)?;
-    let new_lp_vesting_contract = deps.api.addr_validate(&new_lp_vesting_contract)?;
+    let new_vesting_lp_contract = deps.api.addr_validate(&new_vesting_lp_contract)?;
     let new_atom_oracle_contract = deps.api.addr_validate(&new_atom_oracle_contract)?;
     let new_usdc_oracle_contract = deps.api.addr_validate(&new_usdc_oracle_contract)?;
     let new_manager = new_manager
@@ -148,12 +148,12 @@ pub fn execute_update_config(
     if info.sender != config.owner && new_owner != config.owner {
         return Err(ContractError::OnlyOwnerCanChangeOwner {});
     };
-    if info.sender != config.owner && new_lp_vesting_contract != config.lp_vesting_contract {
-        return Err(ContractError::OnlyOwnerCanChangeLpVestingContract {});
+    if info.sender != config.owner && new_vesting_lp_contract != config.vesting_lp_contract {
+        return Err(ContractError::OnlyOwnerCanChangeVestingLpContract {});
     };
 
     config.owner = new_owner;
-    config.lp_vesting_contract = new_lp_vesting_contract;
+    config.vesting_lp_contract = new_vesting_lp_contract;
     config.atom_oracle_contract = new_atom_oracle_contract;
     config.usdc_oracle_contract = new_usdc_oracle_contract;
     config.manager = new_manager;
@@ -166,7 +166,7 @@ pub fn execute_update_config(
         .add_attribute("action", "update_config")
         .add_attribute("description", config.description)
         .add_attribute("owner", config.owner)
-        .add_attribute("lp_vesting_contract", config.lp_vesting_contract)
+        .add_attribute("vesting_lp_contract", config.vesting_lp_contract)
         .add_attribute("atom_oracle_contract", config.atom_oracle_contract)
         .add_attribute("usdc_oracle_contract", config.usdc_oracle_contract)
         .add_attribute(
@@ -213,14 +213,14 @@ pub fn query_voting_power_at_height(
     let query_msg = VestingLpQueryMsg::UnclaimedAmountAtHeight { address, height };
     let atom_power = get_voting_power(
         deps,
-        &config.lp_vesting_contract,
+        &config.vesting_lp_contract,
         &config.atom_oracle_contract,
         &query_msg,
         height,
     )?;
     let usdc_power = get_voting_power(
         deps,
-        &config.lp_vesting_contract,
+        &config.vesting_lp_contract,
         &config.usdc_oracle_contract,
         &query_msg,
         height,
@@ -243,14 +243,14 @@ pub fn query_total_power_at_height(
     let query_msg = VestingLpQueryMsg::UnclaimedTotalAmountAtHeight { height };
     let atom_power = get_voting_power(
         deps,
-        &config.lp_vesting_contract,
+        &config.vesting_lp_contract,
         &config.atom_oracle_contract,
         &query_msg,
         height,
     )?;
     let usdc_power = get_voting_power(
         deps,
-        &config.lp_vesting_contract,
+        &config.vesting_lp_contract,
         &config.usdc_oracle_contract,
         &query_msg,
         height,
@@ -297,7 +297,7 @@ pub fn query_list_bonders(
     let config = CONFIG.load(deps.storage)?;
 
     let vesting_accounts: VestingAccountsResponse = deps.querier.query_wasm_smart(
-        config.lp_vesting_contract,
+        config.vesting_lp_contract,
         &VestingLpQueryMsg::VestingAccounts {
             start_after,
             limit,

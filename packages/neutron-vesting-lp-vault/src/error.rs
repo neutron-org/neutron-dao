@@ -18,8 +18,8 @@ pub enum ContractError {
     #[error("Only owner can change owner")]
     OnlyOwnerCanChangeOwner {},
 
-    #[error("Only owner can change LP vesting contract")]
-    OnlyOwnerCanChangeLpVestingContract {},
+    #[error("Only owner can change vesting LP contract")]
+    OnlyOwnerCanChangeVestingLpContract {},
 
     #[error("config name cannot be empty.")]
     NameIsEmpty {},

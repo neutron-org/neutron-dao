@@ -13,19 +13,16 @@
           "required": [
             "atom_oracle_contract",
             "description",
-            "lp_vesting_contract",
             "name",
             "owner",
-            "usdc_oracle_contract"
+            "usdc_oracle_contract",
+            "vesting_lp_contract"
           ],
           "properties": {
             "atom_oracle_contract": {
               "type": "string"
             },
             "description": {
-              "type": "string"
-            },
-            "lp_vesting_contract": {
               "type": "string"
             },
             "manager": {
@@ -41,6 +38,9 @@
               "type": "string"
             },
             "usdc_oracle_contract": {
+              "type": "string"
+            },
+            "vesting_lp_contract": {
               "type": "string"
             }
           }

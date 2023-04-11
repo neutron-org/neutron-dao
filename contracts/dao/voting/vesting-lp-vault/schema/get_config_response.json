@@ -5,10 +5,10 @@
   "required": [
     "atom_oracle_contract",
     "description",
-    "lp_vesting_contract",
     "name",
     "owner",
-    "usdc_oracle_contract"
+    "usdc_oracle_contract",
+    "vesting_lp_contract"
   ],
   "properties": {
     "atom_oracle_contract": {
@@ -16,9 +16,6 @@
     },
     "description": {
       "type": "string"
-    },
-    "lp_vesting_contract": {
-      "$ref": "#/definitions/Addr"
     },
     "manager": {
       "anyOf": [
@@ -37,6 +34,9 @@
       "$ref": "#/definitions/Addr"
     },
     "usdc_oracle_contract": {
+      "$ref": "#/definitions/Addr"
+    },
+    "vesting_lp_contract": {
       "$ref": "#/definitions/Addr"
     }
   },

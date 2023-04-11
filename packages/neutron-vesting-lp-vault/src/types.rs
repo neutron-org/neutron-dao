@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 pub struct Config {
     pub name: String,
     pub description: String,
-    pub lp_vesting_contract: Addr,
+    pub vesting_lp_contract: Addr,
     pub atom_oracle_contract: Addr,
     pub usdc_oracle_contract: Addr,
     pub owner: Addr,
@@ -37,7 +37,7 @@ mod tests {
         let cfg = Config {
             name: String::from("name"),
             description: String::from("description"),
-            lp_vesting_contract: Addr::unchecked("lp_vesting_contract"),
+            vesting_lp_contract: Addr::unchecked("vesting_lp_contract"),
             atom_oracle_contract: Addr::unchecked("atom_oracle_contract"),
             usdc_oracle_contract: Addr::unchecked("usdc_oracle_contract"),
             owner: Addr::unchecked("owner"),
@@ -51,7 +51,7 @@ mod tests {
         let cfg = Config {
             name: String::from(""),
             description: String::from("description"),
-            lp_vesting_contract: Addr::unchecked("lp_vesting_contract"),
+            vesting_lp_contract: Addr::unchecked("vesting_lp_contract"),
             atom_oracle_contract: Addr::unchecked("atom_oracle_contract"),
             usdc_oracle_contract: Addr::unchecked("usdc_oracle_contract"),
             owner: Addr::unchecked("owner"),
@@ -65,7 +65,7 @@ mod tests {
         let cfg = Config {
             name: String::from("name"),
             description: String::from(""),
-            lp_vesting_contract: Addr::unchecked("lp_vesting_contract"),
+            vesting_lp_contract: Addr::unchecked("vesting_lp_contract"),
             atom_oracle_contract: Addr::unchecked("atom_oracle_contract"),
             usdc_oracle_contract: Addr::unchecked("usdc_oracle_contract"),
             owner: Addr::unchecked("owner"),

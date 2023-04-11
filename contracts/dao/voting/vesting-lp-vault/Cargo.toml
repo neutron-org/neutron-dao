@@ -1,5 +1,5 @@
 [package]
-name = "lp-vesting-vault"
+name = "vesting-lp-vault"
 version = "0.1.0"
 authors = ["Sergei Sotnikov <sergei.s@p2p.org>", "Murad Karammaev <karammaev.murad@p2p.org>"]
 edition = "2021"
@@ -25,7 +25,7 @@ thiserror = { version = "1.0" }
 cwd-macros = { path = "../../../../packages/cwd-macros" }
 cwd-interface = { path = "../../../../packages/cwd-interface" }
 cwd-voting = { path = "../../../../packages/cwd-voting" }
-neutron-lp-vesting-vault = { path = "../../../../packages/neutron-lp-vesting-vault" }
+neutron-vesting-lp-vault = { path = "../../../../packages/neutron-vesting-lp-vault" }
 neutron-lockdrop-vault = { path = "../../../../packages/neutron-lockdrop-vault" }
 vesting-lp = { git = "https://github.com/neutron-org/neutron-tge-contracts", branch = "main" }
 astroport = { git = "https://github.com/neutron-org/neutron-tge-contracts", branch = "main" }

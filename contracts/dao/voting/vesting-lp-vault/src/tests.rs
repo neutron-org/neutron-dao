@@ -6,7 +6,7 @@ use cwd_interface::voting::{
     InfoResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
 use cwd_interface::Admin;
-use neutron_lp_vesting_vault::{
+use neutron_vesting_lp_vault::{
     msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg},
     types::Config,
 };
@@ -16,10 +16,10 @@ const NAME: &str = "name";
 const NEW_NAME: &str = "new_name";
 const DESCRIPTION: &str = "description";
 const NEW_DESCRIPTION: &str = "new description";
-const LP_VESTING_ADDR: &str = "lp_vesting";
+const VESTING_LP_ADDR: &str = "vesting_lp";
 const ATOM_ORACLE_ADDR: &str = "atom_oracle";
 const USDC_ORACLE_ADDR: &str = "usdc_oracle";
-const NEW_LP_VESTING_ADDR: &str = "new_lp_vesting";
+const NEW_VESTING_LP_ADDR: &str = "new_vesting_lp";
 const NEW_ATOM_ORACLE_ADDR: &str = "new_atom_oracle";
 const NEW_USDC_ORACLE_ADDR: &str = "new_usdc_oracle";
 const ADDR1: &str = "addr1";
@@ -127,7 +127,7 @@ fn update_config(
     contract_addr: Addr,
     sender: &str,
     owner: String,
-    lp_vesting_contract: String,
+    vesting_lp_contract: String,
     atom_oracle_contract: String,
     usdc_oracle_contract: String,
     manager: Option<String>,
@@ -139,7 +139,7 @@ fn update_config(
         contract_addr,
         &ExecuteMsg::UpdateConfig {
             owner,
-            lp_vesting_contract,
+            vesting_lp_contract,
             atom_oracle_contract,
             usdc_oracle_contract,
             manager,
@@ -206,7 +206,7 @@ fn test_instantiate() {
             owner: Admin::Address {
                 addr: DAO_ADDR.to_string(),
             },
-            lp_vesting_contract: LP_VESTING_ADDR.to_string(),
+            vesting_lp_contract: VESTING_LP_ADDR.to_string(),
             atom_oracle_contract: ATOM_ORACLE_ADDR.to_string(),
             usdc_oracle_contract: USDC_ORACLE_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
@@ -224,7 +224,7 @@ fn test_instantiate() {
             owner: Admin::Address {
                 addr: DAO_ADDR.to_string(),
             },
-            lp_vesting_contract: LP_VESTING_ADDR.to_string(),
+            vesting_lp_contract: VESTING_LP_ADDR.to_string(),
             atom_oracle_contract: ATOM_ORACLE_ADDR.to_string(),
             usdc_oracle_contract: USDC_ORACLE_ADDR.to_string(),
             manager: None,
@@ -245,7 +245,7 @@ fn test_instantiate_dao_owner() {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
-            lp_vesting_contract: LP_VESTING_ADDR.to_string(),
+            vesting_lp_contract: VESTING_LP_ADDR.to_string(),
             atom_oracle_contract: ATOM_ORACLE_ADDR.to_string(),
             usdc_oracle_contract: USDC_ORACLE_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
@@ -269,7 +269,7 @@ fn test_bond() {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
-            lp_vesting_contract: LP_VESTING_ADDR.to_string(),
+            vesting_lp_contract: VESTING_LP_ADDR.to_string(),
             atom_oracle_contract: ATOM_ORACLE_ADDR.to_string(),
             usdc_oracle_contract: USDC_ORACLE_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
@@ -292,7 +292,7 @@ fn test_unbond() {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
-            lp_vesting_contract: LP_VESTING_ADDR.to_string(),
+            vesting_lp_contract: VESTING_LP_ADDR.to_string(),
             atom_oracle_contract: ATOM_ORACLE_ADDR.to_string(),
             usdc_oracle_contract: USDC_ORACLE_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
@@ -314,7 +314,7 @@ fn test_update_config_invalid_sender() {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
-            lp_vesting_contract: LP_VESTING_ADDR.to_string(),
+            vesting_lp_contract: VESTING_LP_ADDR.to_string(),
             atom_oracle_contract: ATOM_ORACLE_ADDR.to_string(),
             usdc_oracle_contract: USDC_ORACLE_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
@@ -327,7 +327,7 @@ fn test_update_config_invalid_sender() {
         addr,
         ADDR2,
         ADDR1.to_string(),
-        NEW_LP_VESTING_ADDR.to_string(),
+        NEW_VESTING_LP_ADDR.to_string(),
         NEW_ATOM_ORACLE_ADDR.to_string(),
         NEW_USDC_ORACLE_ADDR.to_string(),
         Some(DAO_ADDR.to_string()),
@@ -349,7 +349,7 @@ fn test_update_config_non_owner_changes_owner() {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
-            lp_vesting_contract: LP_VESTING_ADDR.to_string(),
+            vesting_lp_contract: VESTING_LP_ADDR.to_string(),
             atom_oracle_contract: ATOM_ORACLE_ADDR.to_string(),
             usdc_oracle_contract: USDC_ORACLE_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
@@ -362,7 +362,7 @@ fn test_update_config_non_owner_changes_owner() {
         addr,
         ADDR1,
         ADDR2.to_string(),
-        LP_VESTING_ADDR.to_string(),
+        VESTING_LP_ADDR.to_string(),
         NEW_ATOM_ORACLE_ADDR.to_string(),
         NEW_USDC_ORACLE_ADDR.to_string(),
         None,
@@ -373,8 +373,8 @@ fn test_update_config_non_owner_changes_owner() {
 }
 
 #[test]
-#[should_panic(expected = "Only owner can change LP vesting contract")]
-fn test_update_config_non_owner_changes_lp_vesting() {
+#[should_panic(expected = "Only owner can change vesting LP contract")]
+fn test_update_config_non_owner_changes_vesting_lp() {
     let mut app = mock_app();
     let vault_id = app.store_code(vault_contract());
     let addr = instantiate_vault(
@@ -384,7 +384,7 @@ fn test_update_config_non_owner_changes_lp_vesting() {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
-            lp_vesting_contract: LP_VESTING_ADDR.to_string(),
+            vesting_lp_contract: VESTING_LP_ADDR.to_string(),
             atom_oracle_contract: ATOM_ORACLE_ADDR.to_string(),
             usdc_oracle_contract: USDC_ORACLE_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
@@ -397,7 +397,7 @@ fn test_update_config_non_owner_changes_lp_vesting() {
         addr,
         ADDR1,
         DAO_ADDR.to_string(),
-        NEW_LP_VESTING_ADDR.to_string(),
+        NEW_VESTING_LP_ADDR.to_string(),
         NEW_ATOM_ORACLE_ADDR.to_string(),
         NEW_USDC_ORACLE_ADDR.to_string(),
         None,
@@ -418,7 +418,7 @@ fn test_update_config_as_owner() {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
-            lp_vesting_contract: LP_VESTING_ADDR.to_string(),
+            vesting_lp_contract: VESTING_LP_ADDR.to_string(),
             atom_oracle_contract: ATOM_ORACLE_ADDR.to_string(),
             usdc_oracle_contract: USDC_ORACLE_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
@@ -431,7 +431,7 @@ fn test_update_config_as_owner() {
         addr.clone(),
         DAO_ADDR,
         ADDR1.to_string(),
-        NEW_LP_VESTING_ADDR.to_string(),
+        NEW_VESTING_LP_ADDR.to_string(),
         NEW_ATOM_ORACLE_ADDR.to_string(),
         NEW_USDC_ORACLE_ADDR.to_string(),
         Some(DAO_ADDR.to_string()),
@@ -446,7 +446,7 @@ fn test_update_config_as_owner() {
             name: NEW_NAME.to_string(),
             description: NEW_DESCRIPTION.to_string(),
             owner: Addr::unchecked(ADDR1),
-            lp_vesting_contract: Addr::unchecked(NEW_LP_VESTING_ADDR),
+            vesting_lp_contract: Addr::unchecked(NEW_VESTING_LP_ADDR),
             atom_oracle_contract: Addr::unchecked(NEW_ATOM_ORACLE_ADDR),
             usdc_oracle_contract: Addr::unchecked(NEW_USDC_ORACLE_ADDR),
             manager: Some(Addr::unchecked(DAO_ADDR)),
@@ -466,7 +466,7 @@ fn test_update_config_as_manager() {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
-            lp_vesting_contract: LP_VESTING_ADDR.to_string(),
+            vesting_lp_contract: VESTING_LP_ADDR.to_string(),
             atom_oracle_contract: ATOM_ORACLE_ADDR.to_string(),
             usdc_oracle_contract: USDC_ORACLE_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
@@ -482,7 +482,7 @@ fn test_update_config_as_manager() {
         addr.clone(),
         ADDR1,
         DAO_ADDR.to_string(),
-        LP_VESTING_ADDR.to_string(),
+        VESTING_LP_ADDR.to_string(),
         ATOM_ORACLE_ADDR.to_string(),
         USDC_ORACLE_ADDR.to_string(),
         Some(ADDR2.to_string()),
@@ -500,7 +500,7 @@ fn test_update_config_as_manager() {
             name: NEW_NAME.to_string(),
             description: NEW_DESCRIPTION.to_string(),
             owner: Addr::unchecked(DAO_ADDR),
-            lp_vesting_contract: Addr::unchecked(LP_VESTING_ADDR),
+            vesting_lp_contract: Addr::unchecked(VESTING_LP_ADDR),
             atom_oracle_contract: Addr::unchecked(ATOM_ORACLE_ADDR),
             usdc_oracle_contract: Addr::unchecked(USDC_ORACLE_ADDR),
             manager: Some(Addr::unchecked(ADDR2)),
@@ -521,7 +521,7 @@ fn test_update_config_invalid_description() {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
-            lp_vesting_contract: LP_VESTING_ADDR.to_string(),
+            vesting_lp_contract: VESTING_LP_ADDR.to_string(),
             atom_oracle_contract: ATOM_ORACLE_ADDR.to_string(),
             usdc_oracle_contract: USDC_ORACLE_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
@@ -534,7 +534,7 @@ fn test_update_config_invalid_description() {
         addr,
         ADDR1,
         DAO_ADDR.to_string(),
-        LP_VESTING_ADDR.to_string(),
+        VESTING_LP_ADDR.to_string(),
         ATOM_ORACLE_ADDR.to_string(),
         USDC_ORACLE_ADDR.to_string(),
         Some(ADDR2.to_string()),
@@ -556,7 +556,7 @@ fn test_update_config_invalid_name() {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
-            lp_vesting_contract: LP_VESTING_ADDR.to_string(),
+            vesting_lp_contract: VESTING_LP_ADDR.to_string(),
             atom_oracle_contract: ATOM_ORACLE_ADDR.to_string(),
             usdc_oracle_contract: USDC_ORACLE_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
@@ -569,7 +569,7 @@ fn test_update_config_invalid_name() {
         addr,
         ADDR1,
         DAO_ADDR.to_string(),
-        LP_VESTING_ADDR.to_string(),
+        VESTING_LP_ADDR.to_string(),
         ATOM_ORACLE_ADDR.to_string(),
         USDC_ORACLE_ADDR.to_string(),
         Some(ADDR2.to_string()),
@@ -590,7 +590,7 @@ fn test_query_dao() {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
-            lp_vesting_contract: LP_VESTING_ADDR.to_string(),
+            vesting_lp_contract: VESTING_LP_ADDR.to_string(),
             atom_oracle_contract: ATOM_ORACLE_ADDR.to_string(),
             usdc_oracle_contract: USDC_ORACLE_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
@@ -613,7 +613,7 @@ fn test_query_info() {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
-            lp_vesting_contract: LP_VESTING_ADDR.to_string(),
+            vesting_lp_contract: VESTING_LP_ADDR.to_string(),
             atom_oracle_contract: ATOM_ORACLE_ADDR.to_string(),
             usdc_oracle_contract: USDC_ORACLE_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
@@ -622,7 +622,7 @@ fn test_query_info() {
 
     let msg = QueryMsg::Info {};
     let resp: InfoResponse = app.wrap().query_wasm_smart(addr, &msg).unwrap();
-    assert_eq!(resp.info.contract, "crates.io:neutron-lp-vesting-vault");
+    assert_eq!(resp.info.contract, "crates.io:neutron-vesting-lp-vault");
 }
 
 #[test]
@@ -636,7 +636,7 @@ fn test_query_get_config() {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
-            lp_vesting_contract: LP_VESTING_ADDR.to_string(),
+            vesting_lp_contract: VESTING_LP_ADDR.to_string(),
             atom_oracle_contract: ATOM_ORACLE_ADDR.to_string(),
             usdc_oracle_contract: USDC_ORACLE_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
@@ -650,7 +650,7 @@ fn test_query_get_config() {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Addr::unchecked(DAO_ADDR),
-            lp_vesting_contract: Addr::unchecked(LP_VESTING_ADDR),
+            vesting_lp_contract: Addr::unchecked(VESTING_LP_ADDR),
             atom_oracle_contract: Addr::unchecked(ATOM_ORACLE_ADDR),
             usdc_oracle_contract: Addr::unchecked(USDC_ORACLE_ADDR),
             manager: Some(Addr::unchecked(ADDR1)),
@@ -681,7 +681,7 @@ fn test_voting_power_at_height() {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
-            lp_vesting_contract: vesting_lp_addr.to_string(),
+            vesting_lp_contract: vesting_lp_addr.to_string(),
             atom_oracle_contract: ATOM_ORACLE_ADDR.to_string(),
             usdc_oracle_contract: USDC_ORACLE_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
@@ -716,7 +716,7 @@ fn test_total_power_at_height() {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
-            lp_vesting_contract: vesting_lp_addr.to_string(),
+            vesting_lp_contract: vesting_lp_addr.to_string(),
             atom_oracle_contract: ATOM_ORACLE_ADDR.to_string(),
             usdc_oracle_contract: USDC_ORACLE_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),

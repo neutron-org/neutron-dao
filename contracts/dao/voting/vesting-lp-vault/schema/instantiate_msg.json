@@ -5,10 +5,10 @@
   "required": [
     "atom_oracle_contract",
     "description",
-    "lp_vesting_contract",
     "name",
     "owner",
-    "usdc_oracle_contract"
+    "usdc_oracle_contract",
+    "vesting_lp_contract"
   ],
   "properties": {
     "atom_oracle_contract": {
@@ -17,10 +17,6 @@
     },
     "description": {
       "description": "Description contains information that characterizes the vault.",
-      "type": "string"
-    },
-    "lp_vesting_contract": {
-      "description": "The LP Vesting contract behind the vault.",
       "type": "string"
     },
     "manager": {
@@ -44,6 +40,10 @@
     },
     "usdc_oracle_contract": {
       "description": "The USDC oracle contract behind the vault.",
+      "type": "string"
+    },
+    "vesting_lp_contract": {
+      "description": "The Vesting LP contract behind the vault.",
       "type": "string"
     }
   },

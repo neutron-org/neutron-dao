@@ -1386,28 +1386,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "lp-vesting-vault"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "astroport 2.0.0",
- "cosmwasm-schema",
- "cosmwasm-std",
- "cw-multi-test 0.13.4",
- "cw-storage-plus 0.13.4",
- "cw2 0.13.4",
- "cwd-interface",
- "cwd-macros",
- "cwd-voting",
- "neutron-lockdrop-vault",
- "neutron-lp-vesting-vault",
- "schemars",
- "serde",
- "thiserror",
- "vesting-lp",
-]
-
-[[package]]
 name = "neutron-distribution"
 version = "0.1.0"
 dependencies = [
@@ -1427,18 +1405,6 @@ version = "0.1.0"
 dependencies = [
  "astroport 2.0.0",
  "astroport-periphery",
- "cosmwasm-std",
- "cwd-interface",
- "cwd-macros",
- "schemars",
- "serde",
- "thiserror",
-]
-
-[[package]]
-name = "neutron-lp-vesting-vault"
-version = "0.1.0"
-dependencies = [
  "cosmwasm-std",
  "cwd-interface",
  "cwd-macros",
@@ -1566,6 +1532,18 @@ dependencies = [
  "cwd-interface",
  "cwd-macros",
  "cwd-voting",
+ "schemars",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "neutron-vesting-lp-vault"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-std",
+ "cwd-interface",
+ "cwd-macros",
  "schemars",
  "serde",
  "thiserror",
@@ -2146,6 +2124,28 @@ dependencies = [
  "cosmwasm-std",
  "cw-storage-plus 0.15.1",
  "vesting-base",
+]
+
+[[package]]
+name = "vesting-lp-vault"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "astroport 2.0.0",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-multi-test 0.13.4",
+ "cw-storage-plus 0.13.4",
+ "cw2 0.13.4",
+ "cwd-interface",
+ "cwd-macros",
+ "cwd-voting",
+ "neutron-lockdrop-vault",
+ "neutron-vesting-lp-vault",
+ "schemars",
+ "serde",
+ "thiserror",
+ "vesting-lp",
 ]
 
 [[package]]

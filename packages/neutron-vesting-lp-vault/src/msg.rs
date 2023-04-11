@@ -9,8 +9,8 @@ pub struct InstantiateMsg {
     pub name: String,
     /// Description contains information that characterizes the vault.
     pub description: String,
-    /// The LP Vesting contract behind the vault.
-    pub lp_vesting_contract: String,
+    /// The Vesting LP contract behind the vault.
+    pub vesting_lp_contract: String,
     /// The ATOM oracle contract behind the vault.
     pub atom_oracle_contract: String,
     /// The USDC oracle contract behind the vault.
@@ -28,7 +28,7 @@ pub struct InstantiateMsg {
 pub enum ExecuteMsg {
     UpdateConfig {
         owner: String,
-        lp_vesting_contract: String,
+        vesting_lp_contract: String,
         atom_oracle_contract: String,
         usdc_oracle_contract: String,
         manager: Option<String>,

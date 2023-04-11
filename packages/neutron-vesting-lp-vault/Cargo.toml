@@ -1,5 +1,5 @@
 [package]
-name = "neutron-lp-vesting-vault"
+name = "neutron-vesting-lp-vault"
 version = "0.1.0"
 authors = ["Sergei Sotnikov <sergei.s@p2p.org>", "Murad Karammaev <karammaev.murad@p2p.org>"]
 edition = "2021"

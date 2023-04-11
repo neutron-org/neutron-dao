@@ -6,7 +6,7 @@ use cosmwasm_std::Addr;
 use cwd_interface::voting::{
     BondingStatusResponse, InfoResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
-use neutron_lp_vesting_vault::{
+use neutron_vesting_lp_vault::{
     msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg},
     types::Config,
 };
