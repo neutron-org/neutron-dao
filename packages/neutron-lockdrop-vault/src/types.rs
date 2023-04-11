@@ -39,7 +39,8 @@ mod tests {
             name: String::from("name"),
             description: String::from("description"),
             lockdrop_contract: Addr::unchecked("lockdrop_contract"),
-            oracle_contract: Addr::unchecked("oracle_contract"),
+            oracle_usdc_contract: Addr::unchecked("oracle_usdc_contract"),
+            oracle_atom_contract: Addr::unchecked("oracle_atom_contract"),
             owner: Addr::unchecked("owner"),
             manager: Some(Addr::unchecked("manager")),
         };
@@ -49,7 +50,8 @@ mod tests {
             name: String::from(""),
             description: String::from("description"),
             lockdrop_contract: Addr::unchecked("lockdrop_contract"),
-            oracle_contract: Addr::unchecked("oracle_contract"),
+            oracle_usdc_contract: Addr::unchecked("oracle_usdc_contract"),
+            oracle_atom_contract: Addr::unchecked("oracle_atom_contract"),
             owner: Addr::unchecked("owner"),
             manager: Some(Addr::unchecked("manager")),
         };
@@ -62,7 +64,8 @@ mod tests {
             name: String::from("name"),
             description: String::from(""),
             lockdrop_contract: Addr::unchecked("lockdrop_contract"),
-            oracle_contract: Addr::unchecked("oracle_contract"),
+            oracle_usdc_contract: Addr::unchecked("oracle_usdc_contract"),
+            oracle_atom_contract: Addr::unchecked("oracle_atom_contract"),
             owner: Addr::unchecked("owner"),
             manager: Some(Addr::unchecked("manager")),
         };
