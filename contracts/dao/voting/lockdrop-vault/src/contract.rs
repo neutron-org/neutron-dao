@@ -43,7 +43,8 @@ pub fn instantiate(
         name: msg.name,
         description: msg.description,
         lockdrop_contract: deps.api.addr_validate(&msg.lockdrop_contract)?,
-        oracle_contract: deps.api.addr_validate(&msg.oracle_contract)?,
+        oracle_usdc_contract: deps.api.addr_validate(&msg.oracle_usdc_contract)?,
+        oracle_atom_contract: deps.api.addr_validate(&msg.oracle_atom_contract)?,
         owner,
         manager,
     };
@@ -57,7 +58,8 @@ pub fn instantiate(
         .add_attribute("description", config.description)
         .add_attribute("owner", config.owner)
         .add_attribute("lockdrop_contract", config.lockdrop_contract)
-        .add_attribute("oracle_contract", config.oracle_contract)
+        .add_attribute("oracle_usdc_contract", config.oracle_usdc_contract)
+        .add_attribute("oracle_atom_contract", config.oracle_atom_contract)
         .add_attribute(
             "manager",
             config
@@ -80,7 +82,8 @@ pub fn execute(
         ExecuteMsg::UpdateConfig {
             owner,
             lockdrop_contract,
-            oracle_contract,
+            oracle_usdc_contract,
+            oracle_atom_contract,
             manager,
             name,
             description,
@@ -89,7 +92,8 @@ pub fn execute(
             info,
             owner,
             lockdrop_contract,
-            oracle_contract,
+            oracle_usdc_contract,
+            oracle_atom_contract,
             manager,
             name,
             description,
@@ -120,7 +124,8 @@ pub fn execute_update_config(
     info: MessageInfo,
     new_owner: Option<String>,
     new_lockdrop_contract: Option<String>,
-    new_oracle_contract: Option<String>,
+    new_oracle_usdc_contract: Option<String>,
+    new_oracle_atom_contract: Option<String>,
     new_manager: Option<String>,
     new_name: Option<String>,
     new_description: Option<String>,
@@ -138,8 +143,12 @@ pub fn execute_update_config(
         .map(|new_lockdrop_contract| deps.api.addr_validate(&new_lockdrop_contract))
         .transpose()?;
 
-    let new_oracle_contract = new_oracle_contract
-        .map(|new_oracle_contract| deps.api.addr_validate(&new_oracle_contract))
+    let new_oracle_usdc_contract = new_oracle_usdc_contract
+        .map(|new_oracle_usdc_contract| deps.api.addr_validate(&new_oracle_usdc_contract))
+        .transpose()?;
+
+    let new_oracle_atom_contract = new_oracle_atom_contract
+        .map(|new_oracle_atom_contract| deps.api.addr_validate(&new_oracle_atom_contract))
         .transpose()?;
 
     let new_manager = new_manager
@@ -154,7 +163,14 @@ pub fn execute_update_config(
     {
         return Err(ContractError::OnlyOwnerCanChangeLockdropContract {});
     };
-    if info.sender != config.owner && Some(config.oracle_contract.clone()) != new_oracle_contract {
+    if info.sender != config.owner
+        && Some(config.oracle_usdc_contract.clone()) != new_oracle_usdc_contract
+    {
+        return Err(ContractError::OnlyOwnerCanChangeOracleContract {});
+    };
+    if info.sender != config.owner
+        && Some(config.oracle_atom_contract.clone()) != new_oracle_atom_contract
+    {
         return Err(ContractError::OnlyOwnerCanChangeOracleContract {});
     };
 
@@ -167,8 +183,11 @@ pub fn execute_update_config(
     if let Some(lockdrop_contract) = new_lockdrop_contract {
         config.lockdrop_contract = lockdrop_contract;
     }
-    if let Some(oracle_contract) = new_oracle_contract {
-        config.oracle_contract = oracle_contract;
+    if let Some(oracle_contract) = new_oracle_usdc_contract {
+        config.oracle_usdc_contract = oracle_contract;
+    }
+    if let Some(oracle_contract) = new_oracle_atom_contract {
+        config.oracle_atom_contract = oracle_contract;
     }
     if let Some(name) = new_name {
         config.name = name;
@@ -185,7 +204,8 @@ pub fn execute_update_config(
         .add_attribute("description", config.description)
         .add_attribute("owner", config.owner)
         .add_attribute("lockdrop_contract", config.lockdrop_contract)
-        .add_attribute("oracle_contract", config.oracle_contract)
+        .add_attribute("oracle_usdc_contract", config.oracle_usdc_contract)
+        .add_attribute("oracle_atom_contract", config.oracle_atom_contract)
         .add_attribute(
             "manager",
             config
@@ -231,7 +251,8 @@ pub fn query_voting_power_at_height(
     let atom_power = get_voting_power_for_address(
         deps,
         config.lockdrop_contract.as_ref(),
-        config.oracle_contract.as_ref(),
+        config.oracle_usdc_contract.as_ref(),
+        config.oracle_atom_contract.as_ref(),
         PoolType::ATOM,
         address.clone(),
         height,
@@ -239,7 +260,8 @@ pub fn query_voting_power_at_height(
     let usdc_power = get_voting_power_for_address(
         deps,
         config.lockdrop_contract,
-        config.oracle_contract,
+        config.oracle_usdc_contract,
+        config.oracle_atom_contract,
         PoolType::USDC,
         address,
         height,
@@ -265,14 +287,16 @@ pub fn query_total_power_at_height(
     let atom_power = get_voting_power_total(
         deps,
         config.lockdrop_contract.as_ref(),
-        config.oracle_contract.as_ref(),
+        config.oracle_usdc_contract.as_ref(),
+        config.oracle_atom_contract.as_ref(),
         PoolType::ATOM,
         height,
     )?;
     let usdc_power = get_voting_power_total(
         deps,
         config.lockdrop_contract,
-        config.oracle_contract,
+        config.oracle_usdc_contract,
+        config.oracle_atom_contract,
         PoolType::USDC,
         height,
     )?;

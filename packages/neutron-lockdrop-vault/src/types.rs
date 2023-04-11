@@ -8,7 +8,8 @@ pub struct Config {
     pub name: String,
     pub description: String,
     pub lockdrop_contract: Addr,
-    pub oracle_contract: Addr,
+    pub oracle_usdc_contract: Addr,
+    pub oracle_atom_contract: Addr,
     pub owner: Addr,
     pub manager: Option<Addr>,
 }
