@@ -46,8 +46,9 @@ pub fn instantiate(
     let config = Config {
         name: msg.name,
         description: msg.description,
-        vesting_lp_contract: deps.api.addr_validate(&msg.vesting_lp_contract)?,
+        atom_vesting_lp_contract: deps.api.addr_validate(&msg.atom_vesting_lp_contract)?,
         atom_oracle_contract: deps.api.addr_validate(&msg.atom_oracle_contract)?,
+        usdc_vesting_lp_contract: deps.api.addr_validate(&msg.usdc_vesting_lp_contract)?,
         usdc_oracle_contract: deps.api.addr_validate(&msg.usdc_oracle_contract)?,
         owner,
         manager,
@@ -61,8 +62,9 @@ pub fn instantiate(
         .add_attribute("name", config.name)
         .add_attribute("description", config.description)
         .add_attribute("owner", config.owner)
-        .add_attribute("vesting_lp_contract", config.vesting_lp_contract)
+        .add_attribute("atom_vesting_lp_contract", config.atom_vesting_lp_contract)
         .add_attribute("atom_oracle_contract", config.atom_oracle_contract)
+        .add_attribute("usdc_vesting_lp_contract", config.usdc_vesting_lp_contract)
         .add_attribute("usdc_oracle_contract", config.usdc_oracle_contract)
         .add_attribute(
             "manager",
@@ -85,8 +87,9 @@ pub fn execute(
         ExecuteMsg::Unbond { amount } => execute_unbond(deps, env, info, amount),
         ExecuteMsg::UpdateConfig {
             owner,
-            vesting_lp_contract,
+            atom_vesting_lp_contract,
             atom_oracle_contract,
+            usdc_vesting_lp_contract,
             usdc_oracle_contract,
             manager,
             name,
@@ -95,8 +98,9 @@ pub fn execute(
             deps,
             info,
             owner,
-            vesting_lp_contract,
+            atom_vesting_lp_contract,
             atom_oracle_contract,
+            usdc_vesting_lp_contract,
             usdc_oracle_contract,
             manager,
             name,
@@ -127,8 +131,9 @@ pub fn execute_update_config(
     deps: DepsMut,
     info: MessageInfo,
     new_owner: String,
-    new_vesting_lp_contract: String,
+    new_atom_vesting_lp_contract: String,
     new_atom_oracle_contract: String,
+    new_usdc_vesting_lp_contract: String,
     new_usdc_oracle_contract: String,
     new_manager: Option<String>,
     new_name: String,
@@ -140,8 +145,9 @@ pub fn execute_update_config(
     }
 
     let new_owner = deps.api.addr_validate(&new_owner)?;
-    let new_vesting_lp_contract = deps.api.addr_validate(&new_vesting_lp_contract)?;
+    let new_atom_vesting_lp_contract = deps.api.addr_validate(&new_atom_vesting_lp_contract)?;
     let new_atom_oracle_contract = deps.api.addr_validate(&new_atom_oracle_contract)?;
+    let new_usdc_vesting_lp_contract = deps.api.addr_validate(&new_usdc_vesting_lp_contract)?;
     let new_usdc_oracle_contract = deps.api.addr_validate(&new_usdc_oracle_contract)?;
     let new_manager = new_manager
         .map(|new_manager| deps.api.addr_validate(&new_manager))
@@ -150,13 +156,21 @@ pub fn execute_update_config(
     if info.sender != config.owner && new_owner != config.owner {
         return Err(ContractError::OnlyOwnerCanChangeOwner {});
     };
-    if info.sender != config.owner && new_vesting_lp_contract != config.vesting_lp_contract {
+    if info.sender != config.owner
+        && new_atom_vesting_lp_contract != config.atom_vesting_lp_contract
+    {
+        return Err(ContractError::OnlyOwnerCanChangeVestingLpContract {});
+    };
+    if info.sender != config.owner
+        && new_usdc_vesting_lp_contract != config.usdc_vesting_lp_contract
+    {
         return Err(ContractError::OnlyOwnerCanChangeVestingLpContract {});
     };
 
     config.owner = new_owner;
-    config.vesting_lp_contract = new_vesting_lp_contract;
+    config.atom_vesting_lp_contract = new_atom_vesting_lp_contract;
     config.atom_oracle_contract = new_atom_oracle_contract;
+    config.usdc_vesting_lp_contract = new_usdc_vesting_lp_contract;
     config.usdc_oracle_contract = new_usdc_oracle_contract;
     config.manager = new_manager;
     config.name = new_name;
@@ -168,8 +182,9 @@ pub fn execute_update_config(
         .add_attribute("action", "update_config")
         .add_attribute("description", config.description)
         .add_attribute("owner", config.owner)
-        .add_attribute("vesting_lp_contract", config.vesting_lp_contract)
+        .add_attribute("atom_vesting_lp_contract", config.atom_vesting_lp_contract)
         .add_attribute("atom_oracle_contract", config.atom_oracle_contract)
+        .add_attribute("usdc_vesting_lp_contract", config.usdc_vesting_lp_contract)
         .add_attribute("usdc_oracle_contract", config.usdc_oracle_contract)
         .add_attribute(
             "manager",
@@ -217,14 +232,14 @@ pub fn query_voting_power_at_height(
     };
     let atom_power = get_voting_power(
         deps,
-        &config.vesting_lp_contract,
+        &config.atom_vesting_lp_contract,
         &config.atom_oracle_contract,
         &query_msg,
         height,
     )?;
     let usdc_power = get_voting_power(
         deps,
-        &config.vesting_lp_contract,
+        &config.usdc_vesting_lp_contract,
         &config.usdc_oracle_contract,
         &query_msg,
         height,
@@ -249,14 +264,14 @@ pub fn query_total_power_at_height(
     };
     let atom_power = get_voting_power(
         deps,
-        &config.vesting_lp_contract,
+        &config.atom_vesting_lp_contract,
         &config.atom_oracle_contract,
         &query_msg,
         height,
     )?;
     let usdc_power = get_voting_power(
         deps,
-        &config.vesting_lp_contract,
+        &config.usdc_vesting_lp_contract,
         &config.usdc_oracle_contract,
         &query_msg,
         height,
@@ -302,18 +317,22 @@ pub fn query_list_bonders(
     // TODO: this method does not adjust LP tokens amount to their corresponding voting power
     let config = CONFIG.load(deps.storage)?;
 
-    let vesting_accounts: VestingAccountsResponse = deps.querier.query_wasm_smart(
-        config.vesting_lp_contract,
-        &VestingLpQueryMsg::VestingAccounts {
-            start_after,
-            limit,
-            order_by,
-        },
-    )?;
+    let query_msg = VestingLpQueryMsg::VestingAccounts {
+        start_after,
+        limit,
+        order_by,
+    };
+    let atom_vesting_accounts: VestingAccountsResponse = deps
+        .querier
+        .query_wasm_smart(config.atom_vesting_lp_contract, &query_msg)?;
+    let usdc_vesting_accounts: VestingAccountsResponse = deps
+        .querier
+        .query_wasm_smart(config.usdc_vesting_lp_contract, &query_msg)?;
 
-    let bonders = vesting_accounts
+    let bonders = atom_vesting_accounts
         .vesting_accounts
         .into_iter()
+        .chain(usdc_vesting_accounts.vesting_accounts.into_iter())
         .map(|vesting_account| BonderBalanceResponse {
             address: vesting_account.address.into_string(),
             balance: vesting_account

@@ -7,8 +7,9 @@ use serde::{Deserialize, Serialize};
 pub struct Config {
     pub name: String,
     pub description: String,
-    pub vesting_lp_contract: Addr,
+    pub atom_vesting_lp_contract: Addr,
     pub atom_oracle_contract: Addr,
+    pub usdc_vesting_lp_contract: Addr,
     pub usdc_oracle_contract: Addr,
     pub owner: Addr,
     pub manager: Option<Addr>,
@@ -37,8 +38,9 @@ mod tests {
         let cfg = Config {
             name: String::from("name"),
             description: String::from("description"),
-            vesting_lp_contract: Addr::unchecked("vesting_lp_contract"),
+            atom_vesting_lp_contract: Addr::unchecked("atom_vesting_lp_contract"),
             atom_oracle_contract: Addr::unchecked("atom_oracle_contract"),
+            usdc_vesting_lp_contract: Addr::unchecked("usdc_vesting_lp_contract"),
             usdc_oracle_contract: Addr::unchecked("usdc_oracle_contract"),
             owner: Addr::unchecked("owner"),
             manager: None,
@@ -51,8 +53,9 @@ mod tests {
         let cfg = Config {
             name: String::from(""),
             description: String::from("description"),
-            vesting_lp_contract: Addr::unchecked("vesting_lp_contract"),
+            atom_vesting_lp_contract: Addr::unchecked("atom_vesting_lp_contract"),
             atom_oracle_contract: Addr::unchecked("atom_oracle_contract"),
+            usdc_vesting_lp_contract: Addr::unchecked("usdc_vesting_lp_contract"),
             usdc_oracle_contract: Addr::unchecked("usdc_oracle_contract"),
             owner: Addr::unchecked("owner"),
             manager: None,
@@ -65,8 +68,9 @@ mod tests {
         let cfg = Config {
             name: String::from("name"),
             description: String::from(""),
-            vesting_lp_contract: Addr::unchecked("vesting_lp_contract"),
+            atom_vesting_lp_contract: Addr::unchecked("atom_vesting_lp_contract"),
             atom_oracle_contract: Addr::unchecked("atom_oracle_contract"),
+            usdc_vesting_lp_contract: Addr::unchecked("usdc_vesting_lp_contract"),
             usdc_oracle_contract: Addr::unchecked("usdc_oracle_contract"),
             owner: Addr::unchecked("owner"),
             manager: None,
