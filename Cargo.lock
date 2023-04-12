@@ -2141,7 +2141,6 @@ dependencies = [
  "cw2 0.13.4",
  "cwd-interface",
  "cwd-macros",
- "cwd-voting",
  "neutron-lockdrop-vault",
  "neutron-vesting-lp-vault",
  "schemars",
