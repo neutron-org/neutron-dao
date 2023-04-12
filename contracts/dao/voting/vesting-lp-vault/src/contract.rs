@@ -1,4 +1,3 @@
-use astroport::vesting::{OrderBy, VestingAccountsResponse};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -18,7 +17,10 @@ use neutron_vesting_lp_vault::{
     msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg},
     types::Config,
 };
-use vesting_lp::msg::QueryMsg as VestingLpQueryMsg;
+use vesting_base::{
+    msg::{QueryMsg as VestingLpQueryMsg, QueryMsgHistorical},
+    types::{OrderBy, VestingAccountsResponse},
+};
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-vesting-lp-vault";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -210,7 +212,9 @@ pub fn query_voting_power_at_height(
     let config = CONFIG.load(deps.storage)?;
     let height = height.unwrap_or(env.block.height);
 
-    let query_msg = VestingLpQueryMsg::UnclaimedAmountAtHeight { address, height };
+    let query_msg = VestingLpQueryMsg::HistoricalExtension {
+        msg: QueryMsgHistorical::UnclaimedAmountAtHeight { address, height },
+    };
     let atom_power = get_voting_power(
         deps,
         &config.vesting_lp_contract,
@@ -240,7 +244,9 @@ pub fn query_total_power_at_height(
     let config = CONFIG.load(deps.storage)?;
     let height = height.unwrap_or(env.block.height);
 
-    let query_msg = VestingLpQueryMsg::UnclaimedTotalAmountAtHeight { height };
+    let query_msg = VestingLpQueryMsg::HistoricalExtension {
+        msg: QueryMsgHistorical::UnclaimedTotalAmountAtHeight { height },
+    };
     let atom_power = get_voting_power(
         deps,
         &config.vesting_lp_contract,

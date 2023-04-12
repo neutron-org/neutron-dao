@@ -85,7 +85,7 @@ fn instantiate_vault(app: &mut App, id: u64, msg: InstantiateMsg) -> Addr {
         .unwrap()
 }
 
-fn instantiate_vesting_lp(app: &mut App, id: u64, msg: astroport::vesting::InstantiateMsg) -> Addr {
+fn instantiate_vesting_lp(app: &mut App, id: u64, msg: vesting_lp::msg::InstantiateMsg) -> Addr {
     app.instantiate_contract(id, Addr::unchecked(DAO_ADDR), &msg, &[], "vesting_lp", None)
         .unwrap()
 }
@@ -666,7 +666,7 @@ fn test_voting_power_at_height() {
     let vesting_lp_addr = instantiate_vesting_lp(
         &mut app,
         vesting_lp_id,
-        astroport::vesting::InstantiateMsg {
+        vesting_lp::msg::InstantiateMsg {
             owner: DAO_ADDR.to_string(),
             vesting_managers: vec![],
             token_info_manager: "manager".to_string(),
@@ -701,7 +701,7 @@ fn test_total_power_at_height() {
     let vesting_lp_addr = instantiate_vesting_lp(
         &mut app,
         vesting_lp_id,
-        astroport::vesting::InstantiateMsg {
+        vesting_lp::msg::InstantiateMsg {
             owner: DAO_ADDR.to_string(),
             vesting_managers: vec![],
             token_info_manager: "manager".to_string(),

@@ -27,8 +27,8 @@ cwd-interface = { path = "../../../../packages/cwd-interface" }
 cwd-voting = { path = "../../../../packages/cwd-voting" }
 neutron-vesting-lp-vault = { path = "../../../../packages/neutron-vesting-lp-vault" }
 neutron-lockdrop-vault = { path = "../../../../packages/neutron-lockdrop-vault" }
+vesting-base = { git = "https://github.com/neutron-org/neutron-tge-contracts", branch = "main" }
 vesting-lp = { git = "https://github.com/neutron-org/neutron-tge-contracts", branch = "main" }
-astroport = { git = "https://github.com/neutron-org/neutron-tge-contracts", branch = "main" }
 
 [dev-dependencies]
 cosmwasm-schema = { version = "1.0.0" }
