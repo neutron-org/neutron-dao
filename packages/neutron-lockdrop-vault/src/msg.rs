@@ -11,6 +11,10 @@ pub struct InstantiateMsg {
     pub description: String,
     /// The lockdrop contract behind the vault.
     pub lockdrop_contract: String,
+    /// The oracle USDC/NTRN contract behind the vault.
+    pub oracle_usdc_contract: String,
+    /// The oracle ATOM/NTRN contract behind the vault.
+    pub oracle_atom_contract: String,
     /// Owner can update all configs including changing the owner. This will generally be a DAO.
     pub owner: Admin,
     /// Manager can update configs except changing the owner and the lockdrop contract.
@@ -23,11 +27,13 @@ pub struct InstantiateMsg {
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     UpdateConfig {
-        owner: String,
-        lockdrop_contract: String,
+        owner: Option<String>,
+        lockdrop_contract: Option<String>,
+        oracle_usdc_contract: Option<String>,
+        oracle_atom_contract: Option<String>,
         manager: Option<String>,
-        name: String,
-        description: String,
+        name: Option<String>,
+        description: Option<String>,
     },
 }
 

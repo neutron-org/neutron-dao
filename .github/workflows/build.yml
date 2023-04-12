@@ -122,19 +122,19 @@ jobs:
         if: ${{ env.ARTIFACTS_EXIST == 'false' }}
       - name: 'Upload Contracts to the Cloud (repo/branch/sha)'
         if: ${{ env.ARTIFACTS_EXIST == 'false' }}
-        run: 'gsutil -m cp -r artifacts/* gs://neutron-contracts/${{ github.repository }}/${{ env.BRANCH }}/${{ env.sha }}/'
+        run: 'gsutil -h "Cache-Control:no-cache, no-store, must-revalidate" cp -r artifacts/* gs://neutron-contracts/${{ github.repository }}/${{ env.BRANCH }}/${{ env.sha }}/'
       - name: 'Set Metadata (repo/branch/sha)'
         if: ${{ env.ARTIFACTS_EXIST == 'false' }}
         run: 'gsutil setmeta -r -h "x-goog-meta-Neutron-Repo: ${{ github.repository }}" -h "x-goog-meta-Neutron-Commit: ${{ env.sha }}" gs://neutron-contracts/${{ github.repository }}/${{ env.BRANCH }}/${{ env.sha }}/'
       - name: 'Upload Contracts to the Cloud (repo/branch/WF/ID)'
         if: ${{ env.ARTIFACTS_EXIST == 'false' }}
-        run: 'gsutil -m cp -r artifacts/* gs://neutron-contracts/${{ github.repository }}/${{ env.BRANCH }}/WF/${{ env.ID }}/'
+        run: 'gsutil -h "Cache-Control:no-cache, no-store, must-revalidate" cp -r artifacts/* gs://neutron-contracts/${{ github.repository }}/${{ env.BRANCH }}/WF/${{ env.ID }}/'
       - name: 'Set Metadata (repo/branch/WF/ID)'
         if: ${{ env.ARTIFACTS_EXIST == 'false' }}
         run: 'gsutil setmeta -r -h "x-goog-meta-Neutron-Repo: ${{ github.repository }}" -h "x-goog-meta-Neutron-Commit: ${{ env.sha }}" gs://neutron-contracts/${{ github.repository }}/${{ env.BRANCH }}/WF/${{ env.ID }}/'
       - name: 'Upload Contracts to the Cloud (repo/sha)'
         if: ${{ env.ARTIFACTS_EXIST == 'false' }}
-        run: 'gsutil -m cp -r artifacts/* gs://neutron-contracts/${{ github.repository }}/${{ env.sha }}/'
+        run: 'gsutil -h "Cache-Control:no-cache, no-store, must-revalidate" cp -r artifacts/* gs://neutron-contracts/${{ github.repository }}/${{ env.sha }}/'
       - name: 'Set Metadata (repo/sha)'
         if: ${{ env.ARTIFACTS_EXIST == 'false' }}
         run: 'gsutil setmeta -r -h "x-goog-meta-Neutron-Repo: ${{ github.repository }}" -h "x-goog-meta-Neutron-Commit: ${{ env.sha }}" gs://neutron-contracts/${{ github.repository }}/${{ env.sha }}/'

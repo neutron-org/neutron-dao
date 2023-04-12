@@ -8,6 +8,8 @@ pub struct Config {
     pub name: String,
     pub description: String,
     pub lockdrop_contract: Addr,
+    pub oracle_usdc_contract: Addr,
+    pub oracle_atom_contract: Addr,
     pub owner: Addr,
     pub manager: Option<Addr>,
 }
@@ -37,6 +39,8 @@ mod tests {
             name: String::from("name"),
             description: String::from("description"),
             lockdrop_contract: Addr::unchecked("lockdrop_contract"),
+            oracle_usdc_contract: Addr::unchecked("oracle_usdc_contract"),
+            oracle_atom_contract: Addr::unchecked("oracle_atom_contract"),
             owner: Addr::unchecked("owner"),
             manager: Some(Addr::unchecked("manager")),
         };
@@ -46,6 +50,8 @@ mod tests {
             name: String::from(""),
             description: String::from("description"),
             lockdrop_contract: Addr::unchecked("lockdrop_contract"),
+            oracle_usdc_contract: Addr::unchecked("oracle_usdc_contract"),
+            oracle_atom_contract: Addr::unchecked("oracle_atom_contract"),
             owner: Addr::unchecked("owner"),
             manager: Some(Addr::unchecked("manager")),
         };
@@ -58,6 +64,8 @@ mod tests {
             name: String::from("name"),
             description: String::from(""),
             lockdrop_contract: Addr::unchecked("lockdrop_contract"),
+            oracle_usdc_contract: Addr::unchecked("oracle_usdc_contract"),
+            oracle_atom_contract: Addr::unchecked("oracle_atom_contract"),
             owner: Addr::unchecked("owner"),
             manager: Some(Addr::unchecked("manager")),
         };

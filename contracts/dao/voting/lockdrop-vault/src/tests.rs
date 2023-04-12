@@ -1,13 +1,22 @@
 use crate::contract::{migrate, CONTRACT_NAME, CONTRACT_VERSION};
+use astroport::asset::AssetInfo;
+use astroport::oracle::QueryMsg as OracleQueryMsg;
+use astroport_periphery::lockdrop::{PoolType, QueryMsg as LockdropQueryMsg};
 use cosmwasm_std::testing::{mock_dependencies, mock_env};
-use cosmwasm_std::{coins, Addr, Coin, Empty, Uint128};
+use cosmwasm_std::{
+    coins, to_binary, Addr, Binary, Coin, Decimal256, Deps, Empty, Env, Response, StdResult,
+    Uint128,
+};
 use cw_multi_test::{custom_app, App, AppResponse, Contract, ContractWrapper, Executor};
 use cwd_interface::voting::{
     InfoResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
 use cwd_interface::Admin;
+use neutron_lockdrop_vault::error::ContractError;
 use neutron_lockdrop_vault::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use neutron_lockdrop_vault::types::Config;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 
 const DAO_ADDR: &str = "dao";
 const NAME: &str = "name";
@@ -15,7 +24,11 @@ const NEW_NAME: &str = "new_name";
 const DESCRIPTION: &str = "description";
 const NEW_DESCRIPTION: &str = "new description";
 const LOCKDROP_ADDR: &str = "lockdrop";
+const ORACLE_USDC_ADDR: &str = "oracle_usdc";
+const ORACLE_ATOM_ADDR: &str = "oracle_atom";
 const NEW_LOCKDROP_ADDR: &str = "new_lockdrop";
+const NEW_ORACLE_USDC_ADDR: &str = "new_oracle_usdc";
+const NEW_ORACLE_ATOM_ADDR: &str = "new_oracle_atom";
 const ADDR1: &str = "addr1";
 const ADDR2: &str = "addr2";
 const DENOM: &str = "ujuno";
@@ -65,6 +78,115 @@ fn mock_app() -> App {
     })
 }
 
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
+#[serde(rename_all = "snake_case")]
+pub struct EmptyMsg {}
+
+fn lockdrop_query(_deps: Deps, _env: Env, msg: LockdropQueryMsg) -> StdResult<Binary> {
+    match msg {
+        LockdropQueryMsg::QueryUserLockupTotalAtHeight {
+            pool_type,
+            user_address: _,
+            height: _,
+        } => {
+            let response = match pool_type {
+                PoolType::ATOM => Uint128::from(1000u64),
+                PoolType::USDC => Uint128::from(2000u64),
+            };
+
+            to_binary(&response)
+        }
+        LockdropQueryMsg::QueryLockupTotalAtHeight {
+            pool_type,
+            height: _,
+        } => {
+            let response = match pool_type {
+                PoolType::ATOM => Uint128::from(3000u64),
+                PoolType::USDC => Uint128::from(4000u64),
+            };
+
+            to_binary(&response)
+        }
+        _ => unreachable!(),
+    }
+}
+
+fn lockdrop_contract() -> Box<dyn Contract<Empty>> {
+    let contract: ContractWrapper<
+        EmptyMsg,
+        EmptyMsg,
+        LockdropQueryMsg,
+        ContractError,
+        ContractError,
+        cosmwasm_std::StdError,
+    > = ContractWrapper::new(
+        |_, _, _, _: EmptyMsg| Ok(Response::new()),
+        |_, _, _, _: EmptyMsg| Ok(Response::new()),
+        lockdrop_query,
+    );
+    Box::new(contract)
+}
+
+fn instantiate_lockdrop_contract(app: &mut App) -> Addr {
+    let contract_id = app.store_code(lockdrop_contract());
+    app.instantiate_contract(
+        contract_id,
+        Addr::unchecked(DAO_ADDR),
+        &EmptyMsg {},
+        &[],
+        "lockdrop contract",
+        None,
+    )
+    .unwrap()
+}
+
+fn oracle_query(_deps: Deps, _env: Env, msg: OracleQueryMsg) -> StdResult<Binary> {
+    match msg {
+        OracleQueryMsg::TWAPAtHeight { token, height: _ } => {
+            let twap = match token.clone() {
+                AssetInfo::NativeToken { denom } => match denom.as_str() {
+                    "untrn" => Decimal256::from_atomics(4u64, 6).unwrap(),
+                    _ => Decimal256::from_atomics(0u64, 6).unwrap(),
+                },
+                AssetInfo::Token { contract_addr: _ } => Decimal256::from_atomics(0u64, 6).unwrap(),
+            };
+
+            let response = vec![(token, twap)];
+            to_binary(&response)
+        }
+        _ => unreachable!(),
+    }
+}
+
+fn oracle_contract() -> Box<dyn Contract<Empty>> {
+    let contract: ContractWrapper<
+        EmptyMsg,
+        EmptyMsg,
+        OracleQueryMsg,
+        ContractError,
+        ContractError,
+        cosmwasm_std::StdError,
+    > = ContractWrapper::new(
+        |_, _, _, _: EmptyMsg| Ok(Response::new()),
+        |_, _, _, _: EmptyMsg| Ok(Response::new()),
+        oracle_query,
+    );
+    Box::new(contract)
+}
+
+fn instantiate_oracle_contract(app: &mut App) -> Addr {
+    let contract_id = app.store_code(oracle_contract());
+    app.instantiate_contract(
+        contract_id,
+        Addr::unchecked(DAO_ADDR),
+        &EmptyMsg {},
+        &[],
+        "oracle contract",
+        None,
+    )
+    .unwrap()
+}
+
 fn instantiate_vault(app: &mut App, id: u64, msg: InstantiateMsg) -> Addr {
     app.instantiate_contract(id, Addr::unchecked(DAO_ADDR), &msg, &[], "vault", None)
         .unwrap()
@@ -106,11 +228,13 @@ fn update_config(
     app: &mut App,
     contract_addr: Addr,
     sender: &str,
-    owner: String,
-    lockdrop_contract: String,
+    owner: Option<String>,
+    lockdrop_contract: Option<String>,
+    oracle_usdc_contract: Option<String>,
+    oracle_atom_contract: Option<String>,
     manager: Option<String>,
-    name: String,
-    description: String,
+    name: Option<String>,
+    description: Option<String>,
 ) -> anyhow::Result<AppResponse> {
     app.execute_contract(
         Addr::unchecked(sender),
@@ -118,6 +242,8 @@ fn update_config(
         &ExecuteMsg::UpdateConfig {
             owner,
             lockdrop_contract,
+            oracle_usdc_contract,
+            oracle_atom_contract,
             manager,
             name,
             description,
@@ -183,6 +309,8 @@ fn test_instantiate() {
                 addr: DAO_ADDR.to_string(),
             },
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
+            oracle_usdc_contract: ORACLE_USDC_ADDR.to_string(),
+            oracle_atom_contract: ORACLE_ATOM_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
         },
     );
@@ -199,6 +327,8 @@ fn test_instantiate() {
                 addr: DAO_ADDR.to_string(),
             },
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
+            oracle_usdc_contract: ORACLE_USDC_ADDR.to_string(),
+            oracle_atom_contract: ORACLE_ATOM_ADDR.to_string(),
             manager: None,
         },
     );
@@ -218,6 +348,8 @@ fn test_instantiate_dao_owner() {
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
+            oracle_usdc_contract: ORACLE_USDC_ADDR.to_string(),
+            oracle_atom_contract: ORACLE_ATOM_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
         },
     );
@@ -240,6 +372,8 @@ fn test_bond() {
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
+            oracle_usdc_contract: ORACLE_USDC_ADDR.to_string(),
+            oracle_atom_contract: ORACLE_ATOM_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
         },
     );
@@ -261,6 +395,8 @@ fn test_unbond() {
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
+            oracle_usdc_contract: ORACLE_USDC_ADDR.to_string(),
+            oracle_atom_contract: ORACLE_ATOM_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
         },
     );
@@ -281,6 +417,8 @@ fn test_update_config_invalid_sender() {
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
+            oracle_usdc_contract: ORACLE_USDC_ADDR.to_string(),
+            oracle_atom_contract: ORACLE_ATOM_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
         },
     );
@@ -290,11 +428,13 @@ fn test_update_config_invalid_sender() {
         &mut app,
         addr,
         ADDR2,
-        ADDR1.to_string(),
-        NEW_LOCKDROP_ADDR.to_string(),
+        Some(ADDR1.to_string()),
+        Some(NEW_LOCKDROP_ADDR.to_string()),
+        Some(NEW_ORACLE_USDC_ADDR.to_string()),
+        Some(NEW_ORACLE_ATOM_ADDR.to_string()),
         Some(DAO_ADDR.to_string()),
-        NEW_NAME.to_string(),
-        NEW_DESCRIPTION.to_string(),
+        Some(NEW_NAME.to_string()),
+        Some(NEW_DESCRIPTION.to_string()),
     )
     .unwrap();
 }
@@ -312,6 +452,8 @@ fn test_update_config_non_owner_changes_owner() {
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
+            oracle_usdc_contract: ORACLE_USDC_ADDR.to_string(),
+            oracle_atom_contract: ORACLE_ATOM_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
         },
     );
@@ -321,11 +463,13 @@ fn test_update_config_non_owner_changes_owner() {
         &mut app,
         addr,
         ADDR1,
-        ADDR2.to_string(),
-        LOCKDROP_ADDR.to_string(),
+        Some(ADDR2.to_string()),
+        Some(LOCKDROP_ADDR.to_string()),
+        Some(ORACLE_USDC_ADDR.to_string()),
+        Some(ORACLE_ATOM_ADDR.to_string()),
         None,
-        NAME.to_string(),
-        DESCRIPTION.to_string(),
+        Some(NAME.to_string()),
+        Some(DESCRIPTION.to_string()),
     )
     .unwrap();
 }
@@ -343,6 +487,8 @@ fn test_update_config_non_owner_changes_lockdrop() {
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
+            oracle_usdc_contract: ORACLE_USDC_ADDR.to_string(),
+            oracle_atom_contract: ORACLE_ATOM_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
         },
     );
@@ -352,11 +498,13 @@ fn test_update_config_non_owner_changes_lockdrop() {
         &mut app,
         addr,
         ADDR1,
-        DAO_ADDR.to_string(),
-        NEW_LOCKDROP_ADDR.to_string(),
+        Some(DAO_ADDR.to_string()),
+        Some(NEW_LOCKDROP_ADDR.to_string()),
+        Some(ORACLE_USDC_ADDR.to_string()),
+        Some(ORACLE_ATOM_ADDR.to_string()),
         None,
-        NAME.to_string(),
-        DESCRIPTION.to_string(),
+        Some(NAME.to_string()),
+        Some(DESCRIPTION.to_string()),
     )
     .unwrap();
 }
@@ -373,6 +521,8 @@ fn test_update_config_as_owner() {
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
+            oracle_usdc_contract: ORACLE_USDC_ADDR.to_string(),
+            oracle_atom_contract: ORACLE_ATOM_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
         },
     );
@@ -382,11 +532,13 @@ fn test_update_config_as_owner() {
         &mut app,
         addr.clone(),
         DAO_ADDR,
-        ADDR1.to_string(),
-        NEW_LOCKDROP_ADDR.to_string(),
+        Some(ADDR1.to_string()),
+        Some(NEW_LOCKDROP_ADDR.to_string()),
+        Some(NEW_ORACLE_USDC_ADDR.to_string()),
+        Some(NEW_ORACLE_ATOM_ADDR.to_string()),
         Some(DAO_ADDR.to_string()),
-        NEW_NAME.to_string(),
-        NEW_DESCRIPTION.to_string(),
+        Some(NEW_NAME.to_string()),
+        Some(NEW_DESCRIPTION.to_string()),
     )
     .unwrap();
 
@@ -397,6 +549,8 @@ fn test_update_config_as_owner() {
             description: NEW_DESCRIPTION.to_string(),
             owner: Addr::unchecked(ADDR1),
             lockdrop_contract: Addr::unchecked(NEW_LOCKDROP_ADDR),
+            oracle_usdc_contract: Addr::unchecked(NEW_ORACLE_USDC_ADDR),
+            oracle_atom_contract: Addr::unchecked(NEW_ORACLE_ATOM_ADDR),
             manager: Some(Addr::unchecked(DAO_ADDR)),
         },
         config
@@ -415,6 +569,8 @@ fn test_update_config_as_manager() {
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
+            oracle_usdc_contract: ORACLE_USDC_ADDR.to_string(),
+            oracle_atom_contract: ORACLE_ATOM_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
         },
     );
@@ -426,11 +582,13 @@ fn test_update_config_as_manager() {
         &mut app,
         addr.clone(),
         ADDR1,
-        DAO_ADDR.to_string(),
-        LOCKDROP_ADDR.to_string(),
+        Some(DAO_ADDR.to_string()),
+        Some(LOCKDROP_ADDR.to_string()),
+        Some(ORACLE_USDC_ADDR.to_string()),
+        Some(ORACLE_ATOM_ADDR.to_string()),
         Some(ADDR2.to_string()),
-        NEW_NAME.to_string(),
-        NEW_DESCRIPTION.to_string(),
+        Some(NEW_NAME.to_string()),
+        Some(NEW_DESCRIPTION.to_string()),
     )
     .unwrap();
 
@@ -444,6 +602,8 @@ fn test_update_config_as_manager() {
             description: NEW_DESCRIPTION.to_string(),
             owner: Addr::unchecked(DAO_ADDR),
             lockdrop_contract: Addr::unchecked(LOCKDROP_ADDR),
+            oracle_usdc_contract: Addr::unchecked(ORACLE_USDC_ADDR),
+            oracle_atom_contract: Addr::unchecked(ORACLE_ATOM_ADDR),
             manager: Some(Addr::unchecked(ADDR2)),
         },
         config
@@ -463,6 +623,8 @@ fn test_update_config_invalid_description() {
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
+            oracle_usdc_contract: ORACLE_USDC_ADDR.to_string(),
+            oracle_atom_contract: ORACLE_ATOM_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
         },
     );
@@ -472,11 +634,13 @@ fn test_update_config_invalid_description() {
         &mut app,
         addr,
         ADDR1,
-        DAO_ADDR.to_string(),
-        LOCKDROP_ADDR.to_string(),
+        Some(DAO_ADDR.to_string()),
+        Some(LOCKDROP_ADDR.to_string()),
+        Some(ORACLE_USDC_ADDR.to_string()),
+        Some(ORACLE_ATOM_ADDR.to_string()),
         Some(ADDR2.to_string()),
-        NEW_NAME.to_string(),
-        String::from(""),
+        Some(NEW_NAME.to_string()),
+        Some(String::from("")),
     )
     .unwrap();
 }
@@ -494,6 +658,8 @@ fn test_update_config_invalid_name() {
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
+            oracle_usdc_contract: ORACLE_USDC_ADDR.to_string(),
+            oracle_atom_contract: ORACLE_ATOM_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
         },
     );
@@ -503,11 +669,13 @@ fn test_update_config_invalid_name() {
         &mut app,
         addr,
         ADDR1,
-        DAO_ADDR.to_string(),
-        LOCKDROP_ADDR.to_string(),
+        Some(DAO_ADDR.to_string()),
+        Some(LOCKDROP_ADDR.to_string()),
+        Some(ORACLE_USDC_ADDR.to_string()),
+        Some(ORACLE_ATOM_ADDR.to_string()),
         Some(ADDR2.to_string()),
-        String::from(""),
-        NEW_DESCRIPTION.to_string(),
+        Some(String::from("")),
+        Some(NEW_DESCRIPTION.to_string()),
     )
     .unwrap();
 }
@@ -524,6 +692,8 @@ fn test_query_dao() {
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
+            oracle_usdc_contract: ORACLE_USDC_ADDR.to_string(),
+            oracle_atom_contract: ORACLE_ATOM_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
         },
     );
@@ -545,6 +715,8 @@ fn test_query_info() {
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
+            oracle_usdc_contract: ORACLE_USDC_ADDR.to_string(),
+            oracle_atom_contract: ORACLE_ATOM_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
         },
     );
@@ -566,6 +738,8 @@ fn test_query_get_config() {
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
+            oracle_usdc_contract: ORACLE_USDC_ADDR.to_string(),
+            oracle_atom_contract: ORACLE_ATOM_ADDR.to_string(),
             manager: Some(ADDR1.to_string()),
         },
     );
@@ -578,6 +752,8 @@ fn test_query_get_config() {
             description: DESCRIPTION.to_string(),
             owner: Addr::unchecked(DAO_ADDR),
             lockdrop_contract: Addr::unchecked(LOCKDROP_ADDR),
+            oracle_usdc_contract: Addr::unchecked(ORACLE_USDC_ADDR),
+            oracle_atom_contract: Addr::unchecked(ORACLE_ATOM_ADDR),
             manager: Some(Addr::unchecked(ADDR1)),
         }
     )
@@ -586,6 +762,11 @@ fn test_query_get_config() {
 #[test]
 fn test_voting_power_at_height() {
     let mut app = mock_app();
+
+    let lockdrop_contract = instantiate_lockdrop_contract(&mut app);
+    let oracle_usdc_contract = instantiate_oracle_contract(&mut app);
+    let oracle_atom_contract = instantiate_oracle_contract(&mut app);
+
     let vault_id = app.store_code(vault_contract());
     let addr = instantiate_vault(
         &mut app,
@@ -594,19 +775,25 @@ fn test_voting_power_at_height() {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
-            lockdrop_contract: LOCKDROP_ADDR.to_string(),
+            lockdrop_contract: lockdrop_contract.to_string(),
+            oracle_usdc_contract: oracle_usdc_contract.to_string(),
+            oracle_atom_contract: oracle_atom_contract.to_string(),
             manager: Some(ADDR1.to_string()),
         },
     );
 
-    // describe test when lockdrop contract is implemented. use neutron vault tests as template.
     let resp = get_voting_power_at_height(&mut app, addr, ADDR1.to_string(), None);
-    assert!(resp.power.is_zero());
+    assert_eq!(resp.power, Uint128::from(6u128));
 }
 
 #[test]
 fn test_total_power_at_height() {
     let mut app = mock_app();
+
+    let lockdrop_contract = instantiate_lockdrop_contract(&mut app);
+    let oracle_usdc_contract = instantiate_oracle_contract(&mut app);
+    let oracle_atom_contract = instantiate_oracle_contract(&mut app);
+
     let vault_id = app.store_code(vault_contract());
     let addr = instantiate_vault(
         &mut app,
@@ -615,14 +802,15 @@ fn test_total_power_at_height() {
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
-            lockdrop_contract: LOCKDROP_ADDR.to_string(),
+            lockdrop_contract: lockdrop_contract.to_string(),
+            oracle_usdc_contract: oracle_usdc_contract.to_string(),
+            oracle_atom_contract: oracle_atom_contract.to_string(),
             manager: Some(ADDR1.to_string()),
         },
     );
 
-    // describe test when lockdrop contract is implemented. use neutron vault tests as template.
     let resp = get_total_power_at_height(&mut app, addr, None);
-    assert!(resp.power.is_zero());
+    assert_eq!(resp.power, Uint128::from(14u128));
 }
 
 #[test]
