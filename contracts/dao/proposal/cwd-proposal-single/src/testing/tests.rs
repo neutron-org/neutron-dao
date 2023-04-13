@@ -1409,7 +1409,7 @@ fn test_subdao_queries() {
     let res: Vec<SubDao> = app
         .wrap()
         .query_wasm_smart(
-            core_addr.clone(),
+            core_addr,
             &DaoQueryMsg::ListSubDaos {
                 start_after: None,
                 limit: None,

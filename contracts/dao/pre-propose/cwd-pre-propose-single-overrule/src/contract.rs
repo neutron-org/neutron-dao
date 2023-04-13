@@ -218,7 +218,7 @@ fn is_subdao_legit(deps: &DepsMut, subdao_core: &Addr) -> Result<bool, PrePropos
     let main_dao = get_main_dao_address(deps)?;
 
     let subdao: StdResult<SubDao> = deps.querier.query_wasm_smart(
-        main_dao.clone(),
+        main_dao,
         &MainDaoQueryMsg::GetSubDao {
             address: subdao_core.to_string(),
         },
