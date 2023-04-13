@@ -101,7 +101,7 @@ pub fn execute(
 
             if !is_proposal_timelocked(
                 &deps,
-                &Addr::unchecked(timelock_contract_addr.clone()),
+                &timelock_contract_addr,
                 proposal_id,
             )? {
                 return Err(PreProposeOverruleError::ProposalWrongState {});
@@ -195,12 +195,15 @@ fn get_timelock_from_subdao(
         },
     )?;
 
-    if proposal_modules.is_empty() {
-        return Err(PreProposeOverruleError::SubdaoMisconfigured {});
-    }
+    let proposal_module = proposal_modules
+        .first()
+        .ok_or(PreProposeOverruleError::SubdaoMisconfigured {},
+        )?
+        .address
+        .clone();
 
     let prop_policy: ProposalCreationPolicy = deps.querier.query_wasm_smart(
-        proposal_modules.first().unwrap().address.clone(),
+        proposal_module,
         &SubdaoProposalMsg::QueryMsg::ProposalCreationPolicy {},
     )?;
 
@@ -246,7 +249,7 @@ fn is_subdao_legit(deps: &DepsMut, subdao_core: &Addr) -> Result<bool, PrePropos
 
         if subdao_list
             .into_iter()
-            .any(|subdao| subdao.addr == subdao_core.clone().into_string())
+            .any(|subdao| subdao.addr == *subdao_core)
         {
             return Ok(true);
         };
