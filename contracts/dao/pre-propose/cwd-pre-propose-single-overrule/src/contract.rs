@@ -99,11 +99,7 @@ pub fn execute(
                 return Err(PreProposeOverruleError::ForbiddenSubdao {});
             }
 
-            if !is_proposal_timelocked(
-                &deps,
-                &timelock_contract_addr,
-                proposal_id,
-            )? {
+            if !is_proposal_timelocked(&deps, &timelock_contract_addr, proposal_id)? {
                 return Err(PreProposeOverruleError::ProposalWrongState {});
             }
 
@@ -197,8 +193,7 @@ fn get_timelock_from_subdao(
 
     let proposal_module = proposal_modules
         .first()
-        .ok_or(PreProposeOverruleError::SubdaoMisconfigured {},
-        )?
+        .ok_or(PreProposeOverruleError::SubdaoMisconfigured {})?
         .address
         .clone();
 
