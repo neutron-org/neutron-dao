@@ -226,7 +226,7 @@ fn is_subdao_legit(deps: &DepsMut, subdao_core: &Addr) -> Result<bool, PrePropos
 
     match subdao {
         Ok(subdao) => Ok(subdao.addr == *subdao_core),
-        Err(_) => Err(PreProposeOverruleError::ForbiddenSubdao {})
+        Err(_) => Err(PreProposeOverruleError::ForbiddenSubdao {}),
     }
 }
 

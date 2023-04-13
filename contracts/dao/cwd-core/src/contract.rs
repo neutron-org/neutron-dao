@@ -330,9 +330,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::ListSubDaos { start_after, limit } => {
             query_list_sub_daos(deps, start_after, limit)
         }
-        QueryMsg::GetSubDao { address } => {
-            query_sub_dao(deps, address)
-        }
+        QueryMsg::GetSubDao { address } => query_sub_dao(deps, address),
         QueryMsg::DaoURI {} => query_dao_uri(deps),
     }
 }
@@ -517,10 +515,7 @@ pub fn query_list_sub_daos(
     to_binary(&subdaos)
 }
 
-pub fn query_sub_dao(
-    deps: Deps,
-    address: String,
-) -> StdResult<Binary> {
+pub fn query_sub_dao(deps: Deps, address: String) -> StdResult<Binary> {
     let addr = deps.api.addr_validate(&address)?;
     let item = SUBDAO_LIST.may_load(deps.storage, &addr)?;
     match item {
@@ -528,7 +523,7 @@ pub fn query_sub_dao(
         Some(charter) => to_binary(&SubDao {
             addr: address,
             charter,
-        })
+        }),
     }
 }
 

@@ -100,15 +100,12 @@ impl ContractQuerier for MockDaoQueries {
     fn query(&self, msg: &Binary) -> QuerierResult {
         let q: MainDaoQueryMsg = from_binary(msg).unwrap();
         match q {
-            MainDaoQueryMsg::GetSubDao {
-                address,
-            } =>
-            match self.sub_dao_set.contains(&address) {
+            MainDaoQueryMsg::GetSubDao { address } => match self.sub_dao_set.contains(&address) {
                 true => SystemResult::Ok(ContractResult::from(to_binary(&SubDao {
                     addr: address.clone(),
                     charter: None,
                 }))),
-                false => SystemResult::Err(SystemError::Unknown {})
+                false => SystemResult::Err(SystemError::Unknown {}),
             },
             _ => SystemResult::Err(SystemError::Unknown {}),
         }
@@ -247,9 +244,7 @@ pub fn get_properly_initialized_dao() -> HashMap<String, Box<dyn ContractQuerier
     contracts.insert(
         MOCK_DAO_CORE.to_string(),
         Box::new(MockDaoQueries {
-            sub_dao_set: HashSet::from([
-                MOCK_SUBDAO_CORE.to_string()
-            ]),
+            sub_dao_set: HashSet::from([MOCK_SUBDAO_CORE.to_string()]),
         }),
     );
     contracts.insert(
@@ -306,4 +301,3 @@ pub fn get_dao_with_impostor_subdao() -> HashMap<String, Box<dyn ContractQuerier
     );
     contracts
 }
-

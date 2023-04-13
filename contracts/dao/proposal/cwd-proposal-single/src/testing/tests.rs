@@ -1,9 +1,16 @@
-use cosmwasm_std::{coins, testing::{mock_dependencies, mock_env}, to_binary, Addr, Attribute, BankMsg, ContractInfoResponse, CosmosMsg, Decimal, Empty, Reply, StdError, SubMsgResult, Uint128, WasmMsg, WasmQuery, StdResult};
+use cosmwasm_std::{
+    coins,
+    testing::{mock_dependencies, mock_env},
+    to_binary, Addr, Attribute, BankMsg, ContractInfoResponse, CosmosMsg, Decimal, Empty, Reply,
+    StdError, StdResult, SubMsgResult, Uint128, WasmMsg, WasmQuery,
+};
 use cosmwasm_std::{Api, Storage};
 use cw2::ContractVersion;
 use cw20::Cw20Coin;
 use cw_multi_test::{custom_app, BasicApp, Executor, Router};
 use cw_utils::Duration;
+use cwd_core::msg::{ExecuteMsg as DaoExecuteMsg, QueryMsg as DaoQueryMsg};
+use cwd_core::query::SubDao;
 use cwd_hooks::{HookError, HooksResponse};
 use cwd_interface::voting::InfoResponse;
 use cwd_voting::{
@@ -18,11 +25,6 @@ use cwd_voting::{
     voting::{Vote, Votes},
 };
 use neutron_bindings::bindings::msg::NeutronMsg;
-use cwd_core::msg::{
-    QueryMsg as DaoQueryMsg,
-    ExecuteMsg as DaoExecuteMsg,
-};
-use cwd_core::query::SubDao;
 
 use crate::testing::execute::{execute_proposal, execute_proposal_should_fail};
 use crate::{
@@ -1365,11 +1367,23 @@ fn test_subdao_queries() {
     let core_addr = instantiate_with_native_bonded_balances_governance(&mut app, instantiate, None);
 
     let subdao_addr = Addr::unchecked("subdao");
-    let res: StdResult<SubDao> = app.wrap()
-        .query_wasm_smart(core_addr.clone(), &DaoQueryMsg::GetSubDao { address: subdao_addr.to_string() });
+    let res: StdResult<SubDao> = app.wrap().query_wasm_smart(
+        core_addr.clone(),
+        &DaoQueryMsg::GetSubDao {
+            address: subdao_addr.to_string(),
+        },
+    );
     assert!(res.is_err());
-    let res: Vec<SubDao> = app.wrap()
-        .query_wasm_smart(core_addr.clone(), &DaoQueryMsg::ListSubDaos { start_after: None, limit: None }).unwrap();
+    let res: Vec<SubDao> = app
+        .wrap()
+        .query_wasm_smart(
+            core_addr.clone(),
+            &DaoQueryMsg::ListSubDaos {
+                start_after: None,
+                limit: None,
+            },
+        )
+        .unwrap();
     assert_eq!(res.len(), 0);
 
     let res = app.execute_contract(
@@ -1385,11 +1399,23 @@ fn test_subdao_queries() {
         &[],
     );
     assert!(res.is_ok());
-    let res: StdResult<SubDao> = app.wrap()
-        .query_wasm_smart(core_addr.clone(), &DaoQueryMsg::GetSubDao { address: subdao_addr.to_string() });
+    let res: StdResult<SubDao> = app.wrap().query_wasm_smart(
+        core_addr.clone(),
+        &DaoQueryMsg::GetSubDao {
+            address: subdao_addr.to_string(),
+        },
+    );
     assert!(res.is_ok());
-    let res: Vec<SubDao> = app.wrap()
-        .query_wasm_smart(core_addr.clone(), &DaoQueryMsg::ListSubDaos { start_after: None, limit: None }).unwrap();
+    let res: Vec<SubDao> = app
+        .wrap()
+        .query_wasm_smart(
+            core_addr.clone(),
+            &DaoQueryMsg::ListSubDaos {
+                start_after: None,
+                limit: None,
+            },
+        )
+        .unwrap();
     assert_eq!(res.len(), 1);
 }
 

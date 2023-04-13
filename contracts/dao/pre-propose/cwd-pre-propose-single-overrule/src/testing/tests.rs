@@ -15,10 +15,9 @@ use neutron_dao_pre_propose_overrule::msg::{
 
 use crate::error::PreProposeOverruleError;
 use crate::testing::mock_querier::{
-    get_dao_with_impostor_subdao, get_dao_with_impostor_timelock,
-    get_properly_initialized_dao, ContractQuerier, MOCK_DAO_PROPOSE_MODULE,
-    MOCK_IMPOSTOR_TIMELOCK_CONTRACT, MOCK_SUBDAO_CORE, NON_TIMELOCKED_PROPOSAL_ID, PROPOSALS_COUNT,
-    SUBDAO_NAME, TIMELOCKED_PROPOSAL_ID,
+    get_dao_with_impostor_subdao, get_dao_with_impostor_timelock, get_properly_initialized_dao,
+    ContractQuerier, MOCK_DAO_PROPOSE_MODULE, MOCK_IMPOSTOR_TIMELOCK_CONTRACT, MOCK_SUBDAO_CORE,
+    NON_TIMELOCKED_PROPOSAL_ID, PROPOSALS_COUNT, SUBDAO_NAME, TIMELOCKED_PROPOSAL_ID,
 };
 use cwd_pre_propose_base::state::Config;
 use cwd_proposal_single::msg::ExecuteMsg as ProposeMessageInternal;
