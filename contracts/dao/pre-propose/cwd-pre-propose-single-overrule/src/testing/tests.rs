@@ -15,7 +15,7 @@ use neutron_dao_pre_propose_overrule::msg::{
 
 use crate::error::PreProposeOverruleError;
 use crate::testing::mock_querier::{
-    get_dao_with_impostor_subdao, get_dao_with_impostor_timelock, get_dao_with_many_subdaos,
+    get_dao_with_impostor_subdao, get_dao_with_impostor_timelock,
     get_properly_initialized_dao, ContractQuerier, MOCK_DAO_PROPOSE_MODULE,
     MOCK_IMPOSTOR_TIMELOCK_CONTRACT, MOCK_SUBDAO_CORE, NON_TIMELOCKED_PROPOSAL_ID, PROPOSALS_COUNT,
     SUBDAO_NAME, TIMELOCKED_PROPOSAL_ID,
@@ -237,29 +237,6 @@ fn test_proposal_is_not_timelocked() {
     );
     assert!(res.is_err());
     assert_eq!(res, Err(PreProposeOverruleError::ProposalWrongState {}));
-}
-
-#[test]
-fn test_long_subdao_list() {
-    // test where we check if out pagination handling works properly
-    let contracts: HashMap<String, Box<dyn ContractQuerier>> = get_dao_with_many_subdaos();
-    let mut deps = mock_dependencies(contracts);
-    init_base_contract(deps.as_mut());
-    const PROPOSAL_ID: u64 = TIMELOCKED_PROPOSAL_ID;
-    const PROPOSER_ADDR: &str = "whatever";
-    let msg = ExecuteMsg::Propose {
-        msg: ProposeMessage::ProposeOverrule {
-            timelock_contract: MOCK_TIMELOCK_CONTRACT.to_string(),
-            proposal_id: PROPOSAL_ID,
-        },
-    };
-    let res = execute(
-        deps.as_mut(),
-        mock_env(),
-        mock_info(PROPOSER_ADDR, &[]),
-        msg,
-    );
-    assert!(res.is_ok());
 }
 
 #[test]

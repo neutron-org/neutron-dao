@@ -126,6 +126,8 @@ pub enum QueryMsg {
         start_after: Option<String>,
         limit: Option<u32>,
     },
+    /// Returns the SubDAO for a specific address if it in the list
+    GetSubDao { address: String },
     /// Implements the DAO Star standard: https://daostar.one/EIP
     DaoURI {},
 }

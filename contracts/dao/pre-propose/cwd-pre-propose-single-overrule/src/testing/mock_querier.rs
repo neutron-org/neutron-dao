@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::marker::PhantomData;
 
 use cosmwasm_std::{
@@ -93,19 +93,23 @@ pub trait ContractQuerier {
 }
 
 pub struct MockDaoQueries {
-    sub_dao_list_pages: HashMap<Option<String>, Vec<SubDao>>,
+    sub_dao_set: HashSet<String>,
 }
 
 impl ContractQuerier for MockDaoQueries {
     fn query(&self, msg: &Binary) -> QuerierResult {
         let q: MainDaoQueryMsg = from_binary(msg).unwrap();
         match q {
-            MainDaoQueryMsg::ListSubDaos {
-                start_after,
-                limit: _,
-            } => SystemResult::Ok(ContractResult::from(to_binary(
-                &self.sub_dao_list_pages.get(&start_after).unwrap(),
-            ))),
+            MainDaoQueryMsg::GetSubDao {
+                address,
+            } =>
+            match self.sub_dao_set.contains(&address) {
+                true => SystemResult::Ok(ContractResult::from(to_binary(&SubDao {
+                    addr: address.clone(),
+                    charter: None,
+                }))),
+                false => SystemResult::Err(SystemError::Unknown {})
+            },
             _ => SystemResult::Err(SystemError::Unknown {}),
         }
     }
@@ -243,13 +247,9 @@ pub fn get_properly_initialized_dao() -> HashMap<String, Box<dyn ContractQuerier
     contracts.insert(
         MOCK_DAO_CORE.to_string(),
         Box::new(MockDaoQueries {
-            sub_dao_list_pages: HashMap::from([(
-                None,
-                vec![SubDao {
-                    addr: MOCK_SUBDAO_CORE.to_string(),
-                    charter: None,
-                }],
-            )]),
+            sub_dao_set: HashSet::from([
+                MOCK_SUBDAO_CORE.to_string()
+            ]),
         }),
     );
     contracts.insert(
@@ -301,38 +301,9 @@ pub fn get_dao_with_impostor_subdao() -> HashMap<String, Box<dyn ContractQuerier
     contracts.insert(
         MOCK_DAO_CORE.to_string(),
         Box::new(MockDaoQueries {
-            sub_dao_list_pages: HashMap::from([(None, vec![])]),
+            sub_dao_set: HashSet::from([]),
         }),
     );
     contracts
 }
 
-pub fn get_dao_with_many_subdaos() -> HashMap<String, Box<dyn ContractQuerier>> {
-    let mut contracts: HashMap<String, Box<dyn ContractQuerier>> = get_properly_initialized_dao();
-    // subdao becomes impostor if it is not in the dao's list, so let's just make it empty
-    contracts.remove(&MOCK_DAO_CORE.to_string());
-    contracts.insert(
-        MOCK_DAO_CORE.to_string(),
-        Box::new(MockDaoQueries {
-            sub_dao_list_pages: HashMap::from([
-                (
-                    None,
-                    (0..crate::contract::SUBDAOS_QUERY_LIMIT)
-                        .map(|_| SubDao {
-                            addr: "bla_bla".to_string(),
-                            charter: None,
-                        })
-                        .collect::<Vec<SubDao>>(),
-                ),
-                (
-                    Some("bla_bla".to_string()),
-                    vec![SubDao {
-                        addr: MOCK_SUBDAO_CORE.to_string(),
-                        charter: None,
-                    }],
-                ),
-            ]),
-        }),
-    );
-    contracts
-}
