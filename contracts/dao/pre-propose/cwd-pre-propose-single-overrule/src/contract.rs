@@ -86,7 +86,7 @@ pub fn execute(
                 return Err(PreProposeOverruleError::AlreadyExists { id });
             }
 
-            let subdao_address = get_subdao_from_timelock(&deps, &timelock_contract)?;
+            let subdao_address = get_subdao_from_timelock(&deps, &timelock_contract_addr)?;
 
             // We need this check since the timelock contract might be an impostor
             // E.g. the timelock contract might be a malicious contract that is not a part of
@@ -168,7 +168,7 @@ overrule the proposal #{} of '{}' subdao (address {})",
 
 fn get_subdao_from_timelock(
     deps: &DepsMut,
-    timelock_contract: &String,
+    timelock_contract: &Addr,
 ) -> Result<Addr, PreProposeOverruleError> {
     let timelock_config: TimelockTypes::Config = deps.querier.query_wasm_smart(
         timelock_contract.to_string(),
