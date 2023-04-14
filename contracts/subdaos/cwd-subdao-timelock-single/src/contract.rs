@@ -24,7 +24,7 @@ use neutron_subdao_timelock_single::{
 };
 
 use crate::error::ContractError;
-use crate::state::{CONFIG, DEFAULT_LIMIT, PROPOSALS};
+use crate::state::{CONFIG, CONFIG_OLD, DEFAULT_LIMIT, PROPOSALS};
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:cwd-subdao-timelock-single";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -275,9 +275,20 @@ pub fn query_list_proposals(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
     // Set contract to version to latest
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    let mut old_config: Config = CONFIG_OLD.load(deps.storage)?;
+
+    let new_overrule_pre_propose = deps.api.addr_validate(&msg.overrule_pre_propose)?;
+    let new_config = Config {
+        owner: old_config.owner,
+        overrule_pre_propose: new_overrule_pre_propose,
+        subdao: old_config.subdao,
+    };
+
+    CONFIG.save(deps.storage, &new_config)?;
+
     Ok(Response::default())
 }
 

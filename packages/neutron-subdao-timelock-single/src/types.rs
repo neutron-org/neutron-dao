@@ -12,6 +12,14 @@ pub struct Config {
     pub subdao: Addr,
 }
 
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
+pub struct ConfigOld {
+    pub owner: Addr,
+    pub timelock_duration: u64,
+    // subDAO core module can timelock proposals.
+    pub subdao: Addr,
+}
+
 #[derive(Serialize, Deserialize, Clone, JsonSchema, Debug, Eq, PartialEq)]
 pub struct SingleChoiceProposal {
     /// The ID of the proposal being returned.
