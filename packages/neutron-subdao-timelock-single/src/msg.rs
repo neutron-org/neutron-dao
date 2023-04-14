@@ -5,9 +5,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 pub struct InstantiateMsg {
-    // Timelock duration for all proposals (starts when TimelockProposal message handler is executed).
-    // In seconds.
-    pub timelock_duration: u64,
+    // Overrule pre proposal module from the main DAO
+    pub overrule_pre_propose: String,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
@@ -25,7 +24,7 @@ pub enum ExecuteMsg {
     },
     UpdateConfig {
         owner: Option<String>,
-        timelock_duration: Option<u64>,
+        overrule_pre_propose: Option<String>,
     },
 }
 

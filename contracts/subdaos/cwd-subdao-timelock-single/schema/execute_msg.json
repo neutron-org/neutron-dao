@@ -84,19 +84,17 @@
         "update_config": {
           "type": "object",
           "properties": {
-            "owner": {
+            "overrule_pre_propose": {
               "type": [
                 "string",
                 "null"
               ]
             },
-            "timelock_duration": {
+            "owner": {
               "type": [
-                "integer",
+                "string",
                 "null"
-              ],
-              "format": "uint64",
-              "minimum": 0.0
+              ]
             }
           }
         }

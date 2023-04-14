@@ -2,17 +2,25 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply, Response,
-    StdResult, SubMsg,
+    StdResult, SubMsg, WasmMsg,
 };
 use cw2::set_contract_version;
 use cw_storage_plus::Bound;
-use cwd_pre_propose_base::msg::QueryMsg as PreProposeQueryBase;
+use cwd_proposal_single::{
+    msg::QueryMsg as MainDaoProposalModuleQueryMsg,
+    query::ProposalResponse as MainDaoProposalResponse,
+};
+use cwd_voting::status::Status;
 use neutron_bindings::bindings::msg::NeutronMsg;
+use neutron_dao_pre_propose_overrule::msg::{
+    ExecuteMsg as OverruleExecuteMsg, ProposeMessage as OverruleProposeMessage,
+    QueryExt as OverruleQueryExt, QueryMsg as OverruleQueryMsg,
+};
 use neutron_subdao_core::msg::QueryMsg as SubdaoQuery;
 use neutron_subdao_pre_propose_single::msg::QueryMsg as PreProposeQuery;
-use neutron_subdao_timelock_single::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
-use neutron_subdao_timelock_single::types::{
-    Config, ProposalListResponse, ProposalStatus, SingleChoiceProposal,
+use neutron_subdao_timelock_single::{
+    msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg},
+    types::{Config, ProposalListResponse, ProposalStatus, SingleChoiceProposal},
 };
 
 use crate::error::ContractError;
@@ -32,16 +40,22 @@ pub fn instantiate(
 
     let subdao_core: Addr = deps.querier.query_wasm_smart(
         info.sender, // sender is meant to be the pre-propose module
-        &PreProposeQuery::QueryBase(PreProposeQueryBase::Dao {}),
+        &PreProposeQuery::Dao {},
     )?;
 
     let main_dao: Addr = deps
         .querier
         .query_wasm_smart(subdao_core.clone(), &SubdaoQuery::MainDao {})?;
 
+    // We don't validate overrule pre propose address more than just as address.
+    // We could also query the DAO address of this module and check if it matches the main DAO set
+    // in the config. But we don't do that because it would require for the subdao to know much more
+    // about the main DAO than it should IMO. It also makes testing harder.
+    let overrule_pre_propose = deps.api.addr_validate(&msg.overrule_pre_propose)?;
+
     let config = Config {
         owner: main_dao,
-        timelock_duration: msg.timelock_duration,
+        overrule_pre_propose,
         subdao: subdao_core,
     };
 
@@ -50,7 +64,10 @@ pub fn instantiate(
     Ok(Response::new()
         .add_attribute("action", "instantiate")
         .add_attribute("owner", config.owner)
-        .add_attribute("timelock_duration", config.timelock_duration.to_string()))
+        .add_attribute(
+            "overrule_pre_propose",
+            config.overrule_pre_propose.to_string(),
+        ))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -72,8 +89,8 @@ pub fn execute(
         }
         ExecuteMsg::UpdateConfig {
             owner,
-            timelock_duration,
-        } => execute_update_config(deps, info, owner, timelock_duration),
+            overrule_pre_propose,
+        } => execute_update_config(deps, info, owner, overrule_pre_propose),
     }
 }
 
@@ -93,13 +110,26 @@ pub fn execute_timelock_proposal(
     let proposal = SingleChoiceProposal {
         id: proposal_id,
         msgs,
-        timelock_ts: env.block.time,
         status: ProposalStatus::Timelocked,
     };
 
     PROPOSALS.save(deps.storage, proposal_id, &proposal)?;
 
+    let create_overrule_proposal = WasmMsg::Execute {
+        contract_addr: config.overrule_pre_propose.to_string(),
+        msg: to_binary(&OverruleExecuteMsg::Propose {
+            msg: OverruleProposeMessage::ProposeOverrule {
+                timelock_contract: env.contract.address.to_string(),
+                proposal_id,
+            },
+        })?,
+        funds: vec![],
+    };
+
+    // NOTE: we don't handle an error that might appear during overrule proposal creation.
+    // Thus, we expect for proposal to get execution error status on proposal module level.
     Ok(Response::default()
+        .add_message(create_overrule_proposal)
         .add_attribute("action", "timelock_proposal")
         .add_attribute("sender", info.sender)
         .add_attribute("proposal_id", proposal_id.to_string())
@@ -123,8 +153,7 @@ pub fn execute_execute_proposal(
         });
     }
 
-    // Check if timelock has passed
-    if env.block.time.seconds() < (config.timelock_duration + proposal.timelock_ts.seconds()) {
+    if !is_overrule_proposal_rejected(&deps, &env, &config.overrule_pre_propose, proposal.id)? {
         return Err(ContractError::TimeLocked {});
     }
 
@@ -182,7 +211,7 @@ pub fn execute_update_config(
     deps: DepsMut,
     info: MessageInfo,
     new_owner: Option<String>,
-    new_timelock_duration: Option<u64>,
+    new_overrule_pre_propose: Option<String>,
 ) -> Result<Response<NeutronMsg>, ContractError> {
     let mut config: Config = CONFIG.load(deps.storage)?;
     if info.sender != config.owner {
@@ -197,15 +226,18 @@ pub fn execute_update_config(
         config.owner = owner;
     }
 
-    if let Some(timelock_duration) = new_timelock_duration {
-        config.timelock_duration = timelock_duration;
+    if let Some(overrule_pre_propose) = new_overrule_pre_propose {
+        config.overrule_pre_propose = deps.api.addr_validate(&overrule_pre_propose)?;
     }
 
     CONFIG.save(deps.storage, &config)?;
     Ok(Response::new()
         .add_attribute("action", "update_config")
         .add_attribute("owner", config.owner)
-        .add_attribute("timelock_duration", config.timelock_duration.to_string()))
+        .add_attribute(
+            "overrule_pre_propose",
+            config.overrule_pre_propose.to_string(),
+        ))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -247,6 +279,33 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
     // Set contract to version to latest
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     Ok(Response::default())
+}
+
+fn is_overrule_proposal_rejected(
+    deps: &DepsMut,
+    env: &Env,
+    overrule_pre_propose: &Addr,
+    subdao_proposal_id: u64,
+) -> Result<bool, ContractError> {
+    let overrule_proposal_id: u64 = deps.querier.query_wasm_smart(
+        overrule_pre_propose,
+        &OverruleQueryMsg::QueryExtension {
+            msg: OverruleQueryExt::OverruleProposalId {
+                timelock_address: env.contract.address.to_string(),
+                subdao_proposal_id,
+            },
+        },
+    )?;
+    let propose: Addr = deps
+        .querier
+        .query_wasm_smart(overrule_pre_propose, &OverruleQueryMsg::ProposalModule {})?;
+    let overrule_proposal: MainDaoProposalResponse = deps.querier.query_wasm_smart(
+        propose,
+        &MainDaoProposalModuleQueryMsg::Proposal {
+            proposal_id: overrule_proposal_id,
+        },
+    )?;
+    Ok(overrule_proposal.proposal.status == Status::Rejected)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "QueryMsg",
+  "title": "QueryMsg_for_QueryExt",
   "oneOf": [
     {
       "description": "Gets the proposal module that this pre propose module is associated with. Returns `Addr`.",
@@ -63,6 +63,59 @@
         }
       },
       "additionalProperties": false
+    },
+    {
+      "description": "Extension for queries. The default implementation will do nothing if queried for will return `Binary::default()`.",
+      "type": "object",
+      "required": [
+        "query_extension"
+      ],
+      "properties": {
+        "query_extension": {
+          "type": "object",
+          "required": [
+            "msg"
+          ],
+          "properties": {
+            "msg": {
+              "$ref": "#/definitions/QueryExt"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
     }
-  ]
+  ],
+  "definitions": {
+    "QueryExt": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "overrule_proposal_id"
+          ],
+          "properties": {
+            "overrule_proposal_id": {
+              "type": "object",
+              "required": [
+                "subdao_proposal_id",
+                "timelock_address"
+              ],
+              "properties": {
+                "subdao_proposal_id": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "timelock_address": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
 }

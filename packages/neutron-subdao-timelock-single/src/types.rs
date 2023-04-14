@@ -1,5 +1,5 @@
 use cosmwasm_std::Addr;
-use cosmwasm_std::{CosmosMsg, Timestamp};
+use cosmwasm_std::CosmosMsg;
 use neutron_bindings::bindings::msg::NeutronMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 pub struct Config {
     pub owner: Addr,
-    pub timelock_duration: u64,
+    pub overrule_pre_propose: Addr,
     // subDAO core module can timelock proposals.
     pub subdao: Addr,
 }
@@ -16,9 +16,6 @@ pub struct Config {
 pub struct SingleChoiceProposal {
     /// The ID of the proposal being returned.
     pub id: u64,
-
-    /// The timestamp at which the proposal was submitted to the timelock contract.
-    pub timelock_ts: Timestamp,
 
     /// The messages that will be executed should this proposal be executed.
     pub msgs: Vec<CosmosMsg<NeutronMsg>>,

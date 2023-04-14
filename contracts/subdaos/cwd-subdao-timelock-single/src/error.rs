@@ -20,4 +20,7 @@ pub enum ContractError {
 
     #[error("no such proposal ({id})")]
     NoSuchProposal { id: u64 },
+
+    #[error("Can not create overrule proposal for main DAO")]
+    CantCreateOverrule {},
 }

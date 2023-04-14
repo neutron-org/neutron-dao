@@ -4,6 +4,7 @@ use cosmwasm_std::{
 use std::fmt::Debug;
 
 use cw2::set_contract_version;
+use schemars::JsonSchema;
 
 use cw_denom::UncheckedDenom;
 use cwd_interface::voting::{Query as CwCoreQuery, VotingPowerAtHeightResponse};
@@ -22,9 +23,10 @@ use crate::{
 const CONTRACT_NAME: &str = "crates.io::cwd-pre-propose-base";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-impl<ProposalMessage> PreProposeContract<ProposalMessage>
+impl<ProposalMessage, QueryExt> PreProposeContract<ProposalMessage, QueryExt>
 where
     ProposalMessage: Serialize + Debug,
+    QueryExt: JsonSchema,
 {
     pub fn instantiate(
         &self,
@@ -99,7 +101,7 @@ where
         }
     }
 
-    pub fn query(&self, deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+    pub fn query(&self, deps: Deps, _env: Env, msg: QueryMsg<QueryExt>) -> StdResult<Binary> {
         match msg {
             QueryMsg::ProposalModule {} => to_binary(&self.proposal_module.load(deps.storage)?),
             QueryMsg::Dao {} => to_binary(&self.dao.load(deps.storage)?),
@@ -111,6 +113,7 @@ where
                     proposer,
                 })
             }
+            QueryMsg::QueryExtension { .. } => Ok(Binary::default()),
         }
     }
 
