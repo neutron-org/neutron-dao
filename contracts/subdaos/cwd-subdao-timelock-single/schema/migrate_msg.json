@@ -1,13 +1,5 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "MigrateMsg",
-  "type": "object",
-  "required": [
-    "overrule_pre_propose"
-  ],
-  "properties": {
-    "overrule_pre_propose": {
-      "type": "string"
-    }
-  }
+  "type": "object"
 }

@@ -53,6 +53,4 @@ pub enum QueryMsg {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-pub struct MigrateMsg {
-    pub overrule_pre_propose: String,
-}
+pub struct MigrateMsg {}
