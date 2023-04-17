@@ -22,6 +22,7 @@ use neutron_subdao_timelock_single::{
     msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg},
     types::{Config, ProposalListResponse, ProposalStatus, SingleChoiceProposal},
 };
+use neutron_subdao_timelock_single::types::ConfigOld;
 
 use crate::error::ContractError;
 use crate::state::{CONFIG, CONFIG_OLD, DEFAULT_LIMIT, PROPOSALS};
@@ -278,7 +279,7 @@ pub fn query_list_proposals(
 pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
     // Set contract to version to latest
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-    let old_config: Config = CONFIG_OLD.load(deps.storage)?;
+    let old_config: ConfigOld = CONFIG_OLD.load(deps.storage)?;
 
     let new_overrule_pre_propose = deps.api.addr_validate(&msg.overrule_pre_propose)?;
     let new_config = Config {
