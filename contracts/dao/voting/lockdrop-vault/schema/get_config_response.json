@@ -6,7 +6,8 @@
     "description",
     "lockdrop_contract",
     "name",
-    "oracle_contract",
+    "oracle_atom_contract",
+    "oracle_usdc_contract",
     "owner"
   ],
   "properties": {
@@ -29,7 +30,10 @@
     "name": {
       "type": "string"
     },
-    "oracle_contract": {
+    "oracle_atom_contract": {
+      "$ref": "#/definitions/Addr"
+    },
+    "oracle_usdc_contract": {
       "$ref": "#/definitions/Addr"
     },
     "owner": {

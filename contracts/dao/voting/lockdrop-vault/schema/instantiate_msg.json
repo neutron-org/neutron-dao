@@ -6,7 +6,8 @@
     "description",
     "lockdrop_contract",
     "name",
-    "oracle_contract",
+    "oracle_atom_contract",
+    "oracle_usdc_contract",
     "owner"
   ],
   "properties": {
@@ -29,8 +30,12 @@
       "description": "Name contains the vault name which is used to ease the vault's recognition.",
       "type": "string"
     },
-    "oracle_contract": {
-      "description": "The oracle contract behind the vault.",
+    "oracle_atom_contract": {
+      "description": "The oracle ATOM/NTRN contract behind the vault.",
+      "type": "string"
+    },
+    "oracle_usdc_contract": {
+      "description": "The oracle USDC/NTRN contract behind the vault.",
       "type": "string"
     },
     "owner": {

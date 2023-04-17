@@ -1227,8 +1227,7 @@
       "required": [
         "id",
         "msgs",
-        "status",
-        "timelock_ts"
+        "status"
       ],
       "properties": {
         "id": {
@@ -1246,14 +1245,6 @@
         },
         "status": {
           "$ref": "#/definitions/ProposalStatus"
-        },
-        "timelock_ts": {
-          "description": "The timestamp at which the proposal was submitted to the timelock contract.",
-          "allOf": [
-            {
-              "$ref": "#/definitions/Timestamp"
-            }
-          ]
         }
       }
     },
