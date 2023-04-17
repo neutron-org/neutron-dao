@@ -16,6 +16,7 @@ use cwd_pre_propose_base::{
     msg::{ExecuteMsg as ExecuteBase, InstantiateMsg as InstantiateBase},
     state::PreProposeContract,
 };
+use neutron_subdao_pre_propose_single::msg::MigrateMsg;
 use neutron_subdao_pre_propose_single::{
     msg::{ExecuteMsg, InstantiateMsg, QueryExt, QueryMsg},
     types::ProposeMessage,
@@ -185,4 +186,9 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, PrePropos
     }
 
     Err(PreProposeError::UnknownReplyID {})
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, PreProposeError> {
+    Ok(Response::default())
 }
