@@ -1,16 +1,17 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, Deps, DepsMut, Env, Fraction, MessageInfo, Response, Uint128,
+    to_binary, Binary, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo, Response, Uint128,
 };
 use cw2::set_contract_version;
 use cwd_interface::voting::{
     BondingStatusResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
 use cwd_interface::Admin;
+use serde::Serialize;
 
 use crate::state::{CONFIG, DAO};
-use neutron_lockdrop_vault::voting_power::get_voting_power;
+use neutron_oracle::voting_power::voting_power_from_lp_tokens;
 use neutron_vesting_lp_vault::{
     error::{ContractError, ContractResult},
     msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg},
@@ -210,6 +211,35 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
     }
 }
 
+fn get_voting_power(
+    deps: Deps,
+    config: &Config,
+    height: u64,
+    query_msg: &impl Serialize,
+) -> ContractResult<Decimal256> {
+    let mut voting_power = Decimal256::zero();
+    for (vesting_lp, oracle) in [
+        (
+            &config.atom_vesting_lp_contract,
+            &config.atom_oracle_contract,
+        ),
+        (
+            &config.usdc_vesting_lp_contract,
+            &config.usdc_oracle_contract,
+        ),
+    ] {
+        voting_power += voting_power_from_lp_tokens(
+            deps,
+            deps.querier
+                .query_wasm_smart::<Option<Uint128>>(vesting_lp, &query_msg)?
+                .unwrap_or_default(),
+            oracle,
+            height,
+        )?;
+    }
+    Ok(voting_power)
+}
+
 pub fn query_voting_power_at_height(
     deps: Deps,
     env: Env,
@@ -218,27 +248,14 @@ pub fn query_voting_power_at_height(
 ) -> ContractResult<VotingPowerAtHeightResponse> {
     let config = CONFIG.load(deps.storage)?;
     let height = height.unwrap_or(env.block.height);
-
     let query_msg = VestingLpQueryMsg::HistoricalExtension {
         msg: QueryMsgHistorical::UnclaimedAmountAtHeight { address, height },
     };
-    let atom_power = get_voting_power(
-        deps,
-        &config.atom_vesting_lp_contract,
-        &config.atom_oracle_contract,
-        &query_msg,
-        height,
-    )?;
-    let usdc_power = get_voting_power(
-        deps,
-        &config.usdc_vesting_lp_contract,
-        &config.usdc_oracle_contract,
-        &query_msg,
-        height,
-    )?;
 
     Ok(VotingPowerAtHeightResponse {
-        power: (atom_power + usdc_power).numerator().try_into()?,
+        power: get_voting_power(deps, &config, height, &query_msg)?
+            .numerator()
+            .try_into()?,
         height,
     })
 }
@@ -250,27 +267,14 @@ pub fn query_total_power_at_height(
 ) -> ContractResult<TotalPowerAtHeightResponse> {
     let config = CONFIG.load(deps.storage)?;
     let height = height.unwrap_or(env.block.height);
-
     let query_msg = VestingLpQueryMsg::HistoricalExtension {
         msg: QueryMsgHistorical::UnclaimedTotalAmountAtHeight { height },
     };
-    let atom_power = get_voting_power(
-        deps,
-        &config.atom_vesting_lp_contract,
-        &config.atom_oracle_contract,
-        &query_msg,
-        height,
-    )?;
-    let usdc_power = get_voting_power(
-        deps,
-        &config.usdc_vesting_lp_contract,
-        &config.usdc_oracle_contract,
-        &query_msg,
-        height,
-    )?;
 
     Ok(TotalPowerAtHeightResponse {
-        power: (atom_power + usdc_power).numerator().try_into()?,
+        power: get_voting_power(deps, &config, height, &query_msg)?
+            .numerator()
+            .try_into()?,
         height,
     })
 }

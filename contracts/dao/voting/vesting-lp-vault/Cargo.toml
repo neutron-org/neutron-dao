@@ -25,7 +25,7 @@ thiserror = { version = "1.0" }
 cwd-macros = { path = "../../../../packages/cwd-macros" }
 cwd-interface = { path = "../../../../packages/cwd-interface" }
 neutron-vesting-lp-vault = { path = "../../../../packages/neutron-vesting-lp-vault" }
-neutron-lockdrop-vault = { path = "../../../../packages/neutron-lockdrop-vault" }
+neutron-oracle = { path = "../../../../packages/neutron-oracle" }
 vesting-base = { git = "https://github.com/neutron-org/neutron-tge-contracts", branch = "main" }
 vesting-lp = { git = "https://github.com/neutron-org/neutron-tge-contracts", branch = "main" }
 

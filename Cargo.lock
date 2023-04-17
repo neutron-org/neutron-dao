@@ -1413,14 +1413,22 @@ dependencies = [
 name = "neutron-lockdrop-vault"
 version = "0.1.0"
 dependencies = [
- "astroport 2.0.0",
  "astroport-periphery",
  "cosmwasm-std",
  "cwd-interface",
  "cwd-macros",
+ "neutron-oracle",
  "schemars",
  "serde",
  "thiserror",
+]
+
+[[package]]
+name = "neutron-oracle"
+version = "0.1.0"
+dependencies = [
+ "astroport 2.0.0",
+ "cosmwasm-std",
 ]
 
 [[package]]
@@ -2151,7 +2159,7 @@ dependencies = [
  "cw2 0.13.4",
  "cwd-interface",
  "cwd-macros",
- "neutron-lockdrop-vault",
+ "neutron-oracle",
  "neutron-vesting-lp-vault",
  "schemars",
  "serde",
