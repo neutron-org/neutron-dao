@@ -18,11 +18,11 @@ use neutron_dao_pre_propose_overrule::msg::{
 };
 use neutron_subdao_core::msg::QueryMsg as SubdaoQuery;
 use neutron_subdao_pre_propose_single::msg::QueryMsg as PreProposeQuery;
+use neutron_subdao_timelock_single::types::ConfigOld;
 use neutron_subdao_timelock_single::{
     msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg},
     types::{Config, ProposalListResponse, ProposalStatus, SingleChoiceProposal},
 };
-use neutron_subdao_timelock_single::types::ConfigOld;
 
 use crate::error::ContractError;
 use crate::state::{CONFIG, CONFIG_OLD, DEFAULT_LIMIT, PROPOSALS};
