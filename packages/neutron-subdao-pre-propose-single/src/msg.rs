@@ -24,8 +24,8 @@ pub type ExecuteMsg = ExecuteBase<ProposeMessage>;
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 #[serde(rename_all = "snake_case")]
-pub enum QueryMsg {
-    QueryBase(QueryBase),
-    /// Gets the address of the timelock contract.
+pub enum QueryExt {
     TimelockAddress {},
 }
+
+pub type QueryMsg = QueryBase<QueryExt>;

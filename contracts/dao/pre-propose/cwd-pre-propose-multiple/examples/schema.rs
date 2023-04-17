@@ -1,3 +1,4 @@
+use cosmwasm_std::Empty;
 use std::env::current_dir;
 use std::fs::create_dir_all;
 
@@ -14,7 +15,7 @@ fn main() {
 
     export_schema(&schema_for!(InstantiateMsg), &out_dir);
     export_schema(&schema_for!(ExecuteMsg<ProposeMessage>), &out_dir);
-    export_schema(&schema_for!(QueryMsg), &out_dir);
+    export_schema(&schema_for!(QueryMsg<Empty>), &out_dir);
     export_schema(&schema_for!(DepositInfoResponse), &out_dir);
 
     export_schema_with_title(&schema_for!(Addr), &out_dir, "ProposalModuleResponse");

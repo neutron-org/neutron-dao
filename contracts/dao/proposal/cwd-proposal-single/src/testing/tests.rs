@@ -2,13 +2,15 @@ use cosmwasm_std::{
     coins,
     testing::{mock_dependencies, mock_env},
     to_binary, Addr, Attribute, BankMsg, ContractInfoResponse, CosmosMsg, Decimal, Empty, Reply,
-    StdError, SubMsgResult, Uint128, WasmMsg, WasmQuery,
+    StdError, StdResult, SubMsgResult, Uint128, WasmMsg, WasmQuery,
 };
 use cosmwasm_std::{Api, Storage};
 use cw2::ContractVersion;
 use cw20::Cw20Coin;
 use cw_multi_test::{custom_app, BasicApp, Executor, Router};
 use cw_utils::Duration;
+use cwd_core::msg::{ExecuteMsg as DaoExecuteMsg, QueryMsg as DaoQueryMsg};
+use cwd_core::query::SubDao;
 use cwd_hooks::{HookError, HooksResponse};
 use cwd_interface::voting::InfoResponse;
 use cwd_voting::{
@@ -1356,6 +1358,65 @@ fn test_pre_propose_admin_is_dao() {
         }))
         .unwrap();
     assert_eq!(info.admin, Some(core_addr.into_string()));
+}
+
+#[test]
+fn test_subdao_queries() {
+    let mut app = custom_app::<NeutronMsg, Empty, _>(no_init);
+    let instantiate = get_proposal_module_instantiate(&mut app);
+    let core_addr = instantiate_with_native_bonded_balances_governance(&mut app, instantiate, None);
+
+    let subdao_addr = Addr::unchecked("subdao");
+    let res: StdResult<SubDao> = app.wrap().query_wasm_smart(
+        core_addr.clone(),
+        &DaoQueryMsg::GetSubDao {
+            address: subdao_addr.to_string(),
+        },
+    );
+    assert!(res.is_err());
+    let res: Vec<SubDao> = app
+        .wrap()
+        .query_wasm_smart(
+            core_addr.clone(),
+            &DaoQueryMsg::ListSubDaos {
+                start_after: None,
+                limit: None,
+            },
+        )
+        .unwrap();
+    assert_eq!(res.len(), 0);
+
+    let res = app.execute_contract(
+        core_addr.clone(),
+        core_addr.clone(),
+        &DaoExecuteMsg::UpdateSubDaos {
+            to_add: vec![SubDao {
+                addr: subdao_addr.to_string(),
+                charter: None,
+            }],
+            to_remove: vec![],
+        },
+        &[],
+    );
+    assert!(res.is_ok());
+    let res: StdResult<SubDao> = app.wrap().query_wasm_smart(
+        core_addr.clone(),
+        &DaoQueryMsg::GetSubDao {
+            address: subdao_addr.to_string(),
+        },
+    );
+    assert!(res.is_ok());
+    let res: Vec<SubDao> = app
+        .wrap()
+        .query_wasm_smart(
+            core_addr,
+            &DaoQueryMsg::ListSubDaos {
+                start_after: None,
+                limit: None,
+            },
+        )
+        .unwrap();
+    assert_eq!(res.len(), 1);
 }
 
 // TODO: test pre-propose module that fails on new proposal hook (ugh).

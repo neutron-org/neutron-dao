@@ -192,6 +192,27 @@
       "additionalProperties": false
     },
     {
+      "description": "Returns the SubDAO for a specific address if it in the list",
+      "type": "object",
+      "required": [
+        "get_sub_dao"
+      ],
+      "properties": {
+        "get_sub_dao": {
+          "type": "object",
+          "required": [
+            "address"
+          ],
+          "properties": {
+            "address": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
       "description": "Implements the DAO Star standard: https://daostar.one/EIP",
       "type": "object",
       "required": [

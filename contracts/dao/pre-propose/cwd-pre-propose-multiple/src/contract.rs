@@ -1,7 +1,7 @@
 use cosmwasm_schema::cw_serde;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
+use cosmwasm_std::{Binary, Deps, DepsMut, Empty, Env, MessageInfo, Response, StdResult};
 use cw2::set_contract_version;
 
 use cwd_pre_propose_base::{
@@ -25,7 +25,7 @@ pub enum ProposeMessage {
 
 pub type InstantiateMsg = InstantiateBase;
 pub type ExecuteMsg = ExecuteBase<ProposeMessage>;
-pub type QueryMsg = QueryBase;
+pub type QueryMsg = QueryBase<Empty>;
 
 /// Internal version of the propose message that includes the
 /// `proposer` field. The module will fill this in based on the sender
@@ -40,7 +40,7 @@ enum ProposeMessageInternal {
     },
 }
 
-type PrePropose = PreProposeContract<ProposeMessageInternal>;
+type PrePropose = PreProposeContract<ProposeMessageInternal, Empty>;
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(

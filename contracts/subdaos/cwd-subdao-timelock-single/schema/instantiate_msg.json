@@ -3,13 +3,11 @@
   "title": "InstantiateMsg",
   "type": "object",
   "required": [
-    "timelock_duration"
+    "overrule_pre_propose"
   ],
   "properties": {
-    "timelock_duration": {
-      "type": "integer",
-      "format": "uint64",
-      "minimum": 0.0
+    "overrule_pre_propose": {
+      "type": "string"
     }
   }
 }

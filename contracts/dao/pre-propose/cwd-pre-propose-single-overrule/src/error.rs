@@ -10,6 +10,18 @@ pub enum PreProposeOverruleError {
     #[error(transparent)]
     PreProposeBase(PreProposeError),
 
-    #[error("Base pre propose messages aren't supported.")]
+    #[error("Base pre propose messages aren't supported")]
     MessageUnsupported {},
+
+    #[error("Subdao is misconfigured")]
+    SubdaoMisconfigured {},
+
+    #[error("Subdao isn't in the list")]
+    ForbiddenSubdao {},
+
+    #[error("Subdao proposal isn't timelocked")]
+    ProposalWrongState {},
+
+    #[error("Overrule proposal for this subdao proposal already created with id ({id})")]
+    AlreadyExists { id: u64 },
 }

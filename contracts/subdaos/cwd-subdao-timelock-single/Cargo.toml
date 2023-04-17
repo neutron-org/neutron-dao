@@ -21,7 +21,6 @@ cosmwasm-std = { version = "1.0.0" }
 cosmwasm-storage = { version = "1.0.0" }
 cw-storage-plus = "0.13"
 cw2 = "0.13"
-cw-utils = "0.13"
 cw-controllers = "0.13"
 schemars = "0.8"
 serde = { version = "1.0.147", default-features = false, features = ["derive"] }
@@ -32,8 +31,12 @@ neutron-subdao-pre-propose-single = { path = "../../../packages/neutron-subdao-p
 neutron-subdao-timelock-single = { path = "../../../packages/neutron-subdao-timelock-single" }
 cwd-pre-propose-base = { path = "../../../packages/cwd-pre-propose-base" }
 neutron-subdao-core = { path = "../../../packages/neutron-subdao-core" }
+neutron-dao-pre-propose-overrule = { path = "../../../packages/neutron-dao-pre-propose-overrule" }
+cwd-proposal-single = { path = "../../../contracts/dao/proposal/cwd-proposal-single", features = ["library"]}
+cwd-voting = { path = "../../../packages/cwd-voting" }
 
 [dev-dependencies]
 cosmwasm-schema = { version = "1.0.0" }
 cw-multi-test = "0.13"
 anyhow = "1.0.57"
+cw-utils = "0.13"
