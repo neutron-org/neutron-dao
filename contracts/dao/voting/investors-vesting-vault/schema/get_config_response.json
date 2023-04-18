@@ -4,6 +4,7 @@
   "type": "object",
   "required": [
     "description",
+    "name",
     "owner",
     "vesting_contract_address"
   ],
@@ -20,6 +21,9 @@
           "type": "null"
         }
       ]
+    },
+    "name": {
+      "type": "string"
     },
     "owner": {
       "$ref": "#/definitions/Addr"

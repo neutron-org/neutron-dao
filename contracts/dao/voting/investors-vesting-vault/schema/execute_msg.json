@@ -10,9 +10,6 @@
       "properties": {
         "update_config": {
           "type": "object",
-          "required": [
-            "owner"
-          ],
           "properties": {
             "description": {
               "type": [
@@ -26,8 +23,17 @@
                 "null"
               ]
             },
+            "name": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
             "owner": {
-              "type": "string"
+              "type": [
+                "string",
+                "null"
+              ]
             },
             "vesting_contract_address": {
               "type": [
