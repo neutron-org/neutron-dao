@@ -1,3 +1,4 @@
+use crate::{ContractError, ContractResult};
 use cosmwasm_std::Addr;
 use cw_storage_plus::Item;
 use schemars::JsonSchema;
@@ -9,8 +10,21 @@ pub struct Config {
     pub description: String,
     pub owner: Addr,
     pub manager: Option<Addr>,
+    pub name: String,
+}
+
+impl Config {
+    /// checks whether the config fields are valid.
+    pub fn validate(&self) -> ContractResult<()> {
+        if self.name.is_empty() {
+            return Err(ContractError::NameIsEmpty {});
+        }
+        if self.description.is_empty() {
+            return Err(ContractError::DescriptionIsEmpty {});
+        }
+        Ok(())
+    }
 }
 
 pub const CONFIG: Item<Config> = Item::new("config");
 pub const DAO: Item<Addr> = Item::new("dao");
-pub const DESCRIPTION: Item<String> = Item::new("description");

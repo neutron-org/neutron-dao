@@ -11,4 +11,12 @@ pub enum ContractError {
 
     #[error("Only owner can change owner")]
     OnlyOwnerCanChangeOwner {},
+
+    #[error("config name cannot be empty.")]
+    NameIsEmpty {},
+
+    #[error("config description cannot be empty.")]
+    DescriptionIsEmpty {},
 }
+
+pub type ContractResult<T> = Result<T, ContractError>;

@@ -30,6 +30,7 @@ thiserror = { version = "1.0" }
 cwd-macros = { path = "../../../../packages/cwd-macros" }
 cwd-interface = { path = "../../../../packages/cwd-interface" }
 cw-paginate = { path = "../../../../packages/cw-paginate" }
+cwd-voting = { path = "../../../../packages/cwd-voting" }
 vesting-base = { git = "https://github.com/neutron-org/neutron-tge-contracts.git" }
 
 [dev-dependencies]

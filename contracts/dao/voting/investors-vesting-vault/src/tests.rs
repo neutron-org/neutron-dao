@@ -105,9 +105,10 @@ fn update_config(
         contract_addr,
         &ExecuteMsg::UpdateConfig {
             vesting_contract_address,
-            owner,
+            owner: Some(owner),
             manager,
             description,
+            name: None,
         },
         &[],
     )
@@ -160,6 +161,7 @@ fn test_instantiate() {
                 addr: DAO_ADDR.to_string(),
             },
             manager: Some(ADDR1.to_string()),
+            name: "vesting vault".to_string(),
         },
     );
 
@@ -174,6 +176,7 @@ fn test_instantiate() {
                 addr: DAO_ADDR.to_string(),
             },
             manager: None,
+            name: "vesting vault".to_string(),
         },
     );
 }
@@ -193,6 +196,7 @@ fn test_instantiate_dao_owner() {
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
+            name: "vesting vault".to_string(),
         },
     );
 
@@ -216,6 +220,7 @@ fn test_update_config_invalid_sender() {
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
+            name: "vesting vault".to_string(),
         },
     );
 
@@ -247,6 +252,7 @@ fn test_update_config_non_owner_changes_owner() {
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
+            name: "vesting vault".to_string(),
         },
     );
 
@@ -277,6 +283,7 @@ fn test_update_config_as_owner() {
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
+            name: "vesting vault".to_string(),
         },
     );
 
@@ -299,6 +306,7 @@ fn test_update_config_as_owner() {
             description: NEW_DESCRIPTION.to_string(),
             owner: Addr::unchecked(ADDR1),
             manager: Some(Addr::unchecked(DAO_ADDR)),
+            name: "vesting vault".to_string(),
         },
         config
     );
@@ -318,6 +326,7 @@ fn test_update_config_as_manager() {
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
+            name: "vesting vault".to_string(),
         },
     );
 
@@ -340,13 +349,14 @@ fn test_update_config_as_manager() {
             description: NEW_DESCRIPTION.to_string(),
             owner: Addr::unchecked(DAO_ADDR),
             manager: Some(Addr::unchecked(ADDR2)),
+            name: "vesting vault".to_string(),
         },
         config
     );
 }
 
 #[test]
-#[should_panic(expected = "Empty attribute value. Key: description")]
+#[should_panic(expected = "config description cannot be empty.")]
 fn test_update_config_invalid_description() {
     let mut app = mock_app();
     let vesting_contract = instantiate_vesting_contract(&mut app);
@@ -360,6 +370,7 @@ fn test_update_config_invalid_description() {
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
+            name: "vesting vault".to_string(),
         },
     );
 
@@ -390,6 +401,7 @@ fn test_query_dao() {
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
+            name: "vesting vault".to_string(),
         },
     );
 
@@ -412,12 +424,16 @@ fn test_query_info() {
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
+            name: "vesting vault".to_string(),
         },
     );
 
     let msg = QueryMsg::Info {};
     let resp: InfoResponse = app.wrap().query_wasm_smart(addr, &msg).unwrap();
-    assert_eq!(resp.info.contract, "crates.io:neutron-vesting-vault");
+    assert_eq!(
+        resp.info.contract,
+        "crates.io:neutron-investors-vesting-vault"
+    );
 }
 
 #[test]
@@ -434,6 +450,7 @@ fn test_query_get_config() {
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
+            name: "vesting vault".to_string(),
         },
     );
 
@@ -445,6 +462,7 @@ fn test_query_get_config() {
             description: DESCRIPTION.to_string(),
             owner: Addr::unchecked(DAO_ADDR),
             manager: Some(Addr::unchecked(ADDR1)),
+            name: "vesting vault".to_string(),
         }
     )
 }
@@ -463,14 +481,13 @@ fn test_voting_power_queries() {
             description: DESCRIPTION.to_string(),
             owner: Admin::CoreModule {},
             manager: Some(ADDR1.to_string()),
+            name: "vesting vault".to_string(),
         },
     );
 
-    // Total power is 0
     let resp = get_total_power_at_height(&mut app, addr.clone(), None);
     assert_eq!(Uint128::from(10000u64), resp.power);
 
-    // ADDR1 has no power, none bonded
     let resp = get_voting_power_at_height(&mut app, addr, ADDR1.to_string(), None);
     assert_eq!(Uint128::from(10000u64), resp.power);
 }
