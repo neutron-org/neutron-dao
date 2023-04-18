@@ -4,47 +4,24 @@
   "type": "object",
   "required": [
     "description",
-    "lockdrop_contract",
-    "name",
-    "oracle_atom_contract",
-    "oracle_usdc_contract",
-    "owner"
+    "owner",
+    "vesting_contract_address"
   ],
   "properties": {
     "description": {
-      "description": "Description contains information that characterizes the vault.",
-      "type": "string"
-    },
-    "lockdrop_contract": {
-      "description": "The lockdrop contract behind the vault.",
       "type": "string"
     },
     "manager": {
-      "description": "Manager can update configs except changing the owner and the lockdrop contract. This will generally be an operations multisig for a DAO.",
       "type": [
         "string",
         "null"
       ]
     },
-    "name": {
-      "description": "Name contains the vault name which is used to ease the vault's recognition.",
-      "type": "string"
-    },
-    "oracle_atom_contract": {
-      "description": "The oracle ATOM/NTRN contract behind the vault.",
-      "type": "string"
-    },
-    "oracle_usdc_contract": {
-      "description": "The oracle USDC/NTRN contract behind the vault.",
-      "type": "string"
-    },
     "owner": {
-      "description": "Owner can update all configs including changing the owner. This will generally be a DAO.",
-      "allOf": [
-        {
-          "$ref": "#/definitions/Admin"
-        }
-      ]
+      "$ref": "#/definitions/Admin"
+    },
+    "vesting_contract_address": {
+      "type": "string"
     }
   },
   "definitions": {
