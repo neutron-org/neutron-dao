@@ -3,12 +3,12 @@ use std::fs::create_dir_all;
 
 use cosmwasm_schema::{export_schema, export_schema_with_title, remove_schemas, schema_for};
 use cosmwasm_std::Addr;
-use investors_vesting_vault::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
-use investors_vesting_vault::state::Config;
 use cw_controllers::ClaimsResponse;
 use cwd_interface::voting::{
     InfoResponse, IsActiveResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
+use investors_vesting_vault::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
+use investors_vesting_vault::state::Config;
 
 fn main() {
     let mut out_dir = current_dir().unwrap();
