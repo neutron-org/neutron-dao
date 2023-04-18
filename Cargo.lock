@@ -34,6 +34,19 @@ dependencies = [
 
 [[package]]
 name = "astroport"
+version = "2.0.0"
+source = "git+https://github.com/neutron-org/neutron-tge-contracts.git#f4827b3ca1c56b203623c92b6b244040fc81b05e"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-storage-plus 0.15.1",
+ "cw20 0.15.1",
+ "itertools",
+ "uint",
+]
+
+[[package]]
+name = "astroport"
 version = "2.7.1"
 source = "git+https://github.com/astroport-fi/astroport-core.git?branch=main#c73a2db3c0b4f069e906d90970e1b72a5cf71bbf"
 dependencies = [
@@ -1331,6 +1344,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "investors-vesting-vault"
+version = "0.2.0"
+dependencies = [
+ "anyhow",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cosmwasm-storage",
+ "cw-controllers 1.0.1",
+ "cw-multi-test 0.16.2",
+ "cw-paginate 0.2.0",
+ "cw-storage-plus 1.0.1",
+ "cw-utils 1.0.1",
+ "cw2 0.13.4",
+ "cw20 1.0.1",
+ "cwd-interface",
+ "cwd-macros",
+ "cwd-voting",
+ "schemars",
+ "serde",
+ "thiserror",
+ "vesting-base",
+]
+
+[[package]]
 name = "itertools"
 version = "0.10.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1368,7 +1405,7 @@ name = "lockdrop-vault"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "astroport 2.0.0",
+ "astroport 2.0.0 (git+https://github.com/neutron-org/neutron-tge-contracts.git?branch=main)",
  "astroport-periphery",
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -1412,7 +1449,7 @@ dependencies = [
 name = "neutron-lockdrop-vault"
 version = "0.1.0"
 dependencies = [
- "astroport 2.0.0",
+ "astroport 2.0.0 (git+https://github.com/neutron-org/neutron-tge-contracts.git?branch=main)",
  "astroport-periphery",
  "cosmwasm-std",
  "cwd-interface",
@@ -2077,6 +2114,22 @@ name = "version_check"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
+
+[[package]]
+name = "vesting-base"
+version = "1.1.0"
+source = "git+https://github.com/neutron-org/neutron-tge-contracts.git#f4827b3ca1c56b203623c92b6b244040fc81b05e"
+dependencies = [
+ "astroport 2.0.0 (git+https://github.com/neutron-org/neutron-tge-contracts.git)",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-storage-plus 0.15.1",
+ "cw-utils 0.15.1",
+ "cw2 0.15.1",
+ "cw20 0.15.1",
+ "serde",
+ "thiserror",
+]
 
 [[package]]
 name = "vote-hooks"
