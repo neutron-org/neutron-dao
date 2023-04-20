@@ -90,8 +90,8 @@ fn lockdrop_query(_deps: Deps, _env: Env, msg: LockdropQueryMsg) -> StdResult<Bi
             height: _,
         } => {
             let response = match pool_type {
-                PoolType::ATOM => Uint128::from(1000u64),
-                PoolType::USDC => Uint128::from(2000u64),
+                PoolType::ATOM => Uint128::from(1_000_000u64),
+                PoolType::USDC => Uint128::from(2_000_000u64),
             };
 
             to_binary(&response)
@@ -101,8 +101,8 @@ fn lockdrop_query(_deps: Deps, _env: Env, msg: LockdropQueryMsg) -> StdResult<Bi
             height: _,
         } => {
             let response = match pool_type {
-                PoolType::ATOM => Uint128::from(3000u64),
-                PoolType::USDC => Uint128::from(4000u64),
+                PoolType::ATOM => Uint128::from(3_000_000u64),
+                PoolType::USDC => Uint128::from(4_000_000u64),
             };
 
             to_binary(&response)
@@ -145,10 +145,10 @@ fn oracle_query(_deps: Deps, _env: Env, msg: OracleQueryMsg) -> StdResult<Binary
         OracleQueryMsg::TWAPAtHeight { token, height: _ } => {
             let twap = match token.clone() {
                 AssetInfo::NativeToken { denom } => match denom.as_str() {
-                    "untrn" => Decimal256::from_atomics(4u64, 6).unwrap(),
-                    _ => Decimal256::from_atomics(0u64, 6).unwrap(),
+                    "untrn" => Decimal256::from_ratio(2u64, 1u64),
+                    _ => Decimal256::from_ratio(1u64, 2u64),
                 },
-                AssetInfo::Token { contract_addr: _ } => Decimal256::from_atomics(0u64, 6).unwrap(),
+                AssetInfo::Token { contract_addr: _ } => Decimal256::from_ratio(1u64, 2u64),
             };
 
             let response = vec![(token, twap)];
@@ -783,7 +783,7 @@ fn test_voting_power_at_height() {
     );
 
     let resp = get_voting_power_at_height(&mut app, addr, ADDR1.to_string(), None);
-    assert_eq!(resp.power, Uint128::from(6u128));
+    assert_eq!(resp.power, Uint128::from(707106u128 + 1414213u128)); // (1b / sqrt(2)) + (2b / sqrt(2))
 }
 
 #[test]
@@ -810,7 +810,7 @@ fn test_total_power_at_height() {
     );
 
     let resp = get_total_power_at_height(&mut app, addr, None);
-    assert_eq!(resp.power, Uint128::from(14u128));
+    assert_eq!(resp.power, Uint128::from(2121320u128 + 2828427u128)); // (3b / sqrt(2)) + (4b / sqrt(2))
 }
 
 #[test]
