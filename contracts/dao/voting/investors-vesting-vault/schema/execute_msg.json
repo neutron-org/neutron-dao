@@ -17,12 +17,6 @@
                 "null"
               ]
             },
-            "manager": {
-              "type": [
-                "string",
-                "null"
-              ]
-            },
             "name": {
               "type": [
                 "string",

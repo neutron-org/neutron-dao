@@ -15,15 +15,6 @@ pub enum ContractError {
     #[error("Direct unbonding is not available for this contract")]
     DirectUnbondingDisabled {},
 
-    #[error("Only owner can change owner")]
-    OnlyOwnerCanChangeOwner {},
-
-    #[error("Only owner can change lockdrop contract")]
-    OnlyOwnerCanChangeLockdropContract {},
-
-    #[error("Only owner can change lockdrop contract")]
-    OnlyOwnerCanChangeOracleContract {},
-
     #[error("config name cannot be empty.")]
     NameIsEmpty {},
 

@@ -7,7 +7,6 @@ use cw2::set_contract_version;
 use cwd_interface::voting::{
     BondingStatusResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
-use cwd_interface::Admin;
 use cwd_voting::vault::{BonderBalanceResponse, ListBondersResponse};
 
 use crate::error::ContractError;
@@ -26,22 +25,13 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    let owner = match msg.owner {
-        Admin::Address { addr } => deps.api.addr_validate(addr.as_str())?,
-        Admin::CoreModule {} => info.sender.clone(),
-    };
-    let manager = msg
-        .manager
-        .map(|manager| deps.api.addr_validate(&manager))
-        .transpose()?;
-
+    let owner = deps.api.addr_validate(&msg.owner)?;
     let vesting_contract_address = deps.api.addr_validate(&msg.vesting_contract_address)?;
 
     let config = Config {
         vesting_contract_address,
         description: msg.description,
         owner,
-        manager,
         name: msg.name,
     };
 
@@ -54,14 +44,7 @@ pub fn instantiate(
         .add_attribute("action", "instantiate")
         .add_attribute("description", config.description)
         .add_attribute("vesting_contract_address", config.vesting_contract_address)
-        .add_attribute("owner", config.owner)
-        .add_attribute(
-            "manager",
-            config
-                .manager
-                .map(|a| a.to_string())
-                .unwrap_or_else(|| "None".to_string()),
-        ))
+        .add_attribute("owner", config.owner))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -75,7 +58,6 @@ pub fn execute(
         ExecuteMsg::UpdateConfig {
             vesting_contract_address,
             owner,
-            manager,
             description,
             name,
         } => execute_update_config(
@@ -83,7 +65,6 @@ pub fn execute(
             info,
             vesting_contract_address,
             owner,
-            manager,
             description,
             name,
         ),
@@ -95,12 +76,11 @@ pub fn execute_update_config(
     info: MessageInfo,
     new_vesting_contract_address: Option<String>,
     new_owner: Option<String>,
-    new_manager: Option<String>,
     new_description: Option<String>,
     new_name: Option<String>,
 ) -> Result<Response, ContractError> {
     let mut config: Config = CONFIG.load(deps.storage)?;
-    if info.sender != config.owner && Some(info.sender.clone()) != config.manager {
+    if info.sender != config.owner {
         return Err(ContractError::Unauthorized {});
     }
 
@@ -112,14 +92,6 @@ pub fn execute_update_config(
         .map(|new_owner| deps.api.addr_validate(&new_owner))
         .transpose()?;
 
-    let new_manager = new_manager
-        .map(|new_manager| deps.api.addr_validate(&new_manager))
-        .transpose()?;
-
-    if info.sender != config.owner && new_owner != Some(config.owner.clone()) {
-        return Err(ContractError::OnlyOwnerCanChangeOwner {});
-    };
-
     if let Some(owner) = new_owner {
         config.owner = owner;
     }
@@ -128,7 +100,6 @@ pub fn execute_update_config(
         config.name = name;
     }
 
-    config.manager = new_manager;
     if let Some(description) = new_description {
         config.description = description;
     }
@@ -143,14 +114,7 @@ pub fn execute_update_config(
         .add_attribute("action", "update_config")
         .add_attribute("description", config.description)
         .add_attribute("vesting_contract_address", config.vesting_contract_address)
-        .add_attribute("owner", config.owner)
-        .add_attribute(
-            "manager",
-            config
-                .manager
-                .map(|a| a.to_string())
-                .unwrap_or_else(|| "None".to_string()),
-        ))
+        .add_attribute("owner", config.owner))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -166,7 +130,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::Dao {} => query_dao(deps),
         QueryMsg::Name {} => query_name(deps),
         QueryMsg::Description {} => query_description(deps),
-        QueryMsg::GetConfig {} => to_binary(&CONFIG.load(deps.storage)?),
+        QueryMsg::Config {} => to_binary(&CONFIG.load(deps.storage)?),
         QueryMsg::BondingStatus { height, address } => {
             to_binary(&query_bonding_status(deps, env, height, address)?)
         }

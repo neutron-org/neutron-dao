@@ -8,7 +8,6 @@ use cw_multi_test::{custom_app, App, AppResponse, Contract, ContractWrapper, Exe
 use cwd_interface::voting::{
     InfoResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
-use cwd_interface::Admin;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -97,7 +96,6 @@ fn update_config(
     sender: &str,
     vesting_contract_address: Option<String>,
     owner: String,
-    manager: Option<String>,
     description: Option<String>,
 ) -> anyhow::Result<AppResponse> {
     app.execute_contract(
@@ -106,7 +104,6 @@ fn update_config(
         &ExecuteMsg::UpdateConfig {
             vesting_contract_address,
             owner: Some(owner),
-            manager,
             description,
             name: None,
         },
@@ -140,7 +137,7 @@ fn get_total_power_at_height(
 
 fn get_config(app: &mut App, contract_addr: Addr) -> Config {
     app.wrap()
-        .query_wasm_smart(contract_addr, &QueryMsg::GetConfig {})
+        .query_wasm_smart(contract_addr, &QueryMsg::Config {})
         .unwrap()
 }
 
@@ -150,64 +147,21 @@ fn test_instantiate() {
     let vesting_contract = instantiate_vesting_contract(&mut app);
 
     let vault_id = app.store_code(vault_contract());
-    // Populated fields
     let _addr = instantiate_vault(
         &mut app,
         vault_id,
         InstantiateMsg {
             vesting_contract_address: vesting_contract.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Admin::Address {
-                addr: DAO_ADDR.to_string(),
-            },
-            manager: Some(ADDR1.to_string()),
+            owner: DAO_ADDR.to_string(),
             name: "vesting vault".to_string(),
         },
     );
-
-    // Non populated fields
-    let _addr = instantiate_vault(
-        &mut app,
-        vault_id,
-        InstantiateMsg {
-            vesting_contract_address: vesting_contract.to_string(),
-            description: DESCRIPTION.to_string(),
-            owner: Admin::Address {
-                addr: DAO_ADDR.to_string(),
-            },
-            manager: None,
-            name: "vesting vault".to_string(),
-        },
-    );
-}
-
-#[test]
-fn test_instantiate_dao_owner() {
-    let mut app = mock_app();
-    let vesting_contract = instantiate_vesting_contract(&mut app);
-
-    let vault_id = app.store_code(vault_contract());
-    // Populated fields
-    let addr = instantiate_vault(
-        &mut app,
-        vault_id,
-        InstantiateMsg {
-            vesting_contract_address: vesting_contract.to_string(),
-            description: DESCRIPTION.to_string(),
-            owner: Admin::CoreModule {},
-            manager: Some(ADDR1.to_string()),
-            name: "vesting vault".to_string(),
-        },
-    );
-
-    let config = get_config(&mut app, addr);
-
-    assert_eq!(config.owner, Addr::unchecked(DAO_ADDR))
 }
 
 #[test]
 #[should_panic(expected = "Unauthorized")]
-fn test_update_config_invalid_sender() {
+fn test_update_config_unauthorized() {
     let mut app = mock_app();
     let vesting_contract = instantiate_vesting_contract(&mut app);
 
@@ -218,53 +172,19 @@ fn test_update_config_invalid_sender() {
         InstantiateMsg {
             vesting_contract_address: vesting_contract.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Admin::CoreModule {},
-            manager: Some(ADDR1.to_string()),
+            owner: DAO_ADDR.to_string(),
             name: "vesting vault".to_string(),
         },
     );
 
-    // From ADDR2, so not owner or manager
+    // From ADDR2, so not owner
     update_config(
         &mut app,
         addr,
         ADDR2,
         Some(vesting_contract.to_string()),
         ADDR1.to_string(),
-        Some(DAO_ADDR.to_string()),
         Some(NEW_DESCRIPTION.to_string()),
-    )
-    .unwrap();
-}
-
-#[test]
-#[should_panic(expected = "Only owner can change owner")]
-fn test_update_config_non_owner_changes_owner() {
-    let mut app = mock_app();
-    let vesting_contract = instantiate_vesting_contract(&mut app);
-
-    let vault_id = app.store_code(vault_contract());
-    let addr = instantiate_vault(
-        &mut app,
-        vault_id,
-        InstantiateMsg {
-            vesting_contract_address: vesting_contract.to_string(),
-            description: DESCRIPTION.to_string(),
-            owner: Admin::CoreModule {},
-            manager: Some(ADDR1.to_string()),
-            name: "vesting vault".to_string(),
-        },
-    );
-
-    // ADDR1 is the manager so cannot change the owner
-    update_config(
-        &mut app,
-        addr,
-        ADDR1,
-        Some(vesting_contract.to_string()),
-        ADDR2.to_string(),
-        None,
-        None,
     )
     .unwrap();
 }
@@ -281,20 +201,18 @@ fn test_update_config_as_owner() {
         InstantiateMsg {
             vesting_contract_address: vesting_contract.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Admin::CoreModule {},
-            manager: Some(ADDR1.to_string()),
+            owner: DAO_ADDR.to_string(),
             name: "vesting vault".to_string(),
         },
     );
 
-    // Swap owner and manager, change description
+    // Change owner and description
     update_config(
         &mut app,
         addr.clone(),
         DAO_ADDR,
         Some(vesting_contract.to_string()),
         ADDR1.to_string(),
-        Some(DAO_ADDR.to_string()),
         Some(NEW_DESCRIPTION.to_string()),
     )
     .unwrap();
@@ -305,50 +223,6 @@ fn test_update_config_as_owner() {
             vesting_contract_address: Addr::unchecked(vesting_contract),
             description: NEW_DESCRIPTION.to_string(),
             owner: Addr::unchecked(ADDR1),
-            manager: Some(Addr::unchecked(DAO_ADDR)),
-            name: "vesting vault".to_string(),
-        },
-        config
-    );
-}
-
-#[test]
-fn test_update_config_as_manager() {
-    let mut app = mock_app();
-    let vesting_contract = instantiate_vesting_contract(&mut app);
-
-    let vault_id = app.store_code(vault_contract());
-    let addr = instantiate_vault(
-        &mut app,
-        vault_id,
-        InstantiateMsg {
-            vesting_contract_address: vesting_contract.to_string(),
-            description: DESCRIPTION.to_string(),
-            owner: Admin::CoreModule {},
-            manager: Some(ADDR1.to_string()),
-            name: "vesting vault".to_string(),
-        },
-    );
-
-    // Change description and manager as manager cannot change owner
-    update_config(
-        &mut app,
-        addr.clone(),
-        ADDR1,
-        Some(vesting_contract.to_string()),
-        DAO_ADDR.to_string(),
-        Some(ADDR2.to_string()),
-        Some(NEW_DESCRIPTION.to_string()),
-    )
-    .unwrap();
-
-    let config = get_config(&mut app, addr);
-    assert_eq!(
-        Config {
-            vesting_contract_address: Addr::unchecked(vesting_contract),
-            description: NEW_DESCRIPTION.to_string(),
-            owner: Addr::unchecked(DAO_ADDR),
-            manager: Some(Addr::unchecked(ADDR2)),
             name: "vesting vault".to_string(),
         },
         config
@@ -368,20 +242,18 @@ fn test_update_config_invalid_description() {
         InstantiateMsg {
             vesting_contract_address: vesting_contract.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Admin::CoreModule {},
-            manager: Some(ADDR1.to_string()),
+            owner: DAO_ADDR.to_string(),
             name: "vesting vault".to_string(),
         },
     );
 
-    // Change duration and manager as manager cannot change owner
+    // Change description
     update_config(
         &mut app,
         addr,
-        ADDR1,
+        DAO_ADDR,
         Some(vesting_contract.to_string()),
         DAO_ADDR.to_string(),
-        Some(ADDR2.to_string()),
         Some(String::from("")),
     )
     .unwrap();
@@ -399,8 +271,7 @@ fn test_query_dao() {
         InstantiateMsg {
             vesting_contract_address: vesting_contract.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Admin::CoreModule {},
-            manager: Some(ADDR1.to_string()),
+            owner: DAO_ADDR.to_string(),
             name: "vesting vault".to_string(),
         },
     );
@@ -422,8 +293,7 @@ fn test_query_info() {
         InstantiateMsg {
             vesting_contract_address: vesting_contract.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Admin::CoreModule {},
-            manager: Some(ADDR1.to_string()),
+            owner: DAO_ADDR.to_string(),
             name: "vesting vault".to_string(),
         },
     );
@@ -448,8 +318,7 @@ fn test_query_get_config() {
         InstantiateMsg {
             vesting_contract_address: vesting_contract.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Admin::CoreModule {},
-            manager: Some(ADDR1.to_string()),
+            owner: DAO_ADDR.to_string(),
             name: "vesting vault".to_string(),
         },
     );
@@ -461,7 +330,6 @@ fn test_query_get_config() {
             vesting_contract_address: Addr::unchecked(vesting_contract),
             description: DESCRIPTION.to_string(),
             owner: Addr::unchecked(DAO_ADDR),
-            manager: Some(Addr::unchecked(ADDR1)),
             name: "vesting vault".to_string(),
         }
     )
@@ -479,8 +347,7 @@ fn test_voting_power_queries() {
         InstantiateMsg {
             vesting_contract_address: vesting_contract.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Admin::CoreModule {},
-            manager: Some(ADDR1.to_string()),
+            owner: DAO_ADDR.to_string(),
             name: "vesting vault".to_string(),
         },
     );

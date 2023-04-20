@@ -1,4 +1,3 @@
-use cwd_interface::Admin;
 use cwd_macros::{info_query, voting_query, voting_vault, voting_vault_query};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -10,9 +9,7 @@ pub struct InstantiateMsg {
     // Description contains information that characterizes the vault.
     pub description: String,
     // Owner can update all configs including changing the owner. This will generally be a DAO.
-    pub owner: Admin,
-    // Manager can update all configs except changing the owner. This will generally be an operations multisig for a DAO.
-    pub manager: Option<String>,
+    pub owner: String,
     // Token denom e.g. untrn, or some ibc denom
     pub denom: String,
 }
@@ -25,7 +22,6 @@ pub enum ExecuteMsg {
         name: String,
         description: String,
         owner: String,
-        manager: Option<String>,
     },
 }
 
@@ -35,7 +31,7 @@ pub enum ExecuteMsg {
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    GetConfig {},
+    Config {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]

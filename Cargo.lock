@@ -1452,7 +1452,6 @@ dependencies = [
  "astroport 2.0.0 (git+https://github.com/neutron-org/neutron-tge-contracts.git?branch=main)",
  "astroport-periphery",
  "cosmwasm-std",
- "cwd-interface",
  "cwd-macros",
  "schemars",
  "serde",

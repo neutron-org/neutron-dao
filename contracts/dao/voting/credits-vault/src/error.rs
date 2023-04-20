@@ -8,7 +8,4 @@ pub enum ContractError {
 
     #[error("Unauthorized")]
     Unauthorized {},
-
-    #[error("Only owner can change owner")]
-    OnlyOwnerCanChangeOwner {},
 }

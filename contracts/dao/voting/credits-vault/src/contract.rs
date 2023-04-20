@@ -3,7 +3,6 @@ use cosmwasm_std::entry_point;
 use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 use cw2::set_contract_version;
 use cwd_interface::voting::{TotalPowerAtHeightResponse, VotingPowerAtHeightResponse};
-use cwd_interface::Admin;
 
 use crate::error::ContractError;
 use crate::msg::{CreditsQueryMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
@@ -21,14 +20,7 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    let owner = match msg.owner {
-        Admin::Address { addr } => deps.api.addr_validate(addr.as_str())?,
-        Admin::CoreModule {} => info.sender.clone(),
-    };
-    let manager = msg
-        .manager
-        .map(|manager| deps.api.addr_validate(&manager))
-        .transpose()?;
+    let owner = deps.api.addr_validate(&msg.owner)?;
 
     let credits_contract_address = deps.api.addr_validate(&msg.credits_contract_address)?;
 
@@ -36,7 +28,6 @@ pub fn instantiate(
         credits_contract_address,
         description: msg.description,
         owner,
-        manager,
     };
 
     CONFIG.save(deps.storage, &config)?;
@@ -46,14 +37,7 @@ pub fn instantiate(
         .add_attribute("action", "instantiate")
         .add_attribute("description", config.description)
         .add_attribute("credits_contract_address", config.credits_contract_address)
-        .add_attribute("owner", config.owner)
-        .add_attribute(
-            "manager",
-            config
-                .manager
-                .map(|a| a.to_string())
-                .unwrap_or_else(|| "None".to_string()),
-        ))
+        .add_attribute("owner", config.owner))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -67,16 +51,8 @@ pub fn execute(
         ExecuteMsg::UpdateConfig {
             credits_contract_address,
             owner,
-            manager,
             description,
-        } => execute_update_config(
-            deps,
-            info,
-            credits_contract_address,
-            owner,
-            manager,
-            description,
-        ),
+        } => execute_update_config(deps, info, credits_contract_address, owner, description),
     }
 }
 
@@ -85,29 +61,19 @@ pub fn execute_update_config(
     info: MessageInfo,
     new_credits_contract_address: Option<String>,
     new_owner: String,
-    new_manager: Option<String>,
     new_description: Option<String>,
 ) -> Result<Response, ContractError> {
     let mut config: Config = CONFIG.load(deps.storage)?;
-    if info.sender != config.owner && Some(info.sender.clone()) != config.manager {
+    if info.sender != config.owner {
         return Err(ContractError::Unauthorized {});
     }
 
     let new_credits_contract_address = new_credits_contract_address
         .map(|new_credits_contract_address| deps.api.addr_validate(&new_credits_contract_address))
         .transpose()?;
-
     let new_owner = deps.api.addr_validate(&new_owner)?;
-    let new_manager = new_manager
-        .map(|new_manager| deps.api.addr_validate(&new_manager))
-        .transpose()?;
-
-    if info.sender != config.owner && new_owner != config.owner {
-        return Err(ContractError::OnlyOwnerCanChangeOwner {});
-    };
 
     config.owner = new_owner;
-    config.manager = new_manager;
     if let Some(description) = new_description {
         config.description = description;
     }
@@ -120,14 +86,7 @@ pub fn execute_update_config(
         .add_attribute("action", "update_config")
         .add_attribute("description", config.description)
         .add_attribute("credits_contract_address", config.credits_contract_address)
-        .add_attribute("owner", config.owner)
-        .add_attribute(
-            "manager",
-            config
-                .manager
-                .map(|a| a.to_string())
-                .unwrap_or_else(|| "None".to_string()),
-        ))
+        .add_attribute("owner", config.owner))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -142,7 +101,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::Info {} => query_info(deps),
         QueryMsg::Dao {} => query_dao(deps),
         QueryMsg::Description {} => query_description(deps),
-        QueryMsg::GetConfig {} => to_binary(&CONFIG.load(deps.storage)?),
+        QueryMsg::Config {} => to_binary(&CONFIG.load(deps.storage)?),
     }
 }
 

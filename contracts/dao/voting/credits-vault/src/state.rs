@@ -9,7 +9,6 @@ pub struct Config {
     pub credits_contract_address: Addr,
     pub description: String,
     pub owner: Addr,
-    pub manager: Option<Addr>,
 }
 
 #[cw_serde]
