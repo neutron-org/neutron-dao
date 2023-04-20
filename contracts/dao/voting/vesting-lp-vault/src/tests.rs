@@ -180,7 +180,7 @@ fn get_total_power_at_height(
 
 fn get_config(app: &mut App, contract_addr: Addr) -> Config {
     app.wrap()
-        .query_wasm_smart(contract_addr, &QueryMsg::GetConfig {})
+        .query_wasm_smart(contract_addr, &QueryMsg::Config {})
         .unwrap()
 }
 
