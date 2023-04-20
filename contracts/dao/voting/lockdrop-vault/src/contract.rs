@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, Deps, DepsMut, Env, Fraction, MessageInfo, Response, Uint128,
+    to_binary, Binary, Deps, DepsMut, Env, Fraction, MessageInfo, Response, StdError, Uint128,
 };
 use cw2::set_contract_version;
 use cwd_interface::voting::{
@@ -265,7 +265,7 @@ pub fn query_voting_power_at_height(
     let power = atom_power + usdc_power;
 
     Ok(VotingPowerAtHeightResponse {
-        power: power.numerator().try_into()?,
+        power: power.numerator().try_into().map_err(StdError::from)?,
         height,
     })
 }
@@ -299,7 +299,7 @@ pub fn query_total_power_at_height(
     let power = atom_power + usdc_power;
 
     Ok(TotalPowerAtHeightResponse {
-        power: power.numerator().try_into()?,
+        power: power.numerator().try_into().map_err(StdError::from)?,
         height,
     })
 }
