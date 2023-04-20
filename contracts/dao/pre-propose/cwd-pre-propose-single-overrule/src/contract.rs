@@ -14,7 +14,7 @@ use cwd_pre_propose_base::{
     state::PreProposeContract,
 };
 use neutron_dao_pre_propose_overrule::msg::{
-    ExecuteMsg, InstantiateMsg, ProposeMessage, QueryExt, QueryMsg,
+    ExecuteMsg, InstantiateMsg, MigrateMsg, ProposeMessage, QueryExt, QueryMsg,
 };
 
 use crate::state::PROPOSALS;
@@ -285,4 +285,14 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         }
         _ => PrePropose::default().query(deps, env, msg),
     }
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(
+    deps: DepsMut,
+    _env: Env,
+    _msg: MigrateMsg,
+) -> Result<Response, PreProposeOverruleError> {
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    Ok(Response::default())
 }
