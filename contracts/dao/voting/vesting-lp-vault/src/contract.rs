@@ -201,7 +201,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
         QueryMsg::Dao {} => query_dao(deps),
         QueryMsg::Name {} => query_name(deps),
         QueryMsg::Description {} => query_description(deps),
-        QueryMsg::Config {} => query_config(deps),
+        QueryMsg::GetConfig {} => query_config(deps),
         QueryMsg::ListBonders { start_after, limit } => {
             query_list_bonders(deps, start_after, limit)
         }
