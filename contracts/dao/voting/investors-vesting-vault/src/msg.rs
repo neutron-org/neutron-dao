@@ -1,4 +1,4 @@
-use cwd_macros::{info_query, voting_query, voting_vault_query};
+use cwd_macros::{info_query, voting_query, voting_vault, voting_vault_query};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -14,6 +14,7 @@ pub struct InstantiateMsg {
     pub name: String,
 }
 
+#[voting_vault]
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {

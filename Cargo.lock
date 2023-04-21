@@ -267,6 +267,7 @@ dependencies = [
  "cw20 1.0.1",
  "cwd-interface",
  "cwd-macros",
+ "cwd-voting",
  "schemars",
  "serde",
  "thiserror",

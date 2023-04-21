@@ -5,6 +5,7 @@
   "required": [
     "credits_contract_address",
     "description",
+    "name",
     "owner"
   ],
   "properties": {
@@ -12,6 +13,11 @@
       "type": "string"
     },
     "description": {
+      "description": "Description contains information that characterizes the vault.",
+      "type": "string"
+    },
+    "name": {
+      "description": "Name contains the vault name which is used to ease the vault's recognition.",
       "type": "string"
     },
     "owner": {

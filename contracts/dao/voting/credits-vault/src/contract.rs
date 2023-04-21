@@ -1,12 +1,15 @@
-#[cfg(not(feature = "library"))]
-use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
-use cw2::set_contract_version;
-use cwd_interface::voting::{TotalPowerAtHeightResponse, VotingPowerAtHeightResponse};
-
 use crate::error::ContractError;
 use crate::msg::{CreditsQueryMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::state::{Config, TotalSupplyResponse, CONFIG, DAO, DESCRIPTION};
+#[cfg(not(feature = "library"))]
+use cosmwasm_std::entry_point;
+use cosmwasm_std::{
+    to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult, Uint128,
+};
+use cw2::set_contract_version;
+use cwd_interface::voting::{
+    BondingStatusResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
+};
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-credits-vault";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -25,11 +28,12 @@ pub fn instantiate(
     let credits_contract_address = deps.api.addr_validate(&msg.credits_contract_address)?;
 
     let config = Config {
-        credits_contract_address,
+        name: msg.name,
         description: msg.description,
+        credits_contract_address,
         owner,
     };
-
+    config.validate()?;
     CONFIG.save(deps.storage, &config)?;
     DAO.save(deps.storage, &info.sender)?;
 
@@ -43,24 +47,52 @@ pub fn instantiate(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
+        ExecuteMsg::Bond {} => execute_bond(deps, env, info),
+        ExecuteMsg::Unbond { amount } => execute_unbond(deps, env, info, amount),
         ExecuteMsg::UpdateConfig {
             credits_contract_address,
             owner,
+            name,
             description,
-        } => execute_update_config(deps, info, credits_contract_address, owner, description),
+        } => execute_update_config(
+            deps,
+            info,
+            credits_contract_address,
+            owner,
+            name,
+            description,
+        ),
     }
+}
+
+pub fn execute_bond(
+    _deps: DepsMut,
+    _env: Env,
+    _info: MessageInfo,
+) -> Result<Response, ContractError> {
+    Err(ContractError::BondingDisabled {})
+}
+
+pub fn execute_unbond(
+    _deps: DepsMut,
+    _env: Env,
+    _info: MessageInfo,
+    _amount: Uint128,
+) -> Result<Response, ContractError> {
+    Err(ContractError::DirectUnbondingDisabled {})
 }
 
 pub fn execute_update_config(
     deps: DepsMut,
     info: MessageInfo,
     new_credits_contract_address: Option<String>,
-    new_owner: String,
+    new_owner: Option<String>,
+    new_name: Option<String>,
     new_description: Option<String>,
 ) -> Result<Response, ContractError> {
     let mut config: Config = CONFIG.load(deps.storage)?;
@@ -68,12 +100,20 @@ pub fn execute_update_config(
         return Err(ContractError::Unauthorized {});
     }
 
+    let new_owner = new_owner
+        .map(|new_owner| deps.api.addr_validate(&new_owner))
+        .transpose()?;
+
     let new_credits_contract_address = new_credits_contract_address
         .map(|new_credits_contract_address| deps.api.addr_validate(&new_credits_contract_address))
         .transpose()?;
-    let new_owner = deps.api.addr_validate(&new_owner)?;
 
-    config.owner = new_owner;
+    if let Some(owner) = new_owner {
+        config.owner = owner;
+    }
+    if let Some(name) = new_name {
+        config.name = name;
+    }
     if let Some(description) = new_description {
         config.description = description;
     }
@@ -81,7 +121,9 @@ pub fn execute_update_config(
         config.credits_contract_address = new_credits_contract_address;
     }
 
+    config.validate()?;
     CONFIG.save(deps.storage, &config)?;
+
     Ok(Response::new()
         .add_attribute("action", "update_config")
         .add_attribute("description", config.description)
@@ -100,8 +142,15 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         }
         QueryMsg::Info {} => query_info(deps),
         QueryMsg::Dao {} => query_dao(deps),
+        QueryMsg::Name {} => query_name(deps),
         QueryMsg::Description {} => query_description(deps),
-        QueryMsg::Config {} => to_binary(&CONFIG.load(deps.storage)?),
+        QueryMsg::Config {} => query_config(deps),
+        QueryMsg::ListBonders { start_after, limit } => {
+            query_list_bonders(deps, start_after, limit)
+        }
+        QueryMsg::BondingStatus { height, address } => {
+            to_binary(&query_bonding_status(deps, env, height, address)?)
+        }
     }
 }
 
@@ -161,9 +210,42 @@ pub fn query_dao(deps: Deps) -> StdResult<Binary> {
     to_binary(&dao)
 }
 
+pub fn query_name(deps: Deps) -> StdResult<Binary> {
+    let config = CONFIG.load(deps.storage)?;
+    to_binary(&config.name)
+}
+
 pub fn query_description(deps: Deps) -> StdResult<Binary> {
     let description = DESCRIPTION.load(deps.storage)?;
     to_binary(&description)
+}
+
+pub fn query_config(deps: Deps) -> StdResult<Binary> {
+    let config = CONFIG.load(deps.storage)?;
+    to_binary(&config)
+}
+
+pub fn query_list_bonders(
+    _deps: Deps,
+    _start_after: Option<String>,
+    _limit: Option<u32>,
+) -> StdResult<Binary> {
+    Err(StdError::generic_err(format!(
+        "{}",
+        ContractError::BondingDisabled {}
+    )))
+}
+
+pub fn query_bonding_status(
+    _deps: Deps,
+    _env: Env,
+    _height: Option<u64>,
+    _address: String,
+) -> StdResult<BondingStatusResponse> {
+    Err(StdError::generic_err(format!(
+        "{}",
+        ContractError::BondingDisabled {}
+    )))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

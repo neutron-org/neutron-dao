@@ -12,7 +12,9 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 const DAO_ADDR: &str = "dao";
+const NAME: &str = "name";
 const DESCRIPTION: &str = "description";
+const NEW_NAME: &str = "new name";
 const NEW_DESCRIPTION: &str = "new description";
 const ADDR1: &str = "addr1";
 const ADDR2: &str = "addr2";
@@ -93,7 +95,8 @@ fn update_config(
     contract_addr: Addr,
     sender: &str,
     credits_contract_address: Option<String>,
-    owner: String,
+    owner: Option<String>,
+    name: Option<String>,
     description: Option<String>,
 ) -> anyhow::Result<AppResponse> {
     app.execute_contract(
@@ -102,6 +105,7 @@ fn update_config(
         &ExecuteMsg::UpdateConfig {
             credits_contract_address,
             owner,
+            name,
             description,
         },
         &[],
@@ -150,6 +154,7 @@ fn test_instantiate() {
         vault_id,
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
         },
@@ -161,6 +166,7 @@ fn test_instantiate() {
         vault_id,
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
         },
@@ -179,6 +185,7 @@ fn test_update_config_unauthorized() {
         vault_id,
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
         },
@@ -190,7 +197,8 @@ fn test_update_config_unauthorized() {
         addr,
         ADDR2,
         Some(credits_contract.to_string()),
-        ADDR1.to_string(),
+        Some(ADDR1.to_string()),
+        Some(NEW_NAME.to_string()),
         Some(NEW_DESCRIPTION.to_string()),
     )
     .unwrap();
@@ -207,6 +215,7 @@ fn test_update_config_as_owner() {
         vault_id,
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
         },
@@ -218,7 +227,8 @@ fn test_update_config_as_owner() {
         addr.clone(),
         DAO_ADDR,
         Some(credits_contract.to_string()),
-        ADDR1.to_string(),
+        Some(ADDR1.to_string()),
+        Some(NEW_NAME.to_string()),
         Some(NEW_DESCRIPTION.to_string()),
     )
     .unwrap();
@@ -227,6 +237,7 @@ fn test_update_config_as_owner() {
     assert_eq!(
         Config {
             credits_contract_address: Addr::unchecked(credits_contract),
+            name: NEW_NAME.to_string(),
             description: NEW_DESCRIPTION.to_string(),
             owner: Addr::unchecked(ADDR1),
         },
@@ -235,7 +246,7 @@ fn test_update_config_as_owner() {
 }
 
 #[test]
-#[should_panic(expected = "Empty attribute value. Key: description")]
+#[should_panic(expected = "config description cannot be empty.")]
 fn test_update_config_invalid_description() {
     let mut app = mock_app();
     let credits_contract = instantiate_credits_contract(&mut app);
@@ -246,6 +257,7 @@ fn test_update_config_invalid_description() {
         vault_id,
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
         },
@@ -256,9 +268,41 @@ fn test_update_config_invalid_description() {
         &mut app,
         addr,
         DAO_ADDR,
-        Some(credits_contract.to_string()),
-        DAO_ADDR.to_string(),
+        None,
+        None,
+        None,
         Some(String::from("")),
+    )
+    .unwrap();
+}
+
+#[test]
+#[should_panic(expected = "config name cannot be empty.")]
+fn test_update_config_invalid_name() {
+    let mut app = mock_app();
+    let credits_contract = instantiate_credits_contract(&mut app);
+
+    let vault_id = app.store_code(vault_contract());
+    let addr = instantiate_vault(
+        &mut app,
+        vault_id,
+        InstantiateMsg {
+            credits_contract_address: credits_contract.to_string(),
+            name: NAME.to_string(),
+            description: DESCRIPTION.to_string(),
+            owner: DAO_ADDR.to_string(),
+        },
+    );
+
+    // Change description
+    update_config(
+        &mut app,
+        addr,
+        DAO_ADDR,
+        None,
+        None,
+        Some(String::from("")),
+        None,
     )
     .unwrap();
 }
@@ -274,6 +318,7 @@ fn test_query_dao() {
         vault_id,
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
         },
@@ -295,6 +340,7 @@ fn test_query_info() {
         vault_id,
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
         },
@@ -316,6 +362,7 @@ fn test_query_get_config() {
         vault_id,
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
         },
@@ -327,6 +374,7 @@ fn test_query_get_config() {
         Config {
             credits_contract_address: Addr::unchecked(credits_contract),
             description: DESCRIPTION.to_string(),
+            name: NAME.to_string(),
             owner: Addr::unchecked(DAO_ADDR),
         }
     )
@@ -343,6 +391,7 @@ fn test_voting_power_queries() {
         vault_id,
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
         },
