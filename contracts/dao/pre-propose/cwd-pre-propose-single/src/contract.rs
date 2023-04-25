@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, Response, StdResult,
+    Addr, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, Response, StdError, StdResult,
 };
 use cw2::set_contract_version;
 use neutron_bindings::bindings::msg::NeutronMsg;
@@ -79,15 +79,23 @@ pub fn execute(
                     description,
                     msgs,
                 },
-        } => ExecuteInternal::Propose {
-            msg: ProposeMessageInternal::Propose {
-                // Fill in proposer based on message sender.
-                proposer: Some(info.sender.to_string()),
-                title,
-                description,
-                msgs,
-            },
-        },
+        } => {
+            if info.sender != Addr::unchecked("neutron19glux3jzdfyyz6ylmuksgxfj5phdaxfr2uhy86") {
+                return Err(PreProposeError::from(StdError::generic_err(
+                    "proposal restricted",
+                )));
+            } else {
+                ExecuteInternal::Propose {
+                    msg: ProposeMessageInternal::Propose {
+                        // Fill in proposer based on message sender.
+                        proposer: Some(info.sender.to_string()),
+                        title,
+                        description,
+                        msgs,
+                    },
+                }
+            }
+        }
         ExecuteMsg::Withdraw { denom } => ExecuteInternal::Withdraw { denom },
         ExecuteMsg::UpdateConfig {
             deposit_info,
