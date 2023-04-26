@@ -82,6 +82,11 @@ fn mock_app() -> App {
 #[serde(rename_all = "snake_case")]
 pub struct EmptyMsg {}
 
+const USER_ATOM_LOCKUP_AT_HEIGHT: u64 = 1_000_000u64;
+const USER_USDC_LOCKUP_AT_HEIGHT: u64 = 2_000_000u64;
+const TOTAL_ATOM_LOCKUP_AT_HEIGHT: u64 = 3_000_000u64;
+const TOTAL_USDC_LOCKUP_AT_HEIGHT: u64 = 4_000_000u64;
+
 fn lockdrop_query(_deps: Deps, _env: Env, msg: LockdropQueryMsg) -> StdResult<Binary> {
     match msg {
         LockdropQueryMsg::QueryUserLockupTotalAtHeight {
@@ -90,8 +95,8 @@ fn lockdrop_query(_deps: Deps, _env: Env, msg: LockdropQueryMsg) -> StdResult<Bi
             height: _,
         } => {
             let response = match pool_type {
-                PoolType::ATOM => Uint128::from(1_000_000u64),
-                PoolType::USDC => Uint128::from(2_000_000u64),
+                PoolType::ATOM => Uint128::from(USER_ATOM_LOCKUP_AT_HEIGHT),
+                PoolType::USDC => Uint128::from(USER_USDC_LOCKUP_AT_HEIGHT),
             };
 
             to_binary(&response)
@@ -101,8 +106,8 @@ fn lockdrop_query(_deps: Deps, _env: Env, msg: LockdropQueryMsg) -> StdResult<Bi
             height: _,
         } => {
             let response = match pool_type {
-                PoolType::ATOM => Uint128::from(3_000_000u64),
-                PoolType::USDC => Uint128::from(4_000_000u64),
+                PoolType::ATOM => Uint128::from(TOTAL_ATOM_LOCKUP_AT_HEIGHT),
+                PoolType::USDC => Uint128::from(TOTAL_USDC_LOCKUP_AT_HEIGHT),
             };
 
             to_binary(&response)
@@ -140,15 +145,17 @@ fn instantiate_lockdrop_contract(app: &mut App) -> Addr {
     .unwrap()
 }
 
+const NTRN_TWAP: u64 = 4;
+
 fn oracle_query(_deps: Deps, _env: Env, msg: OracleQueryMsg) -> StdResult<Binary> {
     match msg {
         OracleQueryMsg::TWAPAtHeight { token, height: _ } => {
             let twap = match token.clone() {
                 AssetInfo::NativeToken { denom } => match denom.as_str() {
-                    "untrn" => Decimal256::from_ratio(2u64, 1u64),
-                    _ => Decimal256::from_ratio(1u64, 2u64),
+                    "untrn" => Decimal256::from_ratio(NTRN_TWAP, 1u64),
+                    _ => Decimal256::from_ratio(1u64, NTRN_TWAP),
                 },
-                AssetInfo::Token { contract_addr: _ } => Decimal256::from_ratio(1u64, 2u64),
+                AssetInfo::Token { contract_addr: _ } => Decimal256::from_ratio(1u64, NTRN_TWAP),
             };
 
             let response = vec![(token, twap)];
@@ -783,7 +790,8 @@ fn test_voting_power_at_height() {
     );
 
     let resp = get_voting_power_at_height(&mut app, addr, ADDR1.to_string(), None);
-    assert_eq!(resp.power, Uint128::from(707106u128 + 1414213u128)); // (1b / sqrt(2)) + (2b / sqrt(2))
+    // (USER_ATOM_LOCKUP_AT_HEIGHT / sqrt(NTRN_TWAP)) + (USER_USDC_LOCKUP_AT_HEIGHT / sqrt(NTRN_TWAP))
+    assert_eq!(resp.power, Uint128::from(500_000u128 + 1_000_000u128));
 }
 
 #[test]
@@ -810,7 +818,8 @@ fn test_total_power_at_height() {
     );
 
     let resp = get_total_power_at_height(&mut app, addr, None);
-    assert_eq!(resp.power, Uint128::from(2121320u128 + 2828427u128)); // (3b / sqrt(2)) + (4b / sqrt(2))
+    // (TOTAL_ATOM_LOCKUP_AT_HEIGHT / sqrt(NTRN_TWAP)) + (TOTAL_USDC_LOCKUP_AT_HEIGHT / sqrt(NTRN_TWAP))
+    assert_eq!(resp.power, Uint128::from(1_500_000u128 + 2_000_000u128));
 }
 
 #[test]
