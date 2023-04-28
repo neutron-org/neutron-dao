@@ -1,6 +1,6 @@
-## Reserve Contract
+## Treasury Contract
 
-**The Reserve** contract keeps funds vested from treasury for one-off payments
+**The Treasury** contract keeps funds vested from reserve for one-off payments
 
 ### Methods:
 
