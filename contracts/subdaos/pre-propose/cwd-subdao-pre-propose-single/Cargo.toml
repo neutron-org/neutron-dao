@@ -24,6 +24,7 @@ serde = { version = "1.0.147", default-features = false, features = ["derive"] }
 cwd-pre-propose-base = { version = "*", path = "../../../../packages/cwd-pre-propose-base" }
 cwd-voting = { path = "../../../../packages/cwd-voting" }
 neutron_bindings = { package = "neutron-sdk", version = "0.4.0" }
+neutron-subdao-core = { path = "../../../../packages/neutron-subdao-core" }
 neutron-subdao-timelock-single = { path = "../../../../packages/neutron-subdao-timelock-single" }
 neutron-subdao-proposal-single = { path = "../../../../packages/neutron-subdao-proposal-single" }
 neutron-subdao-pre-propose-single = { path = "../../../../packages/neutron-subdao-pre-propose-single" }
