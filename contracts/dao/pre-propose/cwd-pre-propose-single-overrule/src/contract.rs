@@ -182,9 +182,10 @@ fn verify_is_timelock_from_subdao(
 ) -> Result<bool, PreProposeOverruleError> {
     let proposal_modules: Vec<SubdaoTypes::ProposalModule> = deps.querier.query_wasm_smart(
         subdao_core,
+        // we do no pagination here since it either fits in tx by gas or not
         &SubdaoQueryMsg::ProposalModules {
             start_after: None,
-            limit: None, // TODO add pagination
+            limit: None,
         },
     )?;
 
