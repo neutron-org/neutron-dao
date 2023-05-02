@@ -1,6 +1,6 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{DepsMut, Env, MessageInfo, Response, CosmosMsg, WasmMsg};
+use cosmwasm_std::{CosmosMsg, DepsMut, Env, MessageInfo, Response, WasmMsg};
 use neutron_bindings::bindings::msg::NeutronMsg;
 
 use crate::error::ContractError;
@@ -63,11 +63,12 @@ pub fn execute_transfer_admin(
     }
     let addr = deps.api.addr_validate(addresses.as_str())?;
 
-    Ok(Response::default().add_message(
-        CosmosMsg::Wasm(WasmMsg::UpdateAdmin {
+    Ok(
+        Response::default().add_message(CosmosMsg::Wasm(WasmMsg::UpdateAdmin {
             contract_addr: addr.to_string(),
             admin: config.true_admin.to_string(),
-        })))
+        })),
+    )
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

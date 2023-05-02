@@ -13,12 +13,8 @@ pub struct InstantiateMsg {
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    Execute {
-        msgs: Vec<CosmosMsg<NeutronMsg>>,
-    },
-    TransferAdmin {
-        address: String,
-    },
+    Execute { msgs: Vec<CosmosMsg<NeutronMsg>> },
+    TransferAdmin { address: String },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
