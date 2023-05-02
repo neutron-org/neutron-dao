@@ -56,6 +56,8 @@ pub enum ExecuteMsg {
     ExecuteProposalHook {
         msgs: Vec<CosmosMsg<NeutronMsg>>,
     },
+    /// Callable by timelock modules. The DAO will execute the
+    /// messages in order.
     ExecuteTimelockedMsgs {
         msgs: Vec<CosmosMsg<NeutronMsg>>,
     },
