@@ -12,7 +12,6 @@ pub struct Config {
     pub usdc_vesting_lp_contract: Addr,
     pub usdc_oracle_contract: Addr,
     pub owner: Addr,
-    pub manager: Option<Addr>,
 }
 
 impl Config {
@@ -43,7 +42,6 @@ mod tests {
             usdc_vesting_lp_contract: Addr::unchecked("usdc_vesting_lp_contract"),
             usdc_oracle_contract: Addr::unchecked("usdc_oracle_contract"),
             owner: Addr::unchecked("owner"),
-            manager: None,
         };
         assert!(cfg.validate().is_ok());
     }
@@ -58,7 +56,6 @@ mod tests {
             usdc_vesting_lp_contract: Addr::unchecked("usdc_vesting_lp_contract"),
             usdc_oracle_contract: Addr::unchecked("usdc_oracle_contract"),
             owner: Addr::unchecked("owner"),
-            manager: None,
         };
         assert_eq!(cfg.validate(), Err(ContractError::NameIsEmpty {}));
     }
@@ -73,7 +70,6 @@ mod tests {
             usdc_vesting_lp_contract: Addr::unchecked("usdc_vesting_lp_contract"),
             usdc_oracle_contract: Addr::unchecked("usdc_oracle_contract"),
             owner: Addr::unchecked("owner"),
-            manager: None,
         };
         assert_eq!(cfg.validate(), Err(ContractError::DescriptionIsEmpty {}));
     }

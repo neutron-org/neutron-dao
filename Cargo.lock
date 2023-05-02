@@ -1584,7 +1584,6 @@ name = "neutron-vesting-lp-vault"
 version = "0.1.0"
 dependencies = [
  "cosmwasm-std",
- "cwd-interface",
  "cwd-macros",
  "schemars",
  "serde",
