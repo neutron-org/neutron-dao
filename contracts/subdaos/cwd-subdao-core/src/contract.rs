@@ -665,14 +665,15 @@ pub(crate) fn execution_access_check(deps: Deps, sender: Addr) -> Result<(), Con
             &ProposeQueryMsg::ProposalCreationPolicy {},
         )?;
         if let ProposalCreationPolicy::Module { addr } = policy {
-            let timelock_contract: Addr = deps.querier.query_wasm_smart(
+            if let Ok(timelock_contract) = deps.querier.query_wasm_smart::<Addr>(
                 &addr,
                 &PreProposeQueryMsg::QueryExtension {
                     msg: PreProposeQueryExt::TimelockAddress {},
                 },
-            )?;
-            if sender == timelock_contract {
-                return Ok(());
+            ) {
+                if sender == timelock_contract {
+                    return Ok(());
+                }
             }
         };
     }
