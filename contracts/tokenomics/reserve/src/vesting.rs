@@ -1,6 +1,6 @@
 use cosmwasm_std::{Decimal, Deps, DepsMut, StdError, StdResult, Uint128};
-use neutron_bindings::{
-    bindings::query::InterchainQueries, query::total_burned_neutrons::query_total_burned_neutrons,
+use neutron_sdk::{
+    bindings::query::NeutronQuery, query::total_burned_neutrons::query_total_burned_neutrons,
 };
 
 use crate::state::{LAST_BURNED_COINS_AMOUNT, TOTAL_DISTRIBUTED, TOTAL_RESERVED};
@@ -48,7 +48,7 @@ pub fn safe_burned_coins_for_period(
 }
 
 pub fn update_distribution_stats(
-    deps: DepsMut<InterchainQueries>,
+    deps: DepsMut<NeutronQuery>,
     to_distribute: Uint128,
     to_reserve: Uint128,
     burned_coins: Uint128,
@@ -67,7 +67,7 @@ pub fn update_distribution_stats(
     Ok(())
 }
 
-pub fn get_burned_coins(deps: Deps<InterchainQueries>, denom: &String) -> StdResult<Uint128> {
+pub fn get_burned_coins(deps: Deps<NeutronQuery>, denom: &String) -> StdResult<Uint128> {
     let res =
         query_total_burned_neutrons(deps).map_err(|err| StdError::generic_err(err.to_string()))?;
 

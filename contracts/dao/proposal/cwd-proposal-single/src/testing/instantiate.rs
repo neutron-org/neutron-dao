@@ -6,7 +6,7 @@ use cw_multi_test::{next_block, BankSudo, BasicApp, Executor, SudoMsg};
 use cw_utils::Duration;
 use cwd_interface::{Admin, ModuleInstantiateInfo};
 use cwd_pre_propose_single as cppbps;
-use neutron_bindings::bindings::msg::NeutronMsg;
+use neutron_sdk::bindings::msg::NeutronMsg;
 
 use cwd_voting::{
     deposit::{DepositRefundPolicy, UncheckedDepositInfo},

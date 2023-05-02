@@ -1,6 +1,6 @@
 use cosmwasm_std::{coins, Addr, Coin};
 use cw_multi_test::{BankSudo, BasicApp, Executor};
-use neutron_bindings::bindings::msg::NeutronMsg;
+use neutron_sdk::bindings::msg::NeutronMsg;
 
 use cw_denom::CheckedDenom;
 use cwd_pre_propose_multiple as cppm;
