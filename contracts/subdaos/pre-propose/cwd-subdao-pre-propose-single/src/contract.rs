@@ -110,13 +110,9 @@ pub fn execute(
                 contract_addr: timelock_module.to_string(),
                 msg: to_binary(&TimelockExecuteMsg::TimelockProposal {
                     proposal_id: last_proposal_id + 1,
-                    msgs: vec![
-                        CosmosMsg::Wasm(WasmMsg::Execute {
+                    msgs: vec![CosmosMsg::Wasm(WasmMsg::Execute {
                         contract_addr: sub_dao_core.to_string(),
-                        msg: to_binary(&CoreExecuteMsg::ExecuteTimelockedMsgs {
-                            msgs,
-                        })
-                        .unwrap(),
+                        msg: to_binary(&CoreExecuteMsg::ExecuteTimelockedMsgs { msgs }).unwrap(),
                         funds: vec![],
                     })],
                 })

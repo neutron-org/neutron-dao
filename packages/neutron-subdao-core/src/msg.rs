@@ -53,14 +53,23 @@ pub struct InstantiateMsg {
 pub enum ExecuteMsg {
     /// Callable by proposal modules. The DAO will execute the
     /// messages in the hook in order.
-    ExecuteProposalHook { msgs: Vec<CosmosMsg<NeutronMsg>> },
-    ExecuteTimelockedMsgs { msgs: Vec<CosmosMsg<NeutronMsg>> },
+    ExecuteProposalHook {
+        msgs: Vec<CosmosMsg<NeutronMsg>>,
+    },
+    ExecuteTimelockedMsgs {
+        msgs: Vec<CosmosMsg<NeutronMsg>>,
+    },
     /// Removes an item from the governance contract's item map.
-    RemoveItem { key: String },
+    RemoveItem {
+        key: String,
+    },
     /// Adds an item to the governance contract's item map. If the
     /// item already exists the existing value is overriden. If the
     /// item does not exist a new item is added.
-    SetItem { key: String, addr: String },
+    SetItem {
+        key: String,
+        addr: String,
+    },
     /// Callable by the core contract. Replaces the current
     /// governance contract config with the provided config.
     UpdateConfig {
@@ -80,7 +89,9 @@ pub enum ExecuteMsg {
     /// Callable by the core contract. Replaces the current
     /// voting module with a new one instantiated by the governance
     /// contract.
-    UpdateVotingModule { module: ModuleInstantiateInfo },
+    UpdateVotingModule {
+        module: ModuleInstantiateInfo,
+    },
     /// Update the core module to add/remove SubDAOs and their charters
     UpdateSubDaos {
         to_add: Vec<SubDao>,

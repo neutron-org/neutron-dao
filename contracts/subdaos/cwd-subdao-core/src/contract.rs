@@ -158,7 +158,11 @@ pub fn execute_pause(
         .add_attribute("paused_until_height", paused_until_height.to_string()))
 }
 
-pub fn execute_unpause(deps: DepsMut, _env: Env, sender: Addr) -> Result<Response<NeutronMsg>, ContractError> {
+pub fn execute_unpause(
+    deps: DepsMut,
+    _env: Env,
+    sender: Addr,
+) -> Result<Response<NeutronMsg>, ContractError> {
     let config: Config = CONFIG.load(deps.storage)?;
 
     can_unpause(&sender, &config.main_dao)?;
@@ -197,8 +201,7 @@ pub fn execute_timelocked_msgs(
 ) -> Result<Response<NeutronMsg>, ContractError> {
     execution_access_check(deps, sender)?;
 
-    Ok(Response::default()
-        .add_messages(msgs))
+    Ok(Response::default().add_messages(msgs))
 }
 
 pub fn execute_update_config(
