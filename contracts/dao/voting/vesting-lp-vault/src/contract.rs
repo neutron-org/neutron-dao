@@ -1,23 +1,26 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, Deps, DepsMut, Env, Fraction, MessageInfo, Response, StdError, Uint128,
+    to_binary, Binary, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo, Response, StdError,
+    Uint128,
 };
 use cw2::set_contract_version;
 use cwd_interface::voting::{
     BondingStatusResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
 use cwd_interface::Admin;
-use neutron_lockdrop_vault::voting_power::{get_voting_power_for_address, get_voting_power_total};
+use serde::Serialize;
 
 use crate::state::{CONFIG, DAO};
+use neutron_oracle::voting_power::voting_power_from_lp_tokens;
+use neutron_vesting_lp_vault::{
+    error::{ContractError, ContractResult},
+    msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg},
+    types::Config,
+};
+use vesting_base::msg::{QueryMsg as VestingLpQueryMsg, QueryMsgHistorical};
 
-use astroport_periphery::lockdrop::PoolType;
-use neutron_lockdrop_vault::error::{ContractError, ContractResult};
-use neutron_lockdrop_vault::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
-use neutron_lockdrop_vault::types::Config;
-
-pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-lockdrop-vault";
+pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-vesting-lp-vault";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -41,9 +44,10 @@ pub fn instantiate(
     let config = Config {
         name: msg.name,
         description: msg.description,
-        lockdrop_contract: deps.api.addr_validate(&msg.lockdrop_contract)?,
-        oracle_usdc_contract: deps.api.addr_validate(&msg.oracle_usdc_contract)?,
-        oracle_atom_contract: deps.api.addr_validate(&msg.oracle_atom_contract)?,
+        atom_vesting_lp_contract: deps.api.addr_validate(&msg.atom_vesting_lp_contract)?,
+        atom_oracle_contract: deps.api.addr_validate(&msg.atom_oracle_contract)?,
+        usdc_vesting_lp_contract: deps.api.addr_validate(&msg.usdc_vesting_lp_contract)?,
+        usdc_oracle_contract: deps.api.addr_validate(&msg.usdc_oracle_contract)?,
         owner,
         manager,
     };
@@ -56,9 +60,10 @@ pub fn instantiate(
         .add_attribute("name", config.name)
         .add_attribute("description", config.description)
         .add_attribute("owner", config.owner)
-        .add_attribute("lockdrop_contract", config.lockdrop_contract)
-        .add_attribute("oracle_usdc_contract", config.oracle_usdc_contract)
-        .add_attribute("oracle_atom_contract", config.oracle_atom_contract)
+        .add_attribute("atom_vesting_lp_contract", config.atom_vesting_lp_contract)
+        .add_attribute("atom_oracle_contract", config.atom_oracle_contract)
+        .add_attribute("usdc_vesting_lp_contract", config.usdc_vesting_lp_contract)
+        .add_attribute("usdc_oracle_contract", config.usdc_oracle_contract)
         .add_attribute(
             "manager",
             config
@@ -80,9 +85,10 @@ pub fn execute(
         ExecuteMsg::Unbond { amount } => execute_unbond(deps, env, info, amount),
         ExecuteMsg::UpdateConfig {
             owner,
-            lockdrop_contract,
-            oracle_usdc_contract,
-            oracle_atom_contract,
+            atom_vesting_lp_contract,
+            atom_oracle_contract,
+            usdc_vesting_lp_contract,
+            usdc_oracle_contract,
             manager,
             name,
             description,
@@ -90,9 +96,10 @@ pub fn execute(
             deps,
             info,
             owner,
-            lockdrop_contract,
-            oracle_usdc_contract,
-            oracle_atom_contract,
+            atom_vesting_lp_contract,
+            atom_oracle_contract,
+            usdc_vesting_lp_contract,
+            usdc_oracle_contract,
             manager,
             name,
             description,
@@ -117,80 +124,51 @@ pub fn execute_unbond(
 pub fn execute_update_config(
     deps: DepsMut,
     info: MessageInfo,
-    new_owner: Option<String>,
-    new_lockdrop_contract: Option<String>,
-    new_oracle_usdc_contract: Option<String>,
-    new_oracle_atom_contract: Option<String>,
+    new_owner: String,
+    new_atom_vesting_lp_contract: String,
+    new_atom_oracle_contract: String,
+    new_usdc_vesting_lp_contract: String,
+    new_usdc_oracle_contract: String,
     new_manager: Option<String>,
-    new_name: Option<String>,
-    new_description: Option<String>,
+    new_name: String,
+    new_description: String,
 ) -> ContractResult<Response> {
     let mut config: Config = CONFIG.load(deps.storage)?;
     if info.sender != config.owner && Some(info.sender.clone()) != config.manager {
         return Err(ContractError::Unauthorized {});
     }
 
-    let new_owner = new_owner
-        .map(|new_owner| deps.api.addr_validate(&new_owner))
-        .transpose()?;
-
-    let new_lockdrop_contract = new_lockdrop_contract
-        .map(|new_lockdrop_contract| deps.api.addr_validate(&new_lockdrop_contract))
-        .transpose()?;
-
-    let new_oracle_usdc_contract = new_oracle_usdc_contract
-        .map(|new_oracle_usdc_contract| deps.api.addr_validate(&new_oracle_usdc_contract))
-        .transpose()?;
-
-    let new_oracle_atom_contract = new_oracle_atom_contract
-        .map(|new_oracle_atom_contract| deps.api.addr_validate(&new_oracle_atom_contract))
-        .transpose()?;
-
+    let new_owner = deps.api.addr_validate(&new_owner)?;
+    let new_atom_vesting_lp_contract = deps.api.addr_validate(&new_atom_vesting_lp_contract)?;
+    let new_atom_oracle_contract = deps.api.addr_validate(&new_atom_oracle_contract)?;
+    let new_usdc_vesting_lp_contract = deps.api.addr_validate(&new_usdc_vesting_lp_contract)?;
+    let new_usdc_oracle_contract = deps.api.addr_validate(&new_usdc_oracle_contract)?;
     let new_manager = new_manager
         .map(|new_manager| deps.api.addr_validate(&new_manager))
         .transpose()?;
 
-    if info.sender != config.owner && new_owner != Some(config.owner.clone()) {
+    if info.sender != config.owner && new_owner != config.owner {
         return Err(ContractError::OnlyOwnerCanChangeOwner {});
     };
     if info.sender != config.owner
-        && Some(config.lockdrop_contract.clone()) != new_lockdrop_contract
+        && new_atom_vesting_lp_contract != config.atom_vesting_lp_contract
     {
-        return Err(ContractError::OnlyOwnerCanChangeLockdropContract {});
+        return Err(ContractError::OnlyOwnerCanChangeVestingLpContract {});
     };
     if info.sender != config.owner
-        && Some(config.oracle_usdc_contract.clone()) != new_oracle_usdc_contract
+        && new_usdc_vesting_lp_contract != config.usdc_vesting_lp_contract
     {
-        return Err(ContractError::OnlyOwnerCanChangeOracleContract {});
-    };
-    if info.sender != config.owner
-        && Some(config.oracle_atom_contract.clone()) != new_oracle_atom_contract
-    {
-        return Err(ContractError::OnlyOwnerCanChangeOracleContract {});
+        return Err(ContractError::OnlyOwnerCanChangeVestingLpContract {});
     };
 
+    config.owner = new_owner;
+    config.atom_vesting_lp_contract = new_atom_vesting_lp_contract;
+    config.atom_oracle_contract = new_atom_oracle_contract;
+    config.usdc_vesting_lp_contract = new_usdc_vesting_lp_contract;
+    config.usdc_oracle_contract = new_usdc_oracle_contract;
     config.manager = new_manager;
-
-    if let Some(owner) = new_owner {
-        config.owner = owner;
-    }
-
-    if let Some(lockdrop_contract) = new_lockdrop_contract {
-        config.lockdrop_contract = lockdrop_contract;
-    }
-    if let Some(oracle_contract) = new_oracle_usdc_contract {
-        config.oracle_usdc_contract = oracle_contract;
-    }
-    if let Some(oracle_contract) = new_oracle_atom_contract {
-        config.oracle_atom_contract = oracle_contract;
-    }
-    if let Some(name) = new_name {
-        config.name = name;
-    }
-    if let Some(description) = new_description {
-        config.description = description;
-    }
-
+    config.name = new_name;
+    config.description = new_description;
     config.validate()?;
     CONFIG.save(deps.storage, &config)?;
 
@@ -198,9 +176,10 @@ pub fn execute_update_config(
         .add_attribute("action", "update_config")
         .add_attribute("description", config.description)
         .add_attribute("owner", config.owner)
-        .add_attribute("lockdrop_contract", config.lockdrop_contract)
-        .add_attribute("oracle_usdc_contract", config.oracle_usdc_contract)
-        .add_attribute("oracle_atom_contract", config.oracle_atom_contract)
+        .add_attribute("atom_vesting_lp_contract", config.atom_vesting_lp_contract)
+        .add_attribute("atom_oracle_contract", config.atom_oracle_contract)
+        .add_attribute("usdc_vesting_lp_contract", config.usdc_vesting_lp_contract)
+        .add_attribute("usdc_oracle_contract", config.usdc_oracle_contract)
         .add_attribute(
             "manager",
             config
@@ -233,6 +212,35 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
     }
 }
 
+fn get_voting_power(
+    deps: Deps,
+    config: &Config,
+    height: u64,
+    query_msg: &impl Serialize,
+) -> ContractResult<Decimal256> {
+    let mut voting_power = Decimal256::zero();
+    for (vesting_lp, oracle) in [
+        (
+            &config.atom_vesting_lp_contract,
+            &config.atom_oracle_contract,
+        ),
+        (
+            &config.usdc_vesting_lp_contract,
+            &config.usdc_oracle_contract,
+        ),
+    ] {
+        voting_power += voting_power_from_lp_tokens(
+            deps,
+            deps.querier
+                .query_wasm_smart::<Option<Uint128>>(vesting_lp, &query_msg)?
+                .unwrap_or_default(),
+            oracle,
+            height,
+        )?;
+    }
+    Ok(voting_power)
+}
+
 pub fn query_voting_power_at_height(
     deps: Deps,
     env: Env,
@@ -240,32 +248,16 @@ pub fn query_voting_power_at_height(
     height: Option<u64>,
 ) -> ContractResult<VotingPowerAtHeightResponse> {
     let config = CONFIG.load(deps.storage)?;
-
     let height = height.unwrap_or(env.block.height);
-
-    let atom_power = get_voting_power_for_address(
-        deps,
-        config.lockdrop_contract.as_ref(),
-        config.oracle_usdc_contract.as_ref(),
-        config.oracle_atom_contract.as_ref(),
-        PoolType::ATOM,
-        address.clone(),
-        height,
-    )?;
-    let usdc_power = get_voting_power_for_address(
-        deps,
-        config.lockdrop_contract,
-        config.oracle_usdc_contract,
-        config.oracle_atom_contract,
-        PoolType::USDC,
-        address,
-        height,
-    )?;
-
-    let power = atom_power + usdc_power;
+    let query_msg = VestingLpQueryMsg::HistoricalExtension {
+        msg: QueryMsgHistorical::UnclaimedAmountAtHeight { address, height },
+    };
 
     Ok(VotingPowerAtHeightResponse {
-        power: power.numerator().try_into().map_err(StdError::from)?,
+        power: get_voting_power(deps, &config, height, &query_msg)?
+            .numerator()
+            .try_into()
+            .map_err(StdError::from)?,
         height,
     })
 }
@@ -276,30 +268,16 @@ pub fn query_total_power_at_height(
     height: Option<u64>,
 ) -> ContractResult<TotalPowerAtHeightResponse> {
     let config = CONFIG.load(deps.storage)?;
-
     let height = height.unwrap_or(env.block.height);
-
-    let atom_power = get_voting_power_total(
-        deps,
-        config.lockdrop_contract.as_ref(),
-        config.oracle_usdc_contract.as_ref(),
-        config.oracle_atom_contract.as_ref(),
-        PoolType::ATOM,
-        height,
-    )?;
-    let usdc_power = get_voting_power_total(
-        deps,
-        config.lockdrop_contract,
-        config.oracle_usdc_contract,
-        config.oracle_atom_contract,
-        PoolType::USDC,
-        height,
-    )?;
-
-    let power = atom_power + usdc_power;
+    let query_msg = VestingLpQueryMsg::HistoricalExtension {
+        msg: QueryMsgHistorical::UnclaimedTotalAmountAtHeight { height },
+    };
 
     Ok(TotalPowerAtHeightResponse {
-        power: power.numerator().try_into().map_err(StdError::from)?,
+        power: get_voting_power(deps, &config, height, &query_msg)?
+            .numerator()
+            .try_into()
+            .map_err(StdError::from)?,
         height,
     })
 }
