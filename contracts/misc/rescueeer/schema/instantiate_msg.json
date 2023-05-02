@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "InstantiateMsg",
+  "type": "object",
+  "required": [
+    "eol",
+    "owner",
+    "true_admin"
+  ],
+  "properties": {
+    "eol": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    },
+    "owner": {
+      "type": "string"
+    },
+    "true_admin": {
+      "type": "string"
+    }
+  }
+}
