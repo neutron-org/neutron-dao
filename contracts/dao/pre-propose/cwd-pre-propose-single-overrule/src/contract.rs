@@ -89,7 +89,7 @@ pub fn execute(
             // We need this check since the timelock contract might be an impostor
             // E.g. the timelock contract might be a malicious contract that is not a part of
             // the subdao but pretends to be.
-            if get_timelock_from_subdao(&deps, &subdao_address)? != timelock_contract {
+            if !verify_is_timelock_from_subdao(&deps, &subdao_address, &timelock_contract_addr)? {
                 return Err(PreProposeOverruleError::SubdaoMisconfigured {});
             }
 
@@ -175,43 +175,42 @@ fn get_subdao_from_timelock(
     Ok(timelock_config.subdao)
 }
 
-fn get_timelock_from_subdao(
+fn verify_is_timelock_from_subdao(
     deps: &DepsMut,
     subdao_core: &Addr,
-) -> Result<Addr, PreProposeOverruleError> {
+    expected_timelock: &Addr,
+) -> Result<bool, PreProposeOverruleError> {
     let proposal_modules: Vec<SubdaoTypes::ProposalModule> = deps.querier.query_wasm_smart(
         subdao_core,
         &SubdaoQueryMsg::ProposalModules {
             start_after: None,
-            // we assume any subdao proposal module has pre-propose module with timelock.
-            // thus, we need only single module
-            limit: Some(1),
+            limit: None, // TODO add pagination
         },
     )?;
 
-    let proposal_module = proposal_modules
-        .first()
-        .ok_or(PreProposeOverruleError::SubdaoMisconfigured {})?
-        .address
-        .clone();
+    for proposal_module in proposal_modules {
+        let prop_policy: ProposalCreationPolicy = deps.querier.query_wasm_smart(
+            proposal_module.address,
+            &SubdaoProposalMsg::QueryMsg::ProposalCreationPolicy {},
+        )?;
 
-    let prop_policy: ProposalCreationPolicy = deps.querier.query_wasm_smart(
-        proposal_module,
-        &SubdaoProposalMsg::QueryMsg::ProposalCreationPolicy {},
-    )?;
-
-    match prop_policy {
-        ProposalCreationPolicy::Anyone {} => Err(PreProposeOverruleError::SubdaoMisconfigured {}),
-        ProposalCreationPolicy::Module { addr } => {
-            let timelock: Addr = deps.querier.query_wasm_smart(
-                addr,
-                &SubdaoPreProposeQueryMsg::QueryExtension {
-                    msg: SubdaoPreProposeQueryExt::TimelockAddress {},
-                },
-            )?;
-            Ok(timelock)
+        match prop_policy {
+            ProposalCreationPolicy::Anyone {} => {},
+            ProposalCreationPolicy::Module { addr } => {
+                let timelock: Addr = deps.querier.query_wasm_smart(
+                    addr,
+                    &SubdaoPreProposeQueryMsg::QueryExtension {
+                        msg: SubdaoPreProposeQueryExt::TimelockAddress {},
+                    },
+                )?;
+                if *expected_timelock == timelock {
+                    return Ok(true);
+                }
+            }
         }
     }
+
+    Err(PreProposeOverruleError::SubdaoMisconfigured {})
 }
 
 fn is_subdao_legit(deps: &DepsMut, subdao_core: &Addr) -> Result<bool, PreProposeOverruleError> {
