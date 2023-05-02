@@ -195,7 +195,7 @@ fn verify_is_timelock_from_subdao(
         )?;
 
         match prop_policy {
-            ProposalCreationPolicy::Anyone {} => {},
+            ProposalCreationPolicy::Anyone {} => {}
             ProposalCreationPolicy::Module { addr } => {
                 let timelock: Addr = deps.querier.query_wasm_smart(
                     addr,
