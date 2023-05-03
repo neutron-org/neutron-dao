@@ -9,7 +9,6 @@ pub struct Config {
     pub vesting_contract_address: Addr,
     pub description: String,
     pub owner: Addr,
-    pub manager: Option<Addr>,
     pub name: String,
 }
 

@@ -268,6 +268,7 @@ dependencies = [
  "cw20 1.0.1",
  "cwd-interface",
  "cwd-macros",
+ "cwd-voting",
  "schemars",
  "serde",
  "thiserror",
@@ -1453,7 +1454,6 @@ version = "0.1.0"
 dependencies = [
  "astroport-periphery",
  "cosmwasm-std",
- "cwd-interface",
  "cwd-macros",
  "neutron-oracle",
  "schemars",
@@ -1585,7 +1585,6 @@ name = "neutron-vesting-lp-vault"
 version = "0.1.0"
 dependencies = [
  "cosmwasm-std",
- "cwd-interface",
  "cwd-macros",
  "schemars",
  "serde",
@@ -1816,6 +1815,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
 dependencies = [
  "getrandom",
+]
+
+[[package]]
+name = "rescueeer"
+version = "0.2.0"
+dependencies = [
+ "anyhow",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cosmwasm-storage",
+ "cw-controllers 1.0.1",
+ "cw-multi-test 0.16.4",
+ "cw-storage-plus 1.0.1",
+ "cw-utils 1.0.1",
+ "neutron-sdk",
+ "schemars",
+ "serde",
+ "thiserror",
 ]
 
 [[package]]

@@ -4,8 +4,7 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 // use cw_controllers::ClaimsResponse;
-use cwd_interface::voting::{TotalPowerAtHeightResponse, VotingPowerAtHeightResponse};
-use cwd_interface::{voting, Admin};
+use cwd_interface::voting::{self, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse};
 use neutron_vault::msg::QueryMsg as VaultQueryMsg;
 
 use crate::error::ContractError;
@@ -24,14 +23,7 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    let owner = match msg.owner {
-        Admin::Address { addr } => deps.api.addr_validate(addr.as_str())?,
-        Admin::CoreModule {} => info.sender.clone(),
-    };
-    let manager = msg
-        .manager
-        .map(|manager| deps.api.addr_validate(&manager))
-        .transpose()?;
+    let owner = deps.api.addr_validate(&msg.owner)?;
 
     let mut voting_vaults: Vec<Addr> = vec![];
     for vault in msg.voting_vaults.iter() {
@@ -40,7 +32,6 @@ pub fn instantiate(
 
     let config = Config {
         owner,
-        manager,
         voting_vaults,
     };
 
@@ -49,14 +40,7 @@ pub fn instantiate(
 
     Ok(Response::new()
         .add_attribute("action", "instantiate")
-        .add_attribute("owner", config.owner)
-        .add_attribute(
-            "manager",
-            config
-                .manager
-                .map(|a| a.to_string())
-                .unwrap_or_else(|| "None".to_string()),
-        ))
+        .add_attribute("owner", config.owner))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -73,9 +57,7 @@ pub fn execute(
         ExecuteMsg::RemoveVotingVault {
             old_voting_vault_contract,
         } => execute_remove_voting_vault(deps, env, info, old_voting_vault_contract),
-        ExecuteMsg::UpdateConfig { owner, manager } => {
-            execute_update_config(deps, info, owner, manager)
-        }
+        ExecuteMsg::UpdateConfig { owner } => execute_update_config(deps, info, owner),
     }
 }
 
@@ -133,36 +115,20 @@ pub fn execute_update_config(
     deps: DepsMut,
     info: MessageInfo,
     new_owner: String,
-    new_manager: Option<String>,
 ) -> Result<Response, ContractError> {
     let mut config: Config = CONFIG.load(deps.storage)?;
-    if info.sender != config.owner && Some(info.sender.clone()) != config.manager {
+    if info.sender != config.owner {
         return Err(ContractError::Unauthorized {});
     }
 
     let new_owner = deps.api.addr_validate(&new_owner)?;
-    let new_manager = new_manager
-        .map(|new_manager| deps.api.addr_validate(&new_manager))
-        .transpose()?;
-
-    if info.sender != config.owner && new_owner != config.owner {
-        return Err(ContractError::OnlyOwnerCanChangeOwner {});
-    };
 
     config.owner = new_owner;
-    config.manager = new_manager;
 
     CONFIG.save(deps.storage, &config)?;
     Ok(Response::new()
         .add_attribute("action", "update_config")
-        .add_attribute("owner", config.owner)
-        .add_attribute(
-            "manager",
-            config
-                .manager
-                .map(|a| a.to_string())
-                .unwrap_or_else(|| "None".to_string()),
-        ))
+        .add_attribute("owner", config.owner))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -176,7 +142,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         }
         QueryMsg::Info {} => query_info(deps),
         QueryMsg::Dao {} => query_dao(deps),
-        QueryMsg::GetConfig {} => to_binary(&CONFIG.load(deps.storage)?),
+        QueryMsg::Config {} => to_binary(&CONFIG.load(deps.storage)?),
         QueryMsg::VotingVaults {} => to_binary(&query_voting_vaults(deps)?),
     }
 }

@@ -15,12 +15,6 @@ pub enum ContractError {
     #[error("Direct unbonding is not available for this contract")]
     DirectUnbondingDisabled {},
 
-    #[error("Only owner can change owner")]
-    OnlyOwnerCanChangeOwner {},
-
-    #[error("Only owner can change vesting LP contract")]
-    OnlyOwnerCanChangeVestingLpContract {},
-
     #[error("config name cannot be empty.")]
     NameIsEmpty {},
 

@@ -7,61 +7,14 @@
     "voting_vaults"
   ],
   "properties": {
-    "manager": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
     "owner": {
-      "$ref": "#/definitions/Admin"
+      "type": "string"
     },
     "voting_vaults": {
       "type": "array",
       "items": {
         "type": "string"
       }
-    }
-  },
-  "definitions": {
-    "Admin": {
-      "description": "Information about the CosmWasm level admin of a contract. Used in conjunction with `ModuleInstantiateInfo` to instantiate modules.",
-      "oneOf": [
-        {
-          "description": "Set the admin to a specified address.",
-          "type": "object",
-          "required": [
-            "address"
-          ],
-          "properties": {
-            "address": {
-              "type": "object",
-              "required": [
-                "addr"
-              ],
-              "properties": {
-                "addr": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "description": "Sets the admin as the core module address.",
-          "type": "object",
-          "required": [
-            "core_module"
-          ],
-          "properties": {
-            "core_module": {
-              "type": "object"
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
     }
   }
 }

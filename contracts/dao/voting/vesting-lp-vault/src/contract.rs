@@ -8,7 +8,6 @@ use cw2::set_contract_version;
 use cwd_interface::voting::{
     BondingStatusResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
-use cwd_interface::Admin;
 use serde::Serialize;
 
 use crate::state::{CONFIG, DAO};
@@ -32,14 +31,7 @@ pub fn instantiate(
 ) -> ContractResult<Response> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    let owner = match msg.owner {
-        Admin::Address { addr } => deps.api.addr_validate(addr.as_str())?,
-        Admin::CoreModule {} => info.sender.clone(),
-    };
-    let manager = msg
-        .manager
-        .map(|manager| deps.api.addr_validate(&manager))
-        .transpose()?;
+    let owner = deps.api.addr_validate(&msg.owner)?;
 
     let config = Config {
         name: msg.name,
@@ -49,7 +41,6 @@ pub fn instantiate(
         usdc_vesting_lp_contract: deps.api.addr_validate(&msg.usdc_vesting_lp_contract)?,
         usdc_oracle_contract: deps.api.addr_validate(&msg.usdc_oracle_contract)?,
         owner,
-        manager,
     };
     config.validate()?;
     CONFIG.save(deps.storage, &config)?;
@@ -63,14 +54,7 @@ pub fn instantiate(
         .add_attribute("atom_vesting_lp_contract", config.atom_vesting_lp_contract)
         .add_attribute("atom_oracle_contract", config.atom_oracle_contract)
         .add_attribute("usdc_vesting_lp_contract", config.usdc_vesting_lp_contract)
-        .add_attribute("usdc_oracle_contract", config.usdc_oracle_contract)
-        .add_attribute(
-            "manager",
-            config
-                .manager
-                .map(|a| a.to_string())
-                .unwrap_or_else(|| "None".to_string()),
-        ))
+        .add_attribute("usdc_oracle_contract", config.usdc_oracle_contract))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -89,7 +73,6 @@ pub fn execute(
             atom_oracle_contract,
             usdc_vesting_lp_contract,
             usdc_oracle_contract,
-            manager,
             name,
             description,
         } => execute_update_config(
@@ -100,7 +83,6 @@ pub fn execute(
             atom_oracle_contract,
             usdc_vesting_lp_contract,
             usdc_oracle_contract,
-            manager,
             name,
             description,
         ),
@@ -129,12 +111,11 @@ pub fn execute_update_config(
     new_atom_oracle_contract: String,
     new_usdc_vesting_lp_contract: String,
     new_usdc_oracle_contract: String,
-    new_manager: Option<String>,
     new_name: String,
     new_description: String,
 ) -> ContractResult<Response> {
     let mut config: Config = CONFIG.load(deps.storage)?;
-    if info.sender != config.owner && Some(info.sender.clone()) != config.manager {
+    if info.sender != config.owner {
         return Err(ContractError::Unauthorized {});
     }
 
@@ -143,30 +124,12 @@ pub fn execute_update_config(
     let new_atom_oracle_contract = deps.api.addr_validate(&new_atom_oracle_contract)?;
     let new_usdc_vesting_lp_contract = deps.api.addr_validate(&new_usdc_vesting_lp_contract)?;
     let new_usdc_oracle_contract = deps.api.addr_validate(&new_usdc_oracle_contract)?;
-    let new_manager = new_manager
-        .map(|new_manager| deps.api.addr_validate(&new_manager))
-        .transpose()?;
-
-    if info.sender != config.owner && new_owner != config.owner {
-        return Err(ContractError::OnlyOwnerCanChangeOwner {});
-    };
-    if info.sender != config.owner
-        && new_atom_vesting_lp_contract != config.atom_vesting_lp_contract
-    {
-        return Err(ContractError::OnlyOwnerCanChangeVestingLpContract {});
-    };
-    if info.sender != config.owner
-        && new_usdc_vesting_lp_contract != config.usdc_vesting_lp_contract
-    {
-        return Err(ContractError::OnlyOwnerCanChangeVestingLpContract {});
-    };
 
     config.owner = new_owner;
     config.atom_vesting_lp_contract = new_atom_vesting_lp_contract;
     config.atom_oracle_contract = new_atom_oracle_contract;
     config.usdc_vesting_lp_contract = new_usdc_vesting_lp_contract;
     config.usdc_oracle_contract = new_usdc_oracle_contract;
-    config.manager = new_manager;
     config.name = new_name;
     config.description = new_description;
     config.validate()?;
@@ -179,14 +142,7 @@ pub fn execute_update_config(
         .add_attribute("atom_vesting_lp_contract", config.atom_vesting_lp_contract)
         .add_attribute("atom_oracle_contract", config.atom_oracle_contract)
         .add_attribute("usdc_vesting_lp_contract", config.usdc_vesting_lp_contract)
-        .add_attribute("usdc_oracle_contract", config.usdc_oracle_contract)
-        .add_attribute(
-            "manager",
-            config
-                .manager
-                .map(|a| a.to_string())
-                .unwrap_or_else(|| "None".to_string()),
-        ))
+        .add_attribute("usdc_oracle_contract", config.usdc_oracle_contract))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -202,7 +158,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
         QueryMsg::Dao {} => query_dao(deps),
         QueryMsg::Name {} => query_name(deps),
         QueryMsg::Description {} => query_description(deps),
-        QueryMsg::GetConfig {} => query_config(deps),
+        QueryMsg::Config {} => query_config(deps),
         QueryMsg::ListBonders { start_after, limit } => {
             query_list_bonders(deps, start_after, limit)
         }

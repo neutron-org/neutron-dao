@@ -8,12 +8,13 @@ use cw_multi_test::{custom_app, App, AppResponse, Contract, ContractWrapper, Exe
 use cwd_interface::voting::{
     InfoResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
-use cwd_interface::Admin;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 const DAO_ADDR: &str = "dao";
+const NAME: &str = "name";
 const DESCRIPTION: &str = "description";
+const NEW_NAME: &str = "new name";
 const NEW_DESCRIPTION: &str = "new description";
 const ADDR1: &str = "addr1";
 const ADDR2: &str = "addr2";
@@ -94,8 +95,8 @@ fn update_config(
     contract_addr: Addr,
     sender: &str,
     credits_contract_address: Option<String>,
-    owner: String,
-    manager: Option<String>,
+    owner: Option<String>,
+    name: Option<String>,
     description: Option<String>,
 ) -> anyhow::Result<AppResponse> {
     app.execute_contract(
@@ -104,7 +105,7 @@ fn update_config(
         &ExecuteMsg::UpdateConfig {
             credits_contract_address,
             owner,
-            manager,
+            name,
             description,
         },
         &[],
@@ -137,7 +138,7 @@ fn get_total_power_at_height(
 
 fn get_config(app: &mut App, contract_addr: Addr) -> Config {
     app.wrap()
-        .query_wasm_smart(contract_addr, &QueryMsg::GetConfig {})
+        .query_wasm_smart(contract_addr, &QueryMsg::Config {})
         .unwrap()
 }
 
@@ -153,11 +154,9 @@ fn test_instantiate() {
         vault_id,
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Admin::Address {
-                addr: DAO_ADDR.to_string(),
-            },
-            manager: Some(ADDR1.to_string()),
+            owner: DAO_ADDR.to_string(),
         },
     );
 
@@ -167,41 +166,16 @@ fn test_instantiate() {
         vault_id,
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Admin::Address {
-                addr: DAO_ADDR.to_string(),
-            },
-            manager: None,
+            owner: DAO_ADDR.to_string(),
         },
     );
-}
-
-#[test]
-fn test_instantiate_dao_owner() {
-    let mut app = mock_app();
-    let credits_contract = instantiate_credits_contract(&mut app);
-
-    let vault_id = app.store_code(vault_contract());
-    // Populated fields
-    let addr = instantiate_vault(
-        &mut app,
-        vault_id,
-        InstantiateMsg {
-            credits_contract_address: credits_contract.to_string(),
-            description: DESCRIPTION.to_string(),
-            owner: Admin::CoreModule {},
-            manager: Some(ADDR1.to_string()),
-        },
-    );
-
-    let config = get_config(&mut app, addr);
-
-    assert_eq!(config.owner, Addr::unchecked(DAO_ADDR))
 }
 
 #[test]
 #[should_panic(expected = "Unauthorized")]
-fn test_update_config_invalid_sender() {
+fn test_update_config_unauthorized() {
     let mut app = mock_app();
     let credits_contract = instantiate_credits_contract(&mut app);
 
@@ -211,52 +185,21 @@ fn test_update_config_invalid_sender() {
         vault_id,
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Admin::CoreModule {},
-            manager: Some(ADDR1.to_string()),
+            owner: DAO_ADDR.to_string(),
         },
     );
 
-    // From ADDR2, so not owner or manager
+    // From ADDR2, so not owner
     update_config(
         &mut app,
         addr,
         ADDR2,
         Some(credits_contract.to_string()),
-        ADDR1.to_string(),
-        Some(DAO_ADDR.to_string()),
+        Some(ADDR1.to_string()),
+        Some(NEW_NAME.to_string()),
         Some(NEW_DESCRIPTION.to_string()),
-    )
-    .unwrap();
-}
-
-#[test]
-#[should_panic(expected = "Only owner can change owner")]
-fn test_update_config_non_owner_changes_owner() {
-    let mut app = mock_app();
-    let credits_contract = instantiate_credits_contract(&mut app);
-
-    let vault_id = app.store_code(vault_contract());
-    let addr = instantiate_vault(
-        &mut app,
-        vault_id,
-        InstantiateMsg {
-            credits_contract_address: credits_contract.to_string(),
-            description: DESCRIPTION.to_string(),
-            owner: Admin::CoreModule {},
-            manager: Some(ADDR1.to_string()),
-        },
-    );
-
-    // ADDR1 is the manager so cannot change the owner
-    update_config(
-        &mut app,
-        addr,
-        ADDR1,
-        Some(credits_contract.to_string()),
-        ADDR2.to_string(),
-        None,
-        None,
     )
     .unwrap();
 }
@@ -272,20 +215,20 @@ fn test_update_config_as_owner() {
         vault_id,
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Admin::CoreModule {},
-            manager: Some(ADDR1.to_string()),
+            owner: DAO_ADDR.to_string(),
         },
     );
 
-    // Swap owner and manager, change description
+    // Change owner and description
     update_config(
         &mut app,
         addr.clone(),
         DAO_ADDR,
         Some(credits_contract.to_string()),
-        ADDR1.to_string(),
-        Some(DAO_ADDR.to_string()),
+        Some(ADDR1.to_string()),
+        Some(NEW_NAME.to_string()),
         Some(NEW_DESCRIPTION.to_string()),
     )
     .unwrap();
@@ -294,57 +237,16 @@ fn test_update_config_as_owner() {
     assert_eq!(
         Config {
             credits_contract_address: Addr::unchecked(credits_contract),
+            name: NEW_NAME.to_string(),
             description: NEW_DESCRIPTION.to_string(),
             owner: Addr::unchecked(ADDR1),
-            manager: Some(Addr::unchecked(DAO_ADDR)),
         },
         config
     );
 }
 
 #[test]
-fn test_update_config_as_manager() {
-    let mut app = mock_app();
-    let credits_contract = instantiate_credits_contract(&mut app);
-
-    let vault_id = app.store_code(vault_contract());
-    let addr = instantiate_vault(
-        &mut app,
-        vault_id,
-        InstantiateMsg {
-            credits_contract_address: credits_contract.to_string(),
-            description: DESCRIPTION.to_string(),
-            owner: Admin::CoreModule {},
-            manager: Some(ADDR1.to_string()),
-        },
-    );
-
-    // Change description and manager as manager cannot change owner
-    update_config(
-        &mut app,
-        addr.clone(),
-        ADDR1,
-        Some(credits_contract.to_string()),
-        DAO_ADDR.to_string(),
-        Some(ADDR2.to_string()),
-        Some(NEW_DESCRIPTION.to_string()),
-    )
-    .unwrap();
-
-    let config = get_config(&mut app, addr);
-    assert_eq!(
-        Config {
-            credits_contract_address: Addr::unchecked(credits_contract),
-            description: NEW_DESCRIPTION.to_string(),
-            owner: Addr::unchecked(DAO_ADDR),
-            manager: Some(Addr::unchecked(ADDR2)),
-        },
-        config
-    );
-}
-
-#[test]
-#[should_panic(expected = "Empty attribute value. Key: description")]
+#[should_panic(expected = "config description cannot be empty.")]
 fn test_update_config_invalid_description() {
     let mut app = mock_app();
     let credits_contract = instantiate_credits_contract(&mut app);
@@ -355,21 +257,52 @@ fn test_update_config_invalid_description() {
         vault_id,
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Admin::CoreModule {},
-            manager: Some(ADDR1.to_string()),
+            owner: DAO_ADDR.to_string(),
         },
     );
 
-    // Change duration and manager as manager cannot change owner
+    // Change description
     update_config(
         &mut app,
         addr,
-        ADDR1,
-        Some(credits_contract.to_string()),
-        DAO_ADDR.to_string(),
-        Some(ADDR2.to_string()),
+        DAO_ADDR,
+        None,
+        None,
+        None,
         Some(String::from("")),
+    )
+    .unwrap();
+}
+
+#[test]
+#[should_panic(expected = "config name cannot be empty.")]
+fn test_update_config_invalid_name() {
+    let mut app = mock_app();
+    let credits_contract = instantiate_credits_contract(&mut app);
+
+    let vault_id = app.store_code(vault_contract());
+    let addr = instantiate_vault(
+        &mut app,
+        vault_id,
+        InstantiateMsg {
+            credits_contract_address: credits_contract.to_string(),
+            name: NAME.to_string(),
+            description: DESCRIPTION.to_string(),
+            owner: DAO_ADDR.to_string(),
+        },
+    );
+
+    // Change description
+    update_config(
+        &mut app,
+        addr,
+        DAO_ADDR,
+        None,
+        None,
+        Some(String::from("")),
+        None,
     )
     .unwrap();
 }
@@ -385,9 +318,9 @@ fn test_query_dao() {
         vault_id,
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Admin::CoreModule {},
-            manager: Some(ADDR1.to_string()),
+            owner: DAO_ADDR.to_string(),
         },
     );
 
@@ -407,9 +340,9 @@ fn test_query_info() {
         vault_id,
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Admin::CoreModule {},
-            manager: Some(ADDR1.to_string()),
+            owner: DAO_ADDR.to_string(),
         },
     );
 
@@ -429,9 +362,9 @@ fn test_query_get_config() {
         vault_id,
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Admin::CoreModule {},
-            manager: Some(ADDR1.to_string()),
+            owner: DAO_ADDR.to_string(),
         },
     );
 
@@ -441,8 +374,8 @@ fn test_query_get_config() {
         Config {
             credits_contract_address: Addr::unchecked(credits_contract),
             description: DESCRIPTION.to_string(),
+            name: NAME.to_string(),
             owner: Addr::unchecked(DAO_ADDR),
-            manager: Some(Addr::unchecked(ADDR1)),
         }
     )
 }
@@ -458,9 +391,9 @@ fn test_voting_power_queries() {
         vault_id,
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
+            name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            owner: Admin::CoreModule {},
-            manager: Some(ADDR1.to_string()),
+            owner: DAO_ADDR.to_string(),
         },
     );
 
