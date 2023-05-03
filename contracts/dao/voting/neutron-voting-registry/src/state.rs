@@ -6,7 +6,6 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 pub struct Config {
     pub owner: Addr,
-    pub manager: Option<Addr>,
     pub voting_vaults: Vec<Addr>,
 }
 

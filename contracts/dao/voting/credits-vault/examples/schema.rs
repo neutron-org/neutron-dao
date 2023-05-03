@@ -1,14 +1,23 @@
+// Copyright 2022 Neutron
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 use std::env::current_dir;
 use std::fs::create_dir_all;
 
-use cosmwasm_schema::{export_schema, export_schema_with_title, remove_schemas, schema_for};
-use cosmwasm_std::Addr;
-use credits_vault::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
-use credits_vault::state::Config;
-use cw_controllers::ClaimsResponse;
-use cwd_interface::voting::{
-    InfoResponse, IsActiveResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
-};
+use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
+
+use credits_vault::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 
 fn main() {
     let mut out_dir = current_dir().unwrap();
@@ -19,16 +28,4 @@ fn main() {
     export_schema(&schema_for!(InstantiateMsg), &out_dir);
     export_schema(&schema_for!(ExecuteMsg), &out_dir);
     export_schema(&schema_for!(QueryMsg), &out_dir);
-    export_schema(&schema_for!(MigrateMsg), &out_dir);
-
-    export_schema(&schema_for!(InfoResponse), &out_dir);
-    export_schema(&schema_for!(TotalPowerAtHeightResponse), &out_dir);
-    export_schema(&schema_for!(VotingPowerAtHeightResponse), &out_dir);
-    export_schema(&schema_for!(IsActiveResponse), &out_dir);
-    export_schema(&schema_for!(ClaimsResponse), &out_dir);
-
-    // Auto TS code generation expects the query return type as QueryNameResponse
-    // Here we map query resonses to the correct name
-    export_schema_with_title(&schema_for!(Addr), &out_dir, "DaoResponse");
-    export_schema_with_title(&schema_for!(Config), &out_dir, "GetConfigResponse");
 }

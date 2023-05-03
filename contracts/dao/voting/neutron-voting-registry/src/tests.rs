@@ -5,7 +5,6 @@ use cosmwasm_std::testing::{mock_dependencies, mock_env};
 use cosmwasm_std::{Addr, Coin, Empty, Uint128};
 use cw_multi_test::{custom_app, App, AppResponse, Contract, ContractWrapper, Executor};
 use cwd_interface::voting::InfoResponse;
-use cwd_interface::Admin;
 
 const DAO_ADDR: &str = "dao";
 const VAULT_ADDR: &str = "vault";
@@ -87,12 +86,11 @@ fn update_config(
     contract_addr: Addr,
     sender: &str,
     owner: String,
-    manager: Option<String>,
 ) -> anyhow::Result<AppResponse> {
     app.execute_contract(
         Addr::unchecked(sender),
         contract_addr,
-        &ExecuteMsg::UpdateConfig { owner, manager },
+        &ExecuteMsg::UpdateConfig { owner },
         &[],
     )
 }
@@ -131,7 +129,7 @@ fn remove_vault(
 
 fn get_config(app: &mut App, contract_addr: Addr) -> Config {
     app.wrap()
-        .query_wasm_smart(contract_addr, &QueryMsg::GetConfig {})
+        .query_wasm_smart(contract_addr, &QueryMsg::Config {})
         .unwrap()
 }
 
@@ -139,28 +137,11 @@ fn get_config(app: &mut App, contract_addr: Addr) -> Config {
 fn test_instantiate() {
     let mut app = mock_app();
     let vault_id = app.store_code(vault_contract());
-    // Populated fields
     let _addr = instantiate_voting_registry(
         &mut app,
         vault_id,
         InstantiateMsg {
-            owner: Admin::Address {
-                addr: DAO_ADDR.to_string(),
-            },
-            manager: Some(ADDR1.to_string()),
-            voting_vaults: vec![VAULT_ADDR.to_string()],
-        },
-    );
-
-    // Non populated fields
-    let _addr = instantiate_voting_registry(
-        &mut app,
-        vault_id,
-        InstantiateMsg {
-            owner: Admin::Address {
-                addr: DAO_ADDR.to_string(),
-            },
-            manager: None,
+            owner: DAO_ADDR.to_string(),
             voting_vaults: vec![VAULT_ADDR.to_string()],
         },
     );
@@ -175,10 +156,7 @@ fn test_instantiate_multiple_vaults() {
         &mut app,
         vault_id,
         InstantiateMsg {
-            owner: Admin::Address {
-                addr: DAO_ADDR.to_string(),
-            },
-            manager: Some(ADDR1.to_string()),
+            owner: DAO_ADDR.to_string(),
             voting_vaults: vec![VAULT_ADDR.to_string(), String::from("another_vault")],
         },
     );
@@ -190,68 +168,21 @@ fn test_instantiate_multiple_vaults() {
 }
 
 #[test]
-fn test_instantiate_dao_owner() {
-    let mut app = mock_app();
-    let vault_id = app.store_code(vault_contract());
-    // Populated fields
-    let addr = instantiate_voting_registry(
-        &mut app,
-        vault_id,
-        InstantiateMsg {
-            owner: Admin::CoreModule {},
-            manager: Some(ADDR1.to_string()),
-            voting_vaults: vec![VAULT_ADDR.to_string()],
-        },
-    );
-
-    let config = get_config(&mut app, addr);
-
-    assert_eq!(config.owner, Addr::unchecked(DAO_ADDR))
-}
-
-#[test]
 #[should_panic(expected = "Unauthorized")]
-fn test_update_config_invalid_sender() {
+fn test_update_config_unauthorized() {
     let mut app = mock_app();
     let vault_id = app.store_code(vault_contract());
     let addr = instantiate_voting_registry(
         &mut app,
         vault_id,
         InstantiateMsg {
-            owner: Admin::CoreModule {},
-            manager: Some(ADDR1.to_string()),
+            owner: DAO_ADDR.to_string(),
             voting_vaults: vec![VAULT_ADDR.to_string()],
         },
     );
 
-    // From ADDR2, so not owner or manager
-    update_config(
-        &mut app,
-        addr,
-        ADDR2,
-        ADDR1.to_string(),
-        Some(DAO_ADDR.to_string()),
-    )
-    .unwrap();
-}
-
-#[test]
-#[should_panic(expected = "Only owner can change owner")]
-fn test_update_config_non_owner_changes_owner() {
-    let mut app = mock_app();
-    let vault_id = app.store_code(vault_contract());
-    let addr = instantiate_voting_registry(
-        &mut app,
-        vault_id,
-        InstantiateMsg {
-            owner: Admin::CoreModule {},
-            manager: Some(ADDR1.to_string()),
-            voting_vaults: vec![VAULT_ADDR.to_string()],
-        },
-    );
-
-    // ADDR1 is the manager so cannot change the owner
-    update_config(&mut app, addr, ADDR1, ADDR2.to_string(), None).unwrap();
+    // From ADDR2, so not owner
+    update_config(&mut app, addr, ADDR2, ADDR1.to_string()).unwrap();
 }
 
 #[test]
@@ -262,62 +193,18 @@ fn test_update_config_as_owner() {
         &mut app,
         vault_id,
         InstantiateMsg {
-            owner: Admin::CoreModule {},
-            manager: Some(ADDR1.to_string()),
+            owner: DAO_ADDR.to_string(),
             voting_vaults: vec![VAULT_ADDR.to_string()],
         },
     );
 
-    // Swap owner and manager, change description
-    update_config(
-        &mut app,
-        addr.clone(),
-        DAO_ADDR,
-        ADDR1.to_string(),
-        Some(DAO_ADDR.to_string()),
-    )
-    .unwrap();
+    // Change owner and description
+    update_config(&mut app, addr.clone(), DAO_ADDR, ADDR1.to_string()).unwrap();
 
     let config = get_config(&mut app, addr);
     assert_eq!(
         Config {
             owner: Addr::unchecked(ADDR1),
-            manager: Some(Addr::unchecked(DAO_ADDR)),
-            voting_vaults: vec![Addr::unchecked(VAULT_ADDR)]
-        },
-        config
-    );
-}
-
-#[test]
-fn test_update_config_as_manager() {
-    let mut app = mock_app();
-    let vault_id = app.store_code(vault_contract());
-    let addr = instantiate_voting_registry(
-        &mut app,
-        vault_id,
-        InstantiateMsg {
-            owner: Admin::CoreModule {},
-            manager: Some(ADDR1.to_string()),
-            voting_vaults: vec![VAULT_ADDR.to_string()],
-        },
-    );
-
-    // Change description and manager as manager cannot change owner
-    update_config(
-        &mut app,
-        addr.clone(),
-        ADDR1,
-        DAO_ADDR.to_string(),
-        Some(ADDR2.to_string()),
-    )
-    .unwrap();
-
-    let config = get_config(&mut app, addr);
-    assert_eq!(
-        Config {
-            owner: Addr::unchecked(DAO_ADDR),
-            manager: Some(Addr::unchecked(ADDR2)),
             voting_vaults: vec![Addr::unchecked(VAULT_ADDR)]
         },
         config
@@ -332,8 +219,7 @@ fn test_query_dao() {
         &mut app,
         vault_id,
         InstantiateMsg {
-            owner: Admin::CoreModule {},
-            manager: Some(ADDR1.to_string()),
+            owner: DAO_ADDR.to_string(),
             voting_vaults: vec![VAULT_ADDR.to_string()],
         },
     );
@@ -351,8 +237,7 @@ fn test_query_info() {
         &mut app,
         vault_id,
         InstantiateMsg {
-            owner: Admin::CoreModule {},
-            manager: Some(ADDR1.to_string()),
+            owner: DAO_ADDR.to_string(),
             voting_vaults: vec![VAULT_ADDR.to_string()],
         },
     );
@@ -370,8 +255,7 @@ fn test_query_get_config() {
         &mut app,
         vault_id,
         InstantiateMsg {
-            owner: Admin::CoreModule {},
-            manager: Some(ADDR1.to_string()),
+            owner: DAO_ADDR.to_string(),
             voting_vaults: vec![VAULT_ADDR.to_string()],
         },
     );
@@ -381,7 +265,6 @@ fn test_query_get_config() {
         config,
         Config {
             owner: Addr::unchecked(DAO_ADDR),
-            manager: Some(Addr::unchecked(ADDR1)),
             voting_vaults: vec![Addr::unchecked(VAULT_ADDR)]
         }
     )
@@ -395,8 +278,7 @@ fn test_add_vault_owner() {
         &mut app,
         vault_id,
         InstantiateMsg {
-            owner: Admin::CoreModule {},
-            manager: Some(ADDR1.to_string()),
+            owner: DAO_ADDR.to_string(),
             voting_vaults: vec![VAULT_ADDR.to_string()],
         },
     );
@@ -409,7 +291,6 @@ fn test_add_vault_owner() {
         config,
         Config {
             owner: Addr::unchecked(DAO_ADDR),
-            manager: Some(Addr::unchecked(ADDR1)),
             voting_vaults: vec![Addr::unchecked(VAULT_ADDR), Addr::unchecked(new_vault)]
         }
     )
@@ -423,8 +304,7 @@ fn test_remove_vault_owner() {
         &mut app,
         vault_id,
         InstantiateMsg {
-            owner: Admin::CoreModule {},
-            manager: Some(ADDR1.to_string()),
+            owner: DAO_ADDR.to_string(),
             voting_vaults: vec![VAULT_ADDR.to_string()],
         },
     );
@@ -437,7 +317,6 @@ fn test_remove_vault_owner() {
         config,
         Config {
             owner: Addr::unchecked(DAO_ADDR),
-            manager: Some(Addr::unchecked(ADDR1)),
             voting_vaults: vec![Addr::unchecked(VAULT_ADDR), Addr::unchecked(new_vault)]
         }
     );
@@ -448,7 +327,6 @@ fn test_remove_vault_owner() {
         config,
         Config {
             owner: Addr::unchecked(DAO_ADDR),
-            manager: Some(Addr::unchecked(ADDR1)),
             voting_vaults: vec![Addr::unchecked(new_vault)]
         }
     );
@@ -463,8 +341,7 @@ fn test_add_vault_manager() {
         &mut app,
         vault_id,
         InstantiateMsg {
-            owner: Admin::CoreModule {},
-            manager: Some(ADDR1.to_string()),
+            owner: DAO_ADDR.to_string(),
             voting_vaults: vec![VAULT_ADDR.to_string()],
         },
     );
@@ -477,7 +354,6 @@ fn test_add_vault_manager() {
         config,
         Config {
             owner: Addr::unchecked(DAO_ADDR),
-            manager: Some(Addr::unchecked(ADDR1)),
             voting_vaults: vec![Addr::unchecked(VAULT_ADDR)]
         }
     )
@@ -492,8 +368,7 @@ fn test_remove_last_vault_owner() {
         &mut app,
         vault_id,
         InstantiateMsg {
-            owner: Admin::CoreModule {},
-            manager: Some(ADDR1.to_string()),
+            owner: DAO_ADDR.to_string(),
             voting_vaults: vec![VAULT_ADDR.to_string()],
         },
     );

@@ -29,6 +29,7 @@ serde = { version = "1.0.147", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0" }
 cwd-macros = { path = "../../../../packages/cwd-macros" }
 cwd-interface = { path = "../../../../packages/cwd-interface" }
+cwd-voting = { path = "../../../../packages/cwd-voting" }
 cw-paginate = { path = "../../../../packages/cw-paginate" }
 
 [dev-dependencies]

@@ -19,12 +19,6 @@
             "description": {
               "type": "string"
             },
-            "manager": {
-              "type": [
-                "string",
-                "null"
-              ]
-            },
             "name": {
               "type": "string"
             },

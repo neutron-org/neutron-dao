@@ -9,7 +9,6 @@ use cw_utils::must_pay;
 use cwd_interface::voting::{
     BondingStatusResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
-use cwd_interface::Admin;
 use cwd_voting::vault::{BonderBalanceResponse, ListBondersResponse};
 
 use crate::error::ContractError;
@@ -28,20 +27,12 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    let owner = match msg.owner {
-        Admin::Address { addr } => deps.api.addr_validate(addr.as_str())?,
-        Admin::CoreModule {} => info.sender.clone(),
-    };
-    let manager = msg
-        .manager
-        .map(|manager| deps.api.addr_validate(&manager))
-        .transpose()?;
+    let owner = deps.api.addr_validate(&msg.owner)?;
 
     let config = Config {
         name: msg.name,
         description: msg.description,
         owner,
-        manager,
         denom: msg.denom,
     };
     config.validate()?;
@@ -52,14 +43,7 @@ pub fn instantiate(
         .add_attribute("action", "instantiate")
         .add_attribute("name", config.name)
         .add_attribute("description", config.description)
-        .add_attribute("owner", config.owner)
-        .add_attribute(
-            "manager",
-            config
-                .manager
-                .map(|a| a.to_string())
-                .unwrap_or_else(|| "None".to_string()),
-        ))
+        .add_attribute("owner", config.owner))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -74,10 +58,9 @@ pub fn execute(
         ExecuteMsg::Unbond { amount } => execute_unbond(deps, env, info, amount),
         ExecuteMsg::UpdateConfig {
             owner,
-            manager,
             name,
             description,
-        } => execute_update_config(deps, info, owner, manager, name, description),
+        } => execute_update_config(deps, info, owner, name, description),
     }
 }
 
@@ -149,26 +132,17 @@ pub fn execute_update_config(
     deps: DepsMut,
     info: MessageInfo,
     new_owner: String,
-    new_manager: Option<String>,
     new_name: String,
     new_description: String,
 ) -> Result<Response, ContractError> {
     let mut config: Config = CONFIG.load(deps.storage)?;
-    if info.sender != config.owner && Some(info.sender.clone()) != config.manager {
+    if info.sender != config.owner {
         return Err(ContractError::Unauthorized {});
     }
 
     let new_owner = deps.api.addr_validate(&new_owner)?;
-    let new_manager = new_manager
-        .map(|new_manager| deps.api.addr_validate(&new_manager))
-        .transpose()?;
-
-    if info.sender != config.owner && new_owner != config.owner {
-        return Err(ContractError::OnlyOwnerCanChangeOwner {});
-    };
 
     config.owner = new_owner;
-    config.manager = new_manager;
     config.name = new_name;
     config.description = new_description;
     config.validate()?;
@@ -177,14 +151,7 @@ pub fn execute_update_config(
     Ok(Response::new()
         .add_attribute("action", "update_config")
         .add_attribute("description", config.description)
-        .add_attribute("owner", config.owner)
-        .add_attribute(
-            "manager",
-            config
-                .manager
-                .map(|a| a.to_string())
-                .unwrap_or_else(|| "None".to_string()),
-        ))
+        .add_attribute("owner", config.owner))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -200,7 +167,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::Dao {} => query_dao(deps),
         QueryMsg::Name {} => query_name(deps),
         QueryMsg::Description {} => query_description(deps),
-        QueryMsg::GetConfig {} => to_binary(&CONFIG.load(deps.storage)?),
+        QueryMsg::Config {} => to_binary(&CONFIG.load(deps.storage)?),
         QueryMsg::ListBonders { start_after, limit } => {
             query_list_bonders(deps, start_after, limit)
         }
