@@ -13,7 +13,7 @@ pub struct InstantiateMsg {
     /// Owner can update all configs including changing the owner. This will generally be a DAO.
     pub owner: String,
     /// Airdrop address is the address of the airdrop contract.
-    pub airdrop_contract_address: String
+    pub airdrop_contract_address: String,
 }
 
 #[voting_vault]

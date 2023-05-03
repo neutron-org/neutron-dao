@@ -207,7 +207,9 @@ pub fn query_total_power_at_height(
     )?;
 
     Ok(TotalPowerAtHeightResponse {
-        power: total_supply.total_supply.checked_sub(airdrop_balance.balance)?,
+        power: total_supply
+            .total_supply
+            .checked_sub(airdrop_balance.balance)?,
         height,
     })
 }
