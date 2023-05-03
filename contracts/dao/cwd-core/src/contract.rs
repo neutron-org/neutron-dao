@@ -538,15 +538,9 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
 
     Ok(Response::default().add_messages(vec![
         CosmosMsg::Wasm(WasmMsg::Migrate {
-            contract_addr: "neutron1k5uunty0xf353jut6eq0zgk6qy4grc9wypsxyfzfq7wj4q0fpduq7m4883"
+            contract_addr: "neutron1vhhlw7hts2k3k3jwz823ngkc2s5edf9ewnz3dg72cnz8fzsuqjzqfsc9np"
                 .to_string(),
-            new_code_id: 45,
-            msg: to_binary(&MigrateMsg {})?,
-        }),
-        CosmosMsg::Wasm(WasmMsg::Migrate {
-            contract_addr: "neutron13gmz4njttq7f5tahn8077n4waljjfucsuatd28h9zrxr9g4lg2tsz5u7av"
-                .to_string(),
-            new_code_id: 45,
+            new_code_id: 48,
             msg: to_binary(&MigrateMsg {})?,
         }),
     ]))
