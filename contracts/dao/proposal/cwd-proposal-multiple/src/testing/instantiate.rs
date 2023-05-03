@@ -13,6 +13,8 @@ use crate::{
     msg::InstantiateMsg, testing::tests::proposal_multiple_contract, testing::tests::CREATOR_ADDR,
 };
 
+const DAO_ADDR: &str = "dao";
+
 #[allow(dead_code)]
 fn get_pre_propose_info(
     app: &mut BasicApp<NeutronMsg>,
@@ -74,8 +76,7 @@ pub(crate) fn instantiate_with_native_bonded_balances_governance(
     let vault_intantiate = neutron_vault::msg::InstantiateMsg {
         name: "Test vault".to_string(),
         description: "based neutron vault".to_string(),
-        owner: Admin::CoreModule {},
-        manager: None,
+        owner: DAO_ADDR.to_string(),
         denom: "ujuno".to_string(),
     };
 
@@ -125,8 +126,7 @@ pub(crate) fn instantiate_with_native_bonded_balances_governance(
         voting_registry_module_instantiate_info: ModuleInstantiateInfo {
             code_id: voting_registry_id,
             msg: to_binary(&neutron_voting_registry::msg::InstantiateMsg {
-                owner: Admin::CoreModule {},
-                manager: None,
+                owner: DAO_ADDR.to_string(),
                 voting_vaults: vec![vault_addr.to_string()],
             })
             .unwrap(),

@@ -1,4 +1,3 @@
-use cwd_interface::Admin;
 use cwd_macros::{info_query, voting_query, voting_vault, voting_vault_query};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -18,10 +17,7 @@ pub struct InstantiateMsg {
     /// The USDC oracle contract behind the vault.
     pub usdc_oracle_contract: String,
     /// Owner can update all configs including changing the owner. This will generally be a DAO.
-    pub owner: Admin,
-    /// Manager can update configs except changing the owner and the lockdrop contract.
-    /// This will generally be an operations multisig for a DAO.
-    pub manager: Option<String>,
+    pub owner: String,
 }
 
 #[voting_vault]
@@ -34,7 +30,6 @@ pub enum ExecuteMsg {
         atom_oracle_contract: String,
         usdc_vesting_lp_contract: String,
         usdc_oracle_contract: String,
-        manager: Option<String>,
         name: String,
         description: String,
     },
@@ -46,7 +41,7 @@ pub enum ExecuteMsg {
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    GetConfig {},
+    Config {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]

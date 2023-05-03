@@ -21,16 +21,6 @@
     "description": {
       "type": "string"
     },
-    "manager": {
-      "anyOf": [
-        {
-          "$ref": "#/definitions/Addr"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
     "name": {
       "type": "string"
     },

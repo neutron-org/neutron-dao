@@ -54,12 +54,6 @@
             "owner"
           ],
           "properties": {
-            "manager": {
-              "type": [
-                "string",
-                "null"
-              ]
-            },
             "owner": {
               "type": "string"
             }

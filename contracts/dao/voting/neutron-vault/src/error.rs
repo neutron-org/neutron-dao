@@ -25,9 +25,6 @@ pub enum ContractError {
     #[error("Nothing to claim")]
     NothingToClaim {},
 
-    #[error("Only owner can change owner")]
-    OnlyOwnerCanChangeOwner {},
-
     #[error("Can only unbond less than or equal to the amount you have bonded")]
     InvalidUnbondAmount {},
 }

@@ -9,7 +9,6 @@ pub struct Config {
     pub name: String,
     pub description: String,
     pub owner: Addr,
-    pub manager: Option<Addr>,
     pub denom: String,
 }
 
@@ -57,7 +56,6 @@ mod tests {
             name: String::from("name"),
             description: String::from("description"),
             owner: Addr::unchecked("owner"),
-            manager: Some(Addr::unchecked("manager")),
             denom: String::from("denom"),
         };
         assert_eq!(cfg_ok.validate(), Ok(()));
@@ -66,7 +64,6 @@ mod tests {
             name: String::from(""),
             description: String::from("description"),
             owner: Addr::unchecked("owner"),
-            manager: Some(Addr::unchecked("manager")),
             denom: String::from("denom"),
         };
         assert_eq!(
@@ -78,7 +75,6 @@ mod tests {
             name: String::from("name"),
             description: String::from(""),
             owner: Addr::unchecked("owner"),
-            manager: Some(Addr::unchecked("manager")),
             denom: String::from("denom"),
         };
         assert_eq!(
@@ -90,7 +86,6 @@ mod tests {
             name: String::from("name"),
             description: String::from("description"),
             owner: Addr::unchecked("owner"),
-            manager: Some(Addr::unchecked("manager")),
             denom: String::from(""),
         };
         assert_eq!(

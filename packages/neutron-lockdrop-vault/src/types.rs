@@ -11,7 +11,6 @@ pub struct Config {
     pub oracle_usdc_contract: Addr,
     pub oracle_atom_contract: Addr,
     pub owner: Addr,
-    pub manager: Option<Addr>,
 }
 
 impl Config {
@@ -42,7 +41,6 @@ mod tests {
             oracle_usdc_contract: Addr::unchecked("oracle_usdc_contract"),
             oracle_atom_contract: Addr::unchecked("oracle_atom_contract"),
             owner: Addr::unchecked("owner"),
-            manager: Some(Addr::unchecked("manager")),
         };
         assert_eq!(cfg_ok.validate(), Ok(()));
 
@@ -53,7 +51,6 @@ mod tests {
             oracle_usdc_contract: Addr::unchecked("oracle_usdc_contract"),
             oracle_atom_contract: Addr::unchecked("oracle_atom_contract"),
             owner: Addr::unchecked("owner"),
-            manager: Some(Addr::unchecked("manager")),
         };
         assert_eq!(
             cfg_empty_name.validate(),
@@ -67,7 +64,6 @@ mod tests {
             oracle_usdc_contract: Addr::unchecked("oracle_usdc_contract"),
             oracle_atom_contract: Addr::unchecked("oracle_atom_contract"),
             owner: Addr::unchecked("owner"),
-            manager: Some(Addr::unchecked("manager")),
         };
         assert_eq!(
             cfg_empty_description.validate(),

@@ -7,7 +7,6 @@ use cw2::set_contract_version;
 use cwd_interface::voting::{
     BondingStatusResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
-use cwd_interface::Admin;
 use neutron_lockdrop_vault::voting_power::{get_voting_power_for_address, get_voting_power_total};
 
 use crate::state::{CONFIG, DAO};
@@ -29,14 +28,7 @@ pub fn instantiate(
 ) -> ContractResult<Response> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    let owner = match msg.owner {
-        Admin::Address { addr } => deps.api.addr_validate(addr.as_str())?,
-        Admin::CoreModule {} => info.sender.clone(),
-    };
-    let manager = msg
-        .manager
-        .map(|manager| deps.api.addr_validate(&manager))
-        .transpose()?;
+    let owner = deps.api.addr_validate(&msg.owner)?;
 
     let config = Config {
         name: msg.name,
@@ -45,7 +37,6 @@ pub fn instantiate(
         oracle_usdc_contract: deps.api.addr_validate(&msg.oracle_usdc_contract)?,
         oracle_atom_contract: deps.api.addr_validate(&msg.oracle_atom_contract)?,
         owner,
-        manager,
     };
     config.validate()?;
     CONFIG.save(deps.storage, &config)?;
@@ -58,14 +49,7 @@ pub fn instantiate(
         .add_attribute("owner", config.owner)
         .add_attribute("lockdrop_contract", config.lockdrop_contract)
         .add_attribute("oracle_usdc_contract", config.oracle_usdc_contract)
-        .add_attribute("oracle_atom_contract", config.oracle_atom_contract)
-        .add_attribute(
-            "manager",
-            config
-                .manager
-                .map(|a| a.to_string())
-                .unwrap_or_else(|| "None".to_string()),
-        ))
+        .add_attribute("oracle_atom_contract", config.oracle_atom_contract))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -83,7 +67,6 @@ pub fn execute(
             lockdrop_contract,
             oracle_usdc_contract,
             oracle_atom_contract,
-            manager,
             name,
             description,
         } => execute_update_config(
@@ -93,7 +76,6 @@ pub fn execute(
             lockdrop_contract,
             oracle_usdc_contract,
             oracle_atom_contract,
-            manager,
             name,
             description,
         ),
@@ -121,12 +103,11 @@ pub fn execute_update_config(
     new_lockdrop_contract: Option<String>,
     new_oracle_usdc_contract: Option<String>,
     new_oracle_atom_contract: Option<String>,
-    new_manager: Option<String>,
     new_name: Option<String>,
     new_description: Option<String>,
 ) -> ContractResult<Response> {
     let mut config: Config = CONFIG.load(deps.storage)?;
-    if info.sender != config.owner && Some(info.sender.clone()) != config.manager {
+    if info.sender != config.owner {
         return Err(ContractError::Unauthorized {});
     }
 
@@ -145,31 +126,6 @@ pub fn execute_update_config(
     let new_oracle_atom_contract = new_oracle_atom_contract
         .map(|new_oracle_atom_contract| deps.api.addr_validate(&new_oracle_atom_contract))
         .transpose()?;
-
-    let new_manager = new_manager
-        .map(|new_manager| deps.api.addr_validate(&new_manager))
-        .transpose()?;
-
-    if info.sender != config.owner && new_owner != Some(config.owner.clone()) {
-        return Err(ContractError::OnlyOwnerCanChangeOwner {});
-    };
-    if info.sender != config.owner
-        && Some(config.lockdrop_contract.clone()) != new_lockdrop_contract
-    {
-        return Err(ContractError::OnlyOwnerCanChangeLockdropContract {});
-    };
-    if info.sender != config.owner
-        && Some(config.oracle_usdc_contract.clone()) != new_oracle_usdc_contract
-    {
-        return Err(ContractError::OnlyOwnerCanChangeOracleContract {});
-    };
-    if info.sender != config.owner
-        && Some(config.oracle_atom_contract.clone()) != new_oracle_atom_contract
-    {
-        return Err(ContractError::OnlyOwnerCanChangeOracleContract {});
-    };
-
-    config.manager = new_manager;
 
     if let Some(owner) = new_owner {
         config.owner = owner;
@@ -200,14 +156,7 @@ pub fn execute_update_config(
         .add_attribute("owner", config.owner)
         .add_attribute("lockdrop_contract", config.lockdrop_contract)
         .add_attribute("oracle_usdc_contract", config.oracle_usdc_contract)
-        .add_attribute("oracle_atom_contract", config.oracle_atom_contract)
-        .add_attribute(
-            "manager",
-            config
-                .manager
-                .map(|a| a.to_string())
-                .unwrap_or_else(|| "None".to_string()),
-        ))
+        .add_attribute("oracle_atom_contract", config.oracle_atom_contract))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -223,7 +172,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
         QueryMsg::Dao {} => query_dao(deps),
         QueryMsg::Name {} => query_name(deps),
         QueryMsg::Description {} => query_description(deps),
-        QueryMsg::GetConfig {} => query_config(deps),
+        QueryMsg::Config {} => query_config(deps),
         QueryMsg::ListBonders { start_after, limit } => {
             query_list_bonders(deps, start_after, limit)
         }
