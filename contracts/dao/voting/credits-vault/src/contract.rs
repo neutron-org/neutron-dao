@@ -27,11 +27,14 @@ pub fn instantiate(
 
     let credits_contract_address = deps.api.addr_validate(&msg.credits_contract_address)?;
 
+    let airdrop_contract_address = deps.api.addr_validate(&msg.airdrop_contract_address)?;
+
     let config = Config {
         name: msg.name,
         description: msg.description,
         credits_contract_address,
         owner,
+        airdrop_contract_address,
     };
     config.validate()?;
     CONFIG.save(deps.storage, &config)?;
@@ -41,6 +44,7 @@ pub fn instantiate(
         .add_attribute("action", "instantiate")
         .add_attribute("description", config.description)
         .add_attribute("credits_contract_address", config.credits_contract_address)
+        .add_attribute("airdrop_contract_address", config.airdrop_contract_address)
         .add_attribute("owner", config.owner))
 }
 
@@ -187,6 +191,14 @@ pub fn query_total_power_at_height(
 
     let height = height.unwrap_or(env.block.height);
 
+    let airdrop_balance: cw20::BalanceResponse = deps.querier.query_wasm_smart(
+        config.credits_contract_address.clone(),
+        &CreditsQueryMsg::BalanceAtHeight {
+            height: Some(height),
+            address: config.airdrop_contract_address.to_string(),
+        },
+    )?;
+
     let total_supply: TotalSupplyResponse = deps.querier.query_wasm_smart(
         config.credits_contract_address,
         &CreditsQueryMsg::TotalSupplyAtHeight {
@@ -195,7 +207,7 @@ pub fn query_total_power_at_height(
     )?;
 
     Ok(TotalPowerAtHeightResponse {
-        power: total_supply.total_supply,
+        power: total_supply.total_supply.checked_sub(airdrop_balance.balance)?,
         height,
     })
 }

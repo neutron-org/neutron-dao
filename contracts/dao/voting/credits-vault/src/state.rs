@@ -11,6 +11,7 @@ pub struct Config {
     pub description: String,
     pub credits_contract_address: Addr,
     pub owner: Addr,
+    pub airdrop_contract_address: Addr,
 }
 
 impl Config {
