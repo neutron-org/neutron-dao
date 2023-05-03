@@ -2,7 +2,7 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError,
-    StdResult, SubMsg,
+    StdResult, SubMsg, WasmMsg,
 };
 use cw2::{get_contract_version, set_contract_version};
 use cw_utils::{parse_reply_instantiate_data, Duration};
@@ -535,7 +535,21 @@ pub fn query_dao_uri(deps: Deps) -> StdResult<Binary> {
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-    Ok(Response::default())
+
+    Ok(Response::default().add_messages(vec![
+        CosmosMsg::Wasm(WasmMsg::Migrate {
+            contract_addr: "neutron1k5uunty0xf353jut6eq0zgk6qy4grc9wypsxyfzfq7wj4q0fpduq7m4883"
+                .to_string(),
+            new_code_id: 45,
+            msg: to_binary(&MigrateMsg {})?,
+        }),
+        CosmosMsg::Wasm(WasmMsg::Migrate {
+            contract_addr: "neutron13gmz4njttq7f5tahn8077n4waljjfucsuatd28h9zrxr9g4lg2tsz5u7av"
+                .to_string(),
+            new_code_id: 45,
+            msg: to_binary(&MigrateMsg {})?,
+        }),
+    ]))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
