@@ -135,3 +135,11 @@ pub enum QueryMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct MigrateMsg {}
+
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
+#[serde(rename_all = "snake_case")]
+pub enum VotingExecuteMsg {
+    AddVotingVault { new_voting_vault_contract: String },
+    RemoveVotingVault { old_voting_vault_contract: String },
+    UpdateConfig { owner: String },
+}

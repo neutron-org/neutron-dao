@@ -12,7 +12,7 @@ use cwd_interface::{voting, ModuleInstantiateInfo};
 use neutron_bindings::bindings::msg::NeutronMsg;
 
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InitialItem, InstantiateMsg, MigrateMsg, QueryMsg};
+use crate::msg::{ExecuteMsg, InitialItem, InstantiateMsg, MigrateMsg, QueryMsg, VotingExecuteMsg};
 use crate::query::{DumpStateResponse, GetItemResponse, PauseInfoResponse, SubDao};
 use crate::state::{
     Config, ProposalModule, ProposalModuleStatus, ACTIVE_PROPOSAL_MODULE_COUNT, CONFIG, ITEMS,
@@ -536,14 +536,30 @@ pub fn query_dao_uri(deps: Deps) -> StdResult<Binary> {
 pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    Ok(Response::default().add_messages(vec![
-        CosmosMsg::Wasm(WasmMsg::Migrate {
-            contract_addr: "neutron1vhhlw7hts2k3k3jwz823ngkc2s5edf9ewnz3dg72cnz8fzsuqjzqfsc9np"
-                .to_string(),
-            new_code_id: 48,
-            msg: to_binary(&MigrateMsg {})?,
-        }),
-    ]))
+    Ok(
+        Response::default().add_messages(vec![
+            CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: "neutron1f6jlx7d9y408tlzue7r2qcf79plp549n30yzqjajjud8vm7m4vdspg933s"
+                    .to_string(),
+                msg: to_binary(&VotingExecuteMsg::RemoveVotingVault {
+                    old_voting_vault_contract:
+                        "neutron1vhhlw7hts2k3k3jwz823ngkc2s5edf9ewnz3dg72cnz8fzsuqjzqfsc9np"
+                            .to_string(),
+                })?,
+                funds: vec![],
+            }),
+            CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: "neutron1f6jlx7d9y408tlzue7r2qcf79plp549n30yzqjajjud8vm7m4vdspg933s"
+                    .to_string(),
+                msg: to_binary(&VotingExecuteMsg::AddVotingVault {
+                    new_voting_vault_contract:
+                        "neutron1ufezkvrzh8l45038muc28mnnd2e08cs3qqfg3d9xrlgqy75t8tpsucvlmu"
+                            .to_string(),
+                })?,
+                funds: vec![],
+            }),
+        ]),
+    )
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
