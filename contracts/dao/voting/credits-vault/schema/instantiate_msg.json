@@ -3,12 +3,17 @@
   "title": "InstantiateMsg",
   "type": "object",
   "required": [
+    "airdrop_contract_address",
     "credits_contract_address",
     "description",
     "name",
     "owner"
   ],
   "properties": {
+    "airdrop_contract_address": {
+      "description": "Airdrop address is the address of the airdrop contract.",
+      "type": "string"
+    },
     "credits_contract_address": {
       "type": "string"
     },
@@ -21,6 +26,7 @@
       "type": "string"
     },
     "owner": {
+      "description": "Owner can update all configs including changing the owner. This will generally be a DAO.",
       "type": "string"
     }
   }

@@ -49,6 +49,7 @@ mod tests {
             name: String::from("name"),
             description: String::from("description"),
             credits_contract_address: Addr::unchecked("credits_contract"),
+            airdrop_contract_address: Addr::unchecked("airdrop_contract"),
             owner: Addr::unchecked("owner"),
         };
         assert_eq!(cfg_ok.validate(), Ok(()));
@@ -57,6 +58,7 @@ mod tests {
             name: String::from(""),
             description: String::from("description"),
             credits_contract_address: Addr::unchecked("credits_contract"),
+            airdrop_contract_address: Addr::unchecked("airdrop_contract"),
             owner: Addr::unchecked("owner"),
         };
         assert_eq!(
@@ -68,6 +70,7 @@ mod tests {
             name: String::from("name"),
             description: String::from(""),
             credits_contract_address: Addr::unchecked("credits_contract"),
+            airdrop_contract_address: Addr::unchecked("airdrop_contract"),
             owner: Addr::unchecked("owner"),
         };
         assert_eq!(

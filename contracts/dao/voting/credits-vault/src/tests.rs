@@ -154,6 +154,7 @@ fn test_instantiate() {
         vault_id,
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
+            airdrop_contract_address: "airdrop_contract",
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
