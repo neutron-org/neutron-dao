@@ -9,6 +9,6 @@ pub enum ContractError {
     #[error("Unauthorized")]
     Unauthorized {},
 
-    #[error("End of life haven't reached yet")]
+    #[error("End of life hasn't reached yet")]
     TooSoon {},
 }

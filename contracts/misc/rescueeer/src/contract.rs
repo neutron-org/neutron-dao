@@ -55,13 +55,13 @@ pub fn execute_transfer_admin(
     deps: DepsMut,
     env: Env,
     _info: MessageInfo,
-    addresses: String,
+    address: String,
 ) -> Result<Response<NeutronMsg>, ContractError> {
     let config: Config = CONFIG.load(deps.storage)?;
     if env.block.time.seconds() < config.eol {
         return Err(ContractError::TooSoon {});
     }
-    let addr = deps.api.addr_validate(addresses.as_str())?;
+    let addr = deps.api.addr_validate(address.as_str())?;
 
     Ok(
         Response::default().add_message(CosmosMsg::Wasm(WasmMsg::UpdateAdmin {
