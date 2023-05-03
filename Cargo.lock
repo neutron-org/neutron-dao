@@ -1817,6 +1817,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "rescueeer"
+version = "0.2.0"
+dependencies = [
+ "anyhow",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cosmwasm-storage",
+ "cw-controllers 1.0.1",
+ "cw-multi-test 0.16.4",
+ "cw-storage-plus 1.0.1",
+ "cw-utils 1.0.1",
+ "neutron-sdk",
+ "schemars",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "rfc6979"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
