@@ -6,16 +6,15 @@ use cosmwasm_std::{
     to_binary, Binary, Coin, ContractResult, OwnedDeps, Querier, QuerierResult, QueryRequest,
     SystemError, SystemResult,
 };
-use neutron_bindings::{
-    bindings::query::InterchainQueries,
-    query::total_burned_neutrons::TotalBurnedNeutronsAmountResponse,
+use neutron_sdk::{
+    bindings::query::NeutronQuery, query::total_burned_neutrons::TotalBurnedNeutronsAmountResponse,
 };
 
 const MOCK_CONTRACT_ADDR: &str = "cosmos2contract";
 
 pub fn mock_dependencies(
     contract_balance: &[Coin],
-) -> OwnedDeps<MockStorage, MockApi, WasmMockQuerier, InterchainQueries> {
+) -> OwnedDeps<MockStorage, MockApi, WasmMockQuerier, NeutronQuery> {
     let contract_addr = MOCK_CONTRACT_ADDR;
     let custom_querier: WasmMockQuerier =
         WasmMockQuerier::new(MockQuerier::new(&[(contract_addr, contract_balance)]));
@@ -29,14 +28,14 @@ pub fn mock_dependencies(
 }
 
 pub struct WasmMockQuerier {
-    base: MockQuerier<InterchainQueries>,
+    base: MockQuerier<NeutronQuery>,
     total_burned_neutrons: Binary,
     throw_error: bool,
 }
 
 impl Querier for WasmMockQuerier {
     fn raw_query(&self, bin_request: &[u8]) -> QuerierResult {
-        let request: QueryRequest<InterchainQueries> = match from_slice(bin_request) {
+        let request: QueryRequest<NeutronQuery> = match from_slice(bin_request) {
             Ok(v) => v,
             Err(e) => {
                 return QuerierResult::Err(SystemError::InvalidRequest {
@@ -50,7 +49,7 @@ impl Querier for WasmMockQuerier {
 }
 
 impl WasmMockQuerier {
-    pub fn new(base: MockQuerier<InterchainQueries>) -> Self {
+    pub fn new(base: MockQuerier<NeutronQuery>) -> Self {
         WasmMockQuerier {
             base,
             total_burned_neutrons: to_binary(&Vec::<Coin>::with_capacity(0)).unwrap(),
@@ -58,9 +57,9 @@ impl WasmMockQuerier {
         }
     }
 
-    pub fn handle_query(&self, request: &QueryRequest<InterchainQueries>) -> QuerierResult {
+    pub fn handle_query(&self, request: &QueryRequest<NeutronQuery>) -> QuerierResult {
         match &request {
-            QueryRequest::Custom(InterchainQueries::TotalBurnedNeutronsAmount {}) => {
+            QueryRequest::Custom(NeutronQuery::TotalBurnedNeutronsAmount {}) => {
                 if self.throw_error {
                     return SystemResult::Ok(ContractResult::Err("Contract error".to_string()));
                 }

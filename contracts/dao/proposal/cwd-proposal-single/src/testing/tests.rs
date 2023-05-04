@@ -24,7 +24,7 @@ use cwd_voting::{
     threshold::{PercentageThreshold, Threshold},
     voting::{Vote, Votes},
 };
-use neutron_bindings::bindings::msg::NeutronMsg;
+use neutron_sdk::bindings::msg::NeutronMsg;
 
 use crate::testing::execute::{execute_proposal, execute_proposal_should_fail};
 use crate::{

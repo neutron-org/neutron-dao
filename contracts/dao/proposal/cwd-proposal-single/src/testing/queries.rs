@@ -1,7 +1,7 @@
 use cosmwasm_std::{Addr, Uint128};
 use cw_multi_test::BasicApp;
 use cwd_core::state::{ProposalModule, ProposalModuleStatus};
-use neutron_bindings::bindings::msg::NeutronMsg;
+use neutron_sdk::bindings::msg::NeutronMsg;
 
 use cwd_hooks::HooksResponse;
 use cwd_pre_propose_single as cppbps;
