@@ -1,5 +1,5 @@
 use cosmwasm_std::{CosmosMsg, StdError, StdResult, Uint128};
-use neutron_bindings::bindings::msg::NeutronMsg;
+use neutron_sdk::bindings::msg::NeutronMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 

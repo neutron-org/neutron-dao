@@ -4,7 +4,7 @@ use cwd_core::state::{ProposalModule, ProposalModuleStatus};
 use cwd_hooks::HooksResponse;
 use cwd_pre_propose_multiple as cppm;
 use cwd_voting::pre_propose::ProposalCreationPolicy;
-use neutron_bindings::bindings::msg::NeutronMsg;
+use neutron_sdk::bindings::msg::NeutronMsg;
 
 use crate::{
     msg::QueryMsg,

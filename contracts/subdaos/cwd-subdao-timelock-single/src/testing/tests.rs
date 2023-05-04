@@ -5,7 +5,7 @@ use cosmwasm_std::{
     to_binary, Addr, Attribute, CosmosMsg, Reply, SubMsg, SubMsgResult, WasmMsg,
 };
 use cwd_voting::status::Status;
-use neutron_bindings::bindings::msg::NeutronMsg;
+use neutron_sdk::bindings::msg::NeutronMsg;
 use neutron_subdao_timelock_single::{
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
     types::{Config, ProposalListResponse, ProposalStatus, SingleChoiceProposal},

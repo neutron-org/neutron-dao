@@ -4,7 +4,7 @@ use cosmwasm_std::{
     Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, Response, StdResult,
 };
 use cw2::set_contract_version;
-use neutron_bindings::bindings::msg::NeutronMsg;
+use neutron_sdk::bindings::msg::NeutronMsg;
 
 use cwd_pre_propose_base::{
     error::PreProposeError,

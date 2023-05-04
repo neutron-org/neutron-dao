@@ -5,7 +5,7 @@ use cosmwasm_std::Empty;
 use cw_multi_test::{custom_app, BankSudo, BasicApp, Executor};
 use cwd_core::state::ProposalModule;
 use cwd_pre_propose_single as cppbps;
-use neutron_bindings::bindings::msg::NeutronMsg;
+use neutron_sdk::bindings::msg::NeutronMsg;
 
 use cw_denom::CheckedDenom;
 use cwd_testing::{ShouldExecute, TestSingleChoiceVote};

@@ -12,7 +12,7 @@ use cwd_voting::pre_propose::ProposalCreationPolicy;
 use exec_control::pause::{
     can_pause, can_unpause, validate_duration, PauseError, PauseInfoResponse,
 };
-use neutron_bindings::bindings::msg::NeutronMsg;
+use neutron_sdk::bindings::msg::NeutronMsg;
 use neutron_subdao_core::msg::{ExecuteMsg, InitialItem, InstantiateMsg, MigrateMsg, QueryMsg};
 use neutron_subdao_core::types::{
     Config, DumpStateResponse, GetItemResponse, ProposalModule, ProposalModuleStatus, SubDao,
