@@ -208,7 +208,7 @@ fn verify_is_timelock_from_subdao(
         }
     }
 
-    Err(PreProposeOverruleError::SubdaoMisconfigured {})
+    Ok(false)
 }
 
 fn is_subdao_legit(deps: &DepsMut, subdao_core: &Addr) -> Result<bool, PreProposeOverruleError> {
@@ -223,7 +223,7 @@ fn is_subdao_legit(deps: &DepsMut, subdao_core: &Addr) -> Result<bool, PrePropos
 
     match subdao {
         Ok(subdao) => Ok(subdao.addr == *subdao_core),
-        Err(_) => Err(PreProposeOverruleError::ForbiddenSubdao {}),
+        Err(_) => Ok(false),
     }
 }
 
