@@ -95,7 +95,7 @@ pub fn execute(
         PauseInfoResponse::Paused { .. } => {
             return match msg {
                 ExecuteMsg::Pause { duration } => execute_pause(deps, env, info.sender, duration),
-                ExecuteMsg::Unpause {} => execute_unpause(deps, info.sender),
+                ExecuteMsg::Unpause {} => execute_unpause(deps, env, info.sender),
                 _ => Err(ContractError::PauseError(PauseError::Paused {})),
             };
         }
@@ -106,15 +106,18 @@ pub fn execute(
         ExecuteMsg::ExecuteProposalHook { msgs } => {
             execute_proposal_hook(deps.as_ref(), info.sender, msgs)
         }
+        ExecuteMsg::ExecuteTimelockedMsgs { msgs } => {
+            execute_timelocked_msgs(deps.as_ref(), env, info.sender, msgs)
+        }
         ExecuteMsg::Pause { duration } => execute_pause(deps, env, info.sender, duration),
-        ExecuteMsg::Unpause {} => execute_unpause(deps, info.sender),
-        ExecuteMsg::RemoveItem { key } => execute_remove_item(deps, info.sender, key),
-        ExecuteMsg::SetItem { key, addr } => execute_set_item(deps, info.sender, key, addr),
+        ExecuteMsg::Unpause {} => execute_unpause(deps, env, info.sender),
+        ExecuteMsg::RemoveItem { key } => execute_remove_item(deps, env, info.sender, key),
+        ExecuteMsg::SetItem { key, addr } => execute_set_item(deps, env, info.sender, key, addr),
         ExecuteMsg::UpdateConfig {
             name,
             description,
             dao_uri,
-        } => execute_update_config(deps, info.sender, name, description, dao_uri),
+        } => execute_update_config(deps, env, info.sender, name, description, dao_uri),
         ExecuteMsg::UpdateVotingModule { module } => {
             execute_update_voting_module(deps, env, info.sender, module)
         }
@@ -122,7 +125,7 @@ pub fn execute(
             execute_update_proposal_modules(deps, env, info.sender, to_add, to_disable)
         }
         ExecuteMsg::UpdateSubDaos { to_add, to_remove } => {
-            execute_update_sub_daos_list(deps, info.sender, to_add, to_remove)
+            execute_update_sub_daos_list(deps, env, info.sender, to_add, to_remove)
         }
     }
 }
@@ -155,7 +158,11 @@ pub fn execute_pause(
         .add_attribute("paused_until_height", paused_until_height.to_string()))
 }
 
-pub fn execute_unpause(deps: DepsMut, sender: Addr) -> Result<Response<NeutronMsg>, ContractError> {
+pub fn execute_unpause(
+    deps: DepsMut,
+    _env: Env,
+    sender: Addr,
+) -> Result<Response<NeutronMsg>, ContractError> {
     let config: Config = CONFIG.load(deps.storage)?;
 
     can_unpause(&sender, &config.main_dao)?;
@@ -186,14 +193,28 @@ pub fn execute_proposal_hook(
         .add_messages(msgs))
 }
 
+pub fn execute_timelocked_msgs(
+    deps: Deps,
+    _env: Env,
+    sender: Addr,
+    msgs: Vec<CosmosMsg<NeutronMsg>>,
+) -> Result<Response<NeutronMsg>, ContractError> {
+    execution_access_check(deps, sender)?;
+
+    Ok(Response::default().add_messages(msgs))
+}
+
 pub fn execute_update_config(
     deps: DepsMut,
+    env: Env,
     sender: Addr,
     name: Option<String>,
     description: Option<String>,
     dao_uri: Option<String>,
 ) -> Result<Response<NeutronMsg>, ContractError> {
-    execution_access_check(deps.as_ref(), sender)?;
+    if sender != env.contract.address {
+        return Err(ContractError::Unauthorized {});
+    }
 
     let mut config: Config = CONFIG.load(deps.storage)?;
     if let Some(name) = name {
@@ -222,12 +243,14 @@ pub fn execute_update_config(
 }
 
 pub fn execute_update_voting_module(
-    deps: DepsMut,
+    _deps: DepsMut,
     env: Env,
     sender: Addr,
     module: ModuleInstantiateInfo,
 ) -> Result<Response<NeutronMsg>, ContractError> {
-    execution_access_check(deps.as_ref(), sender)?;
+    if sender != env.contract.address {
+        return Err(ContractError::Unauthorized {});
+    }
 
     let wasm = module.into_wasm_msg(env.contract.address);
     let submessage = SubMsg::reply_on_success(wasm, VOTE_MODULE_UPDATE_REPLY_ID);
@@ -244,7 +267,9 @@ pub fn execute_update_proposal_modules(
     to_add: Vec<ModuleInstantiateInfo>,
     to_disable: Vec<String>,
 ) -> Result<Response<NeutronMsg>, ContractError> {
-    execution_access_check(deps.as_ref(), sender)?;
+    if sender != env.contract.address {
+        return Err(ContractError::Unauthorized {});
+    }
 
     let disable_count = to_disable.len() as u32;
     for addr in to_disable {
@@ -288,11 +313,14 @@ pub fn execute_update_proposal_modules(
 
 pub fn execute_set_item(
     deps: DepsMut,
+    env: Env,
     sender: Addr,
     key: String,
     value: String,
 ) -> Result<Response<NeutronMsg>, ContractError> {
-    execution_access_check(deps.as_ref(), sender)?;
+    if sender != env.contract.address {
+        return Err(ContractError::Unauthorized {});
+    }
 
     ITEMS.save(deps.storage, key.clone(), &value)?;
     Ok(Response::default()
@@ -303,10 +331,13 @@ pub fn execute_set_item(
 
 pub fn execute_remove_item(
     deps: DepsMut,
+    env: Env,
     sender: Addr,
     key: String,
 ) -> Result<Response<NeutronMsg>, ContractError> {
-    execution_access_check(deps.as_ref(), sender)?;
+    if sender != env.contract.address {
+        return Err(ContractError::Unauthorized {});
+    }
 
     if ITEMS.has(deps.storage, key.clone()) {
         ITEMS.remove(deps.storage, key.clone());
@@ -320,11 +351,14 @@ pub fn execute_remove_item(
 
 pub fn execute_update_sub_daos_list(
     deps: DepsMut,
+    env: Env,
     sender: Addr,
     to_add: Vec<SubDao>,
     to_remove: Vec<String>,
 ) -> Result<Response<NeutronMsg>, ContractError> {
-    execution_access_check(deps.as_ref(), sender.clone())?;
+    if sender != env.contract.address {
+        return Err(ContractError::Unauthorized {});
+    }
 
     for addr in to_remove {
         let addr = deps.api.addr_validate(&addr)?;
@@ -631,14 +665,15 @@ pub(crate) fn execution_access_check(deps: Deps, sender: Addr) -> Result<(), Con
             &ProposeQueryMsg::ProposalCreationPolicy {},
         )?;
         if let ProposalCreationPolicy::Module { addr } = policy {
-            let timelock_contract: Addr = deps.querier.query_wasm_smart(
+            if let Ok(timelock_contract) = deps.querier.query_wasm_smart::<Addr>(
                 &addr,
                 &PreProposeQueryMsg::QueryExtension {
                     msg: PreProposeQueryExt::TimelockAddress {},
                 },
-            )?;
-            if sender == timelock_contract {
-                return Ok(());
+            ) {
+                if sender == timelock_contract {
+                    return Ok(());
+                }
             }
         };
     }

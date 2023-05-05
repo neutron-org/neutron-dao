@@ -54,6 +54,9 @@ pub enum ExecuteMsg {
     /// Callable by proposal modules. The DAO will execute the
     /// messages in the hook in order.
     ExecuteProposalHook { msgs: Vec<CosmosMsg<NeutronMsg>> },
+    /// Callable by timelock modules. The DAO will execute the
+    /// messages in order.
+    ExecuteTimelockedMsgs { msgs: Vec<CosmosMsg<NeutronMsg>> },
     /// Removes an item from the governance contract's item map.
     RemoveItem { key: String },
     /// Adds an item to the governance contract's item map. If the

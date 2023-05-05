@@ -16,6 +16,7 @@ use cwd_pre_propose_base::{
     msg::{ExecuteMsg as ExecuteBase, InstantiateMsg as InstantiateBase},
     state::PreProposeContract,
 };
+use neutron_subdao_core::msg::ExecuteMsg as CoreExecuteMsg;
 use neutron_subdao_pre_propose_single::msg::MigrateMsg;
 use neutron_subdao_pre_propose_single::{
     msg::{ExecuteMsg, InstantiateMsg, QueryExt, QueryMsg},
@@ -102,12 +103,18 @@ pub fn execute(
                 &ProposalQueryMsg::ProposalCount {},
             )?;
 
+            let sub_dao_core = PrePropose::default().dao.load(deps.storage)?;
+
             // Here, we wrap the original messages in a message to the Timelock module.
             let timelock_msg = CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: timelock_module.to_string(),
                 msg: to_binary(&TimelockExecuteMsg::TimelockProposal {
                     proposal_id: last_proposal_id + 1,
-                    msgs,
+                    msgs: vec![CosmosMsg::Wasm(WasmMsg::Execute {
+                        contract_addr: sub_dao_core.to_string(),
+                        msg: to_binary(&CoreExecuteMsg::ExecuteTimelockedMsgs { msgs }).unwrap(),
+                        funds: vec![],
+                    })],
                 })
                 .unwrap(),
                 funds: vec![],

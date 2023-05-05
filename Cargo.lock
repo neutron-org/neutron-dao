@@ -1013,6 +1013,7 @@ dependencies = [
  "cwd-pre-propose-base",
  "cwd-voting",
  "neutron-sdk",
+ "neutron-subdao-core",
  "neutron-subdao-pre-propose-single",
  "neutron-subdao-proposal-single",
  "neutron-subdao-timelock-single",
