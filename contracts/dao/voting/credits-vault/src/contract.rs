@@ -168,16 +168,22 @@ pub fn query_voting_power_at_height(
 
     let height = height.unwrap_or(env.block.height);
 
-    let balance: cw20::BalanceResponse = deps.querier.query_wasm_smart(
-        config.credits_contract_address,
-        &CreditsQueryMsg::BalanceAtHeight {
-            height: Some(height),
-            address,
-        },
-    )?;
+    let balance = if address == config.airdrop_contract_address {
+        Uint128::zero()
+    } else {
+        deps.querier
+            .query_wasm_smart::<cw20::BalanceResponse>(
+                config.credits_contract_address,
+                &CreditsQueryMsg::BalanceAtHeight {
+                    height: Some(height),
+                    address,
+                },
+            )?
+            .balance
+    };
 
     Ok(VotingPowerAtHeightResponse {
-        power: balance.balance,
+        power: balance,
         height,
     })
 }

@@ -402,8 +402,12 @@ fn test_voting_power_queries() {
     assert_eq!(Uint128::from(8000u64), resp.power);
 
     // ADDR1 has 6000 voting power
-    let resp = get_voting_power_at_height(&mut app, addr, ADDR1.to_string(), None);
+    let resp = get_voting_power_at_height(&mut app, addr.clone(), ADDR1.to_string(), None);
     assert_eq!(Uint128::from(6000u64), resp.power);
+
+    // AIRDROP_ADDR has 2000 credits tokens, but it still has 0 voting power
+    let resp = get_voting_power_at_height(&mut app, addr, AIRDROP_ADDR.to_string(), None);
+    assert_eq!(Uint128::from(0u64), resp.power);
 }
 
 #[test]
