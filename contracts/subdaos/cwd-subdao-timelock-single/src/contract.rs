@@ -11,11 +11,11 @@ use cwd_proposal_single::{
     query::ProposalResponse as MainDaoProposalResponse,
 };
 use cwd_voting::status::Status;
-use neutron_bindings::bindings::msg::NeutronMsg;
 use neutron_dao_pre_propose_overrule::msg::{
     ExecuteMsg as OverruleExecuteMsg, ProposeMessage as OverruleProposeMessage,
     QueryExt as OverruleQueryExt, QueryMsg as OverruleQueryMsg,
 };
+use neutron_sdk::bindings::msg::NeutronMsg;
 use neutron_subdao_core::msg::QueryMsg as SubdaoQuery;
 use neutron_subdao_pre_propose_single::msg::QueryMsg as PreProposeQuery;
 use neutron_subdao_timelock_single::{

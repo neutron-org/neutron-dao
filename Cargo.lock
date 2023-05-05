@@ -1013,6 +1013,7 @@ dependencies = [
  "cwd-pre-propose-base",
  "cwd-voting",
  "neutron-sdk",
+ "neutron-subdao-core",
  "neutron-subdao-pre-propose-single",
  "neutron-subdao-proposal-single",
  "neutron-subdao-timelock-single",
@@ -1485,9 +1486,9 @@ dependencies = [
 
 [[package]]
 name = "neutron-sdk"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e48a57cb451a16a676ecbbb1bb1e0e2e9bc9989834d82c6b16eebc24d9ed97cf"
+checksum = "487305afc06808aabe5b90684bc238c93fb8872a275edf6db4ea24b102eb9a8e"
 dependencies = [
  "base64 0.20.0",
  "bech32",

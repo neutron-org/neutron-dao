@@ -6,7 +6,7 @@ use cosmwasm_std::{
     to_binary, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, StdError, Uint128, WasmMsg,
 };
 use exec_control::pause::{PauseError, PauseInfoResponse};
-use neutron_bindings::bindings::query::InterchainQueries;
+use neutron_sdk::bindings::query::NeutronQuery;
 
 use crate::contract::query;
 use crate::error::ContractError;
@@ -22,7 +22,7 @@ use crate::{
 
 const DENOM: &str = "denom";
 
-pub fn init_base_contract(deps: DepsMut<InterchainQueries>, distribution_rate: &str) {
+pub fn init_base_contract(deps: DepsMut<NeutronQuery>, distribution_rate: &str) {
     let msg = InstantiateMsg {
         denom: DENOM.to_string(),
         min_period: 1000,

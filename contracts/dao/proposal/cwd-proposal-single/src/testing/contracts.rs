@@ -1,5 +1,5 @@
 use cw_multi_test::{Contract, ContractWrapper};
-use neutron_bindings::bindings::msg::NeutronMsg;
+use neutron_sdk::bindings::msg::NeutronMsg;
 use neutron_vault as vault;
 
 pub(crate) fn neutron_vault_contract() -> Box<dyn Contract<NeutronMsg>> {

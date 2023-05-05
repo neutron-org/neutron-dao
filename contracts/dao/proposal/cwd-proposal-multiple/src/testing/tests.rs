@@ -23,7 +23,7 @@ use cwd_voting::{
     status::Status,
     threshold::PercentageThreshold,
 };
-use neutron_bindings::bindings::msg::NeutronMsg;
+use neutron_sdk::bindings::msg::NeutronMsg;
 use std::panic;
 
 use crate::{

@@ -19,7 +19,7 @@ use cwd_voting::reply::{
 use cwd_voting::status::Status;
 use cwd_voting::threshold::Threshold;
 use cwd_voting::voting::{get_total_power, get_voting_power, validate_voting_period, Vote, Votes};
-use neutron_bindings::bindings::msg::NeutronMsg;
+use neutron_sdk::bindings::msg::NeutronMsg;
 
 use crate::msg::MigrateMsg;
 use crate::proposal::SingleChoiceProposal;

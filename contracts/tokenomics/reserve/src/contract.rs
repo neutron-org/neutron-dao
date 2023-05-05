@@ -9,7 +9,7 @@ use cosmwasm_std::{
 use exec_control::pause::{
     can_pause, can_unpause, validate_duration, PauseError, PauseInfoResponse,
 };
-use neutron_bindings::bindings::query::InterchainQueries;
+use neutron_sdk::bindings::query::NeutronQuery;
 
 use crate::msg::{DistributeMsg, ExecuteMsg, InstantiateMsg, QueryMsg, StatsResponse};
 use crate::state::{
@@ -26,7 +26,7 @@ use crate::vesting::{
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
-    deps: DepsMut<InterchainQueries>,
+    deps: DepsMut<NeutronQuery>,
     _env: Env,
     _info: MessageInfo,
     msg: InstantiateMsg,
@@ -53,7 +53,7 @@ pub fn instantiate(
 }
 
 pub fn execute_pause(
-    deps: DepsMut<InterchainQueries>,
+    deps: DepsMut<NeutronQuery>,
     env: Env,
     sender: Addr,
     duration: u64,
@@ -85,7 +85,7 @@ pub fn execute_pause(
 }
 
 pub fn execute_unpause(
-    deps: DepsMut<InterchainQueries>,
+    deps: DepsMut<NeutronQuery>,
     sender: Addr,
 ) -> Result<Response, ContractError> {
     let config: Config = CONFIG.load(deps.storage)?;
@@ -99,7 +99,7 @@ pub fn execute_unpause(
         .add_attribute("sender", sender))
 }
 
-fn get_pause_info(deps: Deps<InterchainQueries>, env: &Env) -> StdResult<PauseInfoResponse> {
+fn get_pause_info(deps: Deps<NeutronQuery>, env: &Env) -> StdResult<PauseInfoResponse> {
     Ok(match PAUSED_UNTIL.may_load(deps.storage)?.unwrap_or(None) {
         Some(paused_until_height) => {
             if env.block.height.ge(&paused_until_height) {
@@ -120,7 +120,7 @@ fn get_pause_info(deps: Deps<InterchainQueries>, env: &Env) -> StdResult<PauseIn
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
-    deps: DepsMut<InterchainQueries>,
+    deps: DepsMut<NeutronQuery>,
     env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
@@ -172,7 +172,7 @@ pub fn execute(
 }
 
 pub fn execute_transfer_ownership(
-    deps: DepsMut<InterchainQueries>,
+    deps: DepsMut<NeutronQuery>,
     info: MessageInfo,
     new_owner_addr: Addr,
 ) -> Result<Response, ContractError> {
@@ -195,7 +195,7 @@ pub fn execute_transfer_ownership(
 }
 
 pub fn execute_update_config(
-    deps: DepsMut<InterchainQueries>,
+    deps: DepsMut<NeutronQuery>,
     info: MessageInfo,
     distribution_contract: Option<String>,
     treasury_contract: Option<String>,
@@ -243,7 +243,7 @@ pub fn execute_update_config(
 }
 
 pub fn execute_distribute(
-    deps: DepsMut<InterchainQueries>,
+    deps: DepsMut<NeutronQuery>,
     env: Env,
 ) -> Result<Response, ContractError> {
     let config: Config = CONFIG.load(deps.storage)?;
@@ -300,7 +300,7 @@ pub fn execute_distribute(
 //--------------------------------------------------------------------------------------------------
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps<InterchainQueries>, env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps<NeutronQuery>, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config {} => to_binary(&query_config(deps)?),
         QueryMsg::Stats {} => to_binary(&query_stats(deps)?),
@@ -308,16 +308,16 @@ pub fn query(deps: Deps<InterchainQueries>, env: Env, msg: QueryMsg) -> StdResul
     }
 }
 
-pub fn query_paused(deps: Deps<InterchainQueries>, env: Env) -> StdResult<Binary> {
+pub fn query_paused(deps: Deps<NeutronQuery>, env: Env) -> StdResult<Binary> {
     to_binary(&get_pause_info(deps, &env)?)
 }
 
-pub fn query_config(deps: Deps<InterchainQueries>) -> StdResult<Config> {
+pub fn query_config(deps: Deps<NeutronQuery>) -> StdResult<Config> {
     let config = CONFIG.load(deps.storage)?;
     Ok(config)
 }
 
-pub fn query_stats(deps: Deps<InterchainQueries>) -> StdResult<StatsResponse> {
+pub fn query_stats(deps: Deps<NeutronQuery>) -> StdResult<StatsResponse> {
     let total_distributed = TOTAL_DISTRIBUTED.load(deps.storage)?;
     let total_reserved = TOTAL_RESERVED.load(deps.storage)?;
     let total_processed_burned_coins = LAST_BURNED_COINS_AMOUNT.load(deps.storage)?;

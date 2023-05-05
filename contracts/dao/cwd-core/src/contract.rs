@@ -9,7 +9,7 @@ use cw_utils::{parse_reply_instantiate_data, Duration};
 
 use cw_paginate::{paginate_map, paginate_map_values};
 use cwd_interface::{voting, ModuleInstantiateInfo};
-use neutron_bindings::bindings::msg::NeutronMsg;
+use neutron_sdk::bindings::msg::NeutronMsg;
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InitialItem, InstantiateMsg, MigrateMsg, QueryMsg};
