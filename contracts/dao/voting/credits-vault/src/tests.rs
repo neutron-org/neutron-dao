@@ -12,6 +12,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 const DAO_ADDR: &str = "dao";
+const AIRDROP_ADDR: &str = "airdrop";
 const NAME: &str = "name";
 const DESCRIPTION: &str = "description";
 const NEW_NAME: &str = "new name";
@@ -30,12 +31,13 @@ fn vault_contract() -> Box<dyn Contract<Empty>> {
 
 fn credits_query(_deps: Deps, _env: Env, msg: CreditsQueryMsg) -> StdResult<Binary> {
     match msg {
-        CreditsQueryMsg::BalanceAtHeight {
-            address: _,
-            height: _,
-        } => {
+        CreditsQueryMsg::BalanceAtHeight { address, height: _ } => {
             let response = cw20::BalanceResponse {
-                balance: Uint128::from(10000u64),
+                balance: Uint128::from(if address == AIRDROP_ADDR {
+                    2000u64
+                } else {
+                    6000u64
+                }),
             };
             to_binary(&response)
         }
@@ -148,24 +150,12 @@ fn test_instantiate() {
     let credits_contract = instantiate_credits_contract(&mut app);
 
     let vault_id = app.store_code(vault_contract());
-    // Populated fields
     let _addr = instantiate_vault(
         &mut app,
         vault_id,
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
-            name: NAME.to_string(),
-            description: DESCRIPTION.to_string(),
-            owner: DAO_ADDR.to_string(),
-        },
-    );
-
-    // Non populated fields
-    let _addr = instantiate_vault(
-        &mut app,
-        vault_id,
-        InstantiateMsg {
-            credits_contract_address: credits_contract.to_string(),
+            airdrop_contract_address: AIRDROP_ADDR.to_string(),
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
@@ -185,6 +175,7 @@ fn test_update_config_unauthorized() {
         vault_id,
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
+            airdrop_contract_address: AIRDROP_ADDR.to_string(),
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
@@ -215,6 +206,7 @@ fn test_update_config_as_owner() {
         vault_id,
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
+            airdrop_contract_address: AIRDROP_ADDR.to_string(),
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
@@ -237,6 +229,7 @@ fn test_update_config_as_owner() {
     assert_eq!(
         Config {
             credits_contract_address: Addr::unchecked(credits_contract),
+            airdrop_contract_address: Addr::unchecked(AIRDROP_ADDR),
             name: NEW_NAME.to_string(),
             description: NEW_DESCRIPTION.to_string(),
             owner: Addr::unchecked(ADDR1),
@@ -257,6 +250,7 @@ fn test_update_config_invalid_description() {
         vault_id,
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
+            airdrop_contract_address: AIRDROP_ADDR.to_string(),
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
@@ -288,6 +282,7 @@ fn test_update_config_invalid_name() {
         vault_id,
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
+            airdrop_contract_address: AIRDROP_ADDR.to_string(),
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
@@ -318,6 +313,7 @@ fn test_query_dao() {
         vault_id,
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
+            airdrop_contract_address: AIRDROP_ADDR.to_string(),
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
@@ -340,6 +336,7 @@ fn test_query_info() {
         vault_id,
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
+            airdrop_contract_address: AIRDROP_ADDR.to_string(),
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
@@ -362,6 +359,7 @@ fn test_query_get_config() {
         vault_id,
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
+            airdrop_contract_address: AIRDROP_ADDR.to_string(),
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
@@ -373,6 +371,7 @@ fn test_query_get_config() {
         config,
         Config {
             credits_contract_address: Addr::unchecked(credits_contract),
+            airdrop_contract_address: Addr::unchecked(AIRDROP_ADDR),
             description: DESCRIPTION.to_string(),
             name: NAME.to_string(),
             owner: Addr::unchecked(DAO_ADDR),
@@ -391,19 +390,24 @@ fn test_voting_power_queries() {
         vault_id,
         InstantiateMsg {
             credits_contract_address: credits_contract.to_string(),
+            airdrop_contract_address: AIRDROP_ADDR.to_string(),
             name: NAME.to_string(),
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
         },
     );
 
-    // Total power is 0
+    // Total power is 8000, total supply is 10000, airdrop has 2000, 10000 - 2000 = 8000
     let resp = get_total_power_at_height(&mut app, addr.clone(), None);
-    assert_eq!(Uint128::from(10000u64), resp.power);
+    assert_eq!(Uint128::from(8000u64), resp.power);
 
-    // ADDR1 has no power, none bonded
-    let resp = get_voting_power_at_height(&mut app, addr, ADDR1.to_string(), None);
-    assert_eq!(Uint128::from(10000u64), resp.power);
+    // ADDR1 has 6000 voting power
+    let resp = get_voting_power_at_height(&mut app, addr.clone(), ADDR1.to_string(), None);
+    assert_eq!(Uint128::from(6000u64), resp.power);
+
+    // AIRDROP_ADDR has 2000 credits tokens, but it still has 0 voting power
+    let resp = get_voting_power_at_height(&mut app, addr, AIRDROP_ADDR.to_string(), None);
+    assert_eq!(Uint128::from(0u64), resp.power);
 }
 
 #[test]
