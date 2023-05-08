@@ -104,8 +104,8 @@ jobs:
           toolchain: ${{ env.TOOLCHAIN }}
           target: ${{ env.TARGET}}
           components: rustfmt, clippy
-      - run: make schema
-        if: ${{ env.ARTIFACTS_EXIST == 'false' }}
+#      - run: make schema
+#        if: ${{ env.ARTIFACTS_EXIST == 'false' }}
       - run: cargo fetch --verbose
         if: ${{ env.ARTIFACTS_EXIST == 'false' }}
       - run: cargo clippy --all --all-targets -- -D warnings
