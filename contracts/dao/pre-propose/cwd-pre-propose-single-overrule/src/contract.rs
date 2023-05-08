@@ -89,9 +89,7 @@ pub fn execute(
             // We need this check since the timelock contract might be an impostor
             // E.g. the timelock contract might be a malicious contract that is not a part of
             // the subdao but pretends to be.
-            if !verify_is_timelock_from_subdao(&deps, &subdao_address, &timelock_contract_addr)? {
-                return Err(PreProposeOverruleError::SubdaoMisconfigured {});
-            }
+            verify_is_timelock_from_subdao(&deps, &subdao_address, &timelock_contract_addr)?;
 
             if !is_subdao_legit(&deps, &subdao_address)? {
                 return Err(PreProposeOverruleError::ForbiddenSubdao {});
@@ -179,7 +177,7 @@ fn verify_is_timelock_from_subdao(
     deps: &DepsMut,
     subdao_core: &Addr,
     expected_timelock: &Addr,
-) -> Result<bool, PreProposeOverruleError> {
+) -> Result<(), PreProposeOverruleError> {
     let proposal_modules: Vec<SubdaoTypes::ProposalModule> = deps.querier.query_wasm_smart(
         subdao_core,
         // we do no pagination here since it either fits in tx by gas or not
@@ -195,22 +193,20 @@ fn verify_is_timelock_from_subdao(
             &SubdaoProposalMsg::QueryMsg::ProposalCreationPolicy {},
         )?;
         if let ProposalCreationPolicy::Module { addr } = prop_policy {
-            let timelock_result = deps.querier.query_wasm_smart::<Addr>(
+            if let Ok(timelock) = deps.querier.query_wasm_smart::<Addr>(
                 addr,
                 &SubdaoPreProposeQueryMsg::QueryExtension {
                     msg: SubdaoPreProposeQueryExt::TimelockAddress {},
                 },
-            );
-            match timelock_result {
-                Ok(timelock) => {if *expected_timelock == timelock {
-                    return Ok(true);
-                }}
-                Err(_) => {}
+            ) {
+                if *expected_timelock == timelock {
+                    return Ok(());
+                }
             }
         }
     }
 
-    Ok(false)
+    Err(PreProposeOverruleError::SubdaoMisconfigured {})
 }
 
 fn is_subdao_legit(deps: &DepsMut, subdao_core: &Addr) -> Result<bool, PreProposeOverruleError> {
