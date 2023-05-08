@@ -165,9 +165,9 @@ impl ContractQuerier for MockSubdaoCoreQueries {
     fn query(&self, msg: &Binary) -> QuerierResult {
         let q: SubdaoQueryMsg = from_binary(msg).unwrap();
         match q {
-            SubdaoQueryMsg::VerifyTimelock {
-                timelock,
-            } => SystemResult::Ok(ContractResult::from(to_binary(&(timelock == self.timelock)))),
+            SubdaoQueryMsg::VerifyTimelock { timelock } => SystemResult::Ok(ContractResult::from(
+                to_binary(&(timelock == self.timelock)),
+            )),
             SubdaoQueryMsg::Config {} => {
                 SystemResult::Ok(ContractResult::from(to_binary(&SubdaoTypes::Config {
                     name: SUBDAO_NAME.to_string(),

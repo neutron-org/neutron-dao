@@ -84,7 +84,11 @@ pub fn execute(
             // We need this check since the timelock contract might be an impostor
             // E.g. the timelock contract might be a malicious contract that is not a part of
             // the subdao but pretends to be.
-            if !verify_is_timelock_from_subdao(&deps, &subdao_address, timelock_contract_addr.clone())? {
+            if !verify_is_timelock_from_subdao(
+                &deps,
+                &subdao_address,
+                timelock_contract_addr.clone(),
+            )? {
                 return Err(PreProposeOverruleError::SubdaoMisconfigured {});
             }
 
@@ -175,7 +179,7 @@ fn verify_is_timelock_from_subdao(
     subdao_core: &Addr,
     expected_timelock: Addr,
 ) -> StdResult<bool> {
-    return deps.querier.query_wasm_smart(
+    deps.querier.query_wasm_smart(
         subdao_core,
         &SubdaoQueryMsg::VerifyTimelock {
             timelock: expected_timelock.to_string(),

@@ -597,10 +597,7 @@ pub fn query_main_dao(deps: Deps) -> StdResult<Binary> {
 }
 
 pub fn query_verify_timelock(deps: Deps, timelock: String) -> StdResult<Binary> {
-    to_binary(&match execution_access_check(deps, deps.api.addr_validate(&timelock)?) {
-        Ok(_) => {true}
-        Err(_) => {false}
-    })
+    to_binary(&(execution_access_check(deps, deps.api.addr_validate(&timelock)?).is_ok()))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
