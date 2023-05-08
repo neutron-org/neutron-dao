@@ -137,6 +137,10 @@ pub enum QueryMsg {
     DaoURI {},
     /// Gets main dao address
     MainDao {},
+    /// Verify timelock. Returns bool.
+    VerifyTimelock {
+        timelock: String,
+    },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]

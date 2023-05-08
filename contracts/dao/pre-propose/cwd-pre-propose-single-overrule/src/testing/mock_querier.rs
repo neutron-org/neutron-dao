@@ -11,16 +11,10 @@ use cwd_core::{msg::QueryMsg as MainDaoQueryMsg, query::SubDao};
 use cwd_proposal_single::msg::QueryMsg as ProposalSingleQueryMsg;
 
 use neutron_subdao_core::{msg::QueryMsg as SubdaoQueryMsg, types as SubdaoTypes};
-use neutron_subdao_pre_propose_single::msg::{
-    QueryExt as SubdaoPreProposeQueryExt, QueryMsg as SubdaoPreProposeQueryMsg,
-};
-use neutron_subdao_proposal_single::msg as SubdaoProposalMsg;
 use neutron_subdao_timelock_single::types::{ProposalStatus, SingleChoiceProposal};
 use neutron_subdao_timelock_single::{msg as TimelockMsg, types as TimelockTypes};
 
 pub const MOCK_DAO_CORE: &str = "neutron1dao_core_contract";
-pub const MOCK_SUBDAO_PROPOSE_MODULE: &str = "neutron1subdao_propose_module";
-pub const MOCK_SUBDAO_PREPROPOSE_MODULE: &str = "neutron1subdao_prepropose_module";
 pub const MOCK_DAO_PROPOSE_MODULE: &str = "neutron1propose_module";
 pub const MOCK_TIMELOCK_CONTRACT: &str = "neutron1timelock_contract";
 pub const MOCK_SUBDAO_CORE: &str = "neutron1subdao_core";
@@ -162,46 +156,8 @@ impl ContractQuerier for MockDaoProposalQueries {
     }
 }
 
-pub struct MockSubdaoProposalQueries {
-    pre_propose: String,
-}
-
-impl ContractQuerier for MockSubdaoProposalQueries {
-    fn query(&self, msg: &Binary) -> QuerierResult {
-        let q: SubdaoProposalMsg::QueryMsg = from_binary(msg).unwrap();
-        match q {
-            SubdaoProposalMsg::QueryMsg::ProposalCreationPolicy {} => {
-                SystemResult::Ok(ContractResult::from(to_binary(
-                    &cwd_voting::pre_propose::ProposalCreationPolicy::Module {
-                        addr: Addr::unchecked(self.pre_propose.clone()),
-                    },
-                )))
-            }
-            _ => SystemResult::Err(SystemError::Unknown {}),
-        }
-    }
-}
-
-pub struct MockSubaoPreProposalQueries {
-    timelock: String,
-}
-
-impl ContractQuerier for MockSubaoPreProposalQueries {
-    fn query(&self, msg: &Binary) -> QuerierResult {
-        let q: SubdaoPreProposeQueryMsg = from_binary(msg).unwrap();
-        match q {
-            SubdaoPreProposeQueryMsg::QueryExtension {
-                msg: SubdaoPreProposeQueryExt::TimelockAddress {},
-            } => SystemResult::Ok(ContractResult::from(to_binary(&Addr::unchecked(
-                self.timelock.clone(),
-            )))),
-            _ => SystemResult::Err(SystemError::Unknown {}),
-        }
-    }
-}
-
 pub struct MockSubdaoCoreQueries {
-    proposal_module: String,
+    timelock: String,
     dao_core: String,
 }
 
@@ -209,16 +165,9 @@ impl ContractQuerier for MockSubdaoCoreQueries {
     fn query(&self, msg: &Binary) -> QuerierResult {
         let q: SubdaoQueryMsg = from_binary(msg).unwrap();
         match q {
-            SubdaoQueryMsg::ProposalModules {
-                start_after: _,
-                limit: _,
-            } => SystemResult::Ok(ContractResult::from(to_binary(&vec![
-                SubdaoTypes::ProposalModule {
-                    address: Addr::unchecked(self.proposal_module.clone()),
-                    prefix: "".to_string(),
-                    status: SubdaoTypes::ProposalModuleStatus::Enabled,
-                },
-            ]))),
+            SubdaoQueryMsg::VerifyTimelock {
+                timelock,
+            } => SystemResult::Ok(ContractResult::from(to_binary(&(timelock == self.timelock)))),
             SubdaoQueryMsg::Config {} => {
                 SystemResult::Ok(ContractResult::from(to_binary(&SubdaoTypes::Config {
                     name: SUBDAO_NAME.to_string(),
@@ -257,20 +206,8 @@ pub fn get_properly_initialized_dao() -> HashMap<String, Box<dyn ContractQuerier
     contracts.insert(
         MOCK_SUBDAO_CORE.to_string(),
         Box::new(MockSubdaoCoreQueries {
-            proposal_module: MOCK_SUBDAO_PROPOSE_MODULE.to_string(),
-            dao_core: MOCK_DAO_CORE.to_string(),
-        }),
-    );
-    contracts.insert(
-        MOCK_SUBDAO_PROPOSE_MODULE.to_string(),
-        Box::new(MockSubdaoProposalQueries {
-            pre_propose: MOCK_SUBDAO_PREPROPOSE_MODULE.to_string(),
-        }),
-    );
-    contracts.insert(
-        MOCK_SUBDAO_PREPROPOSE_MODULE.to_string(),
-        Box::new(MockSubaoPreProposalQueries {
             timelock: MOCK_TIMELOCK_CONTRACT.to_string(),
+            dao_core: MOCK_DAO_CORE.to_string(),
         }),
     );
     contracts
