@@ -155,50 +155,64 @@ fn get_subdao_from_timelock(
     Ok(timelock_config.subdao)
 }
 
-fn verify_is_timelock_from_subdao(
-    deps: &DepsMut,
+fn query_proposal_modules(
     subdao_core: &Addr,
-    expected_timelock: &Addr,
-) -> Result<(), PreProposeOverruleError> {
-    let proposal_modules: Vec<SubdaoTypes::ProposalModule> = deps.querier.query_wasm_smart(
+    deps: &DepsMut,
+) -> StdResult<Vec<SubdaoTypes::ProposalModule>> {
+    deps.querier.query_wasm_smart(
         subdao_core,
         &SubdaoQueryMsg::ProposalModules {
             start_after: None,
             limit: None,
         },
-    )?;
+    )
+}
 
-    let result = proposal_modules.into_iter().find_map(|proposal_module| {
-        let prop_policy: ProposalCreationPolicy = deps
-            .querier
-            .query_wasm_smart(
-                proposal_module.address,
-                &SubdaoProposalMsg::QueryMsg::ProposalCreationPolicy {},
-            )
-            .ok()?;
+fn query_proposal_creation_policy(
+    proposal_module_address: Addr,
+    deps: &DepsMut,
+) -> StdResult<ProposalCreationPolicy> {
+    deps.querier.query_wasm_smart(
+        proposal_module_address,
+        &SubdaoProposalMsg::QueryMsg::ProposalCreationPolicy {},
+    )
+}
 
+fn query_timelock_address(addr: Addr, deps: &DepsMut) -> StdResult<Addr> {
+    deps.querier.query_wasm_smart::<Addr>(
+        addr,
+        &SubdaoPreProposeQueryMsg::QueryExtension {
+            msg: SubdaoPreProposeQueryExt::TimelockAddress {},
+        },
+    )
+}
+
+fn process_proposal_modules(
+    proposal_modules: Vec<SubdaoTypes::ProposalModule>,
+    expected_timelock: &Addr,
+    deps: &DepsMut,
+) -> Result<(), PreProposeOverruleError> {
+    for proposal_module in proposal_modules {
+        let prop_policy = query_proposal_creation_policy(proposal_module.address, deps)?;
         if let ProposalCreationPolicy::Module { addr } = prop_policy {
-            let timelock = deps
-                .querier
-                .query_wasm_smart::<Addr>(
-                    addr,
-                    &SubdaoPreProposeQueryMsg::QueryExtension {
-                        msg: SubdaoPreProposeQueryExt::TimelockAddress {},
-                    },
-                )
-                .ok()?;
-
-            if *expected_timelock == timelock {
-                Some(())
-            } else {
-                None
+            if let Ok(timelock) = query_timelock_address(addr, deps) {
+                if *expected_timelock == timelock {
+                    return Ok(());
+                }
             }
-        } else {
-            None
         }
-    });
+    }
+    Err(PreProposeOverruleError::SubdaoMisconfigured {})
+}
 
-    result.ok_or(PreProposeOverruleError::SubdaoMisconfigured {})
+fn verify_is_timelock_from_subdao(
+    deps: &DepsMut,
+    subdao_core: &Addr,
+    expected_timelock: &Addr,
+) -> Result<(), PreProposeOverruleError> {
+    // Main function
+    let proposal_modules = query_proposal_modules(subdao_core, deps)?;
+    process_proposal_modules(proposal_modules, expected_timelock, deps)
 }
 
 fn is_subdao_legit(deps: &DepsMut, subdao_core: &Addr) -> Result<(), PreProposeOverruleError> {
