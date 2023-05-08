@@ -31,3 +31,17 @@ pub type QueryMsg = QueryBase<QueryExt>;
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct MigrateMsg {}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum MainDaoQueryMsg {
+    GetSubDao { address: String },
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+pub struct SubDao {
+    /// The contract address of the SubDAO
+    pub addr: String,
+    /// The purpose/constitution for the SubDAO
+    pub charter: Option<String>,
+}

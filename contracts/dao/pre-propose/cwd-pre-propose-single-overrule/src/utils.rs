@@ -2,9 +2,9 @@ use crate::contract::PrePropose;
 use crate::error::PreProposeOverruleError;
 use crate::state::PROPOSALS;
 use cosmwasm_std::{Addr, DepsMut, StdResult};
-use cwd_core::{msg::QueryMsg as MainDaoQueryMsg, query::SubDao};
 use cwd_proposal_single::msg::QueryMsg as ProposalSingleQueryMsg;
 use cwd_voting::pre_propose::ProposalCreationPolicy;
+use neutron_dao_pre_propose_overrule::msg::{MainDaoQueryMsg, SubDao};
 use neutron_subdao_core::{msg::QueryMsg as SubdaoQueryMsg, types as SubdaoTypes};
 use neutron_subdao_pre_propose_single::msg::{
     QueryExt as SubdaoPreProposeQueryExt, QueryMsg as SubdaoPreProposeQueryMsg,
