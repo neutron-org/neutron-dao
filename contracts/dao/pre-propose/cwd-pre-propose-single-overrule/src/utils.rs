@@ -1,7 +1,7 @@
 use crate::contract::PrePropose;
 use crate::error::PreProposeOverruleError;
 use crate::state::PROPOSALS;
-use cosmwasm_std::{Addr, DepsMut, StdResult};
+use cosmwasm_std::{Addr, DepsMut, StdError, StdResult};
 use cwd_voting::pre_propose::ProposalCreationPolicy;
 use neutron_dao_pre_propose_overrule::msg::{
     MainDaoQueryMsg, ProposalSingleQueryMsg, SubDao, SubdaoConfig, SubdaoProposalModule,
@@ -62,11 +62,14 @@ fn process_proposal_modules(
     deps: &DepsMut,
 ) -> Result<(), PreProposeOverruleError> {
     for proposal_module in proposal_modules {
-        let prop_policy = query_proposal_creation_policy(proposal_module.address, deps)?;
+        let prop_policy = query_proposal_creation_policy(proposal_module.address.clone(), deps)?;
         if let ProposalCreationPolicy::Module { addr } = prop_policy {
             if let Ok(timelock) = query_timelock_address(addr, deps) {
                 if expected_timelock == timelock {
-                    return Ok(());
+                    if proposal_module.address == expected_timelock {
+                        deps.api.debug("Proposal module found");
+                        return Err(PreProposeOverruleError::ForbiddenSubdao {});
+                    }
                 }
             }
         }
