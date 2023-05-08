@@ -195,15 +195,17 @@ fn verify_is_timelock_from_subdao(
             &SubdaoProposalMsg::QueryMsg::ProposalCreationPolicy {},
         )?;
         if let ProposalCreationPolicy::Module { addr } = prop_policy {
-            if let Ok(timelock) = deps.querier.query_wasm_smart::<Addr>(
+            let timelock_result = deps.querier.query_wasm_smart::<Addr>(
                 addr,
                 &SubdaoPreProposeQueryMsg::QueryExtension {
                     msg: SubdaoPreProposeQueryExt::TimelockAddress {},
                 },
-            ) {
-                if *expected_timelock == timelock {
+            );
+            match timelock_result {
+                Ok(timelock) => {if *expected_timelock == timelock {
                     return Ok(true);
-                }
+                }}
+                Err(_) => {}
             }
         }
     }
