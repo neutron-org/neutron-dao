@@ -91,13 +91,9 @@ pub fn execute(
             // the subdao but pretends to be.
             verify_is_timelock_from_subdao(&deps, &subdao_address, &timelock_contract_addr)?;
 
-            if !is_subdao_legit(&deps, &subdao_address)? {
-                return Err(PreProposeOverruleError::ForbiddenSubdao {});
-            }
+            is_subdao_legit(&deps, &subdao_address)?;
 
-            if !is_proposal_timelocked(&deps, &timelock_contract_addr, proposal_id)? {
-                return Err(PreProposeOverruleError::ProposalWrongState {});
-            }
+            is_proposal_timelocked(&deps, &timelock_contract_addr, proposal_id)?;
 
             let overrule_msg = CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: timelock_contract_addr.to_string(),
@@ -209,7 +205,7 @@ fn verify_is_timelock_from_subdao(
     Err(PreProposeOverruleError::SubdaoMisconfigured {})
 }
 
-fn is_subdao_legit(deps: &DepsMut, subdao_core: &Addr) -> Result<bool, PreProposeOverruleError> {
+fn is_subdao_legit(deps: &DepsMut, subdao_core: &Addr) -> Result<(), PreProposeOverruleError> {
     let main_dao = get_main_dao_address(deps)?;
 
     let subdao: StdResult<SubDao> = deps.querier.query_wasm_smart(
@@ -220,8 +216,14 @@ fn is_subdao_legit(deps: &DepsMut, subdao_core: &Addr) -> Result<bool, PrePropos
     );
 
     match subdao {
-        Ok(subdao) => Ok(subdao.addr == *subdao_core),
-        Err(_) => Ok(false),
+        Ok(subdao) => {
+            if subdao.addr == *subdao_core {
+                Ok(())
+            } else {
+                Err(PreProposeOverruleError::SubdaoMisconfigured {})
+            }
+        }
+        Err(_) => Err(PreProposeOverruleError::ForbiddenSubdao {}),
     }
 }
 
@@ -245,11 +247,15 @@ fn is_proposal_timelocked(
     deps: &DepsMut,
     timelock: &Addr,
     proposal_id: u64,
-) -> Result<bool, PreProposeOverruleError> {
+) -> Result<(), PreProposeOverruleError> {
     let proposal: TimelockTypes::SingleChoiceProposal = deps
         .querier
         .query_wasm_smart(timelock, &TimelockMsg::QueryMsg::Proposal { proposal_id })?;
-    Ok(proposal.status == TimelockTypes::ProposalStatus::Timelocked)
+    if proposal.status == TimelockTypes::ProposalStatus::Timelocked {
+        Ok(())
+    } else {
+        Err(PreProposeOverruleError::ProposalWrongState {})
+    }
 }
 
 fn get_subdao_name(deps: &DepsMut, subdao: &Addr) -> Result<String, PreProposeOverruleError> {
