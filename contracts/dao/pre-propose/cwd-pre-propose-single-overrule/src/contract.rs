@@ -16,11 +16,12 @@ use cwd_pre_propose_base::{
     state::PreProposeContract,
 };
 use neutron_dao_pre_propose_overrule::msg::{
-    ExecuteMsg, InstantiateMsg, MigrateMsg, ProposeMessage, QueryExt, QueryMsg,
+    ExecuteMsg, InstantiateMsg, MigrateMsg, ProposeMessage, ProposeMessageInternal, QueryExt,
+    QueryMsg,
 };
 
 use crate::state::PROPOSALS;
-use cwd_proposal_single::msg::ExecuteMsg as ProposeMessageInternal;
+
 use neutron_subdao_timelock_single::msg as TimelockMsg;
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:cwd-pre-propose-single-overrule";

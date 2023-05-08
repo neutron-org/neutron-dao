@@ -2,10 +2,11 @@ use crate::contract::PrePropose;
 use crate::error::PreProposeOverruleError;
 use crate::state::PROPOSALS;
 use cosmwasm_std::{Addr, DepsMut, StdResult};
-use cwd_proposal_single::msg::QueryMsg as ProposalSingleQueryMsg;
 use cwd_voting::pre_propose::ProposalCreationPolicy;
-use neutron_dao_pre_propose_overrule::msg::{MainDaoQueryMsg, SubDao};
-use neutron_subdao_core::{msg::QueryMsg as SubdaoQueryMsg, types as SubdaoTypes};
+use neutron_dao_pre_propose_overrule::msg::{
+    MainDaoQueryMsg, ProposalSingleQueryMsg, SubDao, SubdaoConfig, SubdaoProposalModule,
+    SubdaoQueryMsg,
+};
 use neutron_subdao_pre_propose_single::msg::{
     QueryExt as SubdaoPreProposeQueryExt, QueryMsg as SubdaoPreProposeQueryMsg,
 };
@@ -26,7 +27,7 @@ pub(crate) fn get_subdao_from_timelock(
 fn query_proposal_modules(
     subdao_core: &Addr,
     deps: &DepsMut,
-) -> StdResult<Vec<SubdaoTypes::ProposalModule>> {
+) -> StdResult<Vec<SubdaoProposalModule>> {
     deps.querier.query_wasm_smart(
         subdao_core,
         &SubdaoQueryMsg::ProposalModules {
@@ -56,7 +57,7 @@ fn query_timelock_address(addr: Addr, deps: &DepsMut) -> StdResult<Addr> {
 }
 
 fn process_proposal_modules(
-    proposal_modules: Vec<SubdaoTypes::ProposalModule>,
+    proposal_modules: Vec<SubdaoProposalModule>,
     expected_timelock: &Addr,
     deps: &DepsMut,
 ) -> Result<(), PreProposeOverruleError> {
@@ -162,7 +163,7 @@ pub(crate) fn get_subdao_name(
     deps: &DepsMut,
     subdao: &Addr,
 ) -> Result<String, PreProposeOverruleError> {
-    let subdao_config: SubdaoTypes::Config = deps
+    let subdao_config: SubdaoConfig = deps
         .querier
         .query_wasm_smart(subdao, &SubdaoQueryMsg::Config {})?;
     Ok(subdao_config.name)
