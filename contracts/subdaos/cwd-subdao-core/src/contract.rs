@@ -400,6 +400,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         }
         QueryMsg::DaoURI {} => query_dao_uri(deps),
         QueryMsg::MainDao {} => query_main_dao(deps),
+        QueryMsg::VerifyTimelock { timelock } => query_verify_timelock(deps, timelock),
     }
 }
 
@@ -593,6 +594,10 @@ pub fn query_dao_uri(deps: Deps) -> StdResult<Binary> {
 pub fn query_main_dao(deps: Deps) -> StdResult<Binary> {
     let config = CONFIG.load(deps.storage)?;
     to_binary(&config.main_dao)
+}
+
+pub fn query_verify_timelock(deps: Deps, timelock: String) -> StdResult<Binary> {
+    to_binary(&(execution_access_check(deps, deps.api.addr_validate(&timelock)?).is_ok()))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
