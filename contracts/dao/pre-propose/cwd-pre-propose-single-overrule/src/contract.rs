@@ -162,33 +162,37 @@ fn verify_is_timelock_from_subdao(
 ) -> Result<(), PreProposeOverruleError> {
     let proposal_modules: Vec<SubdaoTypes::ProposalModule> = deps.querier.query_wasm_smart(
         subdao_core,
-        // we do no pagination here since it either fits in tx by gas or not
         &SubdaoQueryMsg::ProposalModules {
             start_after: None,
             limit: None,
         },
     )?;
 
-    for proposal_module in proposal_modules {
+    let result = proposal_modules.into_iter().find_map(|proposal_module| {
         let prop_policy: ProposalCreationPolicy = deps.querier.query_wasm_smart(
             proposal_module.address,
             &SubdaoProposalMsg::QueryMsg::ProposalCreationPolicy {},
-        )?;
+        ).ok()?;
+
         if let ProposalCreationPolicy::Module { addr } = prop_policy {
-            if let Ok(timelock) = deps.querier.query_wasm_smart::<Addr>(
+            let timelock = deps.querier.query_wasm_smart::<Addr>(
                 addr,
                 &SubdaoPreProposeQueryMsg::QueryExtension {
                     msg: SubdaoPreProposeQueryExt::TimelockAddress {},
                 },
-            ) {
-                if *expected_timelock == timelock {
-                    return Ok(());
-                }
-            }
-        }
-    }
+            ).ok()?;
 
-    Err(PreProposeOverruleError::SubdaoMisconfigured {})
+            if *expected_timelock == timelock {
+                Some(())
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    });
+
+    result.ok_or(PreProposeOverruleError::SubdaoMisconfigured {})
 }
 
 fn is_subdao_legit(deps: &DepsMut, subdao_core: &Addr) -> Result<(), PreProposeOverruleError> {
