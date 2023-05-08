@@ -58,14 +58,14 @@ fn query_timelock_address(addr: Addr, deps: &DepsMut) -> StdResult<Addr> {
 
 fn process_proposal_modules(
     proposal_modules: Vec<SubdaoProposalModule>,
-    expected_timelock: &Addr,
+    expected_timelock: Addr,
     deps: &DepsMut,
 ) -> Result<(), PreProposeOverruleError> {
     for proposal_module in proposal_modules {
         let prop_policy = query_proposal_creation_policy(proposal_module.address, deps)?;
         if let ProposalCreationPolicy::Module { addr } = prop_policy {
             if let Ok(timelock) = query_timelock_address(addr, deps) {
-                if *expected_timelock == timelock {
+                if expected_timelock == timelock {
                     return Ok(());
                 }
             }
@@ -81,7 +81,7 @@ fn verify_is_timelock_from_subdao(
 ) -> Result<(), PreProposeOverruleError> {
     // Main function
     let proposal_modules = query_proposal_modules(subdao_core, deps)?;
-    process_proposal_modules(proposal_modules, expected_timelock, deps)
+    process_proposal_modules(proposal_modules, expected_timelock.clone(), deps)
 }
 
 fn is_subdao_legit(deps: &DepsMut, subdao_core: &Addr) -> Result<(), PreProposeOverruleError> {
