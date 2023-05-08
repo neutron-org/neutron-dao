@@ -169,18 +169,24 @@ fn verify_is_timelock_from_subdao(
     )?;
 
     let result = proposal_modules.into_iter().find_map(|proposal_module| {
-        let prop_policy: ProposalCreationPolicy = deps.querier.query_wasm_smart(
-            proposal_module.address,
-            &SubdaoProposalMsg::QueryMsg::ProposalCreationPolicy {},
-        ).ok()?;
+        let prop_policy: ProposalCreationPolicy = deps
+            .querier
+            .query_wasm_smart(
+                proposal_module.address,
+                &SubdaoProposalMsg::QueryMsg::ProposalCreationPolicy {},
+            )
+            .ok()?;
 
         if let ProposalCreationPolicy::Module { addr } = prop_policy {
-            let timelock = deps.querier.query_wasm_smart::<Addr>(
-                addr,
-                &SubdaoPreProposeQueryMsg::QueryExtension {
-                    msg: SubdaoPreProposeQueryExt::TimelockAddress {},
-                },
-            ).ok()?;
+            let timelock = deps
+                .querier
+                .query_wasm_smart::<Addr>(
+                    addr,
+                    &SubdaoPreProposeQueryMsg::QueryExtension {
+                        msg: SubdaoPreProposeQueryExt::TimelockAddress {},
+                    },
+                )
+                .ok()?;
 
             if *expected_timelock == timelock {
                 Some(())
