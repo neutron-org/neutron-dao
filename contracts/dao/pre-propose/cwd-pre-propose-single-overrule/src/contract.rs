@@ -78,22 +78,8 @@ pub fn execute(
         } => {
             let timelock_contract_addr = deps.api.addr_validate(&timelock_contract)?;
 
-            if let Ok(id) =
-                PROPOSALS.load(deps.storage, (proposal_id, timelock_contract_addr.clone()))
-            {
-                return Err(PreProposeOverruleError::AlreadyExists { id });
-            }
-
             let subdao_address = get_subdao_from_timelock(&deps, &timelock_contract_addr)?;
-
-            // We need this check since the timelock contract might be an impostor
-            // E.g. the timelock contract might be a malicious contract that is not a part of
-            // the subdao but pretends to be.
-            verify_is_timelock_from_subdao(&deps, &subdao_address, &timelock_contract_addr)?;
-
-            is_subdao_legit(&deps, &subdao_address)?;
-
-            is_proposal_timelocked(&deps, &timelock_contract_addr, proposal_id)?;
+            perform_checks(&deps, &subdao_address, &timelock_contract_addr, proposal_id)?;
 
             let overrule_msg = CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: timelock_contract_addr.to_string(),
@@ -256,6 +242,28 @@ fn is_proposal_timelocked(
     } else {
         Err(PreProposeOverruleError::ProposalWrongState {})
     }
+}
+
+fn perform_checks(
+    deps: &DepsMut,
+    subdao: &Addr,
+    timelock: &Addr,
+    proposal_id: u64,
+) -> Result<(), PreProposeOverruleError> {
+    if let Ok(id) = PROPOSALS.load(deps.storage, (proposal_id, timelock.clone())) {
+        return Err(PreProposeOverruleError::AlreadyExists { id });
+    }
+
+    // We need this check since the timelock contract might be an impostor
+    // E.g. the timelock contract might be a malicious contract that is not a part of
+    // the subdao but pretends to be.
+    verify_is_timelock_from_subdao(deps, subdao, timelock)?;
+
+    is_subdao_legit(deps, subdao)?;
+
+    is_proposal_timelocked(deps, timelock, proposal_id)?;
+
+    Ok(())
 }
 
 fn get_subdao_name(deps: &DepsMut, subdao: &Addr) -> Result<String, PreProposeOverruleError> {
