@@ -27,6 +27,30 @@
       "additionalProperties": false
     },
     {
+      "description": "Callable by timelock modules. The DAO will execute the messages in order.",
+      "type": "object",
+      "required": [
+        "execute_timelocked_msgs"
+      ],
+      "properties": {
+        "execute_timelocked_msgs": {
+          "type": "object",
+          "required": [
+            "msgs"
+          ],
+          "properties": {
+            "msgs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/CosmosMsg_for_NeutronMsg"
+              }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
       "description": "Removes an item from the governance contract's item map.",
       "type": "object",
       "required": [
