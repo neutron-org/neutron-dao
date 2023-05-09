@@ -1,6 +1,6 @@
 use crate::error::ContractError;
 use crate::msg::{CreditsQueryMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
-use crate::state::{Config, TotalSupplyResponse, CONFIG, DAO, DESCRIPTION};
+use crate::state::{Config, TotalSupplyResponse, CONFIG, DAO};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -236,8 +236,8 @@ pub fn query_name(deps: Deps) -> StdResult<Binary> {
 }
 
 pub fn query_description(deps: Deps) -> StdResult<Binary> {
-    let description = DESCRIPTION.load(deps.storage)?;
-    to_binary(&description)
+    let config = CONFIG.load(deps.storage)?;
+    to_binary(&config.description)
 }
 
 pub fn query_config(deps: Deps) -> StdResult<Binary> {

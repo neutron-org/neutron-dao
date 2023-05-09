@@ -144,6 +144,12 @@ fn get_config(app: &mut App, contract_addr: Addr) -> Config {
         .unwrap()
 }
 
+fn get_description(app: &mut App, contract_addr: Addr) -> String {
+    app.wrap()
+        .query_wasm_smart(contract_addr, &QueryMsg::Description {})
+        .unwrap()
+}
+
 #[test]
 fn test_instantiate() {
     let mut app = mock_app();
@@ -377,6 +383,28 @@ fn test_query_get_config() {
             owner: Addr::unchecked(DAO_ADDR),
         }
     )
+}
+
+#[test]
+fn test_query_get_description() {
+    let mut app = mock_app();
+    let credits_contract = instantiate_credits_contract(&mut app);
+
+    let vault_id = app.store_code(vault_contract());
+    let addr = instantiate_vault(
+        &mut app,
+        vault_id,
+        InstantiateMsg {
+            credits_contract_address: credits_contract.to_string(),
+            airdrop_contract_address: AIRDROP_ADDR.to_string(),
+            name: NAME.to_string(),
+            description: DESCRIPTION.to_string(),
+            owner: DAO_ADDR.to_string(),
+        },
+    );
+
+    let description = get_description(&mut app, addr);
+    assert_eq!(DESCRIPTION, description)
 }
 
 #[test]

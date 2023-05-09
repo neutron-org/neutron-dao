@@ -205,6 +205,27 @@
       "additionalProperties": false
     },
     {
+      "description": "Verify timelock. Returns bool.",
+      "type": "object",
+      "required": [
+        "verify_timelock"
+      ],
+      "properties": {
+        "verify_timelock": {
+          "type": "object",
+          "required": [
+            "timelock"
+          ],
+          "properties": {
+            "timelock": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
       "type": "object",
       "required": [
         "pause_info"
