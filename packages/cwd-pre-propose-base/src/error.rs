@@ -22,6 +22,9 @@ pub enum PreProposeError {
     #[error("Message sender is not dao")]
     NotDao {},
 
+    #[error("Message  is not a pause message ")]
+    NotAPauseMsg {},
+
     #[error("You must be a member of this DAO (have voting power) to create a proposal")]
     NotMember {},
 

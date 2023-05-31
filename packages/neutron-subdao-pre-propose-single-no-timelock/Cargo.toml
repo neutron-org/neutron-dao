@@ -1,7 +1,7 @@
 [package]
-name = "neutron-subdao-pre-propose-single"
+name = "neutron-subdao-pre-propose-single-no-timelock"
 version = "0.1.0"
-authors = ["Sergei Sotnikov <sergei.s@p2p.org>"]
+authors = ["Pavel Kalinin <pavel.kalinin@p2p.org>"]
 edition = "2021"
 license = "Apache-2.0"
 repository = "https://github.com/neutron/neutron-dao"
@@ -10,6 +10,7 @@ repository = "https://github.com/neutron/neutron-dao"
 
 [dependencies]
 cwd-pre-propose-base = { version = "*", path = "../cwd-pre-propose-base" }
+cw-utils = "0.13"
 schemars = "0.8"
 serde = { version = "1.0.147", default-features = false, features = ["derive"] }
 cosmwasm-std = "1.0.0"
