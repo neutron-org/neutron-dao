@@ -1,10 +1,11 @@
+use cosmwasm_std::Empty;
 use std::env::current_dir;
 use std::fs::create_dir_all;
 
 use cosmwasm_schema::{export_schema, export_schema_with_title, remove_schemas, schema_for};
 use cosmwasm_std::Addr;
-use cwd_pre_propose_base::msg::{DepositInfoResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
-use neutron_dao_pre_propose_overrule::msg::{ProposeMessage, QueryExt};
+use cwd_pre_propose_base::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use cwd_pre_propose_single::{contract::ProposeMessage, DepositInfoResponse};
 
 fn main() {
     let mut out_dir = current_dir().unwrap();
@@ -14,7 +15,7 @@ fn main() {
 
     export_schema(&schema_for!(InstantiateMsg), &out_dir);
     export_schema(&schema_for!(ExecuteMsg<ProposeMessage>), &out_dir);
-    export_schema(&schema_for!(QueryMsg<QueryExt>), &out_dir);
+    export_schema(&schema_for!(QueryMsg<Empty>), &out_dir);
     export_schema(&schema_for!(DepositInfoResponse), &out_dir);
 
     export_schema_with_title(&schema_for!(Addr), &out_dir, "ProposalModuleResponse");
