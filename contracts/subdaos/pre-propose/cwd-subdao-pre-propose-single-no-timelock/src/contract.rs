@@ -1,21 +1,18 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_binary, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, Reply, Response, StdResult, SubMsg, WasmMsg, from_binary};
+use cosmwasm_std::{Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, Response, StdResult,WasmMsg, from_binary};
 use cw2::set_contract_version;
-use cw_utils::parse_reply_instantiate_data;
 use neutron_sdk::bindings::msg::NeutronMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use cwd_pre_propose_base::{
     error::PreProposeError,
-    msg::{ExecuteMsg as ExecuteBase, InstantiateMsg as InstantiateBase},
+    msg::{ExecuteMsg as ExecuteBase, InstantiateMsg as InstantiateBase, QueryMsg as QueryBase},
     state::PreProposeContract,
 };
-use neutron_subdao_core::msg::ExecuteMsg as CoreExecuteMsg;
-use neutron_subdao_pre_propose_single_no_timelock::msg::MigrateMsg;
 use neutron_subdao_pre_propose_single_no_timelock::{
-    msg::{ExecuteMsg as ExecuteMsgPause, QueryExt, QueryMsg},
+    msg::{ExecuteMsg as ExecuteMsgPause},
     types::ProposeMessage,
 };
 
@@ -25,9 +22,6 @@ pub type QueryMsg = QueryBase<Empty>;
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:cwd-subdao-pre-propose-single";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
-
-const TIMELOCK_MODULE_INSTANTIATE_REPLY_ID: u64 = 1;
-
 
 /// Internal version of the propose message that includes the
 /// `proposer` field. The module will fill this in based on the sender
@@ -78,17 +72,13 @@ pub fn execute(
                     msgs,
                 },
         } => {
-            for msg in msgs {
-                match msg {
-                    CosmosMsg::Wasm(w) => match w {
-                        WasmMsg::Execute { contract_addr: _contract_addr, msg, funds: _funds } => {
-                            from_binary::<ExecuteMsgPause>(&msg).unwrap();
-                        }
-                        _ => {PreProposeError::NotAPauseMsg}
-                    },
-                    _ =>  {PreProposeError::NotAPauseMsg},
+            for msg in &msgs {
+                if let CosmosMsg::Wasm(WasmMsg::Execute { contract_addr: _contract_addr, msg, funds: _funds }) = msg {
+                    from_binary::<ExecuteMsgPause>(msg).unwrap();
+                } else {
+                    return Err(PreProposeError::NotAPauseMsg {})
                 }
-            }
+            };
 
             ExecuteInternal::Propose {
                 msg: ProposeMessageInternal::Propose {
