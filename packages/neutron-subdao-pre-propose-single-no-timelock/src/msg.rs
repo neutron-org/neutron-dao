@@ -19,7 +19,6 @@ pub struct InstantiateMsg {
     pub timelock_module_instantiate_info: ModuleInstantiateInfo,
 }
 
-
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct MigrateMsg {}
@@ -30,5 +29,4 @@ pub enum ExecuteMsg {
     /// Pauses the contract for a set duration.
     /// When paused the DAO is unable to execute proposals
     Pause { duration: Duration },
-
 }

@@ -1,6 +1,9 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, Response, StdResult,WasmMsg, from_binary};
+use cosmwasm_std::{
+    from_binary, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, Response, StdResult,
+    WasmMsg,
+};
 use cw2::set_contract_version;
 use neutron_sdk::bindings::msg::NeutronMsg;
 use schemars::JsonSchema;
@@ -12,8 +15,7 @@ use cwd_pre_propose_base::{
     state::PreProposeContract,
 };
 use neutron_subdao_pre_propose_single_no_timelock::{
-    msg::{ExecuteMsg as ExecuteMsgPause},
-    types::ProposeMessage,
+    msg::ExecuteMsg as ExecuteMsgPause, types::ProposeMessage,
 };
 
 pub type InstantiateMsg = InstantiateBase;
@@ -73,12 +75,17 @@ pub fn execute(
                 },
         } => {
             for msg in &msgs {
-                if let CosmosMsg::Wasm(WasmMsg::Execute { contract_addr: _contract_addr, msg, funds: _funds }) = msg {
+                if let CosmosMsg::Wasm(WasmMsg::Execute {
+                    contract_addr: _contract_addr,
+                    msg,
+                    funds: _funds,
+                }) = msg
+                {
                     from_binary::<ExecuteMsgPause>(msg).unwrap();
                 } else {
-                    return Err(PreProposeError::NotAPauseMsg {})
+                    return Err(PreProposeError::NotAPauseMsg {});
                 }
-            };
+            }
 
             ExecuteInternal::Propose {
                 msg: ProposeMessageInternal::Propose {
