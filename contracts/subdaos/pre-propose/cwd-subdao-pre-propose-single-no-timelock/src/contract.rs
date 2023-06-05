@@ -15,7 +15,7 @@ use cwd_pre_propose_base::{
     state::PreProposeContract,
 };
 use neutron_subdao_pre_propose_single_no_timelock::{
-    msg::ExecuteMsg as ExecuteMsgPause, types::ProposeMessage,
+    msg::ExecuteMsgPauseTypedDuration, msg::ExecuteMsgPauseUntypedDuration, types::ProposeMessage,
 };
 
 pub type InstantiateMsg = InstantiateBase;
@@ -75,15 +75,19 @@ pub fn execute(
                 },
         } => {
             for msg in &msgs {
-                if let CosmosMsg::Wasm(WasmMsg::Execute {
-                    contract_addr: _contract_addr,
-                    msg,
-                    funds: _funds,
-                }) = msg
-                {
-                    from_binary::<ExecuteMsgPause>(msg).unwrap();
-                } else {
-                    return Err(PreProposeError::NotAPauseMsg {});
+                match msg {
+                    CosmosMsg::Wasm(WasmMsg::Execute {
+                        contract_addr: _contract_addr,
+                        msg,
+                        funds: _funds,
+                    }) => {
+                        if from_binary::<ExecuteMsgPauseTypedDuration>(msg).is_err()
+                            && from_binary::<ExecuteMsgPauseUntypedDuration>(msg).is_err()
+                        {
+                            return Err(PreProposeError::NotAPauseMsg {});
+                        }
+                    }
+                    _ => return Err(PreProposeError::NotAPauseMsg {}),
                 }
             }
 
