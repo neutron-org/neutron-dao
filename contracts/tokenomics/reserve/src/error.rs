@@ -1,4 +1,4 @@
-use cosmwasm_std::{OverflowError, StdError};
+use cosmwasm_std::{OverflowError, StdError, Uint128};
 use exec_control::pause::PauseError;
 use thiserror::Error;
 
@@ -30,6 +30,16 @@ pub enum ContractError {
 
     #[error("no coins were burned, nothing to distribute")]
     NoBurnedCoins {},
+
+    #[error("Unknown reply ID {reply_id}")]
+    UnkownReplyID { reply_id: u64 },
+
+    #[error("{denom} balance {intermediate_balance} after liquidity withdrawal and providing doesn't match the initial one {initial_balance}")]
+    MigrationBalancesMismtach {
+        denom: String,
+        initial_balance: Uint128,
+        intermediate_balance: Uint128,
+    },
 
     #[error("Overflow")]
     OverflowError(#[from] OverflowError),

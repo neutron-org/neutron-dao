@@ -64,3 +64,14 @@ pub struct StatsResponse {
 pub enum DistributeMsg {
     Fund {},
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub struct MigrateMsg {
+    pub atom_denom: String,
+    pub ntrn_atom_xyk_pair_address: String,
+    pub ntrn_atom_cl_pair_address: String,
+    pub usdc_denom: String,
+    pub ntrn_usdc_xyk_pair_address: String,
+    pub ntrn_usdc_cl_pair_address: String,
+}

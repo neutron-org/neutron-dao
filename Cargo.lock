@@ -60,6 +60,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "astroport"
+version = "2.8.0"
+source = "git+https://github.com/astroport-fi/astroport-core.git?tag=v2.8.0#3b44a4044b823a145730f66ffaf7ae4205b2cd35"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-storage-plus 0.15.1",
+ "cw-utils 0.15.1",
+ "cw20 0.15.1",
+ "itertools",
+ "uint",
+]
+
+[[package]]
 name = "astroport-periphery"
 version = "1.1.0"
 source = "git+https://github.com/neutron-org/neutron-tge-contracts.git?branch=main#0c7175d125e0208ad94868f5cd0b634c1fc76ad1"
@@ -1471,9 +1485,11 @@ dependencies = [
 name = "neutron-reserve"
 version = "0.1.0"
 dependencies = [
+ "astroport 2.8.0",
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-storage-plus 1.0.1",
+ "cw20 0.13.4",
  "cwd-macros",
  "exec-control",
  "neutron-sdk 0.5.0",

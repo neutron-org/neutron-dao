@@ -3,22 +3,36 @@ use crate::error::ContractError;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    coins, to_binary, Addr, BankMsg, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response,
-    StdResult, Uint128, WasmMsg,
+    coins, to_binary, Addr, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
+    Reply, Response, StdResult, SubMsg, Uint128, WasmMsg,
 };
 use exec_control::pause::{
     can_pause, can_unpause, validate_duration, PauseError, PauseInfoResponse,
 };
 use neutron_sdk::bindings::query::NeutronQuery;
 
-use crate::msg::{DistributeMsg, ExecuteMsg, InstantiateMsg, QueryMsg, StatsResponse};
+use crate::msg::{DistributeMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, StatsResponse};
 use crate::state::{
-    Config, CONFIG, LAST_BURNED_COINS_AMOUNT, LAST_DISTRIBUTION_TIME, PAUSED_UNTIL,
-    TOTAL_DISTRIBUTED, TOTAL_RESERVED,
+    Config, ATOM_BALANCE_BEFORE_WITHDRAWAL, ATOM_DENOM, CONFIG, LAST_BURNED_COINS_AMOUNT,
+    LAST_DISTRIBUTION_TIME, NTRN_ATOM_CL_PAIR_ADDRESS, NTRN_BALANCE_BEFORE_WITHDRAWAL,
+    NTRN_USDC_CL_PAIR_ADDRESS, PAUSED_UNTIL, TOTAL_DISTRIBUTED, TOTAL_RESERVED,
+    USDC_BALANCE_BEFORE_WITHDRAWAL, USDC_DENOM,
 };
 use crate::vesting::{
     get_burned_coins, safe_burned_coins_for_period, update_distribution_stats, vesting_function,
 };
+use astroport::asset::{native_asset, PairInfo};
+use astroport::pair::{
+    Cw20HookMsg as PairCw20HookMsg, ExecuteMsg as PairExecuteMsg, QueryMsg as PairQueryMsg,
+};
+use cw20::{Cw20ExecuteMsg, Cw20QueryMsg};
+
+/// A `reply` call code ID used for withdraw NTRN/ATOM liquidity sub-messages during migration.
+const WITHDRAW_NTRN_ATOM_LIQUIDITY_REPLY_ID: u64 = 1;
+/// A `reply` call code ID used for withdraw NTRN/USDC liquidity sub-messages during migration.
+const WITHDRAW_NTRN_USDC_LIQUIDITY_REPLY_ID: u64 = 2;
+/// A `reply` call code ID used for balance check after providing liquidity to a CL pool.
+const POST_PROVIDE_LIQUIDITY_BALANCE_CHECK_REPLY_ID: u64 = 3;
 
 //--------------------------------------------------------------------------------------------------
 // Instantiation
@@ -357,5 +371,235 @@ pub fn create_distribution_response(
         resp = resp.add_message(msg);
     }
 
+    Ok(resp)
+}
+
+/// Withdraws liquidity from Astroport xyk pools and provides it to the concentrated liquidity ones.
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(deps: DepsMut, env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+    let mut resp: Response = Response::default();
+
+    NTRN_ATOM_CL_PAIR_ADDRESS.save(deps.storage, &msg.ntrn_atom_cl_pair_address)?;
+    NTRN_USDC_CL_PAIR_ADDRESS.save(deps.storage, &msg.ntrn_usdc_cl_pair_address)?;
+    ATOM_DENOM.save(deps.storage, &msg.atom_denom.clone())?;
+    USDC_DENOM.save(deps.storage, &msg.usdc_denom.clone())?;
+
+    NTRN_BALANCE_BEFORE_WITHDRAWAL.save(
+        deps.storage,
+        &deps
+            .querier
+            .query_balance(env.contract.address.to_string(), "untrn")?
+            .amount,
+    )?;
+    ATOM_BALANCE_BEFORE_WITHDRAWAL.save(
+        deps.storage,
+        &deps
+            .querier
+            .query_balance(env.contract.address.to_string(), msg.atom_denom)?
+            .amount,
+    )?;
+    USDC_BALANCE_BEFORE_WITHDRAWAL.save(
+        deps.storage,
+        &deps
+            .querier
+            .query_balance(env.contract.address.to_string(), msg.usdc_denom)?
+            .amount,
+    )?;
+
+    // get the NTRN/ATOM pair LP token address and contract's balance
+    let ntrn_atom_xyk_pair_info: PairInfo = deps.querier.query_wasm_smart(
+        msg.ntrn_atom_xyk_pair_address.clone(),
+        &to_binary(&PairQueryMsg::Pair {})?,
+    )?;
+    let ntrn_atom_xyk_pair_lp_token_share: Uint128 = deps.querier.query_wasm_smart(
+        ntrn_atom_xyk_pair_info.liquidity_token.clone(),
+        &Cw20QueryMsg::Balance {
+            address: env.contract.address.to_string(),
+        },
+    )?;
+
+    // get the NTRN/USDC pair LP token address and contract's balance
+    let ntrn_usdc_xyk_pair_info: PairInfo = deps.querier.query_wasm_smart(
+        msg.ntrn_usdc_xyk_pair_address.clone(),
+        &to_binary(&PairQueryMsg::Pair {})?,
+    )?;
+    let ntrn_usdc_xyk_pair_lp_token_share: Uint128 = deps.querier.query_wasm_smart(
+        ntrn_usdc_xyk_pair_info.liquidity_token.clone(),
+        &Cw20QueryMsg::Balance {
+            address: env.contract.address.to_string(),
+        },
+    )?;
+
+    // register submessages for liquidity withdrawal from both pools
+    resp = resp.add_submessages(vec![
+        SubMsg {
+            id: WITHDRAW_NTRN_ATOM_LIQUIDITY_REPLY_ID,
+            msg: CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: ntrn_atom_xyk_pair_info.liquidity_token.to_string(),
+                msg: to_binary(&Cw20ExecuteMsg::Send {
+                    contract: msg.ntrn_atom_xyk_pair_address,
+                    amount: ntrn_atom_xyk_pair_lp_token_share,
+                    msg: to_binary(&PairCw20HookMsg::WithdrawLiquidity { assets: vec![] })?,
+                })?,
+                funds: vec![],
+            }),
+            gas_limit: None,
+            reply_on: cosmwasm_std::ReplyOn::Success,
+        },
+        SubMsg {
+            id: WITHDRAW_NTRN_USDC_LIQUIDITY_REPLY_ID,
+            msg: CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: ntrn_usdc_xyk_pair_info.liquidity_token.to_string(),
+                msg: to_binary(&Cw20ExecuteMsg::Send {
+                    contract: msg.ntrn_usdc_xyk_pair_address,
+                    amount: ntrn_usdc_xyk_pair_lp_token_share,
+                    msg: to_binary(&PairCw20HookMsg::WithdrawLiquidity { assets: vec![] })?,
+                })?,
+                funds: vec![],
+            }),
+            gas_limit: None,
+            reply_on: cosmwasm_std::ReplyOn::Success,
+        },
+    ]);
+
+    Ok(resp)
+}
+
+/// The entry point to the contract for processing replies from submessages.
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractError> {
+    let mut resp = Response::default();
+    match msg.id {
+        WITHDRAW_NTRN_ATOM_LIQUIDITY_REPLY_ID => {
+            let atom_denom = ATOM_DENOM.load(deps.storage)?;
+            let ntrn_balance_after_withdrawal = deps
+                .querier
+                .query_balance(env.contract.address.to_string(), "untrn")?
+                .amount;
+            let atom_balance_after_withdrawal = deps
+                .querier
+                .query_balance(env.contract.address.to_string(), atom_denom.clone())?
+                .amount;
+
+            // calc amount of assets that's been withdrawn
+            let withdrawn_ntrn_amount = NTRN_BALANCE_BEFORE_WITHDRAWAL
+                .load(deps.storage)?
+                .checked_sub(ntrn_balance_after_withdrawal)?;
+            let withdrawn_atom_amount = ATOM_BALANCE_BEFORE_WITHDRAWAL
+                .load(deps.storage)?
+                .checked_sub(atom_balance_after_withdrawal)?;
+
+            // provide the withdrawn assets to the CL pair
+            resp = resp.add_submessage(SubMsg {
+                id: POST_PROVIDE_LIQUIDITY_BALANCE_CHECK_REPLY_ID,
+                msg: CosmosMsg::Wasm(WasmMsg::Execute {
+                    contract_addr: NTRN_ATOM_CL_PAIR_ADDRESS.load(deps.storage)?,
+                    msg: to_binary(&PairExecuteMsg::ProvideLiquidity {
+                        assets: vec![
+                            native_asset(String::from("untrn"), withdrawn_ntrn_amount),
+                            native_asset(atom_denom.clone(), withdrawn_atom_amount),
+                        ],
+                        slippage_tolerance: None,
+                        auto_stake: None,
+                        receiver: None,
+                    })?,
+                    funds: vec![
+                        Coin::new(withdrawn_ntrn_amount.into(), String::from("untrn")),
+                        Coin::new(withdrawn_atom_amount.into(), atom_denom),
+                    ],
+                }),
+                gas_limit: None,
+                reply_on: cosmwasm_std::ReplyOn::Never,
+            });
+        }
+
+        WITHDRAW_NTRN_USDC_LIQUIDITY_REPLY_ID => {
+            let usdc_denom = USDC_DENOM.load(deps.storage)?;
+            let ntrn_balance_after_withdrawal = deps
+                .querier
+                .query_balance(env.contract.address.to_string(), "untrn")?
+                .amount;
+            let usdc_balance_after_withdrawal = deps
+                .querier
+                .query_balance(env.contract.address.to_string(), usdc_denom.clone())?
+                .amount;
+
+            // calc amount of assets that's been withdrawn
+            let withdrawn_ntrn_amount = NTRN_BALANCE_BEFORE_WITHDRAWAL
+                .load(deps.storage)?
+                .checked_sub(ntrn_balance_after_withdrawal)?;
+            let withdrawn_usdc_amount = USDC_BALANCE_BEFORE_WITHDRAWAL
+                .load(deps.storage)?
+                .checked_sub(usdc_balance_after_withdrawal)?;
+
+            // provide the withdrawn assets to the CL pair
+            resp = resp.add_submessage(SubMsg {
+                id: POST_PROVIDE_LIQUIDITY_BALANCE_CHECK_REPLY_ID,
+                msg: CosmosMsg::Wasm(WasmMsg::Execute {
+                    contract_addr: NTRN_USDC_CL_PAIR_ADDRESS.load(deps.storage)?,
+                    msg: to_binary(&PairExecuteMsg::ProvideLiquidity {
+                        assets: vec![
+                            native_asset(String::from("untrn"), withdrawn_ntrn_amount),
+                            native_asset(usdc_denom.clone(), withdrawn_usdc_amount),
+                        ],
+                        slippage_tolerance: None,
+                        auto_stake: None,
+                        receiver: None,
+                    })?,
+                    funds: vec![
+                        Coin::new(withdrawn_ntrn_amount.into(), String::from("untrn")),
+                        Coin::new(withdrawn_usdc_amount.into(), usdc_denom),
+                    ],
+                }),
+                gas_limit: None,
+                reply_on: cosmwasm_std::ReplyOn::Never,
+            });
+        }
+
+        POST_PROVIDE_LIQUIDITY_BALANCE_CHECK_REPLY_ID => {
+            let atom_denom = ATOM_DENOM.load(deps.storage)?;
+            let usdc_denom = USDC_DENOM.load(deps.storage)?;
+
+            let ntrn_balance = deps
+                .querier
+                .query_balance(env.contract.address.to_string(), "untrn")?
+                .amount;
+            let atom_balance = deps
+                .querier
+                .query_balance(env.contract.address.to_string(), atom_denom.clone())?
+                .amount;
+            let usdc_balance = deps
+                .querier
+                .query_balance(env.contract.address.to_string(), usdc_denom.clone())?
+                .amount;
+
+            let initial_ntrn_amount = NTRN_BALANCE_BEFORE_WITHDRAWAL.load(deps.storage)?;
+            let initial_atom_amount = ATOM_BALANCE_BEFORE_WITHDRAWAL.load(deps.storage)?;
+            let initial_usdc_amount = USDC_BALANCE_BEFORE_WITHDRAWAL.load(deps.storage)?;
+
+            if !ntrn_balance.eq(&initial_ntrn_amount) {
+                return Err(ContractError::MigrationBalancesMismtach {
+                    denom: String::from("untrn"),
+                    initial_balance: initial_ntrn_amount,
+                    intermediate_balance: ntrn_balance,
+                });
+            }
+            if !atom_balance.eq(&initial_atom_amount) {
+                return Err(ContractError::MigrationBalancesMismtach {
+                    denom: atom_denom,
+                    initial_balance: initial_atom_amount,
+                    intermediate_balance: atom_balance,
+                });
+            }
+            if !usdc_balance.eq(&initial_usdc_amount) {
+                return Err(ContractError::MigrationBalancesMismtach {
+                    denom: usdc_denom,
+                    initial_balance: initial_usdc_amount,
+                    intermediate_balance: usdc_balance,
+                });
+            }
+        }
+        _ => return Err(ContractError::UnkownReplyID { reply_id: msg.id }),
+    }
     Ok(resp)
 }

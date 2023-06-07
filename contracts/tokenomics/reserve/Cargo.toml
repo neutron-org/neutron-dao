@@ -21,6 +21,8 @@ exec-control = { path = "../../../packages/exec-control" }
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0" }
 cwd-macros = { path = "../../../packages/cwd-macros" }
+astroport = { git = "https://github.com/astroport-fi/astroport-core.git", tag = "v2.8.0" }
+cw20 = "0.13"
 
 [dev-dependencies]
 cosmwasm-schema = { version = "1.0.0", default-features = false }
