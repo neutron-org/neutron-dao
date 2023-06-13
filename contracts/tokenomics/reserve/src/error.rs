@@ -34,11 +34,11 @@ pub enum ContractError {
     #[error("Unknown reply ID {reply_id}")]
     UnkownReplyID { reply_id: u64 },
 
-    #[error("{denom} balance {intermediate_balance} after liquidity withdrawal and providing doesn't match the initial one {initial_balance}")]
+    #[error("{denom} balance {final_balance} after liquidity withdrawal and providing doesn't match the initial one {initial_balance}")]
     MigrationBalancesMismtach {
         denom: String,
         initial_balance: Uint128,
-        intermediate_balance: Uint128,
+        final_balance: Uint128,
     },
 
     #[error("Overflow")]

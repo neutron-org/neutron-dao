@@ -1,4 +1,4 @@
-use cosmwasm_std::{Decimal, Uint128};
+use cosmwasm_std::{to_binary, CosmosMsg, Decimal, Env, StdResult, Uint128, WasmMsg};
 use cwd_macros::{pausable, pausable_query};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -31,7 +31,7 @@ pub enum ExecuteMsg {
     /// Distribute pending funds between Bank and Distribution accounts
     Distribute {},
 
-    // //Update config
+    /// Update config
     UpdateConfig {
         distribution_rate: Option<Decimal>,
         min_period: Option<u64>,
@@ -40,6 +40,45 @@ pub enum ExecuteMsg {
         security_dao_address: Option<String>,
         vesting_denominator: Option<u128>,
     },
+
+    /// Callbacks; only callable by the contract itself.
+    Callback(CallbackMsg),
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum CallbackMsg {
+    MigrateLiquidityToClPair {
+        xyk_pair_address: String,
+        cl_pair_address: String,
+        ntrn_denom: String,
+        paired_asset_denom: String,
+    },
+    ProvideLiquidityToClPairAfterWithdrawal {
+        ntrn_denom: String,
+        ntrn_init_balance: Uint128,
+        paired_asset_denom: String,
+        paired_asset_init_balance: Uint128,
+        cl_pair_address: String,
+    },
+    PostMigrationBalancesCheck {
+        ntrn_denom: String,
+        ntrn_init_balance: Uint128,
+        paired_asset_denom: String,
+        paired_asset_init_balance: Uint128,
+    },
+}
+
+// Modified from
+// https://github.com/CosmWasm/cosmwasm-plus/blob/v0.2.3/packages/cw20/src/receiver.rs#L15
+impl CallbackMsg {
+    pub fn to_cosmos_msg(self, env: &Env) -> StdResult<CosmosMsg> {
+        Ok(CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr: env.contract.address.to_string(),
+            msg: to_binary(&ExecuteMsg::Callback(self))?,
+            funds: vec![],
+        }))
+    }
 }
 
 #[pausable_query]
@@ -68,6 +107,7 @@ pub enum DistributeMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct MigrateMsg {
+    pub ntrn_denom: String,
     pub atom_denom: String,
     pub ntrn_atom_xyk_pair_address: String,
     pub ntrn_atom_cl_pair_address: String,

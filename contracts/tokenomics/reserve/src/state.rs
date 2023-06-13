@@ -55,29 +55,6 @@ pub const CONFIG: Item<Config> = Item::new("config");
 /// The height the contract is paused until. If it's None, the contract is not paused.
 pub const PAUSED_UNTIL: Item<Option<u64>> = Item::new("paused_until");
 
-/// Denom of the IBC transferred ATOM. Used in migrate from xyk to concentrated liquidity pool.
-pub const ATOM_DENOM: Item<String> = Item::new("atom_denom");
-/// Denom of the IBC transferred USDC. Used in migrate from xyk to concentrated liquidity pool.
-pub const USDC_DENOM: Item<String> = Item::new("usdc_denom");
-
-/// Contract's ntrn balance before withdraw liquidity call. Used in migrate from xyk to concentrated
-/// liquidity pool.
-pub const NTRN_BALANCE_BEFORE_WITHDRAWAL: Item<Uint128> =
-    Item::new("ntrn_balance_before_withdrawal");
-/// Contract's atom balance before withdraw liquidity call. Used in migrate from xyk to concentrated
-/// liquidity pool.
-pub const ATOM_BALANCE_BEFORE_WITHDRAWAL: Item<Uint128> =
-    Item::new("atom_balance_before_withdrawal");
-/// Contract's usdc balance before withdraw liquidity call. Used in migrate from xyk to concentrated
-/// liquidity pool.
-pub const USDC_BALANCE_BEFORE_WITHDRAWAL: Item<Uint128> =
-    Item::new("usdc_balance_before_withdrawal");
-
-/// Address of the NTRN/ATOM pair of CL type. Used in migrate from xyk to concentrated liquidity pool.
-pub const NTRN_ATOM_CL_PAIR_ADDRESS: Item<String> = Item::new("ntrn_atom_cl_pair_address");
-/// Address of the NTRN/USDC pair of CL type. Used in migrate from xyk to concentrated liquidity pool.
-pub const NTRN_USDC_CL_PAIR_ADDRESS: Item<String> = Item::new("ntrn_usdc_cl_pair_address");
-
 #[cfg(test)]
 mod tests {
     use super::Config;
