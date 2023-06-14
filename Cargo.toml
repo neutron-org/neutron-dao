@@ -1,16 +1,16 @@
 [workspace]
 members = [
-    # "contracts/dao/cwd-core",
-    # "contracts/dao/proposal/*",
-    # "contracts/dao/pre-propose/*",
-    # "contracts/dao/voting/*",
-    # "contracts/subdaos/cwd-subdao-core",
-    # "contracts/subdaos/proposal/*",
-    # "contracts/subdaos/pre-propose/*",
-    # "contracts/subdaos/cwd-subdao-timelock-single",
+    "contracts/dao/cwd-core",
+    "contracts/dao/proposal/*",
+    "contracts/dao/pre-propose/*",
+    "contracts/dao/voting/*",
+    "contracts/subdaos/cwd-subdao-core",
+    "contracts/subdaos/proposal/*",
+    "contracts/subdaos/pre-propose/*",
+    "contracts/subdaos/cwd-subdao-timelock-single",
     "contracts/tokenomics/reserve",
-    # "contracts/tokenomics/distribution",
-    # "contracts/misc/rescueeer",
+    "contracts/tokenomics/distribution",
+    "contracts/misc/rescueeer",
 
     "packages/*",
 ]
