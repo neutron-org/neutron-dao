@@ -35,7 +35,7 @@ pub enum ContractError {
     UnkownReplyID { reply_id: u64 },
 
     #[error("{denom} balance {final_balance} after liquidity withdrawal and providing doesn't match the initial one {initial_balance}")]
-    MigrationBalancesMismtach {
+    MigrationBalancesMismatch {
         denom: String,
         initial_balance: Uint128,
         final_balance: Uint128,

@@ -577,14 +577,14 @@ fn post_migration_balances_check_callback(
         .amount;
 
     if !ntrn_balance.eq(&ntrn_init_balance) {
-        return Err(ContractError::MigrationBalancesMismtach {
+        return Err(ContractError::MigrationBalancesMismatch {
             denom: ntrn_denom,
             initial_balance: ntrn_init_balance,
             final_balance: ntrn_balance,
         });
     }
     if !paired_asset_balance.eq(&paired_asset_init_balance) {
-        return Err(ContractError::MigrationBalancesMismtach {
+        return Err(ContractError::MigrationBalancesMismatch {
             denom: paired_asset_denom,
             initial_balance: paired_asset_init_balance,
             final_balance: paired_asset_balance,
