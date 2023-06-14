@@ -1,16 +1,5 @@
 use crate::distribution_params::DistributionParams;
 use crate::error::ContractError;
-#[cfg(not(feature = "library"))]
-use cosmwasm_std::entry_point;
-use cosmwasm_std::{
-    coins, to_binary, Addr, BankMsg, Binary, Coin, CosmosMsg, Decimal, Deps, DepsMut, Env,
-    MessageInfo, Response, StdResult, Uint128, WasmMsg,
-};
-use exec_control::pause::{
-    can_pause, can_unpause, validate_duration, PauseError, PauseInfoResponse,
-};
-use neutron_sdk::bindings::query::NeutronQuery;
-
 use crate::msg::{
     CallbackMsg, DistributeMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, StatsResponse,
 };
@@ -25,7 +14,17 @@ use astroport::asset::{native_asset, PairInfo};
 use astroport::pair::{
     Cw20HookMsg as PairCw20HookMsg, ExecuteMsg as PairExecuteMsg, QueryMsg as PairQueryMsg,
 };
-use cw20::{Cw20ExecuteMsg, Cw20QueryMsg};
+#[cfg(not(feature = "library"))]
+use cosmwasm_std::entry_point;
+use cosmwasm_std::{
+    coins, to_binary, Addr, BankMsg, Binary, Coin, CosmosMsg, Decimal, Deps, DepsMut, Env,
+    MessageInfo, Response, StdResult, Uint128, WasmMsg,
+};
+use cw20::{BalanceResponse, Cw20ExecuteMsg, Cw20QueryMsg};
+use exec_control::pause::{
+    can_pause, can_unpause, validate_duration, PauseError, PauseInfoResponse,
+};
+use neutron_sdk::bindings::query::NeutronQuery;
 
 //--------------------------------------------------------------------------------------------------
 // Instantiation
@@ -466,11 +465,10 @@ fn migrate_liquidity_to_cl_pair_callback(
         .amount;
 
     // get the pair LP token address and contract's balance
-    let pair_info: PairInfo = deps.querier.query_wasm_smart(
-        xyk_pair_address.clone(),
-        &to_binary(&PairQueryMsg::Pair {})?,
-    )?;
-    let pair_lp_token_share: Uint128 = deps.querier.query_wasm_smart(
+    let pair_info: PairInfo = deps
+        .querier
+        .query_wasm_smart(xyk_pair_address.clone(), &PairQueryMsg::Pair {})?;
+    let pair_lp_token_balance: BalanceResponse = deps.querier.query_wasm_smart(
         pair_info.liquidity_token.clone(),
         &Cw20QueryMsg::Balance {
             address: env.contract.address.to_string(),
@@ -483,7 +481,7 @@ fn migrate_liquidity_to_cl_pair_callback(
             contract_addr: pair_info.liquidity_token.to_string(),
             msg: to_binary(&Cw20ExecuteMsg::Send {
                 contract: xyk_pair_address,
-                amount: pair_lp_token_share,
+                amount: pair_lp_token_balance.balance,
                 msg: to_binary(&PairCw20HookMsg::WithdrawLiquidity { assets: vec![] })?,
             })?,
             funds: vec![],
