@@ -56,10 +56,11 @@ pub enum ExecuteMsg {
 #[serde(rename_all = "snake_case")]
 pub enum CallbackMsg {
     MigrateLiquidityToClPair {
-        xyk_pair_address: Addr,
+        xyk_pair: Addr,
+        xyk_lp_token: Addr,
         amount: Uint128,
         slippage_tolerance: Decimal,
-        cl_pair_address: Addr,
+        cl_pair: Addr,
         ntrn_denom: String,
         paired_asset_denom: String,
     },
@@ -68,7 +69,7 @@ pub enum CallbackMsg {
         ntrn_init_balance: Uint128,
         paired_asset_denom: String,
         paired_asset_init_balance: Uint128,
-        cl_pair_address: Addr,
+        cl_pair: Addr,
         slippage_tolerance: Decimal,
     },
     PostMigrationBalancesCheck {
@@ -120,9 +121,9 @@ pub struct MigrateMsg {
     pub max_slippage: Decimal,
     pub ntrn_denom: String,
     pub atom_denom: String,
-    pub ntrn_atom_xyk_pair_address: String,
-    pub ntrn_atom_cl_pair_address: String,
+    pub ntrn_atom_xyk_pair: String,
+    pub ntrn_atom_cl_pair: String,
     pub usdc_denom: String,
-    pub ntrn_usdc_xyk_pair_address: String,
-    pub ntrn_usdc_cl_pair_address: String,
+    pub ntrn_usdc_xyk_pair: String,
+    pub ntrn_usdc_cl_pair: String,
 }
