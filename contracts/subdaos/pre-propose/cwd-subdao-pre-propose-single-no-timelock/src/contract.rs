@@ -15,9 +15,9 @@ use cwd_pre_propose_base::{
     state::PreProposeContract,
 };
 use neutron_subdao_pre_propose_single_no_timelock::{
-    msg::ExecuteMsgPauseTypedDuration, msg::ExecuteMsgPauseUntypedDuration, types::ProposeMessage,
+    msg::ExecuteMsgPauseTypedDuration, msg::ExecuteMsgPauseUntypedDuration, msg::RemoveScheduleMsg,
+    types::ProposeMessage,
 };
-
 pub type InstantiateMsg = InstantiateBase;
 pub type ExecuteMsg = ExecuteBase<ProposeMessage>;
 pub type QueryMsg = QueryBase<Empty>;
@@ -83,11 +83,12 @@ pub fn execute(
                     }) => {
                         if from_binary::<ExecuteMsgPauseTypedDuration>(msg).is_err()
                             && from_binary::<ExecuteMsgPauseUntypedDuration>(msg).is_err()
+                            && from_binary::<RemoveScheduleMsg>(msg).is_err()
                         {
-                            return Err(PreProposeError::NotAPauseMsg {});
+                            return Err(PreProposeError::NotAPauseOrRemoveScheduleMsg {});
                         }
                     }
-                    _ => return Err(PreProposeError::NotAPauseMsg {}),
+                    _ => return Err(PreProposeError::NotAPauseOrRemoveScheduleMsg {}),
                 }
             }
 
