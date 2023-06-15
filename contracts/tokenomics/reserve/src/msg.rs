@@ -1,4 +1,4 @@
-use cosmwasm_std::{to_binary, CosmosMsg, Decimal, Env, StdResult, Uint128, WasmMsg};
+use cosmwasm_std::{to_binary, Addr, CosmosMsg, Decimal, Env, StdResult, Uint128, WasmMsg};
 use cwd_macros::{pausable, pausable_query};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -41,6 +41,13 @@ pub enum ExecuteMsg {
         vesting_denominator: Option<u128>,
     },
 
+    /// Processes either partial or full xyk->CL migration of contract's liquidity.
+    MigrateFromXykToCl {
+        slippage_tolerance: Option<Decimal>,
+        ntrn_atom_amount: Option<Uint128>,
+        ntrn_usdc_amount: Option<Uint128>,
+    },
+
     /// Callbacks; only callable by the contract itself.
     Callback(CallbackMsg),
 }
@@ -49,8 +56,10 @@ pub enum ExecuteMsg {
 #[serde(rename_all = "snake_case")]
 pub enum CallbackMsg {
     MigrateLiquidityToClPair {
-        xyk_pair_address: String,
-        cl_pair_address: String,
+        xyk_pair_address: Addr,
+        amount: Uint128,
+        slippage_tolerance: Decimal,
+        cl_pair_address: Addr,
         ntrn_denom: String,
         paired_asset_denom: String,
     },
@@ -59,7 +68,8 @@ pub enum CallbackMsg {
         ntrn_init_balance: Uint128,
         paired_asset_denom: String,
         paired_asset_init_balance: Uint128,
-        cl_pair_address: String,
+        cl_pair_address: Addr,
+        slippage_tolerance: Decimal,
     },
     PostMigrationBalancesCheck {
         ntrn_denom: String,
@@ -107,6 +117,7 @@ pub enum DistributeMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct MigrateMsg {
+    pub max_slippage: Decimal,
     pub ntrn_denom: String,
     pub atom_denom: String,
     pub ntrn_atom_xyk_pair_address: String,

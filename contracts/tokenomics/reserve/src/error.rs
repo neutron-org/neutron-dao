@@ -1,4 +1,4 @@
-use cosmwasm_std::{OverflowError, StdError, Uint128};
+use cosmwasm_std::{Decimal, OverflowError, StdError, Uint128};
 use exec_control::pause::PauseError;
 use thiserror::Error;
 
@@ -40,6 +40,25 @@ pub enum ContractError {
         initial_balance: Uint128,
         final_balance: Uint128,
     },
+
+    #[error(
+        "Amount {amount} to be withdrawn is greater that the max available amount {max_amount}"
+    )]
+    MigrationAmountUnavailable {
+        amount: Uint128,
+        max_amount: Uint128,
+    },
+
+    #[error(
+        "Provided slippage tolerance {slippage_tolerance} is more than the max allowed {max_slippage_tolerance}"
+    )]
+    MigrationSlippageToBig {
+        slippage_tolerance: Decimal,
+        max_slippage_tolerance: Decimal,
+    },
+
+    #[error("Migration from xyk pairs to CL ones is complete: nothing to migrate")]
+    MigrationComplete {},
 
     #[error("Overflow")]
     OverflowError(#[from] OverflowError),

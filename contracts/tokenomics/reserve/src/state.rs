@@ -55,6 +55,24 @@ pub const CONFIG: Item<Config> = Item::new("config");
 /// The height the contract is paused until. If it's None, the contract is not paused.
 pub const PAUSED_UNTIL: Item<Option<u64>> = Item::new("paused_until");
 
+/// The maximum allowed slippage tolerance for xyk to CL liquidity migration calls.
+pub const XYK_TO_CL_MIGRATION_MAX_SLIPPAGE: Item<Decimal> =
+    Item::new("xyk_to_cl_migration_max_slippage");
+pub const XYK_TO_CL_MIGRATION_NTRN_DENOM: Item<String> =
+    Item::new("xyk_to_cl_migration_ntrn_denom");
+pub const XYK_TO_CL_MIGRATION_ATOM_DENOM: Item<String> =
+    Item::new("xyk_to_cl_migration_atom_denom");
+pub const XYK_TO_CL_MIGRATION_NTRN_ATOM_XYK_PAIR: Item<Addr> =
+    Item::new("xyk_to_cl_migration_ntrn_atom_xyk_pair");
+pub const XYK_TO_CL_MIGRATION_NTRN_ATOM_CL_PAIR: Item<Addr> =
+    Item::new("xyk_to_cl_migration_ntrn_atom_cl_pair");
+pub const XYK_TO_CL_MIGRATION_USDC_DENOM: Item<String> =
+    Item::new("xyk_to_cl_migration_usdc_denom");
+pub const XYK_TO_CL_MIGRATION_NTRN_USDC_XYK_PAIR: Item<Addr> =
+    Item::new("xyk_to_cl_migration_ntrn_usdc_xyk_pair");
+pub const XYK_TO_CL_MIGRATION_NTRN_USDC_CL_PAIR: Item<Addr> =
+    Item::new("xyk_to_cl_migration_ntrn_usdc_cl_pair");
+
 #[cfg(test)]
 mod tests {
     use super::Config;
