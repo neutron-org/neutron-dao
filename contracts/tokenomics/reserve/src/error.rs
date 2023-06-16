@@ -42,7 +42,7 @@ pub enum ContractError {
     },
 
     #[error(
-        "Amount {amount} to be withdrawn is greater that the max available amount {max_amount}"
+        "Amount to be migrated is greater that the max available amount: {amount} > {max_amount}"
     )]
     MigrationAmountUnavailable {
         amount: Uint128,
