@@ -1,4 +1,5 @@
 use crate::contract::{migrate, CONTRACT_NAME, CONTRACT_VERSION};
+use crate::state::{CONFIG, OLD_CONFIG};
 use astroport::asset::AssetInfo;
 use astroport::oracle::QueryMsg as OracleQueryMsg;
 use astroport_periphery::lockdrop::{PoolType, QueryMsg as LockdropQueryMsg};
@@ -13,7 +14,7 @@ use cwd_interface::voting::{
 };
 use neutron_lockdrop_vault::error::ContractError;
 use neutron_lockdrop_vault::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
-use neutron_lockdrop_vault::types::Config;
+use neutron_lockdrop_vault::types::{Config, OldConfig};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -28,6 +29,8 @@ const ORACLE_ATOM_ADDR: &str = "oracle_atom";
 const NEW_LOCKDROP_ADDR: &str = "new_lockdrop";
 const NEW_ORACLE_USDC_ADDR: &str = "new_oracle_usdc";
 const NEW_ORACLE_ATOM_ADDR: &str = "new_oracle_atom";
+const ATOM_CL_POOL_ADDR: &str = "atom_cl_pool";
+const USDC_CL_POOL_ADDR: &str = "usdc_cl_pool";
 const ADDR1: &str = "addr1";
 const ADDR2: &str = "addr2";
 const DENOM: &str = "ujuno";
@@ -425,8 +428,8 @@ fn test_update_config_as_owner() {
             description: NEW_DESCRIPTION.to_string(),
             owner: Addr::unchecked(ADDR1),
             lockdrop_contract: Addr::unchecked(NEW_LOCKDROP_ADDR),
-            oracle_usdc_contract: Addr::unchecked(NEW_ORACLE_USDC_ADDR),
-            oracle_atom_contract: Addr::unchecked(NEW_ORACLE_ATOM_ADDR),
+            usdc_cl_pool_contract: Addr::unchecked(NEW_ORACLE_USDC_ADDR),
+            atom_cl_pool_contract: Addr::unchecked(NEW_ORACLE_ATOM_ADDR),
         },
         config
     );
@@ -567,8 +570,8 @@ fn test_query_get_config() {
             description: DESCRIPTION.to_string(),
             owner: Addr::unchecked(DAO_ADDR),
             lockdrop_contract: Addr::unchecked(LOCKDROP_ADDR),
-            oracle_usdc_contract: Addr::unchecked(ORACLE_USDC_ADDR),
-            oracle_atom_contract: Addr::unchecked(ORACLE_ATOM_ADDR),
+            usdc_cl_pool_contract: Addr::unchecked(ORACLE_USDC_ADDR),
+            atom_cl_pool_contract: Addr::unchecked(ORACLE_ATOM_ADDR),
         }
     )
 }
@@ -631,8 +634,39 @@ fn test_total_power_at_height() {
 pub fn test_migrate_update_version() {
     let mut deps = mock_dependencies();
     cw2::set_contract_version(&mut deps.storage, "my-contract", "old-version").unwrap();
-    migrate(deps.as_mut(), mock_env(), MigrateMsg {}).unwrap();
+
+    let old_config = OldConfig {
+        name: NAME.to_string(),
+        description: DESCRIPTION.to_string(),
+        lockdrop_contract: Addr::unchecked(LOCKDROP_ADDR),
+        oracle_usdc_contract: Addr::unchecked(NEW_ORACLE_USDC_ADDR),
+        oracle_atom_contract: Addr::unchecked(NEW_ORACLE_ATOM_ADDR),
+        owner: Addr::unchecked(DAO_ADDR.to_string()),
+    };
+    OLD_CONFIG.save(&mut deps.storage, &old_config).unwrap();
+
+    let new_config = Config {
+        name: NAME.to_string(),
+        description: DESCRIPTION.to_string(),
+        owner: Addr::unchecked(DAO_ADDR.to_string()),
+        atom_cl_pool_contract: Addr::unchecked(ATOM_CL_POOL_ADDR.to_string()),
+        usdc_cl_pool_contract: Addr::unchecked(USDC_CL_POOL_ADDR.to_string()),
+        lockdrop_contract: Addr::unchecked(LOCKDROP_ADDR),
+    };
+
+    migrate(
+        deps.as_mut(),
+        mock_env(),
+        MigrateMsg {
+            atom_cl_pool_contract: ATOM_CL_POOL_ADDR.to_string(),
+            usdc_cl_pool_contract: USDC_CL_POOL_ADDR.to_string(),
+        },
+    )
+    .unwrap();
     let version = cw2::get_contract_version(&deps.storage).unwrap();
+    let config = CONFIG.load(&deps.storage).unwrap();
+
+    assert_eq!(new_config, config);
     assert_eq!(version.version, CONTRACT_VERSION);
     assert_eq!(version.contract, CONTRACT_NAME);
 }

@@ -1,32 +1,37 @@
-use astroport::{asset::AssetInfo, oracle::QueryMsg as OracleQueryMsg};
-use cosmwasm_std::{Decimal256, Deps, StdError, StdResult, Uint128, Uint256, Uint64};
+use astroport::asset::Decimal256Ext;
+use cosmwasm_std::{Decimal256, Deps, StdResult, Uint128, Uint64};
+use std::ops::Div;
 
 pub fn voting_power_from_lp_tokens(
     deps: Deps,
     lp_tokens: Uint128,
-    oracle_contract: impl Into<String>,
+    total_lp_tokens: Uint128,
+    cl_pool: impl Into<String>,
     height: u64,
 ) -> StdResult<Decimal256> {
-    Ok(if lp_tokens.is_zero() {
-        Decimal256::zero()
+    if lp_tokens.is_zero() {
+        Ok(Decimal256::zero())
     } else {
-        let twap: Decimal256 = deps
-            .querier
-            .query_wasm_smart::<Vec<(AssetInfo, Decimal256)>>(
-                oracle_contract,
-                &OracleQueryMsg::TWAPAtHeight {
-                    token: AssetInfo::NativeToken {
-                        denom: "untrn".to_string(),
-                    },
-                    height: Uint64::new(height),
+        let balance_resp: Option<Uint128> = deps.querier.query_wasm_smart(
+            cl_pool,
+            &astroport::pair_concentrated::QueryMsg::AssetBalanceAt {
+                asset_info: astroport::asset::AssetInfo::NativeToken {
+                    denom: "untrn".to_string(),
                 },
-            )?
-            .into_iter()
-            .map(|x| x.1)
-            .sum::<Decimal256>();
+                block_height: Uint64::from(height),
+            },
+        )?;
+        let ntrn_balance_in_pool = if balance_resp.is_some() {
+            balance_resp.unwrap()
+        } else {
+            return Ok(Decimal256::zero());
+        };
 
-        Decimal256::new(Uint256::from(lp_tokens))
-            .checked_div(twap.sqrt())
-            .map_err(|err| StdError::generic_err(format!("{}", err)))?
-    })
+        if ntrn_balance_in_pool.is_zero() {
+            return Ok(Decimal256::zero());
+        }
+
+        Ok(Decimal256::from_ratio(lp_tokens, total_lp_tokens)
+            .div(Decimal256::from_integer(ntrn_balance_in_pool)))
+    }
 }

@@ -14,3 +14,4 @@ serde = { version = "1.0.147", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0" }
 astroport-periphery = { package="astroport-periphery", git = "https://github.com/neutron-org/neutron-tge-contracts.git", branch = "main" }
 neutron-oracle = { path = "../neutron-oracle" }
+astroport = { package="astroport", git = "https://github.com/neutron-org/neutron-tge-contracts.git", branch = "main" }

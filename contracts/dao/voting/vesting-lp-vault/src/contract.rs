@@ -1,3 +1,4 @@
+use astroport::asset::AssetInfo;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -10,7 +11,7 @@ use cwd_interface::voting::{
 };
 use serde::Serialize;
 
-use crate::state::{CONFIG, DAO};
+use crate::state::{CONFIG, DAO, OLD_CONFIG};
 use neutron_oracle::voting_power::voting_power_from_lp_tokens;
 use neutron_vesting_lp_vault::{
     error::{ContractError, ContractResult},
@@ -18,6 +19,7 @@ use neutron_vesting_lp_vault::{
     types::Config,
 };
 use vesting_base::msg::{QueryMsg as VestingLpQueryMsg, QueryMsgHistorical};
+use vesting_base::types::Config as VestingBaseConfig;
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-vesting-lp-vault";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -37,9 +39,9 @@ pub fn instantiate(
         name: msg.name,
         description: msg.description,
         atom_vesting_lp_contract: deps.api.addr_validate(&msg.atom_vesting_lp_contract)?,
-        atom_oracle_contract: deps.api.addr_validate(&msg.atom_oracle_contract)?,
+        atom_cl_pool_contract: deps.api.addr_validate(&msg.atom_cl_pool_contract)?,
         usdc_vesting_lp_contract: deps.api.addr_validate(&msg.usdc_vesting_lp_contract)?,
-        usdc_oracle_contract: deps.api.addr_validate(&msg.usdc_oracle_contract)?,
+        usdc_cl_pool_contract: deps.api.addr_validate(&msg.usdc_cl_pool_contract)?,
         owner,
     };
     config.validate()?;
@@ -52,9 +54,9 @@ pub fn instantiate(
         .add_attribute("description", config.description)
         .add_attribute("owner", config.owner)
         .add_attribute("atom_vesting_lp_contract", config.atom_vesting_lp_contract)
-        .add_attribute("atom_oracle_contract", config.atom_oracle_contract)
+        .add_attribute("atom_cl_pool_contract", config.atom_cl_pool_contract)
         .add_attribute("usdc_vesting_lp_contract", config.usdc_vesting_lp_contract)
-        .add_attribute("usdc_oracle_contract", config.usdc_oracle_contract))
+        .add_attribute("usdc_cl_pool_contract", config.usdc_cl_pool_contract))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -70,9 +72,9 @@ pub fn execute(
         ExecuteMsg::UpdateConfig {
             owner,
             atom_vesting_lp_contract,
-            atom_oracle_contract,
+            atom_cl_pool_contract: atom_oracle_contract,
             usdc_vesting_lp_contract,
-            usdc_oracle_contract,
+            usdc_cl_pool_contract: usdc_oracle_contract,
             name,
             description,
         } => execute_update_config(
@@ -127,9 +129,9 @@ pub fn execute_update_config(
 
     config.owner = new_owner;
     config.atom_vesting_lp_contract = new_atom_vesting_lp_contract;
-    config.atom_oracle_contract = new_atom_oracle_contract;
+    config.atom_cl_pool_contract = new_atom_oracle_contract;
     config.usdc_vesting_lp_contract = new_usdc_vesting_lp_contract;
-    config.usdc_oracle_contract = new_usdc_oracle_contract;
+    config.usdc_cl_pool_contract = new_usdc_oracle_contract;
     config.name = new_name;
     config.description = new_description;
     config.validate()?;
@@ -140,9 +142,9 @@ pub fn execute_update_config(
         .add_attribute("description", config.description)
         .add_attribute("owner", config.owner)
         .add_attribute("atom_vesting_lp_contract", config.atom_vesting_lp_contract)
-        .add_attribute("atom_oracle_contract", config.atom_oracle_contract)
+        .add_attribute("atom_oracle_contract", config.atom_cl_pool_contract)
         .add_attribute("usdc_vesting_lp_contract", config.usdc_vesting_lp_contract)
-        .add_attribute("usdc_oracle_contract", config.usdc_oracle_contract))
+        .add_attribute("usdc_oracle_contract", config.usdc_cl_pool_contract))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -175,22 +177,40 @@ fn get_voting_power(
     query_msg: &impl Serialize,
 ) -> ContractResult<Decimal256> {
     let mut voting_power = Decimal256::zero();
-    for (vesting_lp, oracle) in [
+    for (vesting_lp, cl_pool) in [
         (
             &config.atom_vesting_lp_contract,
-            &config.atom_oracle_contract,
+            &config.atom_cl_pool_contract,
         ),
         (
             &config.usdc_vesting_lp_contract,
-            &config.usdc_oracle_contract,
+            &config.usdc_cl_pool_contract,
         ),
     ] {
+        let vesting_base_config: VestingBaseConfig = deps
+            .querier
+            .query_wasm_smart(vesting_lp, &VestingLpQueryMsg::Config {})?;
+        let lp_token_address: AssetInfo = if vesting_base_config.vesting_token.is_some() {
+            vesting_base_config.vesting_token.unwrap()
+        } else {
+            return Err(ContractError::Std(StdError::generic_err(format!(
+                "vesting token is not set in {:?} contract",
+                vesting_lp
+            ))));
+        };
+
+        let lp_total_supply: Uint128 = deps.querier.query_wasm_smart(
+            lp_token_address.to_string(),
+            &astroport::xastro_token::QueryMsg::TotalSupplyAt { block: height },
+        )?;
+
         voting_power += voting_power_from_lp_tokens(
             deps,
             deps.querier
                 .query_wasm_smart::<Option<Uint128>>(vesting_lp, &query_msg)?
                 .unwrap_or_default(),
-            oracle,
+            lp_total_supply,
+            cl_pool,
             height,
         )?;
     }
@@ -281,7 +301,21 @@ pub fn query_bonding_status(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> ContractResult<Response> {
+pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> ContractResult<Response> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
+    let old_config = OLD_CONFIG.load(deps.storage)?;
+    let new_config = Config {
+        name: old_config.name,
+        description: old_config.description,
+        atom_vesting_lp_contract: old_config.atom_vesting_lp_contract,
+        atom_cl_pool_contract: deps.api.addr_validate(&msg.atom_cl_pool)?,
+        usdc_vesting_lp_contract: old_config.usdc_vesting_lp_contract,
+        usdc_cl_pool_contract: deps.api.addr_validate(&msg.usdc_cl_pool)?,
+        owner: old_config.owner,
+    };
+
+    CONFIG.save(deps.storage, &new_config)?;
+
     Ok(Response::default())
 }

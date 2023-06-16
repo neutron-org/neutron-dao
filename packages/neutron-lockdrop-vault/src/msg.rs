@@ -42,4 +42,7 @@ pub enum QueryMsg {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-pub struct MigrateMsg {}
+pub struct MigrateMsg {
+    pub atom_cl_pool_contract: String,
+    pub usdc_cl_pool_contract: String,
+}

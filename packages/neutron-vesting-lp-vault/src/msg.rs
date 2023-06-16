@@ -10,12 +10,12 @@ pub struct InstantiateMsg {
     pub description: String,
     /// The ATOM Vesting LP contract behind the vault.
     pub atom_vesting_lp_contract: String,
-    /// The ATOM oracle contract behind the vault.
-    pub atom_oracle_contract: String,
+    /// The ATOM/NTRN CL pool contract.
+    pub atom_cl_pool_contract: String,
     /// The USDC Vesting LP contract behind the vault.
     pub usdc_vesting_lp_contract: String,
-    /// The USDC oracle contract behind the vault.
-    pub usdc_oracle_contract: String,
+    /// The USDC/NTRN CL pool oracle contract.
+    pub usdc_cl_pool_contract: String,
     /// Owner can update all configs including changing the owner. This will generally be a DAO.
     pub owner: String,
 }
@@ -27,9 +27,9 @@ pub enum ExecuteMsg {
     UpdateConfig {
         owner: String,
         atom_vesting_lp_contract: String,
-        atom_oracle_contract: String,
+        atom_cl_pool_contract: String,
         usdc_vesting_lp_contract: String,
-        usdc_oracle_contract: String,
+        usdc_cl_pool_contract: String,
         name: String,
         description: String,
     },
@@ -45,4 +45,7 @@ pub enum QueryMsg {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-pub struct MigrateMsg {}
+pub struct MigrateMsg {
+    pub atom_cl_pool: String,
+    pub usdc_cl_pool: String,
+}

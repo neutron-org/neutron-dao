@@ -28,6 +28,7 @@ neutron-vesting-lp-vault = { path = "../../../../packages/neutron-vesting-lp-vau
 neutron-oracle = { path = "../../../../packages/neutron-oracle" }
 vesting-base = { git = "https://github.com/neutron-org/neutron-tge-contracts", branch = "main" }
 vesting-lp = { git = "https://github.com/neutron-org/neutron-tge-contracts", branch = "main" }
+astroport = { package="astroport", git = "https://github.com/neutron-org/neutron-tge-contracts.git", branch = "main" }
 
 [dev-dependencies]
 cosmwasm-schema = { version = "1.0.0" }
