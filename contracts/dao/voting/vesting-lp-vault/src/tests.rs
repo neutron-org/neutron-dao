@@ -42,6 +42,15 @@ fn vault_contract() -> Box<dyn Contract<Empty>> {
     Box::new(contract)
 }
 
+fn lp_token_contract() -> Box<dyn Contract<Empty>> {
+    let contract = ContractWrapper::new(
+        astroport_xastro_token::contract::execute,
+        astroport_xastro_token::contract::instantiate,
+        astroport_xastro_token::contract::query,
+    );
+    Box::new(contract)
+}
+
 fn vesting_lp_contract() -> Box<dyn Contract<Empty>> {
     let contract = ContractWrapper::new(
         vesting_lp::contract::execute,
@@ -88,6 +97,15 @@ fn mock_app() -> App {
 
 fn instantiate_vault(app: &mut App, id: u64, msg: InstantiateMsg) -> Addr {
     app.instantiate_contract(id, Addr::unchecked(DAO_ADDR), &msg, &[], "vault", None)
+        .unwrap()
+}
+
+fn instantiate_lp_token(
+    app: &mut App,
+    id: u64,
+    msg: astroport_original::xastro_token::InstantiateMsg,
+) -> Addr {
+    app.instantiate_contract(id, Addr::unchecked(DAO_ADDR), &msg, &[], "lp-token", None)
         .unwrap()
 }
 
@@ -570,6 +588,33 @@ fn test_total_power_at_height() {
     let mut app = mock_app();
 
     let vesting_lp_id = app.store_code(vesting_lp_contract());
+    let lp_token_id = app.store_code(lp_token_contract());
+
+    let atom_lp_token_address = instantiate_lp_token(
+        &mut app,
+        lp_token_id,
+        astroport_original::xastro_token::InstantiateMsg {
+            name: "atom".to_string(),
+            symbol: "atom-lp".to_string(),
+            decimals: 6,
+            initial_balances: vec![],
+            mint: None,
+            marketing: None,
+        },
+    );
+    let usdc_lp_token_address = instantiate_lp_token(
+        &mut app,
+        lp_token_id,
+        astroport_original::xastro_token::InstantiateMsg {
+            name: "usdc".to_string(),
+            symbol: "usdc-lp".to_string(),
+            decimals: 6,
+            initial_balances: vec![],
+            mint: None,
+            marketing: None,
+        },
+    );
+
     let atom_vesting_lp_addr = instantiate_vesting_lp(
         &mut app,
         vesting_lp_id,
@@ -594,7 +639,15 @@ fn test_total_power_at_height() {
         Addr::unchecked("manager".to_string()),
         usdc_vesting_lp_addr.clone(),
         AssetInfo::Token {
-            contract_addr: Addr::unchecked("usdc"),
+            contract_addr: usdc_lp_token_address,
+        },
+    );
+    set_vesting_token(
+        &mut app,
+        Addr::unchecked("manager".to_string()),
+        atom_vesting_lp_addr.clone(),
+        AssetInfo::Token {
+            contract_addr: atom_lp_token_address,
         },
     );
 

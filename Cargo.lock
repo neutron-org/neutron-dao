@@ -74,6 +74,38 @@ dependencies = [
 ]
 
 [[package]]
+name = "astroport-factory"
+version = "1.5.1"
+source = "git+https://github.com/astroport-fi/astroport-core.git?tag=v2.8.0#3b44a4044b823a145730f66ffaf7ae4205b2cd35"
+dependencies = [
+ "astroport 2.8.0",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-storage-plus 0.15.1",
+ "cw2 0.15.1",
+ "itertools",
+ "protobuf 2.28.0",
+ "thiserror",
+]
+
+[[package]]
+name = "astroport-pair-concentrated"
+version = "1.2.0"
+source = "git+https://github.com/astroport-fi/astroport-core.git?tag=v2.8.0#3b44a4044b823a145730f66ffaf7ae4205b2cd35"
+dependencies = [
+ "astroport 2.8.0",
+ "astroport-factory",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-storage-plus 0.15.1",
+ "cw-utils 0.15.1",
+ "cw2 0.15.1",
+ "cw20 0.15.1",
+ "itertools",
+ "thiserror",
+]
+
+[[package]]
 name = "astroport-periphery"
 version = "1.1.0"
 source = "git+https://github.com/neutron-org/neutron-tge-contracts.git?branch=main#0c7175d125e0208ad94868f5cd0b634c1fc76ad1"
@@ -86,6 +118,21 @@ dependencies = [
  "schemars",
  "serde",
  "terraswap",
+]
+
+[[package]]
+name = "astroport-xastro-token"
+version = "1.0.2"
+source = "git+https://github.com/astroport-fi/astroport-core.git?tag=v2.8.0#3b44a4044b823a145730f66ffaf7ae4205b2cd35"
+dependencies = [
+ "astroport 2.8.0",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-storage-plus 0.15.1",
+ "cw2 0.15.1",
+ "cw20 0.15.1",
+ "cw20-base 0.15.1",
+ "snafu",
 ]
 
 [[package]]
@@ -407,7 +454,7 @@ dependencies = [
  "cosmwasm-std",
  "cw-multi-test 0.13.4",
  "cw20 0.13.4",
- "cw20-base",
+ "cw20-base 0.13.4",
  "schemars",
  "serde",
  "thiserror",
@@ -665,6 +712,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "cw20-base"
+version = "0.15.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0909c56d0c14601fbdc69382189799482799dcad87587926aec1f3aa321abc41"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-storage-plus 0.15.1",
+ "cw-utils 0.15.1",
+ "cw2 0.15.1",
+ "cw20 0.15.1",
+ "schemars",
+ "semver",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "cw3"
 version = "0.13.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -833,7 +898,7 @@ dependencies = [
  "cw-utils 0.13.4",
  "cw2 0.13.4",
  "cw20 0.13.4",
- "cw20-base",
+ "cw20-base 0.13.4",
  "cw4-group",
  "cwd-core",
  "cwd-interface",
@@ -882,7 +947,7 @@ dependencies = [
  "cw-utils 0.13.4",
  "cw2 0.13.4",
  "cw20 0.13.4",
- "cw20-base",
+ "cw20-base 0.13.4",
  "cw4-group",
  "cwd-core",
  "cwd-interface",
@@ -919,7 +984,7 @@ dependencies = [
  "cw-utils 0.13.4",
  "cw2 0.13.4",
  "cw20 0.13.4",
- "cw20-base",
+ "cw20-base 0.13.4",
  "cw3",
  "cw4",
  "cw4-group",
@@ -959,7 +1024,7 @@ dependencies = [
  "cw-utils 0.13.4",
  "cw2 0.13.4",
  "cw20 0.13.4",
- "cw20-base",
+ "cw20-base 0.13.4",
  "cw3",
  "cw4",
  "cw4-group",
@@ -1047,7 +1112,7 @@ dependencies = [
  "cw-utils 0.13.4",
  "cw2 0.13.4",
  "cw20 0.13.4",
- "cw20-base",
+ "cw20-base 0.13.4",
  "cw3",
  "cw4",
  "cw4-group",
@@ -1109,7 +1174,7 @@ dependencies = [
  "cw-utils 0.13.4",
  "cw2 0.13.4",
  "cw20 0.13.4",
- "cw20-base",
+ "cw20-base 0.13.4",
  "cw4",
  "cw4-group",
  "cw721-base",
@@ -1195,6 +1260,12 @@ dependencies = [
  "crypto-common",
  "subtle",
 ]
+
+[[package]]
+name = "doc-comment"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fea41bba32d969b513997752735605054bc0dfa92b4c56bf1189f2e174be7a10"
 
 [[package]]
 name = "dyn-clone"
@@ -2036,6 +2107,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "snafu"
+version = "0.6.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eab12d3c261b2308b0d80c26fffb58d17eba81a4be97890101f416b478c79ca7"
+dependencies = [
+ "doc-comment",
+ "snafu-derive",
+]
+
+[[package]]
+name = "snafu-derive"
+version = "0.6.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1508efa03c362e23817f96cde18abed596a25219a8b2c66e8db33c03543d315b"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "spki"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2246,6 +2338,9 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "astroport 2.0.0 (git+https://github.com/neutron-org/neutron-tge-contracts.git?branch=main)",
+ "astroport 2.8.0",
+ "astroport-pair-concentrated",
+ "astroport-xastro-token",
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-multi-test 0.13.4",

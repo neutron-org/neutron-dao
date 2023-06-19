@@ -34,3 +34,6 @@ astroport = { package="astroport", git = "https://github.com/neutron-org/neutron
 cosmwasm-schema = { version = "1.0.0" }
 cw-multi-test = "0.13"
 anyhow = "1.0.57"
+astroport-xastro-token = { git = "https://github.com/astroport-fi/astroport-core.git", tag = "v2.8.0" }
+astroport-pair-concentrated = { git = "https://github.com/astroport-fi/astroport-core.git", tag = "v2.8.0" }
+astroport-original = { package = "astroport", git = "https://github.com/astroport-fi/astroport-core.git", tag = "v2.8.0" }
