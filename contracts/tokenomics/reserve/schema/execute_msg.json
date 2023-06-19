@@ -88,6 +88,51 @@
       "additionalProperties": false
     },
     {
+      "description": "Processes either partial or full xyk->CL migration of contract's liquidity.",
+      "type": "object",
+      "required": [
+        "migrate_from_xyk_to_cl"
+      ],
+      "properties": {
+        "migrate_from_xyk_to_cl": {
+          "type": "object",
+          "properties": {
+            "ntrn_atom_amount": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Uint128"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "ntrn_usdc_amount": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Uint128"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "slippage_tolerance": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Decimal"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
       "description": "Callbacks; only callable by the contract itself.",
       "type": "object",
       "required": [
@@ -136,6 +181,10 @@
     }
   ],
   "definitions": {
+    "Addr": {
+      "description": "A human readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multi-chain smart contracts no assumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways 1. Use `Addr::unchecked(input)` 2. Use `let checked: Addr = deps.api.addr_validate(input)?` 3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?` 4. Deserialize from JSON. This must only be done from JSON that was validated before such as a contract's state. `Addr` must not be used in messages sent by the user because this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create a mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String` instance.",
+      "type": "string"
+    },
     "CallbackMsg": {
       "oneOf": [
         {
@@ -147,14 +196,20 @@
             "migrate_liquidity_to_cl_pair": {
               "type": "object",
               "required": [
-                "cl_pair_address",
+                "amount",
+                "cl_pair",
                 "ntrn_denom",
                 "paired_asset_denom",
-                "xyk_pair_address"
+                "slippage_tolerance",
+                "xyk_lp_token",
+                "xyk_pair"
               ],
               "properties": {
-                "cl_pair_address": {
-                  "type": "string"
+                "amount": {
+                  "$ref": "#/definitions/Uint128"
+                },
+                "cl_pair": {
+                  "$ref": "#/definitions/Addr"
                 },
                 "ntrn_denom": {
                   "type": "string"
@@ -162,8 +217,14 @@
                 "paired_asset_denom": {
                   "type": "string"
                 },
-                "xyk_pair_address": {
-                  "type": "string"
+                "slippage_tolerance": {
+                  "$ref": "#/definitions/Decimal"
+                },
+                "xyk_lp_token": {
+                  "$ref": "#/definitions/Addr"
+                },
+                "xyk_pair": {
+                  "$ref": "#/definitions/Addr"
                 }
               }
             }
@@ -179,15 +240,16 @@
             "provide_liquidity_to_cl_pair_after_withdrawal": {
               "type": "object",
               "required": [
-                "cl_pair_address",
+                "cl_pair",
                 "ntrn_denom",
                 "ntrn_init_balance",
                 "paired_asset_denom",
-                "paired_asset_init_balance"
+                "paired_asset_init_balance",
+                "slippage_tolerance"
               ],
               "properties": {
-                "cl_pair_address": {
-                  "type": "string"
+                "cl_pair": {
+                  "$ref": "#/definitions/Addr"
                 },
                 "ntrn_denom": {
                   "type": "string"
@@ -200,6 +262,9 @@
                 },
                 "paired_asset_init_balance": {
                   "$ref": "#/definitions/Uint128"
+                },
+                "slippage_tolerance": {
+                  "$ref": "#/definitions/Decimal"
                 }
               }
             }

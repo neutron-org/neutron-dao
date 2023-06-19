@@ -21,8 +21,8 @@ pub fn voting_power_from_lp_tokens(
                 block_height: Uint64::from(height),
             },
         )?;
-        let ntrn_balance_in_pool = if balance_resp.is_some() {
-            balance_resp.unwrap()
+        let ntrn_balance_in_pool = if let Some(ntrn_balance) = balance_resp {
+            ntrn_balance
         } else {
             return Ok(Decimal256::zero());
         };

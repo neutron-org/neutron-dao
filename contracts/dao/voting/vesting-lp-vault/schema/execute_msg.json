@@ -11,16 +11,16 @@
         "update_config": {
           "type": "object",
           "required": [
-            "atom_oracle_contract",
+            "atom_cl_pool_contract",
             "atom_vesting_lp_contract",
             "description",
             "name",
             "owner",
-            "usdc_oracle_contract",
+            "usdc_cl_pool_contract",
             "usdc_vesting_lp_contract"
           ],
           "properties": {
-            "atom_oracle_contract": {
+            "atom_cl_pool_contract": {
               "type": "string"
             },
             "atom_vesting_lp_contract": {
@@ -35,7 +35,7 @@
             "owner": {
               "type": "string"
             },
-            "usdc_oracle_contract": {
+            "usdc_cl_pool_contract": {
               "type": "string"
             },
             "usdc_vesting_lp_contract": {

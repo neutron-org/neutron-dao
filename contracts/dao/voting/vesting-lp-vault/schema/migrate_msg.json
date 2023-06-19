@@ -1,5 +1,17 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "MigrateMsg",
-  "type": "object"
+  "type": "object",
+  "required": [
+    "atom_cl_pool",
+    "usdc_cl_pool"
+  ],
+  "properties": {
+    "atom_cl_pool": {
+      "type": "string"
+    },
+    "usdc_cl_pool": {
+      "type": "string"
+    }
+  }
 }

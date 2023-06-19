@@ -3,17 +3,17 @@
   "title": "InstantiateMsg",
   "type": "object",
   "required": [
-    "atom_oracle_contract",
+    "atom_cl_pool_contract",
     "atom_vesting_lp_contract",
     "description",
     "name",
     "owner",
-    "usdc_oracle_contract",
+    "usdc_cl_pool_contract",
     "usdc_vesting_lp_contract"
   ],
   "properties": {
-    "atom_oracle_contract": {
-      "description": "The ATOM oracle contract behind the vault.",
+    "atom_cl_pool_contract": {
+      "description": "The ATOM/NTRN CL pool contract.",
       "type": "string"
     },
     "atom_vesting_lp_contract": {
@@ -32,8 +32,8 @@
       "description": "Owner can update all configs including changing the owner. This will generally be a DAO.",
       "type": "string"
     },
-    "usdc_oracle_contract": {
-      "description": "The USDC oracle contract behind the vault.",
+    "usdc_cl_pool_contract": {
+      "description": "The USDC/NTRN CL pool oracle contract.",
       "type": "string"
     },
     "usdc_vesting_lp_contract": {
