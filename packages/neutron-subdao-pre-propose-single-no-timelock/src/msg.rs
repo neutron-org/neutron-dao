@@ -37,10 +37,3 @@ pub enum ExecuteMsgPauseUntypedDuration {
     /// Pauses the cntract for blocks
     Pause { duration: u64 },
 }
-
-#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum RemoveScheduleMsg {
-    /// RemoveSchedule removes the schedule with a given name. [Permissioned - DAO or Security DAO only]
-    RemoveSchedule { name: String },
-}
