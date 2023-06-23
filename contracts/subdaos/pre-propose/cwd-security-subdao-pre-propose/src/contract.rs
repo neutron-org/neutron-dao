@@ -14,9 +14,8 @@ use cwd_pre_propose_base::{
     msg::{ExecuteMsg as ExecuteBase, InstantiateMsg as InstantiateBase, QueryMsg as QueryBase},
     state::PreProposeContract,
 };
-use neutron_subdao_pre_propose_single_no_timelock::{
-    msg::ExecuteMsgPauseTypedDuration, msg::ExecuteMsgPauseUntypedDuration, types::ProposeMessage,
-};
+use neutron_security_subdao_pre_propose::msg::{ExecuteMsgPauseTypedDuration, ExecuteMsgPauseUntypedDuration};
+use neutron_security_subdao_pre_propose::types::ProposeMessage;
 pub type InstantiateMsg = InstantiateBase;
 pub type ExecuteMsg = ExecuteBase<ProposeMessage>;
 pub type QueryMsg = QueryBase<Empty>;
@@ -78,18 +77,19 @@ pub fn execute(
                     CosmosMsg::Wasm(WasmMsg::Execute {
                         contract_addr: _contract_addr,
                         msg,
-                        funds: _funds,
+                        funds,
                     }) => {
-                        if from_binary::<ExecuteMsgPauseTypedDuration>(msg).is_err()
-                            && from_binary::<ExecuteMsgPauseUntypedDuration>(msg).is_err()
+                        if (from_binary::<ExecuteMsgPauseTypedDuration>(msg).is_err()
+                            && from_binary::<ExecuteMsgPauseUntypedDuration>(msg).is_err())
+                            || !funds.is_empty()
                         {
-                            return Err(PreProposeError::NotAPauseOrRemoveScheduleMsg {});
+                            return Err(PreProposeError::MalformedProposal {});
                         }
                     }
                     CosmosMsg::Custom(NeutronMsg::RemoveSchedule { name: _name }) => {
                         continue;
                     }
-                    _ => return Err(PreProposeError::NotAPauseOrRemoveScheduleMsg {}),
+                    _ => return Err(PreProposeError::MalformedProposal {}),
                 }
             }
 

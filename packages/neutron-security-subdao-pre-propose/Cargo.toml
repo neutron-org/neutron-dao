@@ -1,5 +1,5 @@
 [package]
-name = "neutron-subdao-pre-propose-single-no-timelock"
+name = "neutron-security-subdao-pre-propose"
 version = "0.1.0"
 authors = ["Pavel Kalinin <pavel.kalinin@p2p.org>"]
 edition = "2021"
