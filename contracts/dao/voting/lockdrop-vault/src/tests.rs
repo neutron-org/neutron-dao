@@ -307,8 +307,8 @@ fn test_instantiate() {
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
-            oracle_usdc_contract: ORACLE_USDC_ADDR.to_string(),
-            oracle_atom_contract: ORACLE_ATOM_ADDR.to_string(),
+            usdc_cl_pool_contract: ORACLE_USDC_ADDR.to_string(),
+            atom_cl_pool_contract: ORACLE_ATOM_ADDR.to_string(),
         },
     );
     assert_eq!(get_dao(&app, &addr), String::from(DAO_ADDR));
@@ -327,8 +327,8 @@ fn test_bond() {
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
-            oracle_usdc_contract: ORACLE_USDC_ADDR.to_string(),
-            oracle_atom_contract: ORACLE_ATOM_ADDR.to_string(),
+            usdc_cl_pool_contract: ORACLE_USDC_ADDR.to_string(),
+            atom_cl_pool_contract: ORACLE_ATOM_ADDR.to_string(),
         },
     );
 
@@ -349,8 +349,8 @@ fn test_unbond() {
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
-            oracle_usdc_contract: ORACLE_USDC_ADDR.to_string(),
-            oracle_atom_contract: ORACLE_ATOM_ADDR.to_string(),
+            usdc_cl_pool_contract: ORACLE_USDC_ADDR.to_string(),
+            atom_cl_pool_contract: ORACLE_ATOM_ADDR.to_string(),
         },
     );
 
@@ -370,8 +370,8 @@ fn test_update_config_unauthorized() {
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
-            oracle_usdc_contract: ORACLE_USDC_ADDR.to_string(),
-            oracle_atom_contract: ORACLE_ATOM_ADDR.to_string(),
+            usdc_cl_pool_contract: ORACLE_USDC_ADDR.to_string(),
+            atom_cl_pool_contract: ORACLE_ATOM_ADDR.to_string(),
         },
     );
 
@@ -402,8 +402,8 @@ fn test_update_config_as_owner() {
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
-            oracle_usdc_contract: ORACLE_USDC_ADDR.to_string(),
-            oracle_atom_contract: ORACLE_ATOM_ADDR.to_string(),
+            usdc_cl_pool_contract: ORACLE_USDC_ADDR.to_string(),
+            atom_cl_pool_contract: ORACLE_ATOM_ADDR.to_string(),
         },
     );
 
@@ -448,8 +448,8 @@ fn test_update_config_invalid_description() {
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
-            oracle_usdc_contract: ORACLE_USDC_ADDR.to_string(),
-            oracle_atom_contract: ORACLE_ATOM_ADDR.to_string(),
+            usdc_cl_pool_contract: ORACLE_USDC_ADDR.to_string(),
+            atom_cl_pool_contract: ORACLE_ATOM_ADDR.to_string(),
         },
     );
 
@@ -481,8 +481,8 @@ fn test_update_config_invalid_name() {
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
-            oracle_usdc_contract: ORACLE_USDC_ADDR.to_string(),
-            oracle_atom_contract: ORACLE_ATOM_ADDR.to_string(),
+            usdc_cl_pool_contract: ORACLE_USDC_ADDR.to_string(),
+            atom_cl_pool_contract: ORACLE_ATOM_ADDR.to_string(),
         },
     );
 
@@ -513,8 +513,8 @@ fn test_query_dao() {
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
-            oracle_usdc_contract: ORACLE_USDC_ADDR.to_string(),
-            oracle_atom_contract: ORACLE_ATOM_ADDR.to_string(),
+            usdc_cl_pool_contract: ORACLE_USDC_ADDR.to_string(),
+            atom_cl_pool_contract: ORACLE_ATOM_ADDR.to_string(),
         },
     );
 
@@ -535,8 +535,8 @@ fn test_query_info() {
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
-            oracle_usdc_contract: ORACLE_USDC_ADDR.to_string(),
-            oracle_atom_contract: ORACLE_ATOM_ADDR.to_string(),
+            usdc_cl_pool_contract: ORACLE_USDC_ADDR.to_string(),
+            atom_cl_pool_contract: ORACLE_ATOM_ADDR.to_string(),
         },
     );
 
@@ -557,8 +557,8 @@ fn test_query_get_config() {
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
             lockdrop_contract: LOCKDROP_ADDR.to_string(),
-            oracle_usdc_contract: ORACLE_USDC_ADDR.to_string(),
-            oracle_atom_contract: ORACLE_ATOM_ADDR.to_string(),
+            usdc_cl_pool_contract: ORACLE_USDC_ADDR.to_string(),
+            atom_cl_pool_contract: ORACLE_ATOM_ADDR.to_string(),
         },
     );
 
@@ -593,8 +593,8 @@ fn test_voting_power_at_height() {
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
             lockdrop_contract: lockdrop_contract.to_string(),
-            oracle_usdc_contract: oracle_usdc_contract.to_string(),
-            oracle_atom_contract: oracle_atom_contract.to_string(),
+            usdc_cl_pool_contract: oracle_usdc_contract.to_string(),
+            atom_cl_pool_contract: oracle_atom_contract.to_string(),
         },
     );
 
@@ -620,8 +620,8 @@ fn test_total_power_at_height() {
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
             lockdrop_contract: lockdrop_contract.to_string(),
-            oracle_usdc_contract: oracle_usdc_contract.to_string(),
-            oracle_atom_contract: oracle_atom_contract.to_string(),
+            usdc_cl_pool_contract: oracle_usdc_contract.to_string(),
+            atom_cl_pool_contract: oracle_atom_contract.to_string(),
         },
     );
 

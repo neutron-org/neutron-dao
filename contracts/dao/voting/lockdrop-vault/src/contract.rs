@@ -34,8 +34,8 @@ pub fn instantiate(
         name: msg.name,
         description: msg.description,
         lockdrop_contract: deps.api.addr_validate(&msg.lockdrop_contract)?,
-        usdc_cl_pool_contract: deps.api.addr_validate(&msg.oracle_usdc_contract)?,
-        atom_cl_pool_contract: deps.api.addr_validate(&msg.oracle_atom_contract)?,
+        usdc_cl_pool_contract: deps.api.addr_validate(&msg.usdc_cl_pool_contract)?,
+        atom_cl_pool_contract: deps.api.addr_validate(&msg.atom_cl_pool_contract)?,
         owner,
     };
     config.validate()?;
