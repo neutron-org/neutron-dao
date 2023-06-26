@@ -544,6 +544,33 @@ fn test_voting_power_at_height() {
     let mut app = mock_app();
 
     let vesting_lp_id = app.store_code(vesting_lp_contract());
+    let lp_token_id = app.store_code(lp_token_contract());
+
+    let atom_lp_token_address = instantiate_lp_token(
+        &mut app,
+        lp_token_id,
+        astroport_original::xastro_token::InstantiateMsg {
+            name: "atom".to_string(),
+            symbol: "atom-lp".to_string(),
+            decimals: 6,
+            initial_balances: vec![],
+            mint: None,
+            marketing: None,
+        },
+    );
+    let usdc_lp_token_address = instantiate_lp_token(
+        &mut app,
+        lp_token_id,
+        astroport_original::xastro_token::InstantiateMsg {
+            name: "usdc".to_string(),
+            symbol: "usdc-lp".to_string(),
+            decimals: 6,
+            initial_balances: vec![],
+            mint: None,
+            marketing: None,
+        },
+    );
+
     let atom_vesting_lp_addr = instantiate_vesting_lp(
         &mut app,
         vesting_lp_id,
@@ -560,6 +587,23 @@ fn test_voting_power_at_height() {
             owner: DAO_ADDR.to_string(),
             vesting_managers: vec![],
             token_info_manager: "manager".to_string(),
+        },
+    );
+
+    set_vesting_token(
+        &mut app,
+        Addr::unchecked("manager".to_string()),
+        usdc_vesting_lp_addr.clone(),
+        AssetInfo::Token {
+            contract_addr: usdc_lp_token_address,
+        },
+    );
+    set_vesting_token(
+        &mut app,
+        Addr::unchecked("manager".to_string()),
+        atom_vesting_lp_addr.clone(),
+        AssetInfo::Token {
+            contract_addr: atom_lp_token_address,
         },
     );
 
