@@ -1,6 +1,6 @@
 use astroport::asset::Decimal256Ext;
 use cosmwasm_std::{Decimal256, Deps, StdResult, Uint128, Uint64};
-use std::ops::Div;
+use std::ops::Mul;
 
 pub fn voting_power_from_lp_tokens(
     deps: Deps,
@@ -32,6 +32,6 @@ pub fn voting_power_from_lp_tokens(
         }
 
         Ok(Decimal256::from_ratio(lp_tokens, total_lp_tokens)
-            .div(Decimal256::from_integer(ntrn_balance_in_pool)))
+            .mul(Decimal256::from_integer(ntrn_balance_in_pool)))
     }
 }
