@@ -1,5 +1,5 @@
 use astroport_periphery::lockdrop::{PoolType, QueryMsg as LockdropQueryMsg};
-use cosmwasm_std::{Decimal256, Deps, StdResult, Uint128};
+use cosmwasm_std::{Deps, StdResult, Uint128};
 use neutron_oracle::voting_power::voting_power_from_lp_tokens;
 use serde::Serialize;
 
@@ -11,7 +11,7 @@ pub fn get_voting_power_for_address(
     pool_type: PoolType,
     address: String,
     height: u64,
-) -> StdResult<Decimal256> {
+) -> StdResult<Uint128> {
     let pool_contract: String = match pool_type {
         PoolType::ATOM => atom_cl_pool_contract.into(),
         PoolType::USDC => usdc_cl_pool_contract.into(),
@@ -37,7 +37,7 @@ pub fn get_voting_power_total(
     oracle_atom_contract: impl Into<String>,
     pool_type: PoolType,
     height: u64,
-) -> StdResult<Decimal256> {
+) -> StdResult<Uint128> {
     let oracle_contract: String = match pool_type {
         PoolType::ATOM => oracle_atom_contract.into(),
         PoolType::USDC => oracle_usdc_contract.into(),
@@ -58,7 +58,7 @@ pub fn get_voting_power(
     pool_contract: String,
     msg: &impl Serialize,
     height: u64,
-) -> StdResult<Decimal256> {
+) -> StdResult<Uint128> {
     let lp_tokens: Option<Uint128> = deps.querier.query_wasm_smart(lockdrop_contract, msg)?;
 
     let pair_info: astroport::asset::PairInfo = deps.querier.query_wasm_smart(

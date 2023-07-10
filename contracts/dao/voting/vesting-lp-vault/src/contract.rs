@@ -2,8 +2,7 @@ use astroport::asset::AssetInfo;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo, Response, StdError,
-    Uint128,
+    to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError, Uint128,
 };
 use cw2::set_contract_version;
 use cwd_interface::voting::{
@@ -175,8 +174,8 @@ fn get_voting_power(
     config: &Config,
     height: u64,
     query_msg: &impl Serialize,
-) -> ContractResult<Decimal256> {
-    let mut voting_power = Decimal256::zero();
+) -> ContractResult<Uint128> {
+    let mut voting_power = Uint128::zero();
     for (vesting_lp, cl_pool) in [
         (
             &config.atom_vesting_lp_contract,
@@ -230,10 +229,7 @@ pub fn query_voting_power_at_height(
     };
 
     Ok(VotingPowerAtHeightResponse {
-        power: get_voting_power(deps, &config, height, &query_msg)?
-            .numerator()
-            .try_into()
-            .map_err(StdError::from)?,
+        power: get_voting_power(deps, &config, height, &query_msg)?,
         height,
     })
 }
@@ -250,10 +246,7 @@ pub fn query_total_power_at_height(
     };
 
     Ok(TotalPowerAtHeightResponse {
-        power: get_voting_power(deps, &config, height, &query_msg)?
-            .numerator()
-            .try_into()
-            .map_err(StdError::from)?,
+        power: get_voting_power(deps, &config, height, &query_msg)?,
         height,
     })
 }
