@@ -16,6 +16,7 @@
       "additionalProperties": false
     },
     {
+      "description": "List of pending funds to addresses (to be distributed); returns [`Vec<(Addr, Uint128)>`]",
       "type": "object",
       "required": [
         "pending"
@@ -28,6 +29,7 @@
       "additionalProperties": false
     },
     {
+      "description": "List of current shareholder weights; returns [`Vec<(Addr, Uint128)>`]",
       "type": "object",
       "required": [
         "shares"

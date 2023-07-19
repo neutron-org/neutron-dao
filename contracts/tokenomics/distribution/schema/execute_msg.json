@@ -16,6 +16,7 @@
       "additionalProperties": false
     },
     {
+      "description": "Alter shareholder's weights",
       "type": "object",
       "required": [
         "set_shares"
@@ -49,7 +50,7 @@
       "additionalProperties": false
     },
     {
-      "description": "Distribute funds between share holders. It is called from reserve contract only when part of the fund is going to distribution betrween share holders.",
+      "description": "Distribute funds between share holders. It is called from reserve contract only when part of the fund is going to distribution between share holders.",
       "type": "object",
       "required": [
         "fund"

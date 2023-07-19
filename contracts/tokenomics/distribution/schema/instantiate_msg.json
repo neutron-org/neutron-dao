@@ -9,6 +9,7 @@
   ],
   "properties": {
     "denom": {
+      "description": "Denom used for rewards distribution. All funds in any other denoms will be ignored.",
       "type": "string"
     },
     "main_dao_address": {
