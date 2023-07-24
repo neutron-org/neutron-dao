@@ -9,7 +9,7 @@ repository = "https://github.com/neutron/neutron-dao"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-neutron-sdk = { package = "neutron-sdk", git = "https://github.com/neutron-org/neutron-sdk.git", rev = "d5656d0a830b6a6604b2471e7c2e72863d9c60ba" }
+neutron-sdk = { package = "neutron-sdk", git = "https://github.com/neutron-org/neutron-sdk.git", rev = "858deb8a3cebb0012f7f27d15a8fe4b353888a9d" }
 cosmwasm-std = { version = "1.3.0" }
 schemars = "0.8.8"
 serde = { version = "1.0.175", default-features = false, features = ["derive"] }
