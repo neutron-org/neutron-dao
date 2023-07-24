@@ -10,7 +10,7 @@ description = "A package for paginating cosmwasm maps."
 [dependencies]
 cosmwasm-std = { version = "1.3.0" }
 cosmwasm-storage = { version = "1.0.0" }
-cw-storage-plus = "0.13"
+cw-storage-plus = "1.1.0"
 serde = { version = "1.0.147", default-features = false }
 
 [dev-dependencies]
