@@ -16,7 +16,7 @@ backtraces = ["cosmwasm-std/backtraces"]
 library = []
 
 [dependencies]
-cosmwasm-std = { version = "1.0.0" }
+cosmwasm-std = { version = "1.3.0" }
 cosmwasm-storage = { version = "1.0.0" }
 cw-storage-plus = "0.13"
 cw2 = "0.13"
@@ -31,6 +31,6 @@ cwd-voting = { path = "../../../../packages/cwd-voting" }
 cw-paginate = { path = "../../../../packages/cw-paginate" }
 
 [dev-dependencies]
-cosmwasm-schema = { version = "1.0.0" }
+cosmwasm-schema = { version = "1.3.0" }
 cw-multi-test = "0.13"
 anyhow = "1.0.57"

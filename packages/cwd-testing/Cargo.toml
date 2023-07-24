@@ -14,7 +14,7 @@ description = "Testing helper functions and interfaces for testing DAO modules."
 # targeting wasm.
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 rand = "0.8"
-cosmwasm-std = { version = "1.0.0" }
+cosmwasm-std = { version = "1.3.0" }
 cw-multi-test = {  version = "0.13" }
 cw20-base = "0.13"
 cw4 = "0.13"
@@ -26,7 +26,7 @@ cw20 = "0.13"
 cwd-voting = { path = "../cwd-voting" }
 cwd-hooks = { version = "*", path = "../cwd-hooks" }
 cwd-core = { path = "../../contracts/dao/cwd-core", features = ["library"] }
-cosmwasm-schema = { version = "1.0.0" }
+cosmwasm-schema = { version = "1.3.0" }
 cwd-interface = { path = "../cwd-interface" }
 cwd-pre-propose-single = {path = "../../contracts/dao/pre-propose/cwd-pre-propose-single"}
 cwd-pre-propose-multiple = {path = "../../contracts/dao/pre-propose/cwd-pre-propose-multiple"}

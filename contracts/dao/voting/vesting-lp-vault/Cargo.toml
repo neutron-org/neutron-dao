@@ -16,7 +16,7 @@ backtraces = ["cosmwasm-std/backtraces"]
 library = []
 
 [dependencies]
-cosmwasm-std = { version = "1.0.0" }
+cosmwasm-std = { version = "1.3.0" }
 cw-storage-plus = "0.13"
 cw2 = "0.13"
 schemars = "0.8"
@@ -30,6 +30,6 @@ vesting-base = { git = "https://github.com/neutron-org/neutron-tge-contracts", b
 vesting-lp = { git = "https://github.com/neutron-org/neutron-tge-contracts", branch = "main" }
 
 [dev-dependencies]
-cosmwasm-schema = { version = "1.0.0" }
+cosmwasm-schema = { version = "1.3.0" }
 cw-multi-test = "0.13"
 anyhow = "1.0.57"
