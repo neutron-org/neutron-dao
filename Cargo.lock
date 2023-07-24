@@ -265,8 +265,8 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "cosmwasm-storage",
- "cw-controllers 1.1.0",
- "cw-multi-test 0.16.5",
+ "cw-controllers",
+ "cw-multi-test",
  "cw-paginate 0.2.0",
  "cw-storage-plus 1.1.0",
  "cw-utils 1.0.1",
@@ -332,20 +332,6 @@ dependencies = [
 
 [[package]]
 name = "cw-controllers"
-version = "0.13.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4f0bc6019b4d3d81e11f5c384bcce7173e2210bd654d75c6c9668e12cca05dfa"
-dependencies = [
- "cosmwasm-std",
- "cw-storage-plus 0.13.4",
- "cw-utils 0.13.4",
- "schemars",
- "serde",
- "thiserror",
-]
-
-[[package]]
-name = "cw-controllers"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d5d8edce4b78785f36413f67387e4be7d0cb7d032b5d4164bcc024f9c3f3f2ea"
@@ -406,28 +392,9 @@ name = "cw-denom"
 version = "0.2.0"
 dependencies = [
  "cosmwasm-std",
- "cw-multi-test 0.16.5",
+ "cw-multi-test",
  "cw20 1.1.0",
  "cw20-base",
- "schemars",
- "serde",
- "thiserror",
-]
-
-[[package]]
-name = "cw-multi-test"
-version = "0.13.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a3f9a8ab7c3c29ec93cb7a39ce4b14a05e053153b4a17ef7cf2246af1b7c087e"
-dependencies = [
- "anyhow",
- "cosmwasm-std",
- "cosmwasm-storage",
- "cw-storage-plus 0.13.4",
- "cw-utils 0.13.4",
- "derivative",
- "itertools",
- "prost 0.9.0",
  "schemars",
  "serde",
  "thiserror",
@@ -495,7 +462,7 @@ version = "0.2.0"
 dependencies = [
  "cosmwasm-std",
  "cosmwasm-storage",
- "cw-multi-test 0.13.4",
+ "cw-multi-test",
  "cw-storage-plus 1.1.0",
  "serde",
 ]
@@ -781,7 +748,7 @@ checksum = "58db332c4039bec8ade6aaa1f5fff24b94b111f21134db172cd27fb2e7f0ceb6"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
- "cw-controllers 1.1.0",
+ "cw-controllers",
  "cw-storage-plus 1.1.0",
  "cw-utils 1.0.1",
  "cw2 1.1.0",
@@ -827,22 +794,6 @@ dependencies = [
  "cw-utils 1.0.1",
  "schemars",
  "serde",
-]
-
-[[package]]
-name = "cw721-base"
-version = "0.13.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "423d4efe8b649d228d1533e141c238415f49aa8a9ee4e40fce192d7a93ffd057"
-dependencies = [
- "cosmwasm-std",
- "cw-storage-plus 0.13.4",
- "cw-utils 0.13.4",
- "cw2 0.13.4",
- "cw721 0.13.4",
- "schemars",
- "serde",
- "thiserror",
 ]
 
 [[package]]
@@ -906,7 +857,7 @@ dependencies = [
  "cw-utils 1.0.1",
  "cw2 1.1.0",
  "cw20 1.1.0",
- "cw721 0.13.4",
+ "cw721 0.18.0",
  "cwd-interface",
  "cwd-macros",
  "neutron-sdk",
@@ -958,7 +909,7 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-denom",
- "cw-multi-test 0.13.4",
+ "cw-multi-test",
  "cw-storage-plus 1.1.0",
  "cw-utils 1.0.1",
  "cw2 1.1.0",
@@ -977,7 +928,7 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-denom",
- "cw-multi-test 0.16.5",
+ "cw-multi-test",
  "cw-utils 1.0.1",
  "cw2 1.1.0",
  "cw20 1.1.0",
@@ -1026,7 +977,7 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-denom",
- "cw-multi-test 0.16.5",
+ "cw-multi-test",
  "cw-utils 1.0.1",
  "cw2 1.1.0",
  "cw20 1.1.0",
@@ -1062,7 +1013,7 @@ dependencies = [
  "cosmwasm-std",
  "cosmwasm-storage",
  "cw-denom",
- "cw-multi-test 0.16.5",
+ "cw-multi-test",
  "cw-storage-plus 1.1.0",
  "cw-utils 1.0.1",
  "cw2 1.1.0",
@@ -1101,7 +1052,7 @@ dependencies = [
  "cosmwasm-std",
  "cosmwasm-storage",
  "cw-denom",
- "cw-multi-test 0.16.5",
+ "cw-multi-test",
  "cw-proposal-single",
  "cw-storage-plus 1.1.0",
  "cw-utils 1.0.1",
@@ -1144,7 +1095,7 @@ dependencies = [
  "cw-utils 1.0.1",
  "cw2 1.1.0",
  "cw20 1.1.0",
- "cw721 0.13.4",
+ "cw721 0.18.0",
  "cwd-interface",
  "cwd-macros",
  "cwd-voting",
@@ -1212,7 +1163,7 @@ dependencies = [
  "cosmwasm-std",
  "cosmwasm-storage",
  "cw-denom",
- "cw-multi-test 0.16.5",
+ "cw-multi-test",
  "cw-proposal-single",
  "cw-storage-plus 1.1.0",
  "cw-utils 1.0.1",
@@ -1249,8 +1200,8 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "cosmwasm-storage",
- "cw-controllers 0.13.4",
- "cw-multi-test 0.13.4",
+ "cw-controllers",
+ "cw-multi-test",
  "cw-storage-plus 1.1.0",
  "cw-utils 1.0.1",
  "cw2 1.1.0",
@@ -1275,7 +1226,7 @@ version = "0.2.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
- "cw-multi-test 0.16.5",
+ "cw-multi-test",
  "cw-proposal-single",
  "cw-utils 1.0.1",
  "cw2 1.1.0",
@@ -1283,7 +1234,7 @@ dependencies = [
  "cw20-base",
  "cw4",
  "cw4-group",
- "cw721-base 0.13.4",
+ "cw721-base 0.18.0",
  "cwd-core",
  "cwd-hooks",
  "cwd-interface",
@@ -1537,8 +1488,8 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "cosmwasm-storage",
- "cw-controllers 1.1.0",
- "cw-multi-test 0.16.5",
+ "cw-controllers",
+ "cw-multi-test",
  "cw-paginate 0.2.0",
  "cw-storage-plus 1.1.0",
  "cw-utils 1.0.1",
@@ -1595,7 +1546,7 @@ dependencies = [
  "astroport-periphery",
  "cosmwasm-schema",
  "cosmwasm-std",
- "cw-multi-test 0.13.4",
+ "cw-multi-test",
  "cw-storage-plus 1.1.0",
  "cw2 1.1.0",
  "cw20 1.1.0",
@@ -1762,8 +1713,8 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "cosmwasm-storage",
- "cw-controllers 0.13.4",
- "cw-multi-test 0.13.4",
+ "cw-controllers",
+ "cw-multi-test",
  "cw-paginate 0.2.0",
  "cw-storage-plus 1.1.0",
  "cw-utils 1.0.1",
@@ -1795,8 +1746,8 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "cosmwasm-storage",
- "cw-controllers 0.13.4",
- "cw-multi-test 0.13.4",
+ "cw-controllers",
+ "cw-multi-test",
  "cw-paginate 0.2.0",
  "cw-storage-plus 1.1.0",
  "cw-utils 1.0.1",
@@ -2380,7 +2331,7 @@ dependencies = [
  "anyhow",
  "cosmwasm-schema",
  "cosmwasm-std",
- "cw-multi-test 0.13.4",
+ "cw-multi-test",
  "cw-storage-plus 1.1.0",
  "cw2 1.1.0",
  "cwd-interface",

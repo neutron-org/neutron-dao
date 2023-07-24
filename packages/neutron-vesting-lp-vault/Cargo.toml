@@ -7,7 +7,7 @@ license = "Apache-2.0"
 repository = "https://github.com/neutron/neutron-dao"
 
 [dependencies]
-serde = { version = "1.0.149", default-features = false, features = ["derive"] }
+serde = { version = "1.0.175", default-features = false, features = ["derive"] }
 schemars = "0.8.8"
 cwd-macros = { path = "../cwd-macros" }
 cosmwasm-std = { version = "1.3.0" }

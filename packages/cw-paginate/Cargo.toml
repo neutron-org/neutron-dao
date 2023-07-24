@@ -14,4 +14,4 @@ cw-storage-plus = "1.1.0"
 serde = { version = "1.0.147", default-features = false }
 
 [dev-dependencies]
-cw-multi-test = "0.13"
+cw-multi-test = "0.16.5"

@@ -25,7 +25,7 @@ cw2 = "1.1.0"
 cw20 = "1.1.0"
 cw3 = "1.1.0"
 schemars = "0.8.8"
-serde = { version = "1.0.149", default-features = false, features = ["derive"] }
+serde = { version = "1.0.175", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0" }
 
 cwd-core = { path = "../../cwd-core", features = ["library"] }
@@ -47,7 +47,7 @@ cw-multi-test = "0.16.5"
 cw-denom = { path = "../../../../packages/cw-denom" }
 cw20-base = "1.1.0"
 cwd-testing = { path = "../../../../packages/cwd-testing" }
-cw721-base = "0.18"
+cw721-base = "0.18.0"
 neutron-voting-registry = { path = "../../voting/neutron-voting-registry" }
 neutron-vault = { path = "../../voting/neutron-vault" }
 cw4 = "1.1.0"
