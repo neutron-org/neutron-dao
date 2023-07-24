@@ -1,4 +1,5 @@
 use cosmwasm_std::{coins, Addr, Empty, Uint128};
+use cw20::Cw20Coin;
 use cw_multi_test::{App, BankSudo, Contract, ContractWrapper, Executor};
 
 use crate::CheckedDenom;
@@ -25,7 +26,7 @@ fn test_cw20_denom_send() {
                 name: "token".to_string(),
                 symbol: "symbol".to_string(),
                 decimals: 6,
-                initial_balances: vec![cw20::Cw20Coin {
+                initial_balances: vec![Cw20Coin {
                     amount: Uint128::new(10),
                     address: "ekez".to_string(),
                 }],
