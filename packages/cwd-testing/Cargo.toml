@@ -15,13 +15,13 @@ description = "Testing helper functions and interfaces for testing DAO modules."
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 rand = "0.8"
 cosmwasm-std = { version = "1.3.0" }
-cw-multi-test = {  version = "0.13" }
-cw20-base = "0.13"
-cw4 = "0.13"
-cw4-group = "0.13"
+cw-multi-test = {  version = "0.16.5" }
+cw20-base = "1.1.0"
+cw4 = "1.1.0"
+cw4-group = "1.1.0"
 cw-utils = { version = "1.0.1" }
-cw2 = "0.13"
-cw20 = "0.13"
+cw2 = "1.1.0"
+cw20 = "1.1.0"
 
 cwd-voting = { path = "../cwd-voting" }
 cwd-hooks = { version = "*", path = "../cwd-hooks" }

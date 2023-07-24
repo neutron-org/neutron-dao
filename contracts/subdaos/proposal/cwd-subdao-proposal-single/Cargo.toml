@@ -18,13 +18,13 @@ library = []
 [dependencies]
 neutron-sdk = { package = "neutron-sdk", git = "https://github.com/neutron-org/neutron-sdk.git", rev = "d5656d0a830b6a6604b2471e7c2e72863d9c60ba" }
 cosmwasm-std = { version = "1.3.0", features = ["ibc3"] }
-cosmwasm-storage = { version = "1.0.0" }
+cosmwasm-storage = { version = "1.3.0" }
 cw-storage-plus = "1.1.0"
 cw-utils = { version = "1.0.1" }
-cw2 = "0.13"
-cw20 = "0.13"
-cw3 = "0.13"
-schemars = "0.8"
+cw2 = "1.1.0"
+cw20 = "1.1.0"
+cw3 = "1.1.0"
+schemars = "0.8.8"
 serde = { version = "1.0.149", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0" }
 
@@ -44,10 +44,10 @@ cw-proposal-single-v1 = { package = "cw-proposal-single", version = "0.1.0", git
 
 [dev-dependencies]
 cosmwasm-schema = { version = "1.3.0" }
-cw-multi-test = "0.13"
+cw-multi-test = "0.16.5"
 cw-denom = { path = "../../../../packages/cw-denom" }
-cw20-base = "0.13"
-cw721-base = "0.13"
-cw4 = "0.13"
-cw4-group = "0.13"
+cw20-base = "1.1.0"
+cw721-base = "0.18"
+cw4 = "1.1.0"
+cw4-group = "1.1.0"
 

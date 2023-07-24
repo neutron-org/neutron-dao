@@ -17,12 +17,12 @@ library = []
 
 [dependencies]
 cosmwasm-std = { version = "1.3.0" }
-cosmwasm-storage = { version = "1.0.0" }
+cosmwasm-storage = { version = "1.3.0" }
 cw-storage-plus = "1.1.0"
-cw2 = "0.13"
+cw2 = "1.1.0"
 cw-utils = { version = "1.0.1" }
 cw-controllers = "0.13"
-schemars = "0.8"
+schemars = "0.8.8"
 serde = { version = "1.0.149", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0" }
 neutron-vault = { path = "../neutron-vault" }

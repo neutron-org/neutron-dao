@@ -10,5 +10,5 @@ repository = "https://github.com/neutron/neutron-dao"
 
 [dependencies]
 cwd-pre-propose-base = { version = "*", path = "../cwd-pre-propose-base" }
-schemars = "0.8"
+schemars = "0.8.8"
 serde = { version = "1.0.149", default-features = false, features = ["derive"] }
