@@ -19,7 +19,7 @@ cw-multi-test = {  version = "0.13" }
 cw20-base = "0.13"
 cw4 = "0.13"
 cw4-group = "0.13"
-cw-utils = "0.13"
+cw-utils = { version = "1.0.1" }
 cw2 = "0.13"
 cw20 = "0.13"
 

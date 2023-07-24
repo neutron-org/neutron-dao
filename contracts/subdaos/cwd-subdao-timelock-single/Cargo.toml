@@ -39,4 +39,4 @@ cwd-voting = { path = "../../../packages/cwd-voting" }
 cosmwasm-schema = { version = "1.3.0" }
 cw-multi-test = "0.13"
 anyhow = "1.0.57"
-cw-utils = "0.13"
+cw-utils = { version = "1.0.1" }

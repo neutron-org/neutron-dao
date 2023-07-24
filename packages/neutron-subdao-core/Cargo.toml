@@ -15,7 +15,7 @@ schemars = "0.8"
 serde = { version = "1.0.149", default-features = false, features = ["derive"] }
 cwd-macros = { path = "../cwd-macros" }
 cwd-voting = { path = "../cwd-voting" }
-cw-utils = "0.13"
+cw-utils = { version = "1.0.1" }
 cwd-interface = { path = "../cwd-interface" }
 cw2 = "0.13"
 exec-control = { path = "../exec-control" }

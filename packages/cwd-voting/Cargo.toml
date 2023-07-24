@@ -17,5 +17,5 @@ cwd-interface = { path = "../cwd-interface" }
 cwd-macros = { path = "../cwd-macros" }
 cwd-core = { path = "../../contracts/dao/cwd-core" }
 cw-denom = { path = "../cw-denom" }
-cw-utils = "0.13"
+cw-utils = { version = "1.0.1" }
 cw-storage-plus = "1.1.0"
