@@ -16,26 +16,23 @@ backtraces = ["cosmwasm-std/backtraces"]
 library = []
 
 [dependencies]
-cosmwasm-std = "1.0.0"
-cw2 = "0.13.2"
-serde = { version = "1.0.147", default-features = false, features = ["derive"] }
+cosmwasm-std = { version = "1.3.0" }
+cw2 = "1.1.0"
+serde = { version = "1.0.175", default-features = false, features = ["derive"] }
 cwd-pre-propose-base = { version = "*", path = "../../../../packages/cwd-pre-propose-base" }
-neutron-sdk = "0.5.0"
+neutron-sdk = { package = "neutron-sdk", version = "0.6.1" }
 schemars = "0.8.8"
 
 [dev-dependencies]
-cosmwasm-schema = "1.0.0"
-cw-multi-test = "0.13.2"
-cw-utils = "0.13.2"
-cw4-group = "0.13.2"
-cw20 = "0.13.2"
-cw20-base = "0.13.2"
-#cwd-voting-cw20-staked = { path = "../../voting/cwd-voting-cw20-staked" }
+cosmwasm-schema = "1.3.0"
+cw-multi-test = "0.16.5"
+cw-utils = { version = "1.0.1" }
+cw4-group = "1.1.0"
+cw20 = "1.1.0"
+cw20-base = "1.1.0"
 cwd-proposal-single = { path = "../../proposal/cwd-proposal-single" }
 cwd-core = { path = "../../../dao/cwd-core" }
-#cwd-voting-cw4 = { path = "../../voting/cwd-voting-cw4" }
 cwd-voting = { path = "../../../../packages/cwd-voting" }
 cw-denom = { path = "../../../../packages/cw-denom" }
 cwd-interface = { path = "../../../../packages/cwd-interface" }
-#cwd-testing = { path = "../../../../packages/cwd-testing" }
 cwd-proposal-hooks = { path = "../../../../packages/cwd-proposal-hooks" }
