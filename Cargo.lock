@@ -1099,6 +1099,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "cwd-subdao-pre-propose-single-no-timelock"
+version = "0.2.0"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-denom",
+ "cw-storage-plus 0.13.4",
+ "cw-utils 0.13.4",
+ "cw2 0.13.4",
+ "cw20 0.13.4",
+ "cwd-interface",
+ "cwd-pre-propose-base",
+ "cwd-voting",
+ "neutron-sdk 0.5.0",
+ "neutron-security-subdao-pre-propose",
+ "neutron-subdao-core",
+ "neutron-subdao-proposal-single",
+ "neutron-subdao-timelock-single",
+ "schemars",
+ "serde",
+]
+
+[[package]]
 name = "cwd-subdao-proposal-single"
 version = "0.2.0"
 dependencies = [
@@ -1610,6 +1633,20 @@ dependencies = [
  "serde-json-wasm 0.4.1",
  "serde_json",
  "thiserror",
+]
+
+[[package]]
+name = "neutron-security-subdao-pre-propose"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-std",
+ "cw-utils 0.13.4",
+ "cwd-interface",
+ "cwd-pre-propose-base",
+ "cwd-voting",
+ "neutron-sdk 0.5.0",
+ "schemars",
+ "serde",
 ]
 
 [[package]]
