@@ -203,7 +203,7 @@ fn get_voting_power(
             &astroport::xastro_token::QueryMsg::TotalSupplyAt { block: height },
         )?;
 
-        voting_power += voting_power_from_lp_tokens(
+        voting_power = voting_power.checked_add(voting_power_from_lp_tokens(
             deps,
             deps.querier
                 .query_wasm_smart::<Option<Uint128>>(vesting_lp, &query_msg)?
@@ -211,7 +211,7 @@ fn get_voting_power(
             lp_total_supply,
             cl_pool,
             height,
-        )?;
+        )?)?;
     }
     Ok(voting_power)
 }

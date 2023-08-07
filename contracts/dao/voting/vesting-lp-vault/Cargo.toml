@@ -25,10 +25,10 @@ thiserror = { version = "1.0" }
 cwd-macros = { path = "../../../../packages/cwd-macros" }
 cwd-interface = { path = "../../../../packages/cwd-interface" }
 neutron-vesting-lp-vault = { path = "../../../../packages/neutron-vesting-lp-vault" }
-neutron-oracle = { path = "../../../../packages/neutron-oracle" }
-vesting-base = { git = "https://github.com/neutron-org/neutron-tge-contracts", branch = "main" }
-vesting-lp = { git = "https://github.com/neutron-org/neutron-tge-contracts", branch = "main" }
-astroport = { package="astroport", git = "https://github.com/neutron-org/neutron-tge-contracts.git", branch = "main" }
+neutron-oracle = { path = "../../../../packages/neutron-voting-power" }
+vesting-base = { git = "https://github.com/neutron-org/neutron-tge-contracts", rev = "e306308dd23d567399c15d899f295a910ede945b" }
+vesting-lp = { git = "https://github.com/neutron-org/neutron-tge-contracts", rev = "e306308dd23d567399c15d899f295a910ede945b" }
+astroport = { package="astroport", git = "https://github.com/neutron-org/neutron-tge-contracts.git", rev = "e306308dd23d567399c15d899f295a910ede945b" }
 
 [dev-dependencies]
 cosmwasm-schema = { version = "1.0.0" }

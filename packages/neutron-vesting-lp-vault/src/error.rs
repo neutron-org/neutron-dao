@@ -1,4 +1,4 @@
-use cosmwasm_std::StdError;
+use cosmwasm_std::{OverflowError, StdError};
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]
@@ -20,6 +20,9 @@ pub enum ContractError {
 
     #[error("config description cannot be empty.")]
     DescriptionIsEmpty {},
+
+    #[error("{0}")]
+    OverflowError(#[from] OverflowError),
 }
 
 pub type ContractResult<T> = Result<T, ContractError>;

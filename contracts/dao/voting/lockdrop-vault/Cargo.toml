@@ -27,8 +27,8 @@ cwd-macros = { path = "../../../../packages/cwd-macros" }
 cwd-interface = { path = "../../../../packages/cwd-interface" }
 cwd-voting = { path = "../../../../packages/cwd-voting" }
 neutron-lockdrop-vault = { path = "../../../../packages/neutron-lockdrop-vault" }
-astroport-periphery = { package="astroport-periphery", git = "https://github.com/neutron-org/neutron-tge-contracts.git", branch = "main" }
-astroport = { package="astroport", git = "https://github.com/neutron-org/neutron-tge-contracts.git", branch = "main" }
+astroport-periphery = { package="astroport-periphery", git = "https://github.com/neutron-org/neutron-tge-contracts.git", rev = "e306308dd23d567399c15d899f295a910ede945b" }
+astroport = { package="astroport", git = "https://github.com/neutron-org/neutron-tge-contracts.git", rev = "e306308dd23d567399c15d899f295a910ede945b" }
 
 [dev-dependencies]
 cosmwasm-schema = { version = "^1.2.1" }
