@@ -1,0 +1,19 @@
+[package]
+name = "neutron-security-subdao-pre-propose"
+version = "0.1.0"
+authors = ["Pavel Kalinin <pavel.kalinin@p2p.org>"]
+edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/neutron/neutron-dao"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+cwd-pre-propose-base = { version = "*", path = "../cwd-pre-propose-base" }
+cw-utils = { version = "1.0.1" }
+schemars = "0.8.8"
+serde = { version = "1.0.175", default-features = false, features = ["derive"] }
+cosmwasm-std = { version = "1.3.0" }
+neutron-sdk = { package = "neutron-sdk", version = "0.6.1" }
+cwd-voting = { path = "../cwd-voting" }
+cwd-interface = { path = "../cwd-interface" }

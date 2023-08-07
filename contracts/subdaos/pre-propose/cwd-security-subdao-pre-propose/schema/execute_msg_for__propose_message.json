@@ -1,24 +1,22 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "ExecuteMsg",
+  "title": "ExecuteMsg_for_ProposeMessage",
   "oneOf": [
     {
+      "description": "Creates a new proposal in the pre-propose module. MSG will be serialized and used as the proposal creation message.",
       "type": "object",
       "required": [
-        "execute"
+        "propose"
       ],
       "properties": {
-        "execute": {
+        "propose": {
           "type": "object",
           "required": [
-            "msgs"
+            "msg"
           ],
           "properties": {
-            "msgs": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/CosmosMsg_for_NeutronMsg"
-              }
+            "msg": {
+              "$ref": "#/definitions/ProposeMessage"
             }
           }
         }
@@ -26,19 +24,110 @@
       "additionalProperties": false
     },
     {
+      "description": "Updates the configuration of this module. This will completely override the existing configuration. This new configuration will only apply to proposals created after the config is updated. Only the DAO may execute this message.",
       "type": "object",
       "required": [
-        "transfer_admin"
+        "update_config"
       ],
       "properties": {
-        "transfer_admin": {
+        "update_config": {
           "type": "object",
           "required": [
-            "address"
+            "open_proposal_submission"
           ],
           "properties": {
-            "address": {
+            "deposit_info": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/UncheckedDepositInfo"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "open_proposal_submission": {
+              "type": "boolean"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Withdraws funds inside of this contract to the message sender. The contracts entire balance for the specifed DENOM is withdrawn to the message sender. Only the DAO may call this method.\n\nThis is intended only as an escape hatch in the event of a critical bug in this contract or it's proposal module. Withdrawing funds will cause future attempts to return proposal deposits to fail their transactions as the contract will have insufficent balance to return them. In the case of `cw-proposal-single` this transaction failure will cause the module to remove the pre-propose module from its proposal hook receivers.\n\nMore likely than not, this should NEVER BE CALLED unless a bug in this contract or the proposal module it is associated with has caused it to stop receiving proposal hook messages, or if a critical security vulnerability has been found that allows an attacker to drain proposal deposits.",
+      "type": "object",
+      "required": [
+        "withdraw"
+      ],
+      "properties": {
+        "withdraw": {
+          "type": "object",
+          "properties": {
+            "denom": {
+              "description": "The denom to withdraw funds for. If no denom is specified, the denomination currently configured for proposal deposits will be used.\n\nYou may want to specify a denomination here if you are withdrawing funds that were previously accepted for proposal deposits but are not longer used due to an `UpdateConfig` message being executed on the contract.",
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/UncheckedDenom"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Handles proposal hook fired by the associated proposal module when a proposal is created. By default, the base contract will return deposits proposals, when they are closed. when proposals are executed, or, if it is refunding failed",
+      "type": "object",
+      "required": [
+        "proposal_created_hook"
+      ],
+      "properties": {
+        "proposal_created_hook": {
+          "type": "object",
+          "required": [
+            "proposal_id",
+            "proposer"
+          ],
+          "properties": {
+            "proposal_id": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            },
+            "proposer": {
               "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Handles proposal hook fired by the associated proposal module when a proposal is completed (ie executed or rejected). By default, the base contract will return deposits proposals, when they are closed. when proposals are executed, or, if it is refunding failed",
+      "type": "object",
+      "required": [
+        "proposal_completed_hook"
+      ],
+      "properties": {
+        "proposal_completed_hook": {
+          "type": "object",
+          "required": [
+            "new_status",
+            "proposal_id"
+          ],
+          "properties": {
+            "new_status": {
+              "$ref": "#/definitions/Status"
+            },
+            "proposal_id": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
             }
           }
         }
@@ -430,6 +519,70 @@
         }
       ]
     },
+    "DepositRefundPolicy": {
+      "oneOf": [
+        {
+          "description": "Deposits should always be refunded.",
+          "type": "string",
+          "enum": [
+            "always"
+          ]
+        },
+        {
+          "description": "Deposits should only be refunded for passed proposals.",
+          "type": "string",
+          "enum": [
+            "only_passed"
+          ]
+        },
+        {
+          "description": "Deposits should never be refunded.",
+          "type": "string",
+          "enum": [
+            "never"
+          ]
+        }
+      ]
+    },
+    "DepositToken": {
+      "description": "Information about the token to use for proposal deposits.",
+      "oneOf": [
+        {
+          "description": "Use a specific token address as the deposit token.",
+          "type": "object",
+          "required": [
+            "token"
+          ],
+          "properties": {
+            "token": {
+              "type": "object",
+              "required": [
+                "denom"
+              ],
+              "properties": {
+                "denom": {
+                  "$ref": "#/definitions/UncheckedDenom"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "Use the token address of the associated DAO's voting module. NOTE: in order to use the token address of the voting module the voting module must (1) use a cw20 token and (2) implement the `TokenContract {}` query type defined by `cwd_macros::token_query`. Failing to implement that and using this option will cause instantiation to fail.",
+          "type": "object",
+          "required": [
+            "voting_module_token"
+          ],
+          "properties": {
+            "voting_module_token": {
+              "type": "object"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
     "DistributionMsg": {
       "description": "The message types of the distribution module.\n\nSee https://github.com/cosmos/cosmos-sdk/blob/v0.42.4/proto/cosmos/distribution/v1beta1/tx.proto",
       "oneOf": [
@@ -517,7 +670,7 @@
       ]
     },
     "IbcFee": {
-      "description": "IbcFee defines struct for fees that refund the relayer for `SudoMsg` messages submission. Unused fee kind will be returned back to message sender. Please refer to these links for more information: IBC transaction structure - https://docs.neutron.org/neutron/interchain-txs/messages/#msgsubmittx General mechanics of fee payments - https://docs.neutron.org/neutron/feerefunder/overview/#general-mechanics",
+      "description": "IbcFee defines struct for fees that refund the relayer for `SudoMsg` messages submission. Unused fee kind will be returned back to message sender. Please refer to these links for more information: IBC transaction structure - <https://docs.neutron.org/neutron/interchain-txs/messages/#msgsubmittx> General mechanics of fee payments - <https://docs.neutron.org/neutron/feerefunder/overview/#general-mechanics>",
       "type": "object",
       "required": [
         "ack_fee",
@@ -1025,6 +1178,111 @@
           "additionalProperties": false
         },
         {
+          "description": "TokenFactory message. Contracts can create denoms, namespaced under the contract's address. A contract may create any number of independent sub-denoms.",
+          "type": "object",
+          "required": [
+            "create_denom"
+          ],
+          "properties": {
+            "create_denom": {
+              "type": "object",
+              "required": [
+                "subdenom"
+              ],
+              "properties": {
+                "subdenom": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "TokenFactory message. Contracts can change the admin of a denom that they are the admin of.",
+          "type": "object",
+          "required": [
+            "change_admin"
+          ],
+          "properties": {
+            "change_admin": {
+              "type": "object",
+              "required": [
+                "denom",
+                "new_admin_address"
+              ],
+              "properties": {
+                "denom": {
+                  "type": "string"
+                },
+                "new_admin_address": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "TokenFactory message. Contracts can mint native tokens for an existing factory denom that they are the admin of.",
+          "type": "object",
+          "required": [
+            "mint_tokens"
+          ],
+          "properties": {
+            "mint_tokens": {
+              "type": "object",
+              "required": [
+                "amount",
+                "denom",
+                "mint_to_address"
+              ],
+              "properties": {
+                "amount": {
+                  "$ref": "#/definitions/Uint128"
+                },
+                "denom": {
+                  "type": "string"
+                },
+                "mint_to_address": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "TokenFactory message. Contracts can burn native tokens for an existing factory denom that they are the admin of. Currently, the burn from address must be the admin contract.",
+          "type": "object",
+          "required": [
+            "burn_tokens"
+          ],
+          "properties": {
+            "burn_tokens": {
+              "type": "object",
+              "required": [
+                "amount",
+                "burn_from_address",
+                "denom"
+              ],
+              "properties": {
+                "amount": {
+                  "$ref": "#/definitions/Uint128"
+                },
+                "burn_from_address": {
+                  "description": "Must be set to `\"\"` for now",
+                  "type": "string"
+                },
+                "denom": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
           "description": "AddSchedule adds new schedule with a given `name`. Until schedule is removed it will execute all `msgs` every `period` blocks. First execution is at least on `current_block + period` block. [Permissioned - DAO Only]",
           "type": "object",
           "required": [
@@ -1185,6 +1443,41 @@
         }
       }
     },
+    "ProposeMessage": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "propose"
+          ],
+          "properties": {
+            "propose": {
+              "type": "object",
+              "required": [
+                "description",
+                "msgs",
+                "title"
+              ],
+              "properties": {
+                "description": {
+                  "type": "string"
+                },
+                "msgs": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/CosmosMsg_for_NeutronMsg"
+                  }
+                },
+                "title": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
     "ProtobufAny": {
       "description": "Type for wrapping any protobuf message",
       "type": "object",
@@ -1339,6 +1632,52 @@
         }
       ]
     },
+    "Status": {
+      "oneOf": [
+        {
+          "description": "The proposal is open for voting.",
+          "type": "string",
+          "enum": [
+            "open"
+          ]
+        },
+        {
+          "description": "The proposal has been rejected.",
+          "type": "string",
+          "enum": [
+            "rejected"
+          ]
+        },
+        {
+          "description": "The proposal has been passed but has not been executed.",
+          "type": "string",
+          "enum": [
+            "passed"
+          ]
+        },
+        {
+          "description": "The proposal has been passed and executed.",
+          "type": "string",
+          "enum": [
+            "executed"
+          ]
+        },
+        {
+          "description": "The proposal has failed or expired and has been closed. A proposal deposit refund has been issued if applicable.",
+          "type": "string",
+          "enum": [
+            "closed"
+          ]
+        },
+        {
+          "description": "The proposal's execution failed.",
+          "type": "string",
+          "enum": [
+            "execution_failed"
+          ]
+        }
+      ]
+    },
     "SudoContractProposal": {
       "description": "SudoContractProposal defines the struct for sudo execution proposal.",
       "type": "object",
@@ -1386,6 +1725,72 @@
     "Uint64": {
       "description": "A thin wrapper around u64 that is using strings for JSON encoding/decoding, such that the full u64 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u64` to get the value out:\n\n``` # use cosmwasm_std::Uint64; let a = Uint64::from(42u64); assert_eq!(a.u64(), 42);\n\nlet b = Uint64::from(70u32); assert_eq!(b.u64(), 70); ```",
       "type": "string"
+    },
+    "UncheckedDenom": {
+      "description": "A denom that has not been checked to confirm it points to a valid asset.",
+      "oneOf": [
+        {
+          "description": "A native (bank module) asset.",
+          "type": "object",
+          "required": [
+            "native"
+          ],
+          "properties": {
+            "native": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "A cw20 asset.",
+          "type": "object",
+          "required": [
+            "cw20"
+          ],
+          "properties": {
+            "cw20": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "UncheckedDepositInfo": {
+      "description": "Information about the deposit required to create a proposal.",
+      "type": "object",
+      "required": [
+        "amount",
+        "denom",
+        "refund_policy"
+      ],
+      "properties": {
+        "amount": {
+          "description": "The number of tokens that must be deposited to create a proposal. Must be a positive, non-zero number.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Uint128"
+            }
+          ]
+        },
+        "denom": {
+          "description": "The address of the token to be used for proposal deposits.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/DepositToken"
+            }
+          ]
+        },
+        "refund_policy": {
+          "description": "The policy used for refunding deposits on proposal completion.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/DepositRefundPolicy"
+            }
+          ]
+        }
+      }
     },
     "UnpinCodesProposal": {
       "description": "UnpinCodesProposal defines the struct for unpin contract codes proposal.",

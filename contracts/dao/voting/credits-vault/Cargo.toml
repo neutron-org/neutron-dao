@@ -16,16 +16,16 @@ backtraces = ["cosmwasm-std/backtraces"]
 library = []
 
 [dependencies]
-cosmwasm-schema = { version = "1.1.3" }
-cosmwasm-std = { version = "1.1.3" }
-cosmwasm-storage = { version = "1.1.3" }
-cw-storage-plus = "1.0.1"
-cw2 = "0.13"
-cw20 = { version = "1.0.1" }
-cw-utils = "1.0.1"
-cw-controllers = "1.0.1"
-schemars = "0.8"
-serde = { version = "1.0.147", default-features = false, features = ["derive"] }
+cosmwasm-schema = { version = "1.3.0" }
+cosmwasm-std = { version = "1.3.0" }
+cosmwasm-storage = { version = "1.3.0" }
+cw-storage-plus = "1.1.0"
+cw2 = "1.1.0"
+cw20 = { version = "1.1.0" }
+cw-utils = { version = "1.0.1" }
+cw-controllers = "1.1.0"
+schemars = "0.8.8"
+serde = { version = "1.0.175", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0" }
 cwd-macros = { path = "../../../../packages/cwd-macros" }
 cwd-interface = { path = "../../../../packages/cwd-interface" }
@@ -33,5 +33,5 @@ cwd-voting = { path = "../../../../packages/cwd-voting" }
 cw-paginate = { path = "../../../../packages/cw-paginate" }
 
 [dev-dependencies]
-cw-multi-test = "0.16.2"
+cw-multi-test = "0.16.5"
 anyhow = "1.0.57"

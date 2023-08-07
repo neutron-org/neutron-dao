@@ -158,7 +158,6 @@ pub fn execute_fund(deps: DepsMut, info: MessageInfo) -> Result<Response, Contra
     }
     let shares = SHARES
         .range(deps.storage, None, None, Order::Ascending)
-        .into_iter()
         .collect::<StdResult<Vec<_>>>()?;
     if shares.is_empty() {
         return Err(ContractError::NoSharesSent {});
