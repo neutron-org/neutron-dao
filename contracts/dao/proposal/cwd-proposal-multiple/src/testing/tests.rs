@@ -60,8 +60,8 @@ pub struct TestMultipleChoiceVote {
     pub should_execute: ShouldExecute,
 }
 
-pub(crate) fn no_init<BankT, CustomT, WasmT, StakingT, DistrT>(
-    _: &mut Router<BankT, CustomT, WasmT, StakingT, DistrT>,
+pub(crate) fn no_init<BankT, CustomT, WasmT, StakingT, DistrT, IbcT, GovT>(
+    _: &mut Router<BankT, CustomT, WasmT, StakingT, DistrT, IbcT, GovT>,
     _: &dyn Api,
     _: &mut dyn Storage,
 ) {
