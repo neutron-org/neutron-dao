@@ -22,19 +22,6 @@ checksum = "3b13c32d80ecc7ab747b80c3784bce54ee8a7a0cc4fbda9bf4cda2cf6fe90854"
 [[package]]
 name = "astroport"
 version = "2.0.0"
-source = "git+https://github.com/neutron-org/neutron-tge-contracts.git?branch=main#e306308dd23d567399c15d899f295a910ede945b"
-dependencies = [
- "cosmwasm-schema",
- "cosmwasm-std",
- "cw-storage-plus 0.15.1",
- "cw20 0.15.1",
- "itertools",
- "uint",
-]
-
-[[package]]
-name = "astroport"
-version = "2.0.0"
 source = "git+https://github.com/neutron-org/neutron-tge-contracts.git?rev=e306308dd23d567399c15d899f295a910ede945b#e306308dd23d567399c15d899f295a910ede945b"
 dependencies = [
  "cosmwasm-schema",
@@ -1584,7 +1571,7 @@ dependencies = [
 name = "neutron-lockdrop-vault"
 version = "0.1.0"
 dependencies = [
- "astroport 2.0.0 (git+https://github.com/neutron-org/neutron-tge-contracts.git?branch=main)",
+ "astroport 2.0.0 (git+https://github.com/neutron-org/neutron-tge-contracts.git?rev=e306308dd23d567399c15d899f295a910ede945b)",
  "astroport-periphery",
  "cosmwasm-std",
  "cwd-macros",
