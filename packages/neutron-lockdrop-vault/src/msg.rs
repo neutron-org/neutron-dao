@@ -10,10 +10,10 @@ pub struct InstantiateMsg {
     pub description: String,
     /// The lockdrop contract behind the vault.
     pub lockdrop_contract: String,
-    /// The USDC/NTRN CL pool contract.
-    pub usdc_cl_pool_contract: String,
-    /// The ATOM/NTRN CL pool oracle contract.
-    pub atom_cl_pool_contract: String,
+    /// The oracle USDC/NTRN contract behind the vault.
+    pub oracle_usdc_contract: String,
+    /// The oracle ATOM/NTRN contract behind the vault.
+    pub oracle_atom_contract: String,
     /// Owner can update all configs including changing the owner. This will generally be a DAO.
     pub owner: String,
 }
@@ -42,7 +42,4 @@ pub enum QueryMsg {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-pub struct MigrateMsg {
-    pub atom_cl_pool_contract: String,
-    pub usdc_cl_pool_contract: String,
-}
+pub struct MigrateMsg {}

@@ -22,6 +22,19 @@ checksum = "3b13c32d80ecc7ab747b80c3784bce54ee8a7a0cc4fbda9bf4cda2cf6fe90854"
 [[package]]
 name = "astroport"
 version = "2.0.0"
+source = "git+https://github.com/neutron-org/neutron-tge-contracts.git?branch=main#e306308dd23d567399c15d899f295a910ede945b"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-storage-plus 0.15.1",
+ "cw20 0.15.1",
+ "itertools",
+ "uint",
+]
+
+[[package]]
+name = "astroport"
+version = "2.0.0"
 source = "git+https://github.com/neutron-org/neutron-tge-contracts.git?rev=e306308dd23d567399c15d899f295a910ede945b#e306308dd23d567399c15d899f295a910ede945b"
 dependencies = [
  "cosmwasm-schema",
@@ -103,6 +116,21 @@ dependencies = [
  "cw20 0.15.1",
  "itertools",
  "thiserror",
+]
+
+[[package]]
+name = "astroport-periphery"
+version = "1.1.0"
+source = "git+https://github.com/neutron-org/neutron-tge-contracts.git?branch=main#e306308dd23d567399c15d899f295a910ede945b"
+dependencies = [
+ "astroport 2.5.0",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-storage-plus 0.15.1",
+ "cw20 0.13.4",
+ "schemars",
+ "serde",
+ "terraswap",
 ]
 
 [[package]]
@@ -1633,8 +1661,8 @@ name = "lockdrop-vault"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "astroport 2.0.0 (git+https://github.com/neutron-org/neutron-tge-contracts.git?rev=e306308dd23d567399c15d899f295a910ede945b)",
- "astroport-periphery",
+ "astroport 2.0.0 (git+https://github.com/neutron-org/neutron-tge-contracts.git?branch=main)",
+ "astroport-periphery 1.1.0 (git+https://github.com/neutron-org/neutron-tge-contracts.git?branch=main)",
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-multi-test",
@@ -1645,6 +1673,28 @@ dependencies = [
  "cwd-macros",
  "cwd-voting",
  "neutron-lockdrop-vault",
+ "schemars",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "lockdrop-vault-for-cl-pools"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "astroport 2.0.0 (git+https://github.com/neutron-org/neutron-tge-contracts.git?rev=e306308dd23d567399c15d899f295a910ede945b)",
+ "astroport-periphery 1.1.0 (git+https://github.com/neutron-org/neutron-tge-contracts.git?rev=e306308dd23d567399c15d899f295a910ede945b)",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-multi-test",
+ "cw-storage-plus 1.1.0",
+ "cw2 1.1.0",
+ "cw20 1.1.0",
+ "cwd-interface",
+ "cwd-macros",
+ "cwd-voting",
+ "neutron-lockdrop-vault-for-cl-pools",
  "schemars",
  "serde",
  "thiserror",
@@ -1677,8 +1727,7 @@ dependencies = [
 name = "neutron-lockdrop-vault"
 version = "0.1.0"
 dependencies = [
- "astroport 2.0.0 (git+https://github.com/neutron-org/neutron-tge-contracts.git?rev=e306308dd23d567399c15d899f295a910ede945b)",
- "astroport-periphery",
+ "astroport-periphery 1.1.0 (git+https://github.com/neutron-org/neutron-tge-contracts.git?branch=main)",
  "cosmwasm-std",
  "cwd-macros",
  "neutron-oracle",
@@ -1688,10 +1737,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "neutron-lockdrop-vault-for-cl-pools"
+version = "0.1.0"
+dependencies = [
+ "astroport 2.0.0 (git+https://github.com/neutron-org/neutron-tge-contracts.git?rev=e306308dd23d567399c15d899f295a910ede945b)",
+ "astroport-periphery 1.1.0 (git+https://github.com/neutron-org/neutron-tge-contracts.git?rev=e306308dd23d567399c15d899f295a910ede945b)",
+ "cosmwasm-std",
+ "cwd-macros",
+ "neutron-voting-power",
+ "schemars",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "neutron-oracle"
 version = "0.1.0"
 dependencies = [
- "astroport 2.8.0",
+ "astroport 2.0.0 (git+https://github.com/neutron-org/neutron-tge-contracts.git?branch=main)",
  "cosmwasm-std",
 ]
 
@@ -1831,6 +1894,25 @@ dependencies = [
  "schemars",
  "serde",
  "thiserror",
+]
+
+[[package]]
+name = "neutron-vesting-lp-vault-for-cl-pools"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-std",
+ "cwd-macros",
+ "schemars",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "neutron-voting-power"
+version = "0.1.0"
+dependencies = [
+ "astroport 2.8.0",
+ "cosmwasm-std",
 ]
 
 [[package]]
@@ -2400,6 +2482,22 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 [[package]]
 name = "vesting-base"
 version = "1.1.0"
+source = "git+https://github.com/neutron-org/neutron-tge-contracts.git?branch=main#e306308dd23d567399c15d899f295a910ede945b"
+dependencies = [
+ "astroport 2.0.0 (git+https://github.com/neutron-org/neutron-tge-contracts.git?branch=main)",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-storage-plus 0.15.1",
+ "cw-utils 0.15.1",
+ "cw2 0.15.1",
+ "cw20 0.15.1",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "vesting-base"
+version = "1.1.0"
 source = "git+https://github.com/neutron-org/neutron-tge-contracts.git?rev=e306308dd23d567399c15d899f295a910ede945b#e306308dd23d567399c15d899f295a910ede945b"
 dependencies = [
  "astroport 2.0.0 (git+https://github.com/neutron-org/neutron-tge-contracts.git?rev=e306308dd23d567399c15d899f295a910ede945b)",
@@ -2432,6 +2530,19 @@ dependencies = [
 [[package]]
 name = "vesting-lp"
 version = "1.1.0"
+source = "git+https://github.com/neutron-org/neutron-tge-contracts.git?branch=main#e306308dd23d567399c15d899f295a910ede945b"
+dependencies = [
+ "astroport 2.0.0 (git+https://github.com/neutron-org/neutron-tge-contracts.git?branch=main)",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-storage-plus 0.15.1",
+ "cw2 0.15.1",
+ "vesting-base 1.1.0 (git+https://github.com/neutron-org/neutron-tge-contracts.git?branch=main)",
+]
+
+[[package]]
+name = "vesting-lp"
+version = "1.1.0"
 source = "git+https://github.com/neutron-org/neutron-tge-contracts.git?rev=e306308dd23d567399c15d899f295a910ede945b#e306308dd23d567399c15d899f295a910ede945b"
 dependencies = [
  "astroport 2.0.0 (git+https://github.com/neutron-org/neutron-tge-contracts.git?rev=e306308dd23d567399c15d899f295a910ede945b)",
@@ -2447,10 +2558,6 @@ name = "vesting-lp-vault"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "astroport 2.0.0 (git+https://github.com/neutron-org/neutron-tge-contracts.git?rev=e306308dd23d567399c15d899f295a910ede945b)",
- "astroport 2.8.0",
- "astroport-pair-concentrated",
- "astroport-xastro-token",
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-multi-test",
@@ -2463,8 +2570,33 @@ dependencies = [
  "schemars",
  "serde",
  "thiserror",
+ "vesting-base 1.1.0 (git+https://github.com/neutron-org/neutron-tge-contracts.git?branch=main)",
+ "vesting-lp 1.1.0 (git+https://github.com/neutron-org/neutron-tge-contracts.git?branch=main)",
+]
+
+[[package]]
+name = "vesting-lp-vault-for-cl-pools"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "astroport 2.0.0 (git+https://github.com/neutron-org/neutron-tge-contracts.git?rev=e306308dd23d567399c15d899f295a910ede945b)",
+ "astroport 2.8.0",
+ "astroport-pair-concentrated",
+ "astroport-xastro-token",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-multi-test",
+ "cw-storage-plus 1.1.0",
+ "cw2 1.1.0",
+ "cwd-interface",
+ "cwd-macros",
+ "neutron-vesting-lp-vault-for-cl-pools",
+ "neutron-voting-power",
+ "schemars",
+ "serde",
+ "thiserror",
  "vesting-base 1.1.0 (git+https://github.com/neutron-org/neutron-tge-contracts.git?rev=e306308dd23d567399c15d899f295a910ede945b)",
- "vesting-lp",
+ "vesting-lp 1.1.0 (git+https://github.com/neutron-org/neutron-tge-contracts.git?rev=e306308dd23d567399c15d899f295a910ede945b)",
 ]
 
 [[package]]

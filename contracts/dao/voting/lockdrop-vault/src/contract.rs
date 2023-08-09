@@ -1,13 +1,15 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, Uint128};
+use cosmwasm_std::{
+    to_binary, Binary, Deps, DepsMut, Env, Fraction, MessageInfo, Response, StdError, Uint128,
+};
 use cw2::set_contract_version;
 use cwd_interface::voting::{
     BondingStatusResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
 use neutron_lockdrop_vault::voting_power::{get_voting_power_for_address, get_voting_power_total};
 
-use crate::state::{CONFIG, DAO, OLD_CONFIG};
+use crate::state::{CONFIG, DAO};
 
 use astroport_periphery::lockdrop::PoolType;
 use neutron_lockdrop_vault::error::{ContractError, ContractResult};
@@ -32,8 +34,8 @@ pub fn instantiate(
         name: msg.name,
         description: msg.description,
         lockdrop_contract: deps.api.addr_validate(&msg.lockdrop_contract)?,
-        usdc_cl_pool_contract: deps.api.addr_validate(&msg.usdc_cl_pool_contract)?,
-        atom_cl_pool_contract: deps.api.addr_validate(&msg.atom_cl_pool_contract)?,
+        oracle_usdc_contract: deps.api.addr_validate(&msg.oracle_usdc_contract)?,
+        oracle_atom_contract: deps.api.addr_validate(&msg.oracle_atom_contract)?,
         owner,
     };
     config.validate()?;
@@ -46,8 +48,8 @@ pub fn instantiate(
         .add_attribute("description", config.description)
         .add_attribute("owner", config.owner)
         .add_attribute("lockdrop_contract", config.lockdrop_contract)
-        .add_attribute("oracle_usdc_contract", config.usdc_cl_pool_contract)
-        .add_attribute("oracle_atom_contract", config.atom_cl_pool_contract))
+        .add_attribute("oracle_usdc_contract", config.oracle_usdc_contract)
+        .add_attribute("oracle_atom_contract", config.oracle_atom_contract))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -133,10 +135,10 @@ pub fn execute_update_config(
         config.lockdrop_contract = lockdrop_contract;
     }
     if let Some(oracle_contract) = new_oracle_usdc_contract {
-        config.usdc_cl_pool_contract = oracle_contract;
+        config.oracle_usdc_contract = oracle_contract;
     }
     if let Some(oracle_contract) = new_oracle_atom_contract {
-        config.atom_cl_pool_contract = oracle_contract;
+        config.oracle_atom_contract = oracle_contract;
     }
     if let Some(name) = new_name {
         config.name = name;
@@ -153,8 +155,8 @@ pub fn execute_update_config(
         .add_attribute("description", config.description)
         .add_attribute("owner", config.owner)
         .add_attribute("lockdrop_contract", config.lockdrop_contract)
-        .add_attribute("oracle_usdc_contract", config.usdc_cl_pool_contract)
-        .add_attribute("oracle_atom_contract", config.atom_cl_pool_contract))
+        .add_attribute("oracle_usdc_contract", config.oracle_usdc_contract)
+        .add_attribute("oracle_atom_contract", config.oracle_atom_contract))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -193,8 +195,8 @@ pub fn query_voting_power_at_height(
     let atom_power = get_voting_power_for_address(
         deps,
         config.lockdrop_contract.as_ref(),
-        config.usdc_cl_pool_contract.as_ref(),
-        config.atom_cl_pool_contract.as_ref(),
+        config.oracle_usdc_contract.as_ref(),
+        config.oracle_atom_contract.as_ref(),
         PoolType::ATOM,
         address.clone(),
         height,
@@ -202,8 +204,8 @@ pub fn query_voting_power_at_height(
     let usdc_power = get_voting_power_for_address(
         deps,
         config.lockdrop_contract,
-        config.usdc_cl_pool_contract,
-        config.atom_cl_pool_contract,
+        config.oracle_usdc_contract,
+        config.oracle_atom_contract,
         PoolType::USDC,
         address,
         height,
@@ -211,7 +213,10 @@ pub fn query_voting_power_at_height(
 
     let power = atom_power + usdc_power;
 
-    Ok(VotingPowerAtHeightResponse { power, height })
+    Ok(VotingPowerAtHeightResponse {
+        power: power.numerator().try_into().map_err(StdError::from)?,
+        height,
+    })
 }
 
 pub fn query_total_power_at_height(
@@ -226,23 +231,26 @@ pub fn query_total_power_at_height(
     let atom_power = get_voting_power_total(
         deps,
         config.lockdrop_contract.as_ref(),
-        config.usdc_cl_pool_contract.as_ref(),
-        config.atom_cl_pool_contract.as_ref(),
+        config.oracle_usdc_contract.as_ref(),
+        config.oracle_atom_contract.as_ref(),
         PoolType::ATOM,
         height,
     )?;
     let usdc_power = get_voting_power_total(
         deps,
         config.lockdrop_contract,
-        config.usdc_cl_pool_contract,
-        config.atom_cl_pool_contract,
+        config.oracle_usdc_contract,
+        config.oracle_atom_contract,
         PoolType::USDC,
         height,
     )?;
 
     let power = atom_power + usdc_power;
 
-    Ok(TotalPowerAtHeightResponse { power, height })
+    Ok(TotalPowerAtHeightResponse {
+        power: power.numerator().try_into().map_err(StdError::from)?,
+        height,
+    })
 }
 
 pub fn query_info(deps: Deps) -> ContractResult<Binary> {
@@ -288,20 +296,7 @@ pub fn query_bonding_status(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> ContractResult<Response> {
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> ContractResult<Response> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-
-    let old_config = OLD_CONFIG.load(deps.storage)?;
-    let new_config = Config {
-        name: old_config.name,
-        description: old_config.description,
-        atom_cl_pool_contract: deps.api.addr_validate(&msg.atom_cl_pool_contract)?,
-        usdc_cl_pool_contract: deps.api.addr_validate(&msg.usdc_cl_pool_contract)?,
-        owner: old_config.owner,
-        lockdrop_contract: old_config.lockdrop_contract,
-    };
-
-    CONFIG.save(deps.storage, &new_config)?;
-
     Ok(Response::default())
 }

@@ -1,0 +1,11 @@
+[package]
+name = "neutron-oracle"
+version = "0.1.0"
+authors = ["Murad Karammaev <karammaev.murad@p2p.org>"]
+edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/neutron/neutron-dao"
+
+[dependencies]
+cosmwasm-std = { version = "1.3.0" }
+astroport = { package="astroport", git = "https://github.com/neutron-org/neutron-tge-contracts.git", branch = "main" }

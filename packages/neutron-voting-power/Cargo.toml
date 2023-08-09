@@ -1,5 +1,5 @@
 [package]
-name = "neutron-oracle"
+name = "neutron-voting-power"
 version = "0.1.0"
 authors = ["Murad Karammaev <karammaev.murad@p2p.org>"]
 edition = "2021"

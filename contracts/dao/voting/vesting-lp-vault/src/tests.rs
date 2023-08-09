@@ -1,13 +1,10 @@
 use crate::contract::{migrate, CONTRACT_NAME, CONTRACT_VERSION};
-use crate::state::{CONFIG, OLD_CONFIG};
-use astroport::asset::AssetInfo;
 use cosmwasm_std::testing::{mock_dependencies, mock_env};
 use cosmwasm_std::{coins, Addr, Coin, Empty, Uint128};
 use cw_multi_test::{custom_app, App, AppResponse, Contract, ContractWrapper, Executor};
 use cwd_interface::voting::{
     InfoResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
-use neutron_vesting_lp_vault::types::OldConfig;
 use neutron_vesting_lp_vault::{
     msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg},
     types::Config,
@@ -26,8 +23,6 @@ const NEW_ATOM_VESTING_LP_ADDR: &str = "new_atom_vesting_lp";
 const NEW_USDC_VESTING_LP_ADDR: &str = "new_usdc_vesting_lp";
 const NEW_ATOM_ORACLE_ADDR: &str = "new_atom_oracle";
 const NEW_USDC_ORACLE_ADDR: &str = "new_usdc_oracle";
-const ATOM_CL_POOL_ADDR: &str = "atom_cl_pool";
-const USDC_CL_POOL_ADDR: &str = "usdc_cl_pool";
 const ADDR1: &str = "addr1";
 const ADDR2: &str = "addr2";
 const DENOM: &str = "ujuno";
@@ -38,15 +33,6 @@ fn vault_contract() -> Box<dyn Contract<Empty>> {
         crate::contract::execute,
         crate::contract::instantiate,
         crate::contract::query,
-    );
-    Box::new(contract)
-}
-
-fn lp_token_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        astroport_xastro_token::contract::execute,
-        astroport_xastro_token::contract::instantiate,
-        astroport_xastro_token::contract::query,
     );
     Box::new(contract)
 }
@@ -100,33 +86,9 @@ fn instantiate_vault(app: &mut App, id: u64, msg: InstantiateMsg) -> Addr {
         .unwrap()
 }
 
-fn instantiate_lp_token(
-    app: &mut App,
-    id: u64,
-    msg: astroport_original::xastro_token::InstantiateMsg,
-) -> Addr {
-    app.instantiate_contract(id, Addr::unchecked(DAO_ADDR), &msg, &[], "lp-token", None)
-        .unwrap()
-}
-
 fn instantiate_vesting_lp(app: &mut App, id: u64, msg: vesting_lp::msg::InstantiateMsg) -> Addr {
     app.instantiate_contract(id, Addr::unchecked(DAO_ADDR), &msg, &[], "vesting_lp", None)
         .unwrap()
-}
-
-fn set_vesting_token(
-    app: &mut App,
-    sender: Addr,
-    vesting_contract: Addr,
-    vesting_token: AssetInfo,
-) {
-    app.execute_contract(
-        sender,
-        vesting_contract,
-        &vesting_base::msg::ExecuteMsg::SetVestingToken { vesting_token },
-        &[],
-    )
-    .unwrap();
 }
 
 fn bond_tokens(
@@ -179,9 +141,9 @@ fn update_config(
         &ExecuteMsg::UpdateConfig {
             owner,
             atom_vesting_lp_contract,
-            atom_cl_pool_contract: atom_oracle_contract,
+            atom_oracle_contract,
             usdc_vesting_lp_contract,
-            usdc_cl_pool_contract: usdc_oracle_contract,
+            usdc_oracle_contract,
             name,
             description,
         },
@@ -238,9 +200,9 @@ fn test_instantiate() {
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
             atom_vesting_lp_contract: ATOM_VESTING_LP_ADDR.to_string(),
-            atom_cl_pool_contract: ATOM_ORACLE_ADDR.to_string(),
+            atom_oracle_contract: ATOM_ORACLE_ADDR.to_string(),
             usdc_vesting_lp_contract: USDC_VESTING_LP_ADDR.to_string(),
-            usdc_cl_pool_contract: USDC_ORACLE_ADDR.to_string(),
+            usdc_oracle_contract: USDC_ORACLE_ADDR.to_string(),
         },
     );
     assert_eq!(get_dao(&app, &addr), String::from(DAO_ADDR));
@@ -254,9 +216,9 @@ fn test_instantiate() {
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
             atom_vesting_lp_contract: ATOM_VESTING_LP_ADDR.to_string(),
-            atom_cl_pool_contract: ATOM_ORACLE_ADDR.to_string(),
+            atom_oracle_contract: ATOM_ORACLE_ADDR.to_string(),
             usdc_vesting_lp_contract: USDC_VESTING_LP_ADDR.to_string(),
-            usdc_cl_pool_contract: USDC_ORACLE_ADDR.to_string(),
+            usdc_oracle_contract: USDC_ORACLE_ADDR.to_string(),
         },
     );
     assert_eq!(get_dao(&app, &addr), String::from(DAO_ADDR));
@@ -275,9 +237,9 @@ fn test_bond() {
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
             atom_vesting_lp_contract: ATOM_VESTING_LP_ADDR.to_string(),
-            atom_cl_pool_contract: ATOM_ORACLE_ADDR.to_string(),
+            atom_oracle_contract: ATOM_ORACLE_ADDR.to_string(),
             usdc_vesting_lp_contract: USDC_VESTING_LP_ADDR.to_string(),
-            usdc_cl_pool_contract: USDC_ORACLE_ADDR.to_string(),
+            usdc_oracle_contract: USDC_ORACLE_ADDR.to_string(),
         },
     );
 
@@ -298,9 +260,9 @@ fn test_unbond() {
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
             atom_vesting_lp_contract: ATOM_VESTING_LP_ADDR.to_string(),
-            atom_cl_pool_contract: ATOM_ORACLE_ADDR.to_string(),
+            atom_oracle_contract: ATOM_ORACLE_ADDR.to_string(),
             usdc_vesting_lp_contract: USDC_VESTING_LP_ADDR.to_string(),
-            usdc_cl_pool_contract: USDC_ORACLE_ADDR.to_string(),
+            usdc_oracle_contract: USDC_ORACLE_ADDR.to_string(),
         },
     );
 
@@ -320,9 +282,9 @@ fn test_update_config_unauthorized() {
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
             atom_vesting_lp_contract: ATOM_VESTING_LP_ADDR.to_string(),
-            atom_cl_pool_contract: ATOM_ORACLE_ADDR.to_string(),
+            atom_oracle_contract: ATOM_ORACLE_ADDR.to_string(),
             usdc_vesting_lp_contract: USDC_VESTING_LP_ADDR.to_string(),
-            usdc_cl_pool_contract: USDC_ORACLE_ADDR.to_string(),
+            usdc_oracle_contract: USDC_ORACLE_ADDR.to_string(),
         },
     );
 
@@ -354,9 +316,9 @@ fn test_update_config() {
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
             atom_vesting_lp_contract: ATOM_VESTING_LP_ADDR.to_string(),
-            atom_cl_pool_contract: ATOM_ORACLE_ADDR.to_string(),
+            atom_oracle_contract: ATOM_ORACLE_ADDR.to_string(),
             usdc_vesting_lp_contract: USDC_VESTING_LP_ADDR.to_string(),
-            usdc_cl_pool_contract: USDC_ORACLE_ADDR.to_string(),
+            usdc_oracle_contract: USDC_ORACLE_ADDR.to_string(),
         },
     );
 
@@ -382,9 +344,9 @@ fn test_update_config() {
             description: NEW_DESCRIPTION.to_string(),
             owner: Addr::unchecked(ADDR1),
             atom_vesting_lp_contract: Addr::unchecked(NEW_ATOM_VESTING_LP_ADDR),
-            atom_cl_pool_contract: Addr::unchecked(NEW_ATOM_ORACLE_ADDR),
+            atom_oracle_contract: Addr::unchecked(NEW_ATOM_ORACLE_ADDR),
             usdc_vesting_lp_contract: Addr::unchecked(NEW_USDC_VESTING_LP_ADDR),
-            usdc_cl_pool_contract: Addr::unchecked(NEW_USDC_ORACLE_ADDR),
+            usdc_oracle_contract: Addr::unchecked(NEW_USDC_ORACLE_ADDR),
         },
         config
     );
@@ -403,9 +365,9 @@ fn test_update_config_invalid_description() {
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
             atom_vesting_lp_contract: ATOM_VESTING_LP_ADDR.to_string(),
-            atom_cl_pool_contract: ATOM_ORACLE_ADDR.to_string(),
+            atom_oracle_contract: ATOM_ORACLE_ADDR.to_string(),
             usdc_vesting_lp_contract: USDC_VESTING_LP_ADDR.to_string(),
-            usdc_cl_pool_contract: USDC_ORACLE_ADDR.to_string(),
+            usdc_oracle_contract: USDC_ORACLE_ADDR.to_string(),
         },
     );
 
@@ -438,9 +400,9 @@ fn test_update_config_invalid_name() {
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
             atom_vesting_lp_contract: ATOM_VESTING_LP_ADDR.to_string(),
-            atom_cl_pool_contract: ATOM_ORACLE_ADDR.to_string(),
+            atom_oracle_contract: ATOM_ORACLE_ADDR.to_string(),
             usdc_vesting_lp_contract: USDC_VESTING_LP_ADDR.to_string(),
-            usdc_cl_pool_contract: USDC_ORACLE_ADDR.to_string(),
+            usdc_oracle_contract: USDC_ORACLE_ADDR.to_string(),
         },
     );
 
@@ -472,9 +434,9 @@ fn test_query_dao() {
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
             atom_vesting_lp_contract: ATOM_VESTING_LP_ADDR.to_string(),
-            atom_cl_pool_contract: ATOM_ORACLE_ADDR.to_string(),
+            atom_oracle_contract: ATOM_ORACLE_ADDR.to_string(),
             usdc_vesting_lp_contract: USDC_VESTING_LP_ADDR.to_string(),
-            usdc_cl_pool_contract: USDC_ORACLE_ADDR.to_string(),
+            usdc_oracle_contract: USDC_ORACLE_ADDR.to_string(),
         },
     );
 
@@ -495,9 +457,9 @@ fn test_query_info() {
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
             atom_vesting_lp_contract: ATOM_VESTING_LP_ADDR.to_string(),
-            atom_cl_pool_contract: ATOM_ORACLE_ADDR.to_string(),
+            atom_oracle_contract: ATOM_ORACLE_ADDR.to_string(),
             usdc_vesting_lp_contract: USDC_VESTING_LP_ADDR.to_string(),
-            usdc_cl_pool_contract: USDC_ORACLE_ADDR.to_string(),
+            usdc_oracle_contract: USDC_ORACLE_ADDR.to_string(),
         },
     );
 
@@ -518,9 +480,9 @@ fn test_query_get_config() {
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
             atom_vesting_lp_contract: ATOM_VESTING_LP_ADDR.to_string(),
-            atom_cl_pool_contract: ATOM_ORACLE_ADDR.to_string(),
+            atom_oracle_contract: ATOM_ORACLE_ADDR.to_string(),
             usdc_vesting_lp_contract: USDC_VESTING_LP_ADDR.to_string(),
-            usdc_cl_pool_contract: USDC_ORACLE_ADDR.to_string(),
+            usdc_oracle_contract: USDC_ORACLE_ADDR.to_string(),
         },
     );
 
@@ -532,9 +494,9 @@ fn test_query_get_config() {
             description: DESCRIPTION.to_string(),
             owner: Addr::unchecked(DAO_ADDR),
             atom_vesting_lp_contract: Addr::unchecked(ATOM_VESTING_LP_ADDR),
-            atom_cl_pool_contract: Addr::unchecked(ATOM_ORACLE_ADDR),
+            atom_oracle_contract: Addr::unchecked(ATOM_ORACLE_ADDR),
             usdc_vesting_lp_contract: Addr::unchecked(USDC_VESTING_LP_ADDR),
-            usdc_cl_pool_contract: Addr::unchecked(USDC_ORACLE_ADDR),
+            usdc_oracle_contract: Addr::unchecked(USDC_ORACLE_ADDR),
         }
     )
 }
@@ -544,33 +506,6 @@ fn test_voting_power_at_height() {
     let mut app = mock_app();
 
     let vesting_lp_id = app.store_code(vesting_lp_contract());
-    let lp_token_id = app.store_code(lp_token_contract());
-
-    let atom_lp_token_address = instantiate_lp_token(
-        &mut app,
-        lp_token_id,
-        astroport_original::xastro_token::InstantiateMsg {
-            name: "atom".to_string(),
-            symbol: "atom-lp".to_string(),
-            decimals: 6,
-            initial_balances: vec![],
-            mint: None,
-            marketing: None,
-        },
-    );
-    let usdc_lp_token_address = instantiate_lp_token(
-        &mut app,
-        lp_token_id,
-        astroport_original::xastro_token::InstantiateMsg {
-            name: "usdc".to_string(),
-            symbol: "usdc-lp".to_string(),
-            decimals: 6,
-            initial_balances: vec![],
-            mint: None,
-            marketing: None,
-        },
-    );
-
     let atom_vesting_lp_addr = instantiate_vesting_lp(
         &mut app,
         vesting_lp_id,
@@ -590,23 +525,6 @@ fn test_voting_power_at_height() {
         },
     );
 
-    set_vesting_token(
-        &mut app,
-        Addr::unchecked("manager".to_string()),
-        usdc_vesting_lp_addr.clone(),
-        AssetInfo::Token {
-            contract_addr: usdc_lp_token_address,
-        },
-    );
-    set_vesting_token(
-        &mut app,
-        Addr::unchecked("manager".to_string()),
-        atom_vesting_lp_addr.clone(),
-        AssetInfo::Token {
-            contract_addr: atom_lp_token_address,
-        },
-    );
-
     let vault_id = app.store_code(vault_contract());
     let addr = instantiate_vault(
         &mut app,
@@ -616,9 +534,9 @@ fn test_voting_power_at_height() {
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
             atom_vesting_lp_contract: atom_vesting_lp_addr.to_string(),
-            atom_cl_pool_contract: ATOM_ORACLE_ADDR.to_string(),
+            atom_oracle_contract: ATOM_ORACLE_ADDR.to_string(),
             usdc_vesting_lp_contract: usdc_vesting_lp_addr.to_string(),
-            usdc_cl_pool_contract: USDC_ORACLE_ADDR.to_string(),
+            usdc_oracle_contract: USDC_ORACLE_ADDR.to_string(),
         },
     );
 
@@ -632,33 +550,6 @@ fn test_total_power_at_height() {
     let mut app = mock_app();
 
     let vesting_lp_id = app.store_code(vesting_lp_contract());
-    let lp_token_id = app.store_code(lp_token_contract());
-
-    let atom_lp_token_address = instantiate_lp_token(
-        &mut app,
-        lp_token_id,
-        astroport_original::xastro_token::InstantiateMsg {
-            name: "atom".to_string(),
-            symbol: "atom-lp".to_string(),
-            decimals: 6,
-            initial_balances: vec![],
-            mint: None,
-            marketing: None,
-        },
-    );
-    let usdc_lp_token_address = instantiate_lp_token(
-        &mut app,
-        lp_token_id,
-        astroport_original::xastro_token::InstantiateMsg {
-            name: "usdc".to_string(),
-            symbol: "usdc-lp".to_string(),
-            decimals: 6,
-            initial_balances: vec![],
-            mint: None,
-            marketing: None,
-        },
-    );
-
     let atom_vesting_lp_addr = instantiate_vesting_lp(
         &mut app,
         vesting_lp_id,
@@ -678,23 +569,6 @@ fn test_total_power_at_height() {
         },
     );
 
-    set_vesting_token(
-        &mut app,
-        Addr::unchecked("manager".to_string()),
-        usdc_vesting_lp_addr.clone(),
-        AssetInfo::Token {
-            contract_addr: usdc_lp_token_address,
-        },
-    );
-    set_vesting_token(
-        &mut app,
-        Addr::unchecked("manager".to_string()),
-        atom_vesting_lp_addr.clone(),
-        AssetInfo::Token {
-            contract_addr: atom_lp_token_address,
-        },
-    );
-
     let vault_id = app.store_code(vault_contract());
     let addr = instantiate_vault(
         &mut app,
@@ -704,9 +578,9 @@ fn test_total_power_at_height() {
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
             atom_vesting_lp_contract: atom_vesting_lp_addr.to_string(),
-            atom_cl_pool_contract: ATOM_ORACLE_ADDR.to_string(),
+            atom_oracle_contract: ATOM_ORACLE_ADDR.to_string(),
             usdc_vesting_lp_contract: usdc_vesting_lp_addr.to_string(),
-            usdc_cl_pool_contract: USDC_ORACLE_ADDR.to_string(),
+            usdc_oracle_contract: USDC_ORACLE_ADDR.to_string(),
         },
     );
 
@@ -719,40 +593,8 @@ fn test_total_power_at_height() {
 pub fn test_migrate_update_version() {
     let mut deps = mock_dependencies();
     cw2::set_contract_version(&mut deps.storage, "my-contract", "old-version").unwrap();
-
-    let old_config = OldConfig {
-        name: NAME.to_string(),
-        description: DESCRIPTION.to_string(),
-        owner: Addr::unchecked(DAO_ADDR.to_string()),
-        atom_vesting_lp_contract: Addr::unchecked(ATOM_VESTING_LP_ADDR.to_string()),
-        atom_oracle_contract: Addr::unchecked(ATOM_ORACLE_ADDR.to_string()),
-        usdc_vesting_lp_contract: Addr::unchecked(USDC_VESTING_LP_ADDR.to_string()),
-        usdc_oracle_contract: Addr::unchecked(USDC_ORACLE_ADDR.to_string()),
-    };
-    OLD_CONFIG.save(&mut deps.storage, &old_config).unwrap();
-
-    let new_config = Config {
-        name: NAME.to_string(),
-        description: DESCRIPTION.to_string(),
-        owner: Addr::unchecked(DAO_ADDR.to_string()),
-        atom_vesting_lp_contract: Addr::unchecked(ATOM_VESTING_LP_ADDR.to_string()),
-        atom_cl_pool_contract: Addr::unchecked(ATOM_CL_POOL_ADDR.to_string()),
-        usdc_vesting_lp_contract: Addr::unchecked(USDC_VESTING_LP_ADDR.to_string()),
-        usdc_cl_pool_contract: Addr::unchecked(USDC_CL_POOL_ADDR.to_string()),
-    };
-
-    migrate(
-        deps.as_mut(),
-        mock_env(),
-        MigrateMsg {
-            atom_cl_pool: ATOM_CL_POOL_ADDR.to_string(),
-            usdc_cl_pool: USDC_CL_POOL_ADDR.to_string(),
-        },
-    )
-    .unwrap();
+    migrate(deps.as_mut(), mock_env(), MigrateMsg {}).unwrap();
     let version = cw2::get_contract_version(&deps.storage).unwrap();
-    let config = CONFIG.load(&deps.storage).unwrap();
     assert_eq!(version.version, CONTRACT_VERSION);
     assert_eq!(version.contract, CONTRACT_NAME);
-    assert_eq!(config, new_config);
 }

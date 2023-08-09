@@ -3,16 +3,16 @@
   "title": "GetConfigResponse",
   "type": "object",
   "required": [
-    "atom_cl_pool_contract",
+    "atom_oracle_contract",
     "atom_vesting_lp_contract",
     "description",
     "name",
     "owner",
-    "usdc_cl_pool_contract",
+    "usdc_oracle_contract",
     "usdc_vesting_lp_contract"
   ],
   "properties": {
-    "atom_cl_pool_contract": {
+    "atom_oracle_contract": {
       "$ref": "#/definitions/Addr"
     },
     "atom_vesting_lp_contract": {
@@ -27,7 +27,7 @@
     "owner": {
       "$ref": "#/definitions/Addr"
     },
-    "usdc_cl_pool_contract": {
+    "usdc_oracle_contract": {
       "$ref": "#/definitions/Addr"
     },
     "usdc_vesting_lp_contract": {

@@ -4,24 +4,13 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
-pub struct OldConfig {
+pub struct Config {
     pub name: String,
     pub description: String,
     pub atom_vesting_lp_contract: Addr,
     pub atom_oracle_contract: Addr,
     pub usdc_vesting_lp_contract: Addr,
     pub usdc_oracle_contract: Addr,
-    pub owner: Addr,
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
-pub struct Config {
-    pub name: String,
-    pub description: String,
-    pub atom_vesting_lp_contract: Addr,
-    pub atom_cl_pool_contract: Addr,
-    pub usdc_vesting_lp_contract: Addr,
-    pub usdc_cl_pool_contract: Addr,
     pub owner: Addr,
 }
 
@@ -49,9 +38,9 @@ mod tests {
             name: String::from("name"),
             description: String::from("description"),
             atom_vesting_lp_contract: Addr::unchecked("atom_vesting_lp_contract"),
-            atom_cl_pool_contract: Addr::unchecked("atom_cl_pool_contract"),
+            atom_oracle_contract: Addr::unchecked("atom_oracle_contract"),
             usdc_vesting_lp_contract: Addr::unchecked("usdc_vesting_lp_contract"),
-            usdc_cl_pool_contract: Addr::unchecked("usdc_cl_pool_contract"),
+            usdc_oracle_contract: Addr::unchecked("usdc_oracle_contract"),
             owner: Addr::unchecked("owner"),
         };
         assert!(cfg.validate().is_ok());
@@ -63,9 +52,9 @@ mod tests {
             name: String::from(""),
             description: String::from("description"),
             atom_vesting_lp_contract: Addr::unchecked("atom_vesting_lp_contract"),
-            atom_cl_pool_contract: Addr::unchecked("atom_cl_pool_contract"),
+            atom_oracle_contract: Addr::unchecked("atom_oracle_contract"),
             usdc_vesting_lp_contract: Addr::unchecked("usdc_vesting_lp_contract"),
-            usdc_cl_pool_contract: Addr::unchecked("usdc_cl_pool_contract"),
+            usdc_oracle_contract: Addr::unchecked("usdc_oracle_contract"),
             owner: Addr::unchecked("owner"),
         };
         assert_eq!(cfg.validate(), Err(ContractError::NameIsEmpty {}));
@@ -77,9 +66,9 @@ mod tests {
             name: String::from("name"),
             description: String::from(""),
             atom_vesting_lp_contract: Addr::unchecked("atom_vesting_lp_contract"),
-            atom_cl_pool_contract: Addr::unchecked("atom_cl_pool_contract"),
+            atom_oracle_contract: Addr::unchecked("atom_oracle_contract"),
             usdc_vesting_lp_contract: Addr::unchecked("usdc_vesting_lp_contract"),
-            usdc_cl_pool_contract: Addr::unchecked("usdc_cl_pool_contract"),
+            usdc_oracle_contract: Addr::unchecked("usdc_oracle_contract"),
             owner: Addr::unchecked("owner"),
         };
         assert_eq!(cfg.validate(), Err(ContractError::DescriptionIsEmpty {}));
