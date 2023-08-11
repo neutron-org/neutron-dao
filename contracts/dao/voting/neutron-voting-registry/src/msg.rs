@@ -1,3 +1,4 @@
+use crate::state::VotingVaultState;
 use cwd_macros::{info_query, voting_query};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -14,7 +15,8 @@ pub struct InstantiateMsg {
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     AddVotingVault { new_voting_vault_contract: String },
-    RemoveVotingVault { old_voting_vault_contract: String },
+    DeactivateVotingVault { voting_vault_contract: String },
+    ActivateVotingVault { voting_vault_contract: String },
     UpdateConfig { owner: String },
 }
 
@@ -25,15 +27,16 @@ pub enum ExecuteMsg {
 pub enum QueryMsg {
     Dao {},
     Config {},
-    VotingVaults {},
+    VotingVaults { height: Option<u64> },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct MigrateMsg {}
 
-#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq, Eq)]
 pub struct VotingVault {
     pub address: String,
     pub name: String,
     pub description: String,
+    pub state: VotingVaultState,
 }
