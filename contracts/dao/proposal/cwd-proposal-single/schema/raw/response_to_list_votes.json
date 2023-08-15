@@ -1,19 +1,17 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "GetVoteResponse",
-  "description": "Information about a vote.",
+  "title": "VoteListResponse",
+  "description": "Information about the votes for a proposal.",
   "type": "object",
+  "required": [
+    "votes"
+  ],
   "properties": {
-    "vote": {
-      "description": "None if no such vote, Some otherwise.",
-      "anyOf": [
-        {
-          "$ref": "#/definitions/VoteInfo"
-        },
-        {
-          "type": "null"
-        }
-      ]
+    "votes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/VoteInfo"
+      }
     }
   },
   "definitions": {
