@@ -1,157 +1,155 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "ExecuteMsg_for_ProposeMessage",
-  "oneOf": [
-    {
-      "description": "Creates a new proposal in the pre-propose module. MSG will be serialized and used as the proposal creation message.",
-      "type": "object",
-      "required": [
-        "propose"
-      ],
-      "properties": {
-        "propose": {
-          "type": "object",
-          "required": [
-            "msg"
-          ],
-          "properties": {
-            "msg": {
-              "$ref": "#/definitions/ProposeMessage"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "description": "Updates the configuration of this module. This will completely override the existing configuration. This new configuration will only apply to proposals created after the config is updated. Only the DAO may execute this message.",
-      "type": "object",
-      "required": [
-        "update_config"
-      ],
-      "properties": {
-        "update_config": {
-          "type": "object",
-          "required": [
-            "open_proposal_submission"
-          ],
-          "properties": {
-            "deposit_info": {
-              "anyOf": [
-                {
-                  "$ref": "#/definitions/UncheckedDepositInfo"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "open_proposal_submission": {
-              "type": "boolean"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "description": "Withdraws funds inside of this contract to the message sender. The contracts entire balance for the specifed DENOM is withdrawn to the message sender. Only the DAO may call this method.\n\nThis is intended only as an escape hatch in the event of a critical bug in this contract or it's proposal module. Withdrawing funds will cause future attempts to return proposal deposits to fail their transactions as the contract will have insufficent balance to return them. In the case of `cw-proposal-single` this transaction failure will cause the module to remove the pre-propose module from its proposal hook receivers.\n\nMore likely than not, this should NEVER BE CALLED unless a bug in this contract or the proposal module it is associated with has caused it to stop receiving proposal hook messages, or if a critical security vulnerability has been found that allows an attacker to drain proposal deposits.",
-      "type": "object",
-      "required": [
-        "withdraw"
-      ],
-      "properties": {
-        "withdraw": {
-          "type": "object",
-          "properties": {
-            "denom": {
-              "description": "The denom to withdraw funds for. If no denom is specified, the denomination currently configured for proposal deposits will be used.\n\nYou may want to specify a denomination here if you are withdrawing funds that were previously accepted for proposal deposits but are not longer used due to an `UpdateConfig` message being executed on the contract.",
-              "anyOf": [
-                {
-                  "$ref": "#/definitions/UncheckedDenom"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "description": "Handles proposal hook fired by the associated proposal module when a proposal is created. By default, the base contract will return deposits proposals, when they are closed. when proposals are executed, or, if it is refunding failed",
-      "type": "object",
-      "required": [
-        "proposal_created_hook"
-      ],
-      "properties": {
-        "proposal_created_hook": {
-          "type": "object",
-          "required": [
-            "proposal_id",
-            "proposer"
-          ],
-          "properties": {
-            "proposal_id": {
-              "type": "integer",
-              "format": "uint64",
-              "minimum": 0.0
-            },
-            "proposer": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "description": "Handles proposal hook fired by the associated proposal module when a proposal is completed (ie executed or rejected). By default, the base contract will return deposits proposals, when they are closed. when proposals are executed, or, if it is refunding failed",
-      "type": "object",
-      "required": [
-        "proposal_completed_hook"
-      ],
-      "properties": {
-        "proposal_completed_hook": {
-          "type": "object",
-          "required": [
-            "new_status",
-            "proposal_id"
-          ],
-          "properties": {
-            "new_status": {
-              "$ref": "#/definitions/Status"
-            },
-            "proposal_id": {
-              "type": "integer",
-              "format": "uint64",
-              "minimum": 0.0
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    }
+  "title": "SingleChoiceProposal",
+  "type": "object",
+  "required": [
+    "id",
+    "msgs",
+    "status"
   ],
+  "properties": {
+    "id": {
+      "description": "The ID of the proposal being returned.",
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    },
+    "msgs": {
+      "description": "The messages that will be executed should this proposal be executed.",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/CosmosMsg_for_NeutronMsg"
+      }
+    },
+    "status": {
+      "$ref": "#/definitions/ProposalStatus"
+    }
+  },
   "definitions": {
     "AdminProposal": {
-      "description": "AdminProposal defines the struct for various proposals which Neutron's Admin Module may accept. Currently only parameter change proposals are implemented, new types of admin proposals may be implemented in future.",
-      "type": "object",
-      "properties": {
-        "param_change_proposal": {
-          "description": "*param_change_proposal** is a parameter change proposal field.",
-          "anyOf": [
-            {
+      "description": "AdminProposal defines the struct for various proposals which Neutron's Admin Module may accept.",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "param_change_proposal"
+          ],
+          "properties": {
+            "param_change_proposal": {
               "$ref": "#/definitions/ParamChangeProposal"
-            },
-            {
-              "type": "null"
             }
-          ]
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "software_upgrade_proposal"
+          ],
+          "properties": {
+            "software_upgrade_proposal": {
+              "$ref": "#/definitions/SoftwareUpgradeProposal"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "cancel_software_upgrade_proposal"
+          ],
+          "properties": {
+            "cancel_software_upgrade_proposal": {
+              "$ref": "#/definitions/CancelSoftwareUpgradeProposal"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "upgrade_proposal"
+          ],
+          "properties": {
+            "upgrade_proposal": {
+              "$ref": "#/definitions/UpgradeProposal"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "client_update_proposal"
+          ],
+          "properties": {
+            "client_update_proposal": {
+              "$ref": "#/definitions/ClientUpdateProposal"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "pin_codes_proposal"
+          ],
+          "properties": {
+            "pin_codes_proposal": {
+              "$ref": "#/definitions/PinCodesProposal"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "unpin_codes_proposal"
+          ],
+          "properties": {
+            "unpin_codes_proposal": {
+              "$ref": "#/definitions/UnpinCodesProposal"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "sudo_contract_proposal"
+          ],
+          "properties": {
+            "sudo_contract_proposal": {
+              "$ref": "#/definitions/SudoContractProposal"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "update_admin_proposal"
+          ],
+          "properties": {
+            "update_admin_proposal": {
+              "$ref": "#/definitions/UpdateAdminProposal"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "clear_admin_proposal"
+          ],
+          "properties": {
+            "clear_admin_proposal": {
+              "$ref": "#/definitions/ClearAdminProposal"
+            }
+          },
+          "additionalProperties": false
         }
-      }
+      ]
     },
     "BankMsg": {
       "description": "The message types of the bank module.\n\nSee https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/bank/v1beta1/tx.proto",
@@ -213,6 +211,75 @@
     "Binary": {
       "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization with serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>. See also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
       "type": "string"
+    },
+    "CancelSoftwareUpgradeProposal": {
+      "description": "CancelSoftwareUpgradeProposal defines the struct for cancel software upgrade proposal.",
+      "type": "object",
+      "required": [
+        "description",
+        "title"
+      ],
+      "properties": {
+        "description": {
+          "description": "*description** is a text description of proposal. Non unique.",
+          "type": "string"
+        },
+        "title": {
+          "description": "*title** is a text title of proposal. Non unique.",
+          "type": "string"
+        }
+      }
+    },
+    "ClearAdminProposal": {
+      "description": "SudoContractProposal defines the struct for clear admin proposal.",
+      "type": "object",
+      "required": [
+        "contract",
+        "description",
+        "title"
+      ],
+      "properties": {
+        "contract": {
+          "description": "*contract** is an address of contract admin will be removed.",
+          "type": "string"
+        },
+        "description": {
+          "description": "*description** is a text description of proposal.",
+          "type": "string"
+        },
+        "title": {
+          "description": "*title** is a text title of proposal.",
+          "type": "string"
+        }
+      }
+    },
+    "ClientUpdateProposal": {
+      "description": "ClientUpdateProposal defines the struct for client update proposal.",
+      "type": "object",
+      "required": [
+        "description",
+        "subject_client_id",
+        "substitute_client_id",
+        "title"
+      ],
+      "properties": {
+        "description": {
+          "description": "*description** is a text description of proposal. Non unique.",
+          "type": "string"
+        },
+        "subject_client_id": {
+          "description": "*subject_client_id** is a subject client id.",
+          "type": "string"
+        },
+        "substitute_client_id": {
+          "description": "*substitute_client_id** is a substitute client id.",
+          "type": "string"
+        },
+        "title": {
+          "description": "*title** is a text title of proposal.",
+          "type": "string"
+        }
+      }
     },
     "Coin": {
       "type": "object",
@@ -342,70 +409,6 @@
         }
       ]
     },
-    "DepositRefundPolicy": {
-      "oneOf": [
-        {
-          "description": "Deposits should always be refunded.",
-          "type": "string",
-          "enum": [
-            "always"
-          ]
-        },
-        {
-          "description": "Deposits should only be refunded for passed proposals.",
-          "type": "string",
-          "enum": [
-            "only_passed"
-          ]
-        },
-        {
-          "description": "Deposits should never be refunded.",
-          "type": "string",
-          "enum": [
-            "never"
-          ]
-        }
-      ]
-    },
-    "DepositToken": {
-      "description": "Information about the token to use for proposal deposits.",
-      "oneOf": [
-        {
-          "description": "Use a specific token address as the deposit token.",
-          "type": "object",
-          "required": [
-            "token"
-          ],
-          "properties": {
-            "token": {
-              "type": "object",
-              "required": [
-                "denom"
-              ],
-              "properties": {
-                "denom": {
-                  "$ref": "#/definitions/UncheckedDenom"
-                }
-              }
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "description": "Use the token address of the associated DAO's voting module. NOTE: in order to use the token address of the voting module the voting module must (1) use a cw20 token and (2) implement the `TokenContract {}` query type defined by `cwd_macros::token_query`. Failing to implement that and using this option will cause instantiation to fail.",
-          "type": "object",
-          "required": [
-            "voting_module_token"
-          ],
-          "properties": {
-            "voting_module_token": {
-              "type": "object"
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
     "DistributionMsg": {
       "description": "The message types of the distribution module.\n\nSee https://github.com/cosmos/cosmos-sdk/blob/v0.42.4/proto/cosmos/distribution/v1beta1/tx.proto",
       "oneOf": [
@@ -456,6 +459,7 @@
       ]
     },
     "GovMsg": {
+      "description": "This message type allows the contract interact with the [x/gov] module in order to cast votes.\n\n[x/gov]: https://github.com/cosmos/cosmos-sdk/tree/v0.45.12/x/gov\n\n## Examples\n\nCast a simple vote:\n\n``` # use cosmwasm_std::{ #     HexBinary, #     Storage, Api, Querier, DepsMut, Deps, entry_point, Env, StdError, MessageInfo, #     Response, QueryResponse, # }; # type ExecuteMsg = (); use cosmwasm_std::{GovMsg, VoteOption};\n\n#[entry_point] pub fn execute( deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg, ) -> Result<Response, StdError> { // ... Ok(Response::new().add_message(GovMsg::Vote { proposal_id: 4, vote: VoteOption::Yes, })) } ```\n\nCast a weighted vote:\n\n``` # use cosmwasm_std::{ #     HexBinary, #     Storage, Api, Querier, DepsMut, Deps, entry_point, Env, StdError, MessageInfo, #     Response, QueryResponse, # }; # type ExecuteMsg = (); # #[cfg(feature = \"cosmwasm_1_2\")] use cosmwasm_std::{Decimal, GovMsg, VoteOption, WeightedVoteOption};\n\n# #[cfg(feature = \"cosmwasm_1_2\")] #[entry_point] pub fn execute( deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg, ) -> Result<Response, StdError> { // ... Ok(Response::new().add_message(GovMsg::VoteWeighted { proposal_id: 4, options: vec![ WeightedVoteOption { option: VoteOption::Yes, weight: Decimal::percent(65), }, WeightedVoteOption { option: VoteOption::Abstain, weight: Decimal::percent(35), }, ], })) } ```",
       "oneOf": [
         {
           "description": "This maps directly to [MsgVote](https://github.com/cosmos/cosmos-sdk/blob/v0.42.5/proto/cosmos/gov/v1beta1/tx.proto#L46-L56) in the Cosmos SDK with voter set to the contract address.",
@@ -477,7 +481,12 @@
                   "minimum": 0.0
                 },
                 "vote": {
-                  "$ref": "#/definitions/VoteOption"
+                  "description": "The vote option.\n\nThis should be called \"option\" for consistency with Cosmos SDK. Sorry for that. See <https://github.com/CosmWasm/cosmwasm/issues/1571>.",
+                  "allOf": [
+                    {
+                      "$ref": "#/definitions/VoteOption"
+                    }
+                  ]
                 }
               }
             }
@@ -487,6 +496,7 @@
       ]
     },
     "IbcFee": {
+      "description": "IbcFee defines struct for fees that refund the relayer for `SudoMsg` messages submission. Unused fee kind will be returned back to message sender. Please refer to these links for more information: IBC transaction structure - <https://docs.neutron.org/neutron/interchain-txs/messages/#msgsubmittx> General mechanics of fee payments - <https://docs.neutron.org/neutron/feerefunder/overview/#general-mechanics>",
       "type": "object",
       "required": [
         "ack_fee",
@@ -495,18 +505,21 @@
       ],
       "properties": {
         "ack_fee": {
+          "description": "*ack_fee** is an amount of coins to refund relayer for submitting ack message for a particular IBC packet.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/Coin"
           }
         },
         "recv_fee": {
+          "description": "**recv_fee** currently is used for compatibility with ICS-29 interface only and must be set to zero (i.e. 0untrn), because Neutron's fee module can't refund relayer for submission of Recv IBC packets due to compatibility with target chains.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/Coin"
           }
         },
         "timeout_fee": {
+          "description": "*timeout_fee** amount of coins to refund relayer for submitting timeout message for a particular IBC packet.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/Coin"
@@ -684,7 +697,25 @@
           ]
         },
         "path": {
-          "description": "*path** is a path to the storage (storage prefix) where you want to read value by key (usually name of cosmos-sdk module: 'staking', 'bank', etc.)",
+          "description": "*path** is a path to the storage (storage prefix) where you want to read value by key (usually name of cosmos-packages module: 'staking', 'bank', etc.)",
+          "type": "string"
+        }
+      }
+    },
+    "MsgExecuteContract": {
+      "description": "MsgExecuteContract defines a call to the contract execution",
+      "type": "object",
+      "required": [
+        "contract",
+        "msg"
+      ],
+      "properties": {
+        "contract": {
+          "description": "*contract** is a contract address that will be called",
+          "type": "string"
+        },
+        "msg": {
+          "description": "*msg** is a contract call message",
           "type": "string"
         }
       }
@@ -907,6 +938,7 @@
               "type": "object",
               "required": [
                 "fee",
+                "memo",
                 "receiver",
                 "sender",
                 "source_channel",
@@ -918,6 +950,9 @@
               "properties": {
                 "fee": {
                   "$ref": "#/definitions/IbcFee"
+                },
+                "memo": {
+                  "type": "string"
                 },
                 "receiver": {
                   "type": "string"
@@ -967,6 +1002,169 @@
             }
           },
           "additionalProperties": false
+        },
+        {
+          "description": "TokenFactory message. Contracts can create denoms, namespaced under the contract's address. A contract may create any number of independent sub-denoms.",
+          "type": "object",
+          "required": [
+            "create_denom"
+          ],
+          "properties": {
+            "create_denom": {
+              "type": "object",
+              "required": [
+                "subdenom"
+              ],
+              "properties": {
+                "subdenom": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "TokenFactory message. Contracts can change the admin of a denom that they are the admin of.",
+          "type": "object",
+          "required": [
+            "change_admin"
+          ],
+          "properties": {
+            "change_admin": {
+              "type": "object",
+              "required": [
+                "denom",
+                "new_admin_address"
+              ],
+              "properties": {
+                "denom": {
+                  "type": "string"
+                },
+                "new_admin_address": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "TokenFactory message. Contracts can mint native tokens for an existing factory denom that they are the admin of.",
+          "type": "object",
+          "required": [
+            "mint_tokens"
+          ],
+          "properties": {
+            "mint_tokens": {
+              "type": "object",
+              "required": [
+                "amount",
+                "denom",
+                "mint_to_address"
+              ],
+              "properties": {
+                "amount": {
+                  "$ref": "#/definitions/Uint128"
+                },
+                "denom": {
+                  "type": "string"
+                },
+                "mint_to_address": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "TokenFactory message. Contracts can burn native tokens for an existing factory denom that they are the admin of. Currently, the burn from address must be the admin contract.",
+          "type": "object",
+          "required": [
+            "burn_tokens"
+          ],
+          "properties": {
+            "burn_tokens": {
+              "type": "object",
+              "required": [
+                "amount",
+                "burn_from_address",
+                "denom"
+              ],
+              "properties": {
+                "amount": {
+                  "$ref": "#/definitions/Uint128"
+                },
+                "burn_from_address": {
+                  "description": "Must be set to `\"\"` for now",
+                  "type": "string"
+                },
+                "denom": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "AddSchedule adds new schedule with a given `name`. Until schedule is removed it will execute all `msgs` every `period` blocks. First execution is at least on `current_block + period` block. [Permissioned - DAO Only]",
+          "type": "object",
+          "required": [
+            "add_schedule"
+          ],
+          "properties": {
+            "add_schedule": {
+              "type": "object",
+              "required": [
+                "msgs",
+                "name",
+                "period"
+              ],
+              "properties": {
+                "msgs": {
+                  "description": "list of cosmwasm messages to be executed",
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/MsgExecuteContract"
+                  }
+                },
+                "name": {
+                  "description": "Name of a new schedule. Needed to be able to `RemoveSchedule` and to log information about it",
+                  "type": "string"
+                },
+                "period": {
+                  "description": "period in blocks with which `msgs` will be executed",
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "RemoveSchedule removes the schedule with a given `name`. [Permissioned - DAO or Security DAO only]",
+          "type": "object",
+          "required": [
+            "remove_schedule"
+          ],
+          "properties": {
+            "remove_schedule": {
+              "type": "object",
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
         }
       ]
     },
@@ -1003,7 +1201,7 @@
       ],
       "properties": {
         "description": {
-          "description": "*descriptionr** is a text description of proposal. Non unique.",
+          "description": "*description** is a text description of proposal. Non unique.",
           "type": "string"
         },
         "param_changes": {
@@ -1019,38 +1217,87 @@
         }
       }
     },
-    "ProposeMessage": {
+    "PinCodesProposal": {
+      "description": "PinCodesProposal defines the struct for pin contract codes proposal.",
+      "type": "object",
+      "required": [
+        "code_ids",
+        "description",
+        "title"
+      ],
+      "properties": {
+        "code_ids": {
+          "description": "*code_ids** is an array of codes to be pined.",
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        },
+        "description": {
+          "description": "*description** is a text description of proposal.",
+          "type": "string"
+        },
+        "title": {
+          "description": "*title** is a text title of proposal.",
+          "type": "string"
+        }
+      }
+    },
+    "Plan": {
+      "description": "Plan defines the struct for planned upgrade.",
+      "type": "object",
+      "required": [
+        "height",
+        "info",
+        "name"
+      ],
+      "properties": {
+        "height": {
+          "description": "*height** is a height at which the upgrade must be performed",
+          "type": "integer",
+          "format": "int64"
+        },
+        "info": {
+          "description": "*info** is any application specific upgrade info to be included on-chain",
+          "type": "string"
+        },
+        "name": {
+          "description": "*name** is a name for the upgrade",
+          "type": "string"
+        }
+      }
+    },
+    "ProposalStatus": {
       "oneOf": [
         {
-          "type": "object",
-          "required": [
-            "propose"
-          ],
-          "properties": {
-            "propose": {
-              "type": "object",
-              "required": [
-                "description",
-                "msgs",
-                "title"
-              ],
-              "properties": {
-                "description": {
-                  "type": "string"
-                },
-                "msgs": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/definitions/CosmosMsg_for_NeutronMsg"
-                  }
-                },
-                "title": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "additionalProperties": false
+          "description": "The proposal is open for voting.",
+          "type": "string",
+          "enum": [
+            "timelocked"
+          ]
+        },
+        {
+          "description": "The proposal has been overruled.",
+          "type": "string",
+          "enum": [
+            "overruled"
+          ]
+        },
+        {
+          "description": "The proposal has been executed.",
+          "type": "string",
+          "enum": [
+            "executed"
+          ]
+        },
+        {
+          "description": "The proposal's execution failed.",
+          "type": "string",
+          "enum": [
+            "execution_failed"
+          ]
         }
       ]
     },
@@ -1094,6 +1341,33 @@
           ],
           "format": "uint64",
           "minimum": 0.0
+        }
+      }
+    },
+    "SoftwareUpgradeProposal": {
+      "description": "SoftwareUpgradeProposal defines the struct for software upgrade proposal.",
+      "type": "object",
+      "required": [
+        "description",
+        "plan",
+        "title"
+      ],
+      "properties": {
+        "description": {
+          "description": "*description** is a text description of proposal. Non unique.",
+          "type": "string"
+        },
+        "plan": {
+          "description": "*plan** is a plan of upgrade.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Plan"
+            }
+          ]
+        },
+        "title": {
+          "description": "*title** is a text title of proposal. Non unique.",
+          "type": "string"
         }
       }
     },
@@ -1181,51 +1455,37 @@
         }
       ]
     },
-    "Status": {
-      "oneOf": [
-        {
-          "description": "The proposal is open for voting.",
-          "type": "string",
-          "enum": [
-            "open"
+    "SudoContractProposal": {
+      "description": "SudoContractProposal defines the struct for sudo execution proposal.",
+      "type": "object",
+      "required": [
+        "contract",
+        "description",
+        "msg",
+        "title"
+      ],
+      "properties": {
+        "contract": {
+          "description": "*contract** is an address of contract to be executed.",
+          "type": "string"
+        },
+        "description": {
+          "description": "*description** is a text description of proposal.",
+          "type": "string"
+        },
+        "msg": {
+          "description": "**msg*** is a sudo message.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Binary"
+            }
           ]
         },
-        {
-          "description": "The proposal has been rejected.",
-          "type": "string",
-          "enum": [
-            "rejected"
-          ]
-        },
-        {
-          "description": "The proposal has been passed but has not been executed.",
-          "type": "string",
-          "enum": [
-            "passed"
-          ]
-        },
-        {
-          "description": "The proposal has been passed and executed.",
-          "type": "string",
-          "enum": [
-            "executed"
-          ]
-        },
-        {
-          "description": "The proposal has failed or expired and has been closed. A proposal deposit refund has been issued if applicable.",
-          "type": "string",
-          "enum": [
-            "closed"
-          ]
-        },
-        {
-          "description": "The proposal's execution failed.",
-          "type": "string",
-          "enum": [
-            "execution_failed"
-          ]
+        "title": {
+          "description": "*title** is a text title of proposal.",
+          "type": "string"
         }
-      ]
+      }
     },
     "Timestamp": {
       "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n``` # use cosmwasm_std::Timestamp; let ts = Timestamp::from_nanos(1_000_000_202); assert_eq!(ts.nanos(), 1_000_000_202); assert_eq!(ts.seconds(), 1); assert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2); assert_eq!(ts.nanos(), 3_000_000_202); assert_eq!(ts.seconds(), 3); assert_eq!(ts.subsec_nanos(), 202); ```",
@@ -1243,67 +1503,93 @@
       "description": "A thin wrapper around u64 that is using strings for JSON encoding/decoding, such that the full u64 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u64` to get the value out:\n\n``` # use cosmwasm_std::Uint64; let a = Uint64::from(42u64); assert_eq!(a.u64(), 42);\n\nlet b = Uint64::from(70u32); assert_eq!(b.u64(), 70); ```",
       "type": "string"
     },
-    "UncheckedDenom": {
-      "description": "A denom that has not been checked to confirm it points to a valid asset.",
-      "oneOf": [
-        {
-          "description": "A native (bank module) asset.",
-          "type": "object",
-          "required": [
-            "native"
-          ],
-          "properties": {
-            "native": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "description": "A cw20 asset.",
-          "type": "object",
-          "required": [
-            "cw20"
-          ],
-          "properties": {
-            "cw20": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
-    "UncheckedDepositInfo": {
-      "description": "Information about the deposit required to create a proposal.",
+    "UnpinCodesProposal": {
+      "description": "UnpinCodesProposal defines the struct for unpin contract codes proposal.",
       "type": "object",
       "required": [
-        "amount",
-        "denom",
-        "refund_policy"
+        "code_ids",
+        "description",
+        "title"
       ],
       "properties": {
-        "amount": {
-          "description": "The number of tokens that must be deposited to create a proposal. Must be a positive, non-zero number.",
+        "code_ids": {
+          "description": "*code_ids** is an array of codes to be unpined.",
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        },
+        "description": {
+          "description": "*description** is a text description of proposal.",
+          "type": "string"
+        },
+        "title": {
+          "description": "*title** is a text title of proposal.",
+          "type": "string"
+        }
+      }
+    },
+    "UpdateAdminProposal": {
+      "description": "UpdateAdminProposal defines the struct for  update admin proposal.",
+      "type": "object",
+      "required": [
+        "contract",
+        "description",
+        "new_admin",
+        "title"
+      ],
+      "properties": {
+        "contract": {
+          "description": "*contract** is an address of contract to update admin.",
+          "type": "string"
+        },
+        "description": {
+          "description": "*description** is a text description of proposal.",
+          "type": "string"
+        },
+        "new_admin": {
+          "description": "**new_admin*** is an address of new admin",
+          "type": "string"
+        },
+        "title": {
+          "description": "*title** is a text title of proposal.",
+          "type": "string"
+        }
+      }
+    },
+    "UpgradeProposal": {
+      "description": "UpgradeProposal defines the struct for  upgrade proposal.",
+      "type": "object",
+      "required": [
+        "description",
+        "plan",
+        "title",
+        "upgraded_client_state"
+      ],
+      "properties": {
+        "description": {
+          "description": "*description** is a text description of proposal.",
+          "type": "string"
+        },
+        "plan": {
+          "description": "*plan** is a plan of upgrade.",
           "allOf": [
             {
-              "$ref": "#/definitions/Uint128"
+              "$ref": "#/definitions/Plan"
             }
           ]
         },
-        "denom": {
-          "description": "The address of the token to be used for proposal deposits.",
-          "allOf": [
-            {
-              "$ref": "#/definitions/DepositToken"
-            }
-          ]
+        "title": {
+          "description": "*title** is a text title of proposal.",
+          "type": "string"
         },
-        "refund_policy": {
-          "description": "The policy used for refunding deposits on proposal completion.",
+        "upgraded_client_state": {
+          "description": "*upgraded_client_state** is an upgraded client state.",
           "allOf": [
             {
-              "$ref": "#/definitions/DepositRefundPolicy"
+              "$ref": "#/definitions/ProtobufAny"
             }
           ]
         }
@@ -1359,7 +1645,7 @@
           "additionalProperties": false
         },
         {
-          "description": "Instantiates a new contracts from previously uploaded Wasm code.\n\nThis is translated to a [MsgInstantiateContract](https://github.com/CosmWasm/wasmd/blob/v0.16.0-alpha1/x/wasm/internal/types/tx.proto#L47-L61). `sender` is automatically filled with the current contract's address.",
+          "description": "Instantiates a new contracts from previously uploaded Wasm code.\n\nThe contract address is non-predictable. But it is guaranteed that when emitting the same Instantiate message multiple times, multiple instances on different addresses will be generated. See also Instantiate2.\n\nThis is translated to a [MsgInstantiateContract](https://github.com/CosmWasm/wasmd/blob/v0.29.2/proto/cosmwasm/wasm/v1/tx.proto#L53-L71). `sender` is automatically filled with the current contract's address.",
           "type": "object",
           "required": [
             "instantiate"

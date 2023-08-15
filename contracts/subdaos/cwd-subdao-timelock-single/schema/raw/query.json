@@ -3,14 +3,15 @@
   "title": "QueryMsg",
   "oneOf": [
     {
-      "description": "Gets the config. Returns `state::Config`.",
+      "description": "Gets the config. Returns `types::Config`.",
       "type": "object",
       "required": [
         "config"
       ],
       "properties": {
         "config": {
-          "type": "object"
+          "type": "object",
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
@@ -33,7 +34,8 @@
               "format": "uint64",
               "minimum": 0.0
             }
-          }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
@@ -66,7 +68,8 @@
               "format": "uint64",
               "minimum": 0.0
             }
-          }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false

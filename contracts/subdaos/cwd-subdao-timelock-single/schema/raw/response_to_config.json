@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "ConfigResponse",
+  "title": "Config",
   "type": "object",
   "required": [
     "overrule_pre_propose",
