@@ -10,7 +10,8 @@
       ],
       "properties": {
         "config": {
-          "type": "object"
+          "type": "object",
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
@@ -22,7 +23,8 @@
       ],
       "properties": {
         "stats": {
-          "type": "object"
+          "type": "object",
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
@@ -34,7 +36,8 @@
       ],
       "properties": {
         "pause_info": {
-          "type": "object"
+          "type": "object",
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
