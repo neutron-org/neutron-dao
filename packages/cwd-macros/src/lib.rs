@@ -58,15 +58,21 @@ pub fn voting_query(metadata: TokenStream, input: TokenStream) -> TokenStream {
     let mut ast: DeriveInput = parse_macro_input!(input);
     match &mut ast.data {
         syn::Data::Enum(DataEnum { variants, .. }) => {
-            let voting_power: Variant = syn::parse2(quote! { VotingPowerAtHeight {
-                address: ::std::string::String,
-                height: ::std::option::Option<::std::primitive::u64>
-            } })
+            let voting_power: Variant = syn::parse2(quote! {
+                #[returns(VotingPowerAtHeightResponse)]
+                VotingPowerAtHeight {
+                    address: ::std::string::String,
+                    height: ::std::option::Option<::std::primitive::u64>
+                }
+            })
             .unwrap();
 
-            let total_power: Variant = syn::parse2(quote! { TotalPowerAtHeight {
-                height: ::std::option::Option<::std::primitive::u64>
-            } })
+            let total_power: Variant = syn::parse2(quote! {
+                #[returns(TotalPowerAtHeightResponse)]
+                TotalPowerAtHeight {
+                    height: ::std::option::Option<::std::primitive::u64>
+                }
+            })
             .unwrap();
 
             // This is example how possible we can implement such methods,
@@ -153,7 +159,11 @@ pub fn token_query(metadata: TokenStream, input: TokenStream) -> TokenStream {
     let mut ast: DeriveInput = parse_macro_input!(input);
     match &mut ast.data {
         syn::Data::Enum(DataEnum { variants, .. }) => {
-            let info: Variant = syn::parse2(quote! { TokenContract {} }).unwrap();
+            let info: Variant = syn::parse2(quote! {
+                #[returns(Addr)]
+                TokenContract {}
+            })
+            .unwrap();
 
             variants.push(info);
         }
@@ -224,7 +234,11 @@ pub fn active_query(metadata: TokenStream, input: TokenStream) -> TokenStream {
     let mut ast: DeriveInput = parse_macro_input!(input);
     match &mut ast.data {
         syn::Data::Enum(DataEnum { variants, .. }) => {
-            let info: Variant = syn::parse2(quote! { IsActive {} }).unwrap();
+            let info: Variant = syn::parse2(quote! {
+                #[returns(IsActiveResponse)]
+                IsActive {}
+            })
+            .unwrap();
 
             variants.push(info);
         }
@@ -295,7 +309,11 @@ pub fn info_query(metadata: TokenStream, input: TokenStream) -> TokenStream {
     let mut ast: DeriveInput = parse_macro_input!(input);
     match &mut ast.data {
         syn::Data::Enum(DataEnum { variants, .. }) => {
-            let info: Variant = syn::parse2(quote! { Info {} }).unwrap();
+            let info: Variant = syn::parse2(quote! {
+                #[returns(InfoResponse)]
+                Info {}
+            })
+            .unwrap();
 
             variants.push(info);
         }
@@ -365,7 +383,11 @@ pub fn proposal_module_query(metadata: TokenStream, input: TokenStream) -> Token
     let mut ast: DeriveInput = parse_macro_input!(input);
     match &mut ast.data {
         syn::Data::Enum(DataEnum { variants, .. }) => {
-            let dao: Variant = syn::parse2(quote! { Dao {} }).unwrap();
+            let dao: Variant = syn::parse2(quote! {
+                #[returns(Addr)]
+                Dao {}
+            })
+            .unwrap();
 
             variants.push(dao);
         }

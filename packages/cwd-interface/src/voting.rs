@@ -1,4 +1,5 @@
-use cosmwasm_std::Uint128;
+use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_std::{Addr, Uint128};
 use cw2::ContractVersion;
 use cwd_macros::{active_query, info_query, proposal_module_query, token_query, voting_query};
 use schemars::JsonSchema;
@@ -9,8 +10,8 @@ use serde::{Deserialize, Serialize};
 #[info_query]
 #[active_query]
 #[proposal_module_query]
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
+#[derive(QueryResponses)]
 pub enum Query {}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
