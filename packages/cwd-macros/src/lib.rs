@@ -9,8 +9,12 @@ use syn::{parse_macro_input, AttributeArgs, DataEnum, DeriveInput, Variant};
 ///
 /// ```
 /// use cwd_macros::voting_query;
+/// use cosmwasm_schema::{cw_serde, QueryResponses};
+/// use cwd_interface::voting::{TotalPowerAtHeightResponse, VotingPowerAtHeightResponse};
 ///
 /// #[voting_query]
+/// #[cw_serde]
+/// #[derive(QueryResponses)]
 /// enum QueryMsg {}
 /// ```
 ///
@@ -35,13 +39,21 @@ use syn::{parse_macro_input, AttributeArgs, DataEnum, DeriveInput, Variant};
 ///
 /// ```compile_fail
 /// use cwd_macros::voting_query;
+/// use cosmwasm_schema::{cw_serde, QueryResponses};
+/// use cwd_interface::voting::{TotalPowerAtHeightResponse, VotingPowerAtHeightResponse};
+/// use cosmwasm_std::Empty;
 ///
 /// #[derive(Clone)]
 /// #[voting_query]
+/// #[cw_serde]
+/// #[derive(QueryResponses)]
 /// #[allow(dead_code)]
 /// enum Test {
+///     #[returns(Empty)]
 ///     Foo,
+///     #[returns(Empty)]
 ///     Bar(u64),
+///     #[returns(Empty)]
 ///     Baz { foo: u64 },
 /// }
 /// ```
@@ -116,8 +128,12 @@ pub fn voting_query(metadata: TokenStream, input: TokenStream) -> TokenStream {
 ///
 /// ```
 /// use cwd_macros::token_query;
+/// use cosmwasm_schema::{cw_serde, QueryResponses};
+/// use cosmwasm_std::Addr;
 ///
 /// #[token_query]
+/// #[cw_serde]
+/// #[derive(QueryResponses)]
 /// enum QueryMsg {}
 /// ```
 ///
@@ -136,13 +152,20 @@ pub fn voting_query(metadata: TokenStream, input: TokenStream) -> TokenStream {
 ///
 /// ```compile_fail
 /// use cwd_macros::token_query;
+/// use cosmwasm_schema::{cw_serde, QueryResponses};
+/// use cosmwasm_std::{Empty, Addr};
 ///
 /// #[derive(Clone)]
 /// #[token_query]
+/// #[cw_serde]
+/// #[derive(QueryResponses)]
 /// #[allow(dead_code)]
 /// enum Test {
+///     #[returns(Empty)]
 ///     Foo,
+///     #[returns(Empty)]
 ///     Bar(u64),
+///     #[returns(Empty)]
 ///     Baz { foo: u64 },
 /// }
 /// ```
@@ -191,8 +214,13 @@ pub fn token_query(metadata: TokenStream, input: TokenStream) -> TokenStream {
 ///
 /// ```
 /// use cwd_macros::active_query;
+/// use cosmwasm_schema::{cw_serde, QueryResponses};
+/// use cosmwasm_std::Empty;
+/// use cwd_interface::voting::IsActiveResponse;
 ///
 /// #[active_query]
+/// #[cw_serde]
+/// #[derive(QueryResponses)]
 /// enum QueryMsg {}
 /// ```
 ///
@@ -211,13 +239,21 @@ pub fn token_query(metadata: TokenStream, input: TokenStream) -> TokenStream {
 ///
 /// ```compile_fail
 /// use cwd_macros::active_query;
+/// use cosmwasm_schema::{cw_serde, QueryResponses};
+/// use cosmwasm_std::Empty;
+/// use cwd_interface::voting::IsActiveResponse;
 ///
 /// #[derive(Clone)]
 /// #[active_query]
+/// #[cw_serde]
+/// #[derive(QueryResponses)]
 /// #[allow(dead_code)]
 /// enum Test {
+///     #[returns(Empty)]
 ///     Foo,
+///     #[returns(Empty)]
 ///     Bar(u64),
+///     #[returns(Empty)]
 ///     Baz { foo: u64 },
 /// }
 /// ```
@@ -266,8 +302,12 @@ pub fn active_query(metadata: TokenStream, input: TokenStream) -> TokenStream {
 ///
 /// ```
 /// use cwd_macros::info_query;
+/// use cosmwasm_schema::{cw_serde, QueryResponses};
+/// use cwd_interface::voting::InfoResponse;
 ///
 /// #[info_query]
+/// #[cw_serde]
+/// #[derive(QueryResponses)]
 /// enum QueryMsg {}
 /// ```
 ///
@@ -286,13 +326,21 @@ pub fn active_query(metadata: TokenStream, input: TokenStream) -> TokenStream {
 ///
 /// ```compile_fail
 /// use cwd_macros::info_query;
+/// use cosmwasm_schema::{cw_serde, QueryResponses};
+/// use cwd_interface::voting::InfoResponse;
+/// use cosmwasm_std::Empty;
 ///
-/// #[derive(Clone)]
 /// #[info_query]
+/// #[derive(Clone)]
+/// #[cw_serde]
+/// #[derive(QueryResponses)]
 /// #[allow(dead_code)]
 /// enum Test {
+///     #[returns(Empty)]
 ///     Foo,
+///     #[returns(Empty)]
 ///     Bar(u64),
+///     #[returns(Empty)]
 ///     Baz { foo: u64 },
 /// }
 /// ```
@@ -340,8 +388,12 @@ pub fn info_query(metadata: TokenStream, input: TokenStream) -> TokenStream {
 ///
 /// ```
 /// use cwd_macros::proposal_module_query;
+/// use cosmwasm_schema::{cw_serde, QueryResponses};
+/// use cosmwasm_std::Addr;
 ///
 /// #[proposal_module_query]
+/// #[cw_serde]
+/// #[derive(QueryResponses)]
 /// enum QueryMsg {}
 /// ```
 ///
@@ -360,13 +412,20 @@ pub fn info_query(metadata: TokenStream, input: TokenStream) -> TokenStream {
 ///
 /// ```compile_fail
 /// use cwd_macros::proposal_module_query;
+/// use cosmwasm_schema::{cw_serde, QueryResponses};
+/// use cosmwasm_std::{Addr, Empty};
 ///
 /// #[derive(Clone)]
 /// #[proposal_module_query]
+/// #[cw_serde]
+/// #[derive(QueryResponses)]
 /// #[allow(dead_code)]
 /// enum Test {
+///     #[returns(Empty)]
 ///     Foo,
+///     #[returns(Empty)]
 ///     Bar(u64),
+///     #[returns(Empty)]
 ///     Baz { foo: u64 },
 /// }
 /// ```
@@ -473,8 +532,14 @@ pub fn limit_variant_count(metadata: TokenStream, input: TokenStream) -> TokenSt
 ///
 /// ```
 /// use cwd_macros::pausable_query;
+/// use cosmwasm_schema::{cw_serde, QueryResponses};
+///
+/// #[cw_serde]
+/// struct PauseInfoResponse{}
 ///
 /// #[pausable_query]
+/// #[cw_serde]
+/// #[derive(QueryResponses)]
 /// enum QueryMsg {}
 /// ```
 ///
@@ -494,13 +559,22 @@ pub fn limit_variant_count(metadata: TokenStream, input: TokenStream) -> TokenSt
 ///
 /// ```compile_fail
 /// use cwd_macros::pausable_query;
+/// use cosmwasm_schema::{cw_serde, QueryResponses};
+/// use cosmwasm_std::Empty;
+///
+/// struct PauseInfoResponse{}
 ///
 /// #[derive(Clone)]
 /// #[pausable_query]
+/// #[cw_serde]
+/// #[derive(QueryResponses)]
 /// #[allow(dead_code)]
 /// enum Test {
+///     #[returns(Empty)]
 ///     Foo,
+///     #[returns(Empty)]
 ///     Bar(u64),
+///     #[returns(Empty)]
 ///     Baz { foo: u64 },
 /// }
 /// ```
@@ -702,8 +776,13 @@ pub fn voting_vault(metadata: TokenStream, input: TokenStream) -> TokenStream {
 ///
 /// ```
 /// use cwd_macros::voting_vault_query;
+/// use cosmwasm_std::{Uint128, Addr};
+/// use cosmwasm_schema::{cw_serde, QueryResponses};
+/// use cwd_interface::voting::BondingStatusResponse;
 ///
 /// #[voting_vault_query]
+/// #[cw_serde]
+/// #[derive(QueryResponses)]
 /// enum QueryMsg {}
 /// ```
 ///
@@ -738,13 +817,21 @@ pub fn voting_vault(metadata: TokenStream, input: TokenStream) -> TokenStream {
 ///
 /// ```compile_fail
 /// use cwd_macros::voting_vault_query;
+/// use cosmwasm_std::{Uint128, Addr, Empty};
+/// use cosmwasm_schema::{cw_serde, QueryResponses};
+/// use cwd_interface::voting::BondingStatusResponse;
 ///
 /// #[derive(Clone)]
 /// #[voting_vault_query]
+/// #[cw_serde]
+/// #[derive(QueryResponses)]
 /// #[allow(dead_code)]
 /// enum Test {
+///     #[returns(Empty)]
 ///     Foo,
+///     #[returns(Empty)]
 ///     Bar(u64),
+///     #[returns(Empty)]
 ///     Baz { foo: u64 },
 /// }
 /// ```
