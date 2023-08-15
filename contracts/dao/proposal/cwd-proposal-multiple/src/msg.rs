@@ -1,12 +1,13 @@
-use cosmwasm_schema::cw_serde;
+use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_std::Addr;
 use cw_utils::Duration;
+use cwd_hooks::HooksResponse;
+use cwd_interface::voting::InfoResponse;
 use cwd_macros::{info_query, proposal_module_query};
 use cwd_voting::{
     multiple_choice::{MultipleChoiceOptions, MultipleChoiceVote, VotingStrategy},
-    pre_propose::PreProposeInfo,
+    pre_propose::{PreProposeInfo, ProposalCreationPolicy},
 };
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -136,32 +137,39 @@ pub enum ExecuteMsg {
 
 #[proposal_module_query]
 #[info_query]
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
+#[derive(QueryResponses)]
 pub enum QueryMsg {
     /// Gets the governance module's config.
+    #[returns(crate::state::Config)]
     Config {},
     /// Gets information about a proposal.
+    #[returns(crate::proposal::MultipleChoiceProposal)]
     Proposal { proposal_id: u64 },
     /// Lists all the proposals that have been cast in this
     /// module.
+    #[returns(crate::query::ProposalListResponse)]
     ListProposals {
         start_after: Option<u64>,
         limit: Option<u64>,
     },
     /// Lists all of the proposals that have been cast in this module
     /// in descending order of proposal ID.
+    #[returns(crate::query::ProposalListResponse)]
     ReverseProposals {
         start_before: Option<u64>,
         limit: Option<u64>,
     },
     /// Returns the number of proposals that have been created in this
     /// module./// Returns a voters position on a propsal.
+    #[returns(u64)]
     ProposalCount {},
     /// Returns a voters position on a proposal.
+    #[returns(crate::query::VoteResponse)]
     GetVote { proposal_id: u64, voter: String },
     /// Lists all of the votes that have been cast on a
     /// proposal.
+    #[returns(crate::query::VoteListResponse)]
     ListVotes {
         proposal_id: u64,
         start_after: Option<String>,
@@ -169,11 +177,14 @@ pub enum QueryMsg {
     },
     /// Gets the current proposal creation policy for this
     /// module.
+    #[returns(ProposalCreationPolicy)]
     ProposalCreationPolicy {},
     /// Lists all of the consumers of proposal hooks for this module.
+    #[returns(HooksResponse)]
     ProposalHooks {},
     /// Lists all of the consumers of vote hooks for this
     /// module.
+    #[returns(HooksResponse)]
     VoteHooks {},
 }
 

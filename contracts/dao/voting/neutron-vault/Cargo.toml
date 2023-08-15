@@ -1,10 +1,10 @@
 [package]
-name = "neutron-vault"
-version = "0.2.0"
 authors = ["Callum Anderson <callumanderson745@gmail.com>"]
-edition = "2021"
-repository = "https://github.com/DA0-DA0/dao-contracts"
 description = "A DAO DAO voting module based on staked cw721 tokens."
+edition = "2021"
+name = "neutron-vault"
+repository = "https://github.com/DA0-DA0/dao-contracts"
+version = "0.2.0"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -16,21 +16,21 @@ backtraces = ["cosmwasm-std/backtraces"]
 library = []
 
 [dependencies]
-cosmwasm-std = { version = "1.3.0" }
-cosmwasm-storage = { version = "1.3.0" }
-cw-storage-plus = "1.1.0"
-cw2 = "1.1.0"
-cw-utils = { version = "1.0.1" }
+cosmwasm-schema = {version = "1.3.0"}
+cosmwasm-std = {version = "1.3.0"}
+cosmwasm-storage = {version = "1.3.0"}
 cw-controllers = "1.1.0"
+cw-paginate = {path = "../../../../packages/cw-paginate"}
+cw-storage-plus = "1.1.0"
+cw-utils = {version = "1.0.1"}
+cw2 = "1.1.0"
+cwd-interface = {path = "../../../../packages/cwd-interface"}
+cwd-macros = {path = "../../../../packages/cwd-macros"}
+cwd-voting = {path = "../../../../packages/cwd-voting"}
 schemars = "0.8.8"
-serde = { version = "1.0.175", default-features = false, features = ["derive"] }
-thiserror = { version = "1.0" }
-cwd-macros = { path = "../../../../packages/cwd-macros" }
-cwd-interface = { path = "../../../../packages/cwd-interface" }
-cwd-voting = { path = "../../../../packages/cwd-voting" }
-cw-paginate = { path = "../../../../packages/cw-paginate" }
+serde = {version = "1.0.175", default-features = false, features = ["derive"]}
+thiserror = {version = "1.0"}
 
 [dev-dependencies]
-cosmwasm-schema = { version = "1.3.0" }
-cw-multi-test = "0.16.5"
 anyhow = "1.0.57"
+cw-multi-test = "0.16.5"

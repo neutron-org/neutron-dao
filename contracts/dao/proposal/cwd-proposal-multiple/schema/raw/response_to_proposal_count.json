@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "ProposalCountResponse",
+  "title": "uint64",
   "type": "integer",
   "format": "uint64",
   "minimum": 0.0

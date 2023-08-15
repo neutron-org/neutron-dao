@@ -761,18 +761,36 @@ pub fn voting_vault_query(metadata: TokenStream, input: TokenStream) -> TokenStr
     let mut ast: DeriveInput = parse_macro_input!(input);
     match &mut ast.data {
         syn::Data::Enum(DataEnum { variants, .. }) => {
-            let bonding_status: Variant = syn::parse2(quote! { BondingStatus {
-                address: ::std::string::String,
-                height: ::std::option::Option<::std::primitive::u64>
-            } })
+            let bonding_status: Variant = syn::parse2(quote! {
+                   #[returns(BondingStatusResponse)]
+                   BondingStatus {
+                       address: ::std::string::String,
+                       height: ::std::option::Option<::std::primitive::u64>
+                   }
+            })
             .unwrap();
-            let dao: Variant = syn::parse2(quote! { Dao {} }).unwrap();
-            let name: Variant = syn::parse2(quote! { Name {} }).unwrap();
-            let description: Variant = syn::parse2(quote! { Description {} }).unwrap();
-            let bonders: Variant = syn::parse2(quote! { ListBonders {
-                start_after: ::std::option::Option<::std::string::String>,
-                limit: ::std::option::Option<::std::primitive::u32>
-            } })
+            let dao: Variant = syn::parse2(quote! {
+                #[returns(Addr)]
+                Dao {}
+            })
+            .unwrap();
+            let name: Variant = syn::parse2(quote! {
+                #[returns(String)]
+                Name {}
+            })
+            .unwrap();
+            let description: Variant = syn::parse2(quote! {
+                #[returns(String)]
+                Description {}
+            })
+            .unwrap();
+            let bonders: Variant = syn::parse2(quote! {
+                #[returns(Vec<(Addr, Uint128)>)]
+                ListBonders {
+                    start_after: ::std::option::Option<::std::string::String>,
+                    limit: ::std::option::Option<::std::primitive::u32>
+                }
+            })
             .unwrap();
 
             variants.push(bonding_status);

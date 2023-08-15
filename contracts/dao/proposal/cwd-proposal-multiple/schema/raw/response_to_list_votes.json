@@ -1,17 +1,16 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "GetVoteResponse",
+  "title": "VoteListResponse",
   "type": "object",
+  "required": [
+    "votes"
+  ],
   "properties": {
-    "vote": {
-      "anyOf": [
-        {
-          "$ref": "#/definitions/VoteInfo"
-        },
-        {
-          "type": "null"
-        }
-      ]
+    "votes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/VoteInfo"
+      }
     }
   },
   "additionalProperties": false,
