@@ -1,5 +1,3 @@
-use crate::query::{DumpStateResponse, GetItemResponse, PauseInfoResponse};
-use crate::state::ProposalModule;
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, CosmosMsg};
 use cw_utils::Duration;
@@ -99,10 +97,10 @@ pub enum QueryMsg {
     /// query. Useful for frontends as performance for queries is more
     /// limited by network times than compute times. Returns
     /// `DumpStateResponse`.
-    #[returns(DumpStateResponse)]
+    #[returns(crate::query::DumpStateResponse)]
     DumpState {},
     /// Gets the address associated with an item key.
-    #[returns(GetItemResponse)]
+    #[returns(crate::query::GetItemResponse)]
     GetItem { key: String },
     /// Lists all of the items associted with the contract. For
     /// example, given the items `{ "group": "foo", "subdao": "bar"}`
@@ -115,20 +113,20 @@ pub enum QueryMsg {
     },
     /// Gets all proposal modules associated with the
     /// contract. Returns Vec<ProposalModule>.
-    #[returns(Vec<ProposalModule>)]
+    #[returns(Vec<crate::state::ProposalModule>)]
     ProposalModules {
         start_after: Option<String>,
         limit: Option<u32>,
     },
     /// Gets the active proposal modules associated with the
     /// contract. Returns Vec<ProposalModule>.
-    #[returns(Vec<ProposalModule>)]
+    #[returns(Vec<crate::state::ProposalModule>)]
     ActiveProposalModules {
         start_after: Option<String>,
         limit: Option<u32>,
     },
     /// Returns information about if the contract is currently paused.
-    #[returns(PauseInfoResponse)]
+    #[returns(crate::query::PauseInfoResponse)]
     PauseInfo {},
     /// Gets the contract's voting module. Returns Addr.
     #[returns(Addr)]

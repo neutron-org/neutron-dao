@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "QueryMsg_for_Empty",
+  "title": "QueryMsg",
   "oneOf": [
     {
       "description": "Gets the proposal module that this pre propose module is associated with. Returns `Addr`.",
@@ -10,7 +10,8 @@
       ],
       "properties": {
         "proposal_module": {
-          "type": "object"
+          "type": "object",
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
@@ -23,7 +24,8 @@
       ],
       "properties": {
         "dao": {
-          "type": "object"
+          "type": "object",
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
@@ -36,7 +38,8 @@
       ],
       "properties": {
         "config": {
-          "type": "object"
+          "type": "object",
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
@@ -59,7 +62,8 @@
               "format": "uint64",
               "minimum": 0.0
             }
-          }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
@@ -80,7 +84,8 @@
             "msg": {
               "$ref": "#/definitions/Empty"
             }
-          }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false

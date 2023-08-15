@@ -1,5 +1,7 @@
-use cosmwasm_std::CosmosMsg;
+use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_std::{Addr, CosmosMsg};
 use cw_utils::Duration;
+use cwd_interface::voting::InfoResponse;
 use neutron_sdk::bindings::msg::NeutronMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -131,16 +133,19 @@ pub enum ExecuteMsg {
 
 #[proposal_module_query]
 #[info_query]
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
+#[derive(QueryResponses)]
 pub enum QueryMsg {
     /// Gets the governance module's config. Returns `state::Config`.
+    #[returns(crate::state::Config)]
     Config {},
     /// Gets information about a proposal. Returns
     /// `proposals::Proposal`.
+    #[returns(crate::proposal::SingleChoiceProposal)]
     Proposal { proposal_id: u64 },
     /// Lists all the proposals that have been cast in this
     /// module. Returns `query::ProposalListResponse`.
+    #[returns(crate::query::ProposalListResponse)]
     ListProposals {
         /// The proposal ID to start listing proposals after. For
         /// example, if this is set to 2 proposals with IDs 3 and
@@ -154,6 +159,7 @@ pub enum QueryMsg {
     /// Lists all of the proposals that have been cast in this module
     /// in descending order of proposal ID. Returns
     /// `query::ProposalListResponse`.
+    #[returns(crate::query::ProposalListResponse)]
     ReverseProposals {
         /// The proposal ID to start listing proposals before. For
         /// example, if this is set to 6 proposals with IDs 5 and
@@ -166,12 +172,15 @@ pub enum QueryMsg {
     },
     /// Returns the number of proposals that have been created in this
     /// module.
+    #[returns(u64)]
     ProposalCount {},
     /// Returns a voters position on a proposal. Returns
     /// `query::VoteResponse`.
+    #[returns(crate::query::VoteResponse)]
     GetVote { proposal_id: u64, voter: String },
     /// Lists all of the votes that have been cast on a
     /// proposal. Returns `VoteListResponse`.
+    #[returns(crate::query::VoteListResponse)]
     ListVotes {
         /// The proposal to list the votes of.
         proposal_id: u64,
@@ -184,11 +193,14 @@ pub enum QueryMsg {
     },
     /// Gets the current proposal creation policy for this
     /// module. Returns `voting::pre_propose::ProposalCreationPolicy`.
+    #[returns(cwd_voting::pre_propose::ProposalCreationPolicy)]
     ProposalCreationPolicy {},
     /// Lists all of the consumers of proposal hooks for this module.
+    #[returns(cwd_hooks::HooksResponse)]
     ProposalHooks {},
     /// Lists all of the consumers of vote hooks for this
     /// module. Returns cwd_hooks::HooksResponse.
+    #[returns(cwd_hooks::HooksResponse)]
     VoteHooks {},
 }
 
