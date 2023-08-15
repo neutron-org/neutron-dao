@@ -1,22 +1,23 @@
 [package]
-name = "neutron-subdao-core"
-version = "0.1.0"
 authors = ["Sergei Sotnikov <sergei.s@p2p.org>"]
 edition = "2021"
 license = "Apache-2.0"
+name = "neutron-subdao-core"
 repository = "https://github.com/neutron/neutron-dao"
+version = "0.1.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-neutron-sdk = { package = "neutron-sdk", version = "0.6.1" }
-cosmwasm-std = { version = "1.3.0" }
-schemars = "0.8.8"
-serde = { version = "1.0.175", default-features = false, features = ["derive"] }
-cwd-macros = { path = "../cwd-macros" }
-cwd-voting = { path = "../cwd-voting" }
-cw-utils = { version = "1.0.1" }
-cwd-interface = { path = "../cwd-interface" }
+cosmwasm-schema = {version = "1.3.0"}
+cosmwasm-std = {version = "1.3.0"}
+cw-utils = {version = "1.0.1"}
 cw2 = "1.1.0"
-exec-control = { path = "../exec-control" }
-thiserror = { version = "1.0" }
+cwd-interface = {path = "../cwd-interface"}
+cwd-macros = {path = "../cwd-macros"}
+cwd-voting = {path = "../cwd-voting"}
+exec-control = {path = "../exec-control"}
+neutron-sdk = {package = "neutron-sdk", version = "0.6.1"}
+schemars = "0.8.8"
+serde = {version = "1.0.175", default-features = false, features = ["derive"]}
+thiserror = {version = "1.0"}

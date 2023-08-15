@@ -1,5 +1,10 @@
-use cosmwasm_std::CosmosMsg;
+use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_std::{Addr, CosmosMsg};
+use cwd_interface::voting::{
+    InfoResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
+};
 use cwd_interface::ModuleInstantiateInfo;
+use exec_control::pause::PauseInfoResponse;
 use neutron_sdk::bindings::msg::NeutronMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -93,51 +98,62 @@ pub enum ExecuteMsg {
 #[pausable_query]
 #[voting_query]
 #[info_query]
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
+#[derive(QueryResponses)]
 pub enum QueryMsg {
     /// Gets the contract's config. Returns Config.
+    #[returns(crate::types::Config)]
     Config {},
     /// Dumps all of the core contract's state in a single
     /// query. Useful for frontends as performance for queries is more
     /// limited by network times than compute times. Returns
     /// `DumpStateResponse`.
+    #[returns(crate::types::DumpStateResponse)]
     DumpState {},
     /// Gets the address associated with an item key.
+    #[returns(crate::types::GetItemResponse)]
     GetItem { key: String },
     /// Lists all of the items associted with the contract. For
     /// example, given the items `{ "group": "foo", "subdao": "bar"}`
     /// this query would return `[("group", "foo"), ("subdao",
     /// "bar")]`.
+    #[returns(Vec<(String, String)>)]
     ListItems {
         start_after: Option<String>,
         limit: Option<u32>,
     },
     /// Gets all proposal modules associated with the
     /// contract. Returns Vec<ProposalModule>.
+    #[returns(Vec<crate::types::ProposalModule>)]
     ProposalModules {
         start_after: Option<String>,
         limit: Option<u32>,
     },
     /// Gets the active proposal modules associated with the
     /// contract. Returns Vec<ProposalModule>.
+    #[returns(Vec<crate::types::ProposalModule>)]
     ActiveProposalModules {
         start_after: Option<String>,
         limit: Option<u32>,
     },
     /// Gets the contract's voting module. Returns Addr.
+    #[returns(Addr)]
     VotingModule {},
     /// Returns all SubDAOs with their charters in a vec
     /// start_after is bound exclusive and asks for a string address
+    #[returns(Vec<SubDao>)]
     ListSubDaos {
         start_after: Option<String>,
         limit: Option<u32>,
     },
     /// Implements the DAO Star standard: https://daostar.one/EIP
+    #[returns(String)]
     DaoURI {},
     /// Gets main dao address
+    #[returns(Addr)]
     MainDao {},
     /// Verify timelock. Returns bool.
+    #[returns(bool)]
     VerifyTimelock { timelock: String },
 }
 

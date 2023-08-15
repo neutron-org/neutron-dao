@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "ExecuteMsg_for_ProposeMessage",
+  "title": "ExecuteMsg",
   "oneOf": [
     {
       "description": "Creates a new proposal in the pre-propose module. MSG will be serialized and used as the proposal creation message.",

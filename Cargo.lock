@@ -1663,6 +1663,7 @@ dependencies = [
 name = "neutron-subdao-core"
 version = "0.1.0"
 dependencies = [
+ "cosmwasm-schema",
  "cosmwasm-std",
  "cw-utils 1.0.1",
  "cw2 1.1.0",

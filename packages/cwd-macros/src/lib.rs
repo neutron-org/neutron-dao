@@ -517,7 +517,11 @@ pub fn pausable_query(metadata: TokenStream, input: TokenStream) -> TokenStream 
     let mut ast: DeriveInput = parse_macro_input!(input);
     match &mut ast.data {
         syn::Data::Enum(DataEnum { variants, .. }) => {
-            let pause_info: Variant = syn::parse2(quote! { PauseInfo {} }).unwrap();
+            let pause_info: Variant = syn::parse2(quote! {
+                #[returns(PauseInfoResponse)]
+                PauseInfo {}
+            })
+            .unwrap();
 
             variants.push(pause_info);
         }
