@@ -10,7 +10,8 @@
       ],
       "properties": {
         "proposal_module": {
-          "type": "object"
+          "type": "object",
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
@@ -23,7 +24,8 @@
       ],
       "properties": {
         "dao": {
-          "type": "object"
+          "type": "object",
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
@@ -36,7 +38,8 @@
       ],
       "properties": {
         "config": {
-          "type": "object"
+          "type": "object",
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
@@ -59,10 +62,51 @@
               "format": "uint64",
               "minimum": 0.0
             }
-          }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Extension for queries. The default implementation will do nothing if queried for will return `Binary::default()`.",
+      "type": "object",
+      "required": [
+        "query_extension"
+      ],
+      "properties": {
+        "query_extension": {
+          "type": "object",
+          "required": [
+            "msg"
+          ],
+          "properties": {
+            "msg": {
+              "$ref": "#/definitions/QueryExt"
+            }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
     }
-  ]
+  ],
+  "definitions": {
+    "QueryExt": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "timelock_address"
+          ],
+          "properties": {
+            "timelock_address": {
+              "type": "object"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
 }
