@@ -1593,7 +1593,9 @@ name = "neutron-lockdrop-vault"
 version = "0.1.0"
 dependencies = [
  "astroport-periphery",
+ "cosmwasm-schema",
  "cosmwasm-std",
+ "cwd-interface",
  "cwd-macros",
  "neutron-oracle",
  "schemars",
