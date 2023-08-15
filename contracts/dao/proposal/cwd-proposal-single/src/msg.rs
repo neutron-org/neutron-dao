@@ -141,7 +141,7 @@ pub enum QueryMsg {
     Config {},
     /// Gets information about a proposal. Returns
     /// `proposals::Proposal`.
-    #[returns(crate::proposal::SingleChoiceProposal)]
+    #[returns(crate::query::ProposalResponse)]
     Proposal { proposal_id: u64 },
     /// Lists all the proposals that have been cast in this
     /// module. Returns `query::ProposalListResponse`.
