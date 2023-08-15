@@ -33,7 +33,7 @@ pub enum ExecuteMsg {
     /// Distribute pending funds between Bank and Distribution accounts
     Distribute {},
 
-    // Update config
+    /// Update config
     UpdateConfig {
         distribution_rate: Option<Decimal>,
         min_period: Option<u64>,
