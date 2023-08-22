@@ -1,3 +1,4 @@
+use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::CosmosMsg;
 use neutron_sdk::bindings::msg::NeutronMsg;
 use schemars::JsonSchema;
@@ -28,18 +29,21 @@ pub enum ExecuteMsg {
     },
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
+#[derive(QueryResponses)]
 pub enum QueryMsg {
-    /// Gets the config. Returns `state::Config`.
+    /// Gets the config. Returns `types::Config`.
+    #[returns(crate::types::Config)]
     Config {},
 
     /// Gets information about a proposal. Returns
     /// `proposals::Proposal`.
+    #[returns(crate::types::SingleChoiceProposal)]
     Proposal { proposal_id: u64 },
 
     /// Lists all the proposals that have been cast in this
     /// module. Returns `query::ProposalListResponse`.
+    #[returns(crate::types::ProposalListResponse)]
     ListProposals {
         /// The proposal ID to start listing proposals after. For
         /// example, if this is set to 2 proposals with IDs 3 and

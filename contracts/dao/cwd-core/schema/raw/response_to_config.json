@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Config",
+  "description": "Top level config type for core module.",
+  "type": "object",
+  "required": [
+    "description",
+    "name"
+  ],
+  "properties": {
+    "dao_uri": {
+      "description": "The URI for the DAO as defined by the DAOstar standard https://daostar.one/EIP",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "description": {
+      "description": "A description of the contract.",
+      "type": "string"
+    },
+    "name": {
+      "description": "The name of the contract.",
+      "type": "string"
+    }
+  }
+}
