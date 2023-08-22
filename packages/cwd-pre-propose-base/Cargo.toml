@@ -1,10 +1,10 @@
 [package]
-name = "cwd-pre-propose-base"
-version = "0.2.0"
-edition = "2021"
 authors = ["ekez ekez@withoutdoing.com"]
-repository = "https://github.com/DA0-DA0/dao-contracts"
 description = "A package for implementing pre-propose modules."
+edition = "2021"
+name = "cwd-pre-propose-base"
+repository = "https://github.com/DA0-DA0/dao-contracts"
+version = "0.2.0"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -16,18 +16,18 @@ backtraces = ["cosmwasm-std/backtraces"]
 library = []
 
 [dependencies]
-cosmwasm-std = { version = "1.3.0" }
+cosmwasm-schema = "1.3.0"
+cosmwasm-std = {version = "1.3.0"}
+cw-denom = {path = "../cw-denom"}
 cw-storage-plus = "1.1.0"
+cw-utils = {version = "1.0.1"}
 cw2 = "1.1.0"
+cwd-interface = {path = "../cwd-interface"}
+cwd-proposal-hooks = {path = "../cwd-proposal-hooks"}
+cwd-voting = {path = "../cwd-voting"}
 schemars = "0.8.8"
-serde = { version = "1.0.175", default-features = false, features = ["derive"] }
-thiserror = { version = "1.0.31" }
-cwd-voting = { path = "../cwd-voting" }
-cwd-proposal-hooks = { path = "../cwd-proposal-hooks" }
-cwd-interface = { path = "../cwd-interface" }
-cw-denom = { path = "../cw-denom" }
-cw-utils = { version = "1.0.1" }
+serde = {version = "1.0.175", default-features = false, features = ["derive"]}
+thiserror = {version = "1.0.31"}
 
 [dev-dependencies]
-cosmwasm-schema = "1.3.0"
 cw-multi-test = "0.16.5"

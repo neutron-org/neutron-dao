@@ -9,8 +9,12 @@ use syn::{parse_macro_input, AttributeArgs, DataEnum, DeriveInput, Variant};
 ///
 /// ```
 /// use cwd_macros::voting_query;
+/// use cosmwasm_schema::{cw_serde, QueryResponses};
+/// use cwd_interface::voting::{TotalPowerAtHeightResponse, VotingPowerAtHeightResponse};
 ///
 /// #[voting_query]
+/// #[cw_serde]
+/// #[derive(QueryResponses)]
 /// enum QueryMsg {}
 /// ```
 ///
@@ -35,13 +39,21 @@ use syn::{parse_macro_input, AttributeArgs, DataEnum, DeriveInput, Variant};
 ///
 /// ```compile_fail
 /// use cwd_macros::voting_query;
+/// use cosmwasm_schema::{cw_serde, QueryResponses};
+/// use cwd_interface::voting::{TotalPowerAtHeightResponse, VotingPowerAtHeightResponse};
+/// use cosmwasm_std::Empty;
 ///
 /// #[derive(Clone)]
 /// #[voting_query]
+/// #[cw_serde]
+/// #[derive(QueryResponses)]
 /// #[allow(dead_code)]
 /// enum Test {
+///     #[returns(Empty)]
 ///     Foo,
+///     #[returns(Empty)]
 ///     Bar(u64),
+///     #[returns(Empty)]
 ///     Baz { foo: u64 },
 /// }
 /// ```
@@ -58,15 +70,21 @@ pub fn voting_query(metadata: TokenStream, input: TokenStream) -> TokenStream {
     let mut ast: DeriveInput = parse_macro_input!(input);
     match &mut ast.data {
         syn::Data::Enum(DataEnum { variants, .. }) => {
-            let voting_power: Variant = syn::parse2(quote! { VotingPowerAtHeight {
-                address: ::std::string::String,
-                height: ::std::option::Option<::std::primitive::u64>
-            } })
+            let voting_power: Variant = syn::parse2(quote! {
+                #[returns(VotingPowerAtHeightResponse)]
+                VotingPowerAtHeight {
+                    address: ::std::string::String,
+                    height: ::std::option::Option<::std::primitive::u64>
+                }
+            })
             .unwrap();
 
-            let total_power: Variant = syn::parse2(quote! { TotalPowerAtHeight {
-                height: ::std::option::Option<::std::primitive::u64>
-            } })
+            let total_power: Variant = syn::parse2(quote! {
+                #[returns(TotalPowerAtHeightResponse)]
+                TotalPowerAtHeight {
+                    height: ::std::option::Option<::std::primitive::u64>
+                }
+            })
             .unwrap();
 
             // This is example how possible we can implement such methods,
@@ -110,8 +128,12 @@ pub fn voting_query(metadata: TokenStream, input: TokenStream) -> TokenStream {
 ///
 /// ```
 /// use cwd_macros::token_query;
+/// use cosmwasm_schema::{cw_serde, QueryResponses};
+/// use cosmwasm_std::Addr;
 ///
 /// #[token_query]
+/// #[cw_serde]
+/// #[derive(QueryResponses)]
 /// enum QueryMsg {}
 /// ```
 ///
@@ -130,13 +152,20 @@ pub fn voting_query(metadata: TokenStream, input: TokenStream) -> TokenStream {
 ///
 /// ```compile_fail
 /// use cwd_macros::token_query;
+/// use cosmwasm_schema::{cw_serde, QueryResponses};
+/// use cosmwasm_std::{Empty, Addr};
 ///
 /// #[derive(Clone)]
 /// #[token_query]
+/// #[cw_serde]
+/// #[derive(QueryResponses)]
 /// #[allow(dead_code)]
 /// enum Test {
+///     #[returns(Empty)]
 ///     Foo,
+///     #[returns(Empty)]
 ///     Bar(u64),
+///     #[returns(Empty)]
 ///     Baz { foo: u64 },
 /// }
 /// ```
@@ -153,7 +182,11 @@ pub fn token_query(metadata: TokenStream, input: TokenStream) -> TokenStream {
     let mut ast: DeriveInput = parse_macro_input!(input);
     match &mut ast.data {
         syn::Data::Enum(DataEnum { variants, .. }) => {
-            let info: Variant = syn::parse2(quote! { TokenContract {} }).unwrap();
+            let info: Variant = syn::parse2(quote! {
+                #[returns(Addr)]
+                TokenContract {}
+            })
+            .unwrap();
 
             variants.push(info);
         }
@@ -181,8 +214,13 @@ pub fn token_query(metadata: TokenStream, input: TokenStream) -> TokenStream {
 ///
 /// ```
 /// use cwd_macros::active_query;
+/// use cosmwasm_schema::{cw_serde, QueryResponses};
+/// use cosmwasm_std::Empty;
+/// use cwd_interface::voting::IsActiveResponse;
 ///
 /// #[active_query]
+/// #[cw_serde]
+/// #[derive(QueryResponses)]
 /// enum QueryMsg {}
 /// ```
 ///
@@ -201,13 +239,21 @@ pub fn token_query(metadata: TokenStream, input: TokenStream) -> TokenStream {
 ///
 /// ```compile_fail
 /// use cwd_macros::active_query;
+/// use cosmwasm_schema::{cw_serde, QueryResponses};
+/// use cosmwasm_std::Empty;
+/// use cwd_interface::voting::IsActiveResponse;
 ///
 /// #[derive(Clone)]
 /// #[active_query]
+/// #[cw_serde]
+/// #[derive(QueryResponses)]
 /// #[allow(dead_code)]
 /// enum Test {
+///     #[returns(Empty)]
 ///     Foo,
+///     #[returns(Empty)]
 ///     Bar(u64),
+///     #[returns(Empty)]
 ///     Baz { foo: u64 },
 /// }
 /// ```
@@ -224,7 +270,11 @@ pub fn active_query(metadata: TokenStream, input: TokenStream) -> TokenStream {
     let mut ast: DeriveInput = parse_macro_input!(input);
     match &mut ast.data {
         syn::Data::Enum(DataEnum { variants, .. }) => {
-            let info: Variant = syn::parse2(quote! { IsActive {} }).unwrap();
+            let info: Variant = syn::parse2(quote! {
+                #[returns(IsActiveResponse)]
+                IsActive {}
+            })
+            .unwrap();
 
             variants.push(info);
         }
@@ -252,8 +302,12 @@ pub fn active_query(metadata: TokenStream, input: TokenStream) -> TokenStream {
 ///
 /// ```
 /// use cwd_macros::info_query;
+/// use cosmwasm_schema::{cw_serde, QueryResponses};
+/// use cwd_interface::voting::InfoResponse;
 ///
 /// #[info_query]
+/// #[cw_serde]
+/// #[derive(QueryResponses)]
 /// enum QueryMsg {}
 /// ```
 ///
@@ -272,13 +326,21 @@ pub fn active_query(metadata: TokenStream, input: TokenStream) -> TokenStream {
 ///
 /// ```compile_fail
 /// use cwd_macros::info_query;
+/// use cosmwasm_schema::{cw_serde, QueryResponses};
+/// use cwd_interface::voting::InfoResponse;
+/// use cosmwasm_std::Empty;
 ///
-/// #[derive(Clone)]
 /// #[info_query]
+/// #[derive(Clone)]
+/// #[cw_serde]
+/// #[derive(QueryResponses)]
 /// #[allow(dead_code)]
 /// enum Test {
+///     #[returns(Empty)]
 ///     Foo,
+///     #[returns(Empty)]
 ///     Bar(u64),
+///     #[returns(Empty)]
 ///     Baz { foo: u64 },
 /// }
 /// ```
@@ -295,7 +357,11 @@ pub fn info_query(metadata: TokenStream, input: TokenStream) -> TokenStream {
     let mut ast: DeriveInput = parse_macro_input!(input);
     match &mut ast.data {
         syn::Data::Enum(DataEnum { variants, .. }) => {
-            let info: Variant = syn::parse2(quote! { Info {} }).unwrap();
+            let info: Variant = syn::parse2(quote! {
+                #[returns(InfoResponse)]
+                Info {}
+            })
+            .unwrap();
 
             variants.push(info);
         }
@@ -322,8 +388,12 @@ pub fn info_query(metadata: TokenStream, input: TokenStream) -> TokenStream {
 ///
 /// ```
 /// use cwd_macros::proposal_module_query;
+/// use cosmwasm_schema::{cw_serde, QueryResponses};
+/// use cosmwasm_std::Addr;
 ///
 /// #[proposal_module_query]
+/// #[cw_serde]
+/// #[derive(QueryResponses)]
 /// enum QueryMsg {}
 /// ```
 ///
@@ -342,13 +412,20 @@ pub fn info_query(metadata: TokenStream, input: TokenStream) -> TokenStream {
 ///
 /// ```compile_fail
 /// use cwd_macros::proposal_module_query;
+/// use cosmwasm_schema::{cw_serde, QueryResponses};
+/// use cosmwasm_std::{Addr, Empty};
 ///
 /// #[derive(Clone)]
 /// #[proposal_module_query]
+/// #[cw_serde]
+/// #[derive(QueryResponses)]
 /// #[allow(dead_code)]
 /// enum Test {
+///     #[returns(Empty)]
 ///     Foo,
+///     #[returns(Empty)]
 ///     Bar(u64),
+///     #[returns(Empty)]
 ///     Baz { foo: u64 },
 /// }
 /// ```
@@ -365,7 +442,11 @@ pub fn proposal_module_query(metadata: TokenStream, input: TokenStream) -> Token
     let mut ast: DeriveInput = parse_macro_input!(input);
     match &mut ast.data {
         syn::Data::Enum(DataEnum { variants, .. }) => {
-            let dao: Variant = syn::parse2(quote! { Dao {} }).unwrap();
+            let dao: Variant = syn::parse2(quote! {
+                #[returns(Addr)]
+                Dao {}
+            })
+            .unwrap();
 
             variants.push(dao);
         }
@@ -451,8 +532,14 @@ pub fn limit_variant_count(metadata: TokenStream, input: TokenStream) -> TokenSt
 ///
 /// ```
 /// use cwd_macros::pausable_query;
+/// use cosmwasm_schema::{cw_serde, QueryResponses};
+///
+/// #[cw_serde]
+/// struct PauseInfoResponse{}
 ///
 /// #[pausable_query]
+/// #[cw_serde]
+/// #[derive(QueryResponses)]
 /// enum QueryMsg {}
 /// ```
 ///
@@ -472,13 +559,22 @@ pub fn limit_variant_count(metadata: TokenStream, input: TokenStream) -> TokenSt
 ///
 /// ```compile_fail
 /// use cwd_macros::pausable_query;
+/// use cosmwasm_schema::{cw_serde, QueryResponses};
+/// use cosmwasm_std::Empty;
+///
+/// struct PauseInfoResponse{}
 ///
 /// #[derive(Clone)]
 /// #[pausable_query]
+/// #[cw_serde]
+/// #[derive(QueryResponses)]
 /// #[allow(dead_code)]
 /// enum Test {
+///     #[returns(Empty)]
 ///     Foo,
+///     #[returns(Empty)]
 ///     Bar(u64),
+///     #[returns(Empty)]
 ///     Baz { foo: u64 },
 /// }
 /// ```
@@ -495,7 +591,11 @@ pub fn pausable_query(metadata: TokenStream, input: TokenStream) -> TokenStream 
     let mut ast: DeriveInput = parse_macro_input!(input);
     match &mut ast.data {
         syn::Data::Enum(DataEnum { variants, .. }) => {
-            let pause_info: Variant = syn::parse2(quote! { PauseInfo {} }).unwrap();
+            let pause_info: Variant = syn::parse2(quote! {
+                #[returns(PauseInfoResponse)]
+                PauseInfo {}
+            })
+            .unwrap();
 
             variants.push(pause_info);
         }
@@ -676,8 +776,13 @@ pub fn voting_vault(metadata: TokenStream, input: TokenStream) -> TokenStream {
 ///
 /// ```
 /// use cwd_macros::voting_vault_query;
+/// use cosmwasm_std::{Uint128, Addr};
+/// use cosmwasm_schema::{cw_serde, QueryResponses};
+/// use cwd_interface::voting::BondingStatusResponse;
 ///
 /// #[voting_vault_query]
+/// #[cw_serde]
+/// #[derive(QueryResponses)]
 /// enum QueryMsg {}
 /// ```
 ///
@@ -712,13 +817,21 @@ pub fn voting_vault(metadata: TokenStream, input: TokenStream) -> TokenStream {
 ///
 /// ```compile_fail
 /// use cwd_macros::voting_vault_query;
+/// use cosmwasm_std::{Uint128, Addr, Empty};
+/// use cosmwasm_schema::{cw_serde, QueryResponses};
+/// use cwd_interface::voting::BondingStatusResponse;
 ///
 /// #[derive(Clone)]
 /// #[voting_vault_query]
+/// #[cw_serde]
+/// #[derive(QueryResponses)]
 /// #[allow(dead_code)]
 /// enum Test {
+///     #[returns(Empty)]
 ///     Foo,
+///     #[returns(Empty)]
 ///     Bar(u64),
+///     #[returns(Empty)]
 ///     Baz { foo: u64 },
 /// }
 /// ```
@@ -735,18 +848,36 @@ pub fn voting_vault_query(metadata: TokenStream, input: TokenStream) -> TokenStr
     let mut ast: DeriveInput = parse_macro_input!(input);
     match &mut ast.data {
         syn::Data::Enum(DataEnum { variants, .. }) => {
-            let bonding_status: Variant = syn::parse2(quote! { BondingStatus {
-                address: ::std::string::String,
-                height: ::std::option::Option<::std::primitive::u64>
-            } })
+            let bonding_status: Variant = syn::parse2(quote! {
+                   #[returns(BondingStatusResponse)]
+                   BondingStatus {
+                       address: ::std::string::String,
+                       height: ::std::option::Option<::std::primitive::u64>
+                   }
+            })
             .unwrap();
-            let dao: Variant = syn::parse2(quote! { Dao {} }).unwrap();
-            let name: Variant = syn::parse2(quote! { Name {} }).unwrap();
-            let description: Variant = syn::parse2(quote! { Description {} }).unwrap();
-            let bonders: Variant = syn::parse2(quote! { ListBonders {
-                start_after: ::std::option::Option<::std::string::String>,
-                limit: ::std::option::Option<::std::primitive::u32>
-            } })
+            let dao: Variant = syn::parse2(quote! {
+                #[returns(Addr)]
+                Dao {}
+            })
+            .unwrap();
+            let name: Variant = syn::parse2(quote! {
+                #[returns(String)]
+                Name {}
+            })
+            .unwrap();
+            let description: Variant = syn::parse2(quote! {
+                #[returns(String)]
+                Description {}
+            })
+            .unwrap();
+            let bonders: Variant = syn::parse2(quote! {
+                #[returns(Vec<(Addr, Uint128)>)]
+                ListBonders {
+                    start_after: ::std::option::Option<::std::string::String>,
+                    limit: ::std::option::Option<::std::primitive::u32>
+                }
+            })
             .unwrap();
 
             variants.push(bonding_status);
