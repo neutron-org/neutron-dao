@@ -38,3 +38,4 @@ cw20 = "1.1.0"
 cwd-voting = { path = "../../../../packages/cwd-voting" }
 cw-denom = { path = "../../../../packages/cw-denom" }
 cwd-interface = { path = "../../../../packages/cwd-interface" }
+
