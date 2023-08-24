@@ -1,3 +1,8 @@
+use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_std::Addr;
+use cwd_interface::voting::{
+    InfoResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
+};
 use cwd_macros::{info_query, voting_query};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -20,11 +25,14 @@ pub enum ExecuteMsg {
 
 #[voting_query]
 #[info_query]
-#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
+#[derive(QueryResponses)]
 pub enum QueryMsg {
+    #[returns(Addr)]
     Dao {},
+    #[returns(crate::state::Config)]
     Config {},
+    #[returns(Vec<VotingVault>)]
     VotingVaults {},
 }
 

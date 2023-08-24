@@ -1,5 +1,7 @@
-use cosmwasm_std::Uint128;
+use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_std::{Addr, Uint128};
 use cwd_macros::{pausable, pausable_query};
+use exec_control::pause::PauseInfoResponse;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -32,13 +34,16 @@ pub enum ExecuteMsg {
 }
 
 #[pausable_query]
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
+#[derive(QueryResponses)]
 pub enum QueryMsg {
     /// The contract's configurations; returns [`ConfigResponse`]
+    #[returns(crate::state::Config)]
     Config {},
     /// List of pending funds to addresses (to be distributed); returns [`Vec<(Addr, Uint128)>`]
+    #[returns(Vec<(Addr, Uint128)>)]
     Pending {},
     /// List of current shareholder weights; returns [`Vec<(Addr, Uint128)>`]
+    #[returns(Vec<(Addr, Uint128)>)]
     Shares {},
 }
