@@ -1630,8 +1630,7 @@ dependencies = [
 [[package]]
 name = "neutron-sdk"
 version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "adfc6f92cae61b5af9014c09b7bac25ac95b7442be38441a7103377a8edfd37c"
+source = "git+https://github.com/neutron-org/neutron-sdk?branch=feat/sdk47#97dddc61f3a240b69795fa397540a759577ad304"
 dependencies = [
  "base64 0.21.2",
  "bech32",
