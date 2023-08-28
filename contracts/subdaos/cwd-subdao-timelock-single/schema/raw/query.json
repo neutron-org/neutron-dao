@@ -73,6 +73,30 @@
         }
       },
       "additionalProperties": false
+    },
+    {
+      "description": "Returns an error of the failed proposal. Returns `Option<String>`",
+      "type": "object",
+      "required": [
+        "proposal_failed_execution_error"
+      ],
+      "properties": {
+        "proposal_failed_execution_error": {
+          "type": "object",
+          "required": [
+            "proposal_id"
+          ],
+          "properties": {
+            "proposal_id": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
     }
   ]
 }
