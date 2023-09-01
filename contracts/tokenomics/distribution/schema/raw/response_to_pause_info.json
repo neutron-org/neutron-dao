@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PauseInfoResponse",
+  "description": "Information about if the contract is currently paused.",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "paused"
+      ],
+      "properties": {
+        "paused": {
+          "type": "object",
+          "required": [
+            "until_height"
+          ],
+          "properties": {
+            "until_height": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "unpaused"
+      ],
+      "properties": {
+        "unpaused": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    }
+  ]
+}

@@ -895,6 +895,7 @@ version = "0.2.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
+ "cwd-interface",
  "proc-macro2",
  "quote",
  "schemars",
@@ -1593,7 +1594,9 @@ name = "neutron-lockdrop-vault"
 version = "0.1.0"
 dependencies = [
  "astroport-periphery",
+ "cosmwasm-schema",
  "cosmwasm-std",
+ "cwd-interface",
  "cwd-macros",
  "neutron-oracle",
  "schemars",
@@ -1665,6 +1668,7 @@ dependencies = [
 name = "neutron-subdao-core"
 version = "0.1.0"
 dependencies = [
+ "cosmwasm-schema",
  "cosmwasm-std",
  "cw-utils 1.0.1",
  "cw2 1.1.0",
@@ -1695,8 +1699,11 @@ dependencies = [
 name = "neutron-subdao-proposal-single"
 version = "0.1.0"
 dependencies = [
+ "cosmwasm-schema",
  "cosmwasm-std",
  "cw-utils 1.0.1",
+ "cwd-hooks",
+ "cwd-interface",
  "cwd-macros",
  "cwd-voting",
  "neutron-sdk",
@@ -1708,6 +1715,7 @@ dependencies = [
 name = "neutron-subdao-timelock-single"
 version = "0.1.0"
 dependencies = [
+ "cosmwasm-schema",
  "cosmwasm-std",
  "neutron-sdk",
  "schemars",
@@ -1740,7 +1748,9 @@ dependencies = [
 name = "neutron-vesting-lp-vault"
 version = "0.1.0"
 dependencies = [
+ "cosmwasm-schema",
  "cosmwasm-std",
+ "cwd-interface",
  "cwd-macros",
  "schemars",
  "serde",

@@ -1,0 +1,305 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "QueryMsg",
+  "oneOf": [
+    {
+      "description": "Gets the contract's config. Returns Config.",
+      "type": "object",
+      "required": [
+        "config"
+      ],
+      "properties": {
+        "config": {
+          "type": "object",
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Dumps all of the core contract's state in a single query. Useful for frontends as performance for queries is more limited by network times than compute times. Returns `DumpStateResponse`.",
+      "type": "object",
+      "required": [
+        "dump_state"
+      ],
+      "properties": {
+        "dump_state": {
+          "type": "object",
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Gets the address associated with an item key.",
+      "type": "object",
+      "required": [
+        "get_item"
+      ],
+      "properties": {
+        "get_item": {
+          "type": "object",
+          "required": [
+            "key"
+          ],
+          "properties": {
+            "key": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Lists all of the items associted with the contract. For example, given the items `{ \"group\": \"foo\", \"subdao\": \"bar\"}` this query would return `[(\"group\", \"foo\"), (\"subdao\", \"bar\")]`.",
+      "type": "object",
+      "required": [
+        "list_items"
+      ],
+      "properties": {
+        "list_items": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint32",
+              "minimum": 0.0
+            },
+            "start_after": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Gets all proposal modules associated with the contract. Returns Vec<ProposalModule>.",
+      "type": "object",
+      "required": [
+        "proposal_modules"
+      ],
+      "properties": {
+        "proposal_modules": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint32",
+              "minimum": 0.0
+            },
+            "start_after": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Gets the active proposal modules associated with the contract. Returns Vec<ProposalModule>.",
+      "type": "object",
+      "required": [
+        "active_proposal_modules"
+      ],
+      "properties": {
+        "active_proposal_modules": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint32",
+              "minimum": 0.0
+            },
+            "start_after": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Returns information about if the contract is currently paused.",
+      "type": "object",
+      "required": [
+        "pause_info"
+      ],
+      "properties": {
+        "pause_info": {
+          "type": "object",
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Gets the contract's voting module. Returns Addr.",
+      "type": "object",
+      "required": [
+        "voting_module"
+      ],
+      "properties": {
+        "voting_module": {
+          "type": "object",
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Returns all SubDAOs with their charters in a vec start_after is bound exclusive and asks for a string address",
+      "type": "object",
+      "required": [
+        "list_sub_daos"
+      ],
+      "properties": {
+        "list_sub_daos": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint32",
+              "minimum": 0.0
+            },
+            "start_after": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Returns the SubDAO for a specific address if it in the list",
+      "type": "object",
+      "required": [
+        "get_sub_dao"
+      ],
+      "properties": {
+        "get_sub_dao": {
+          "type": "object",
+          "required": [
+            "address"
+          ],
+          "properties": {
+            "address": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Implements the DAO Star standard: https://daostar.one/EIP",
+      "type": "object",
+      "required": [
+        "dao_u_r_i"
+      ],
+      "properties": {
+        "dao_u_r_i": {
+          "type": "object",
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "voting_power_at_height"
+      ],
+      "properties": {
+        "voting_power_at_height": {
+          "type": "object",
+          "required": [
+            "address"
+          ],
+          "properties": {
+            "address": {
+              "type": "string"
+            },
+            "height": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint64",
+              "minimum": 0.0
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "total_power_at_height"
+      ],
+      "properties": {
+        "total_power_at_height": {
+          "type": "object",
+          "properties": {
+            "height": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint64",
+              "minimum": 0.0
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "info"
+      ],
+      "properties": {
+        "info": {
+          "type": "object",
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  ]
+}
