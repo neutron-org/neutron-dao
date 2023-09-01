@@ -70,14 +70,14 @@ pub fn execute_add_voting_vault(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    new_voting_vault_contact: String,
+    new_voting_vault_contract: String,
 ) -> Result<Response, ContractError> {
     let config: Config = CONFIG.load(deps.storage)?;
     if info.sender != config.owner {
         return Err(ContractError::Unauthorized {});
     }
 
-    let voting_vault_contract_addr = deps.api.addr_validate(&new_voting_vault_contact)?;
+    let voting_vault_contract_addr = deps.api.addr_validate(&new_voting_vault_contract)?;
     if VAULT_STATES
         .load(deps.storage, voting_vault_contract_addr.clone())
         .is_ok()
@@ -93,21 +93,21 @@ pub fn execute_add_voting_vault(
 
     Ok(Response::new()
         .add_attribute("action", "add_voting_vault")
-        .add_attribute("vault", new_voting_vault_contact))
+        .add_attribute("vault", new_voting_vault_contract))
 }
 
 pub fn execute_deactivate_voting_vault(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    voting_vault_contact: String,
+    voting_vault_contract: String,
 ) -> Result<Response, ContractError> {
     let config: Config = CONFIG.load(deps.storage)?;
     if info.sender != config.owner {
         return Err(ContractError::Unauthorized {});
     }
 
-    let voting_vault_contract_addr = deps.api.addr_validate(&voting_vault_contact)?;
+    let voting_vault_contract_addr = deps.api.addr_validate(&voting_vault_contract)?;
 
     let vault_state = VAULT_STATES.load(deps.storage, voting_vault_contract_addr.clone())?;
     if vault_state == VotingVaultState::Inactive {
@@ -123,21 +123,21 @@ pub fn execute_deactivate_voting_vault(
 
     Ok(Response::new()
         .add_attribute("action", "deactivate_voting_vault")
-        .add_attribute("vault", voting_vault_contact))
+        .add_attribute("vault", voting_vault_contract))
 }
 
 pub fn execute_activate_voting_vault(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    voting_vault_contact: String,
+    voting_vault_contract: String,
 ) -> Result<Response, ContractError> {
     let config: Config = CONFIG.load(deps.storage)?;
     if info.sender != config.owner {
         return Err(ContractError::Unauthorized {});
     }
 
-    let voting_vault_contract_addr = deps.api.addr_validate(&voting_vault_contact)?;
+    let voting_vault_contract_addr = deps.api.addr_validate(&voting_vault_contract)?;
 
     let vault_state = VAULT_STATES.load(deps.storage, voting_vault_contract_addr.clone())?;
     if vault_state == VotingVaultState::Active {
@@ -153,7 +153,7 @@ pub fn execute_activate_voting_vault(
 
     Ok(Response::new()
         .add_attribute("action", "activate_voting_vault")
-        .add_attribute("vault", voting_vault_contact))
+        .add_attribute("vault", voting_vault_contract))
 }
 
 pub fn execute_update_config(
