@@ -319,6 +319,14 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
         VAULT_STATES.save(deps.storage, vault, &VotingVaultState::Active, 1u64)?;
     }
 
+    // overwrite value behind config key
+    CONFIG.save(
+        deps.storage,
+        &Config {
+            owner: old_config.owner,
+        },
+    )?;
+
     // Set contract to version to latest
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     Ok(Response::default())
