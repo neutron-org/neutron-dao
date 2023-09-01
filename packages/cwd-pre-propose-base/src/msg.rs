@@ -1,3 +1,5 @@
+use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_std::{Addr, Binary};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -83,25 +85,30 @@ pub enum ExecuteMsg<ProposalMessage> {
     },
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
+#[derive(QueryResponses)]
 pub enum QueryMsg<QueryExt>
 where
     QueryExt: JsonSchema,
 {
     /// Gets the proposal module that this pre propose module is
     /// associated with. Returns `Addr`.
+    #[returns(Addr)]
     ProposalModule {},
     /// Gets the DAO (cw-dao-core) module this contract is associated
     /// with. Returns `Addr`.
+    #[returns(Addr)]
     Dao {},
     /// Gets the module's configuration. Returns `state::Config`.
+    #[returns(crate::state::Config)]
     Config {},
     /// Gets the deposit info for the proposal identified by
     /// PROPOSAL_ID. Returns `DepositInfoResponse`.
+    #[returns(DepositInfoResponse)]
     DepositInfo { proposal_id: u64 },
     /// Extension for queries. The default implementation will do
     /// nothing if queried for will return `Binary::default()`.
+    #[returns(Binary)]
     QueryExtension { msg: QueryExt },
 }
 

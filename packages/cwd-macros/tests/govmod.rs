@@ -1,12 +1,18 @@
+use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_std::{Addr, Empty};
 use cwd_macros::proposal_module_query;
 
 #[proposal_module_query]
-#[derive(Clone)]
 #[allow(dead_code)]
+#[cw_serde]
+#[derive(QueryResponses)]
 enum Test {
+    #[returns(Empty)]
     Foo,
+    #[returns(Empty)]
     Bar(u64),
-    Baz { foo: u64 },
+    #[returns(Empty)]
+    Baz { foobar: u64 },
 }
 
 #[test]

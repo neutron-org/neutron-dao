@@ -1,0 +1,86 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ExecuteMsg",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "add_voting_vault"
+      ],
+      "properties": {
+        "add_voting_vault": {
+          "type": "object",
+          "required": [
+            "new_voting_vault_contract"
+          ],
+          "properties": {
+            "new_voting_vault_contract": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "deactivate_voting_vault"
+      ],
+      "properties": {
+        "deactivate_voting_vault": {
+          "type": "object",
+          "required": [
+            "voting_vault_contract"
+          ],
+          "properties": {
+            "voting_vault_contract": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "activate_voting_vault"
+      ],
+      "properties": {
+        "activate_voting_vault": {
+          "type": "object",
+          "required": [
+            "voting_vault_contract"
+          ],
+          "properties": {
+            "voting_vault_contract": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "update_config"
+      ],
+      "properties": {
+        "update_config": {
+          "type": "object",
+          "required": [
+            "owner"
+          ],
+          "properties": {
+            "owner": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  ]
+}
