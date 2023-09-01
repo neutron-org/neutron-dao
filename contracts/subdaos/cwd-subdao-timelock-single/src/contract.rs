@@ -333,6 +333,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
         .into_result()
         .err()
         .unwrap_or_else(|| "result is not error".to_string());
+    // Error is reduced before cosmwasm reply and is expected in form of "codespace=? code=?"
     PROPOSAL_FAILED_EXECUTION_ERRORS.save(deps.storage, proposal_id, &err)?;
 
     Ok(Response::new().add_attribute(
