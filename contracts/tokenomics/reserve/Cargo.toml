@@ -1,10 +1,10 @@
 [package]
-name = "neutron-reserve"
-version = "0.1.0"
 authors = ["Sergey Ratiashvili <sergey.r@p2p.org>"]
 edition = "2021"
 license = "Apache-2.0"
+name = "neutron-reserve"
 repository = "https://github.com/neutron/neutron-dao"
+version = "0.1.0"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -13,16 +13,16 @@ crate-type = ["cdylib", "rlib"]
 backtraces = ["cosmwasm-std/backtraces"]
 
 [dependencies]
-neutron-sdk = { package = "neutron-sdk", version = "0.6.1" }
+cosmwasm-schema = { version = "1.3.0", default-features = false }
 cosmwasm-std = { version = "1.3.0" }
 cw-storage-plus = "1.1.0"
-schemars = "0.8.8"
+cwd-macros = { path = "../../../packages/cwd-macros" }
 exec-control = { path = "../../../packages/exec-control" }
+neutron-sdk = { package = "neutron-sdk", version = "0.6.1" }
+schemars = "0.8.8"
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0" }
-cwd-macros = { path = "../../../packages/cwd-macros" }
 astroport = { git = "https://github.com/astroport-fi/astroport-core.git", tag = "v2.5.0" }
 cw20 = "0.13"
 
 [dev-dependencies]
-cosmwasm-schema = { version = "1.3.0", default-features = false }

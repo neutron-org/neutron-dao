@@ -1,5 +1,7 @@
+use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{to_binary, Addr, CosmosMsg, Decimal, Env, StdResult, Uint128, WasmMsg};
 use cwd_macros::{pausable, pausable_query};
+use exec_control::pause::PauseInfoResponse;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -93,11 +95,13 @@ impl CallbackMsg {
 }
 
 #[pausable_query]
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
+#[derive(QueryResponses)]
 pub enum QueryMsg {
     /// The contract's configurations; returns [`ConfigResponse`]
+    #[returns(crate::state::Config)]
     Config {},
+    #[returns(StatsResponse)]
     Stats {},
 }
 

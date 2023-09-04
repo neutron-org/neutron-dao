@@ -1,3 +1,8 @@
+use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_std::Empty;
+use cwd_interface::voting::{
+    InfoResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
+};
 use cwd_macros::{info_query, voting_query};
 
 /// enum for testing. Important that this derives things / has other
@@ -5,12 +10,16 @@ use cwd_macros::{info_query, voting_query};
 /// with ours.
 #[voting_query]
 #[info_query]
-#[derive(Clone)]
 #[allow(dead_code)]
+#[cw_serde]
+#[derive(QueryResponses)]
 enum Test {
+    #[returns(Empty)]
     Foo,
+    #[returns(Empty)]
     Bar(u64),
-    Baz { foo: u64 },
+    #[returns(Empty)]
+    Baz { foobar: u64 },
 }
 
 #[test]
