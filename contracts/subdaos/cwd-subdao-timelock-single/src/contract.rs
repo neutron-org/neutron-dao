@@ -341,7 +341,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
                 .unwrap_or_else(|| "result is not error".to_string());
             let value = FailedExecutionError {
                 height: env.block.height,
-                error: error.to_string(),
+                error,
             };
             match maybe {
                 Some(mut xs) => {
