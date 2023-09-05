@@ -1,22 +1,16 @@
 use astroport_periphery::lockdrop::{PoolType, QueryMsg as LockdropQueryMsg};
-use cosmwasm_std::{Deps, StdResult, Uint128};
+use cosmwasm_std::{Addr, Deps, StdResult, Uint128};
 use neutron_voting_power::voting_power::voting_power_from_lp_tokens;
 use serde::Serialize;
 
 pub fn get_voting_power_for_address(
     deps: Deps,
-    lockdrop_contract: impl Into<String>,
-    usdc_cl_pool_contract: impl Into<String>,
-    atom_cl_pool_contract: impl Into<String>,
+    lockdrop_contract: &Addr,
+    pool_contract: &Addr,
     pool_type: PoolType,
     address: String,
     height: u64,
 ) -> StdResult<Uint128> {
-    let pool_contract: String = match pool_type {
-        PoolType::ATOM => atom_cl_pool_contract.into(),
-        PoolType::USDC => usdc_cl_pool_contract.into(),
-    };
-
     get_voting_power(
         deps,
         lockdrop_contract,
@@ -32,21 +26,15 @@ pub fn get_voting_power_for_address(
 
 pub fn get_voting_power_total(
     deps: Deps,
-    lp_contract: impl Into<String>,
-    oracle_usdc_contract: impl Into<String>,
-    oracle_atom_contract: impl Into<String>,
+    lp_contract: &Addr,
+    pool_contract: &Addr,
     pool_type: PoolType,
     height: u64,
 ) -> StdResult<Uint128> {
-    let oracle_contract: String = match pool_type {
-        PoolType::ATOM => oracle_atom_contract.into(),
-        PoolType::USDC => oracle_usdc_contract.into(),
-    };
-
     get_voting_power(
         deps,
         lp_contract,
-        oracle_contract,
+        pool_contract,
         &LockdropQueryMsg::QueryLockupTotalAtHeight { pool_type, height },
         height,
     )
@@ -54,15 +42,15 @@ pub fn get_voting_power_total(
 
 pub fn get_voting_power(
     deps: Deps,
-    lockdrop_contract: impl Into<String>,
-    pool_contract: String,
+    lockdrop_contract: &Addr,
+    pool_contract: &Addr,
     msg: &impl Serialize,
     height: u64,
 ) -> StdResult<Uint128> {
     let lp_tokens: Option<Uint128> = deps.querier.query_wasm_smart(lockdrop_contract, msg)?;
 
     let pair_info: astroport::asset::PairInfo = deps.querier.query_wasm_smart(
-        &pool_contract,
+        pool_contract,
         &astroport::pair_concentrated::QueryMsg::Pair {},
     )?;
 

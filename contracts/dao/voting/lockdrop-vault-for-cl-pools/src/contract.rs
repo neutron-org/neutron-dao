@@ -101,8 +101,8 @@ pub fn execute_update_config(
     info: MessageInfo,
     new_owner: Option<String>,
     new_lockdrop_contract: Option<String>,
-    new_oracle_usdc_contract: Option<String>,
-    new_oracle_atom_contract: Option<String>,
+    new_usdc_cl_pool_contract: Option<String>,
+    new_atom_cl_pool_contract: Option<String>,
     new_name: Option<String>,
     new_description: Option<String>,
 ) -> ContractResult<Response> {
@@ -119,12 +119,12 @@ pub fn execute_update_config(
         .map(|new_lockdrop_contract| deps.api.addr_validate(&new_lockdrop_contract))
         .transpose()?;
 
-    let new_oracle_usdc_contract = new_oracle_usdc_contract
-        .map(|new_oracle_usdc_contract| deps.api.addr_validate(&new_oracle_usdc_contract))
+    let new_usdc_pool_contract = new_usdc_cl_pool_contract
+        .map(|new_usdc_pool_contract| deps.api.addr_validate(&new_usdc_pool_contract))
         .transpose()?;
 
-    let new_oracle_atom_contract = new_oracle_atom_contract
-        .map(|new_oracle_atom_contract| deps.api.addr_validate(&new_oracle_atom_contract))
+    let new_atom_pool_contract = new_atom_cl_pool_contract
+        .map(|new_atom_pool_contract| deps.api.addr_validate(&new_atom_pool_contract))
         .transpose()?;
 
     if let Some(owner) = new_owner {
@@ -134,10 +134,10 @@ pub fn execute_update_config(
     if let Some(lockdrop_contract) = new_lockdrop_contract {
         config.lockdrop_contract = lockdrop_contract;
     }
-    if let Some(oracle_contract) = new_oracle_usdc_contract {
+    if let Some(oracle_contract) = new_usdc_pool_contract {
         config.usdc_cl_pool_contract = oracle_contract;
     }
-    if let Some(oracle_contract) = new_oracle_atom_contract {
+    if let Some(oracle_contract) = new_atom_pool_contract {
         config.atom_cl_pool_contract = oracle_contract;
     }
     if let Some(name) = new_name {
@@ -194,18 +194,16 @@ pub fn query_voting_power_at_height(
 
     let atom_power = get_voting_power_for_address(
         deps,
-        config.lockdrop_contract.as_ref(),
-        config.usdc_cl_pool_contract.as_ref(),
-        config.atom_cl_pool_contract.as_ref(),
+        &config.lockdrop_contract,
+        &config.atom_cl_pool_contract,
         PoolType::ATOM,
         address.clone(),
         height,
     )?;
     let usdc_power = get_voting_power_for_address(
         deps,
-        config.lockdrop_contract,
-        config.usdc_cl_pool_contract,
-        config.atom_cl_pool_contract,
+        &config.lockdrop_contract,
+        &config.usdc_cl_pool_contract,
         PoolType::USDC,
         address,
         height,
@@ -227,17 +225,15 @@ pub fn query_total_power_at_height(
 
     let atom_power = get_voting_power_total(
         deps,
-        config.lockdrop_contract.as_ref(),
-        config.usdc_cl_pool_contract.as_ref(),
-        config.atom_cl_pool_contract.as_ref(),
+        &config.lockdrop_contract,
+        &config.atom_cl_pool_contract,
         PoolType::ATOM,
         height,
     )?;
     let usdc_power = get_voting_power_total(
         deps,
-        config.lockdrop_contract,
-        config.usdc_cl_pool_contract,
-        config.atom_cl_pool_contract,
+        &config.lockdrop_contract,
+        &config.usdc_cl_pool_contract,
         PoolType::USDC,
         height,
     )?;

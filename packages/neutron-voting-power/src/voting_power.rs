@@ -1,10 +1,10 @@
-use cosmwasm_std::{Deps, StdResult, Uint128, Uint64};
+use cosmwasm_std::{Addr, Deps, StdResult, Uint128, Uint64};
 
 pub fn voting_power_from_lp_tokens(
     deps: Deps,
     lp_tokens: Uint128,
     total_lp_tokens: Uint128,
-    cl_pool: impl Into<String>,
+    cl_pool: &Addr,
     height: u64,
 ) -> StdResult<Uint128> {
     if lp_tokens.is_zero() {
