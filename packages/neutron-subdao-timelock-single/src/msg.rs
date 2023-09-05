@@ -55,10 +55,10 @@ pub enum QueryMsg {
         limit: Option<u64>,
     },
 
-    /// Returns an error of the failed proposal.
-    /// Expected in the form of "codespace=? code=?".
-    /// Returns `Option<String>`
-    #[returns(Option<String>)]
+    /// Returns errors of the failed proposal.
+    /// Expected in the form of [execution_height, "codespace=? code=?"].
+    /// Returns `types::FailedProposalErrors`
+    #[returns(crate::types::FailedProposalErrors)]
     ProposalFailedExecutionError { proposal_id: u64 },
 }
 

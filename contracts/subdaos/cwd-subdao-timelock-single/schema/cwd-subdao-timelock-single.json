@@ -1920,7 +1920,7 @@
         "additionalProperties": false
       },
       {
-        "description": "Returns an error of the failed proposal. Expected in the form of \"codespace=? code=?\". Returns `Option<String>`",
+        "description": "Returns errors of the failed proposal. Expected in the form of [execution_height, \"codespace=? code=?\"]. Returns `types::FailedProposalErrors`",
         "type": "object",
         "required": [
           "proposal_failed_execution_error"
@@ -5562,11 +5562,42 @@
     },
     "proposal_failed_execution_error": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Nullable_String",
-      "type": [
-        "string",
-        "null"
-      ]
+      "title": "FailedProposalErrors",
+      "description": "A list of proposals returned by `ListProposals`.",
+      "type": "object",
+      "properties": {
+        "errors": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/FailedExecutionError"
+          }
+        }
+      },
+      "definitions": {
+        "FailedExecutionError": {
+          "description": "Proposal failed execution error",
+          "type": "object",
+          "required": [
+            "error",
+            "height"
+          ],
+          "properties": {
+            "error": {
+              "description": "Error text. Error is reduced before cosmwasm reply and is expected in form of \"codespace=? code=?\"",
+              "type": "string"
+            },
+            "height": {
+              "description": "Block height of execution error",
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            }
+          }
+        }
+      }
     }
   }
 }

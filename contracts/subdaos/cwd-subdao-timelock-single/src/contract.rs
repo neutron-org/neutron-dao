@@ -18,6 +18,7 @@ use neutron_dao_pre_propose_overrule::msg::{
 use neutron_sdk::bindings::msg::NeutronMsg;
 use neutron_subdao_core::msg::QueryMsg as SubdaoQuery;
 use neutron_subdao_pre_propose_single::msg::QueryMsg as PreProposeQuery;
+use neutron_subdao_timelock_single::types::{FailedExecutionError, FailedProposalErrors};
 use neutron_subdao_timelock_single::{
     msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg},
     types::{Config, ProposalListResponse, ProposalStatus, SingleChoiceProposal},
@@ -278,8 +279,8 @@ pub fn query_list_proposals(
 }
 
 fn query_proposal_failed_execution_error(deps: Deps, proposal_id: u64) -> StdResult<Binary> {
-    let proposal_error = PROPOSAL_FAILED_EXECUTION_ERRORS.may_load(deps.storage, proposal_id)?;
-    to_binary(&proposal_error)
+    let errors = PROPOSAL_FAILED_EXECUTION_ERRORS.may_load(deps.storage, proposal_id)?;
+    to_binary(&FailedProposalErrors { errors })
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -317,7 +318,7 @@ fn is_overrule_proposal_rejected(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
+pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractError> {
     let proposal_id = msg.id;
 
     PROPOSALS.update(deps.storage, proposal_id, |prop| match prop {
@@ -328,13 +329,29 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
         None => Err(ContractError::NoSuchProposal { id: proposal_id }),
     })?;
 
-    let err = msg
-        .result
-        .into_result()
-        .err()
-        .unwrap_or_else(|| "result is not error".to_string());
     // Error is reduced before cosmwasm reply and is expected in form of "codespace=? code=?"
-    PROPOSAL_FAILED_EXECUTION_ERRORS.save(deps.storage, proposal_id, &err)?;
+    PROPOSAL_FAILED_EXECUTION_ERRORS.update::<_, ContractError>(
+        deps.storage,
+        proposal_id,
+        |maybe| {
+            let error = msg
+                .result
+                .into_result()
+                .err()
+                .unwrap_or_else(|| "result is not error".to_string());
+            let value = FailedExecutionError {
+                height: env.block.height,
+                error: error.to_string(),
+            };
+            match maybe {
+                Some(mut xs) => {
+                    xs.push(value);
+                    Ok(xs)
+                }
+                None => Ok(vec![value]),
+            }
+        },
+    )?;
 
     Ok(Response::new().add_attribute(
         "timelocked_proposal_execution_failed",
