@@ -1,24 +1,30 @@
 use crate::distribution_params::DistributionParams;
 use crate::error::ContractError;
-#[cfg(not(feature = "library"))]
-use cosmwasm_std::entry_point;
-use cosmwasm_std::{
-    coins, to_binary, Addr, BankMsg, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response,
-    StdResult, Uint128, WasmMsg,
+use crate::msg::{
+    CallbackMsg, DistributeMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, StatsResponse,
 };
-use exec_control::pause::{
-    can_pause, can_unpause, validate_duration, PauseError, PauseInfoResponse,
-};
-use neutron_sdk::bindings::query::NeutronQuery;
-
-use crate::msg::{DistributeMsg, ExecuteMsg, InstantiateMsg, QueryMsg, StatsResponse};
 use crate::state::{
-    Config, CONFIG, LAST_BURNED_COINS_AMOUNT, LAST_DISTRIBUTION_TIME, PAUSED_UNTIL,
-    TOTAL_DISTRIBUTED, TOTAL_RESERVED,
+    Config, XykToClMigrationConfig, CONFIG, LAST_BURNED_COINS_AMOUNT, LAST_DISTRIBUTION_TIME,
+    PAUSED_UNTIL, TOTAL_DISTRIBUTED, TOTAL_RESERVED, XYK_TO_CL_MIGRATION_CONFIG,
 };
 use crate::vesting::{
     get_burned_coins, safe_burned_coins_for_period, update_distribution_stats, vesting_function,
 };
+use astroport::asset::{native_asset, PairInfo};
+use astroport::pair::{
+    Cw20HookMsg as PairCw20HookMsg, ExecuteMsg as PairExecuteMsg, QueryMsg as PairQueryMsg,
+};
+#[cfg(not(feature = "library"))]
+use cosmwasm_std::entry_point;
+use cosmwasm_std::{
+    coins, to_binary, Addr, BankMsg, Binary, Coin, CosmosMsg, Decimal, Deps, DepsMut, Env,
+    MessageInfo, Response, StdResult, Uint128, WasmMsg,
+};
+use cw20::{BalanceResponse, Cw20ExecuteMsg, Cw20QueryMsg};
+use exec_control::pause::{
+    can_pause, can_unpause, validate_duration, PauseError, PauseInfoResponse,
+};
+use neutron_sdk::bindings::query::NeutronQuery;
 
 //--------------------------------------------------------------------------------------------------
 // Instantiation
@@ -168,6 +174,18 @@ pub fn execute(
         ),
         ExecuteMsg::Pause { duration } => execute_pause(deps, env, info.sender, duration),
         ExecuteMsg::Unpause {} => execute_unpause(deps, info.sender),
+        ExecuteMsg::MigrateFromXykToCl {
+            slippage_tolerance,
+            ntrn_atom_amount,
+            ntrn_usdc_amount,
+        } => execute_migrate_from_xyk_to_cl(
+            deps,
+            env,
+            slippage_tolerance,
+            ntrn_atom_amount,
+            ntrn_usdc_amount,
+        ),
+        ExecuteMsg::Callback(msg) => _handle_callback(deps, env, info, msg),
     }
 }
 
@@ -295,6 +313,315 @@ pub fn execute_distribute(
         .add_attribute("distributed", to_distribute))
 }
 
+fn execute_migrate_from_xyk_to_cl(
+    deps: DepsMut<NeutronQuery>,
+    env: Env,
+    slippage_tolerance: Option<Decimal>,
+    ntrn_atom_amount: Option<Uint128>,
+    ntrn_usdc_amount: Option<Uint128>,
+) -> Result<Response, ContractError> {
+    let migration_config: XykToClMigrationConfig = XYK_TO_CL_MIGRATION_CONFIG.load(deps.storage)?;
+
+    // get pairs LP token addresses
+    let ntrn_atom_pair_info: PairInfo = deps.querier.query_wasm_smart(
+        migration_config.ntrn_atom_xyk_pair.clone(),
+        &PairQueryMsg::Pair {},
+    )?;
+    let ntrn_usdc_pair_info: PairInfo = deps.querier.query_wasm_smart(
+        migration_config.ntrn_usdc_xyk_pair.clone(),
+        &PairQueryMsg::Pair {},
+    )?;
+
+    // query max available amounts to be withdrawn from both pairs
+    let max_available_ntrn_atom_amount = {
+        let resp: BalanceResponse = deps.querier.query_wasm_smart(
+            ntrn_atom_pair_info.liquidity_token.clone(),
+            &Cw20QueryMsg::Balance {
+                address: env.contract.address.to_string(),
+            },
+        )?;
+        resp.balance
+    };
+    let max_available_ntrn_usdc_amount = {
+        let resp: BalanceResponse = deps.querier.query_wasm_smart(
+            ntrn_usdc_pair_info.liquidity_token.clone(),
+            &Cw20QueryMsg::Balance {
+                address: env.contract.address.to_string(),
+            },
+        )?;
+        resp.balance
+    };
+    if max_available_ntrn_atom_amount.is_zero() && max_available_ntrn_usdc_amount.is_zero() {
+        return Err(ContractError::MigrationComplete {});
+    }
+
+    // validate parameters to the max available values
+    if let Some(ntrn_atom_amount) = ntrn_atom_amount {
+        if ntrn_atom_amount.gt(&max_available_ntrn_atom_amount) {
+            return Err(ContractError::MigrationAmountUnavailable {
+                amount: ntrn_atom_amount,
+                max_amount: max_available_ntrn_atom_amount,
+            });
+        }
+    }
+    if let Some(ntrn_usdc_amount) = ntrn_usdc_amount {
+        if ntrn_usdc_amount.gt(&max_available_ntrn_usdc_amount) {
+            return Err(ContractError::MigrationAmountUnavailable {
+                amount: ntrn_usdc_amount,
+                max_amount: max_available_ntrn_usdc_amount,
+            });
+        }
+    }
+    if let Some(slippage_tolerance) = slippage_tolerance {
+        if slippage_tolerance.gt(&migration_config.max_slippage) {
+            return Err(ContractError::MigrationSlippageToBig {
+                slippage_tolerance,
+                max_slippage_tolerance: migration_config.max_slippage,
+            });
+        }
+    }
+
+    let ntrn_atom_amount = ntrn_atom_amount.unwrap_or(max_available_ntrn_atom_amount);
+    let ntrn_usdc_amount = ntrn_usdc_amount.unwrap_or(max_available_ntrn_usdc_amount);
+    let slippage_tolerance = slippage_tolerance.unwrap_or(migration_config.max_slippage);
+
+    let mut resp = Response::default();
+    if !ntrn_atom_amount.is_zero() {
+        resp = resp.add_message(
+            CallbackMsg::MigrateLiquidityToClPair {
+                ntrn_denom: migration_config.ntrn_denom.clone(),
+                amount: ntrn_atom_amount,
+                slippage_tolerance,
+                xyk_pair: migration_config.ntrn_atom_xyk_pair,
+                xyk_lp_token: ntrn_atom_pair_info.liquidity_token,
+                cl_pair: migration_config.ntrn_atom_cl_pair,
+                paired_asset_denom: migration_config.atom_denom,
+            }
+            .to_cosmos_msg(&env)?,
+        );
+    }
+    if !ntrn_usdc_amount.is_zero() {
+        resp = resp.add_message(
+            CallbackMsg::MigrateLiquidityToClPair {
+                ntrn_denom: migration_config.ntrn_denom,
+                amount: ntrn_usdc_amount,
+                slippage_tolerance,
+                xyk_pair: migration_config.ntrn_usdc_xyk_pair,
+                xyk_lp_token: ntrn_usdc_pair_info.liquidity_token,
+                cl_pair: migration_config.ntrn_usdc_cl_pair,
+                paired_asset_denom: migration_config.usdc_denom,
+            }
+            .to_cosmos_msg(&env)?,
+        );
+    }
+
+    Ok(resp)
+}
+
+fn _handle_callback(
+    deps: DepsMut<NeutronQuery>,
+    env: Env,
+    info: MessageInfo,
+    msg: CallbackMsg,
+) -> Result<Response, ContractError> {
+    // Only the contract itself can call callbacks
+    if info.sender != env.contract.address {
+        return Err(ContractError::Unauthorized {});
+    }
+    match msg {
+        CallbackMsg::MigrateLiquidityToClPair {
+            xyk_pair,
+            xyk_lp_token,
+            amount,
+            slippage_tolerance,
+            cl_pair,
+            ntrn_denom,
+            paired_asset_denom,
+        } => migrate_liquidity_to_cl_pair_callback(
+            deps,
+            env,
+            xyk_pair,
+            xyk_lp_token,
+            amount,
+            slippage_tolerance,
+            cl_pair,
+            ntrn_denom,
+            paired_asset_denom,
+        ),
+        CallbackMsg::ProvideLiquidityToClPairAfterWithdrawal {
+            ntrn_denom,
+            ntrn_init_balance,
+            paired_asset_denom,
+            paired_asset_init_balance,
+            cl_pair: cl_pair_address,
+            slippage_tolerance,
+        } => provide_liquidity_to_cl_pair_after_withdrawal_callback(
+            deps,
+            env,
+            ntrn_denom,
+            ntrn_init_balance,
+            paired_asset_denom,
+            paired_asset_init_balance,
+            cl_pair_address,
+            slippage_tolerance,
+        ),
+        CallbackMsg::PostMigrationBalancesCheck {
+            ntrn_denom,
+            ntrn_init_balance,
+            paired_asset_denom,
+            paired_asset_init_balance,
+        } => post_migration_balances_check_callback(
+            deps,
+            env,
+            ntrn_denom,
+            ntrn_init_balance,
+            paired_asset_denom,
+            paired_asset_init_balance,
+        ),
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn migrate_liquidity_to_cl_pair_callback(
+    deps: DepsMut<NeutronQuery>,
+    env: Env,
+    xyk_pair: Addr,
+    xyk_lp_token: Addr,
+    amount: Uint128,
+    slippage_tolerance: Decimal,
+    cl_pair: Addr,
+    ntrn_denom: String,
+    paired_asset_denom: String,
+) -> Result<Response, ContractError> {
+    let ntrn_init_balance = deps
+        .querier
+        .query_balance(env.contract.address.to_string(), ntrn_denom.clone())?
+        .amount;
+    let paired_asset_init_balance = deps
+        .querier
+        .query_balance(env.contract.address.to_string(), paired_asset_denom.clone())?
+        .amount;
+
+    let msgs: Vec<CosmosMsg> = vec![
+        // push message to withdraw liquidity from the xyk pair
+        CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr: xyk_lp_token.to_string(),
+            msg: to_binary(&Cw20ExecuteMsg::Send {
+                contract: xyk_pair.to_string(),
+                amount,
+                msg: to_binary(&PairCw20HookMsg::WithdrawLiquidity { assets: vec![] })?,
+            })?,
+            funds: vec![],
+        }),
+        // push the next migration step as a callback message
+        CallbackMsg::ProvideLiquidityToClPairAfterWithdrawal {
+            ntrn_denom,
+            ntrn_init_balance,
+            paired_asset_denom,
+            paired_asset_init_balance,
+            cl_pair,
+            slippage_tolerance,
+        }
+        .to_cosmos_msg(&env)?,
+    ];
+
+    Ok(Response::default().add_messages(msgs))
+}
+
+#[allow(clippy::too_many_arguments)]
+fn provide_liquidity_to_cl_pair_after_withdrawal_callback(
+    deps: DepsMut<NeutronQuery>,
+    env: Env,
+    ntrn_denom: String,
+    ntrn_init_balance: Uint128,
+    paired_asset_denom: String,
+    paired_asset_init_balance: Uint128,
+    cl_pair_address: Addr,
+    slippage_tolerance: Decimal,
+) -> Result<Response, ContractError> {
+    let ntrn_balance_after_withdrawal = deps
+        .querier
+        .query_balance(env.contract.address.to_string(), ntrn_denom.clone())?
+        .amount;
+    let paired_asset_balance_after_withdrawal = deps
+        .querier
+        .query_balance(env.contract.address.to_string(), paired_asset_denom.clone())?
+        .amount;
+
+    // calc amount of assets that's been withdrawn
+    let withdrawn_ntrn_amount = ntrn_balance_after_withdrawal.checked_sub(ntrn_init_balance)?;
+    let withdrawn_paired_asset_amount =
+        paired_asset_balance_after_withdrawal.checked_sub(paired_asset_init_balance)?;
+
+    let msgs: Vec<CosmosMsg> = vec![
+        // push message to provide liquidity to the CL pair
+        CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr: cl_pair_address.to_string(),
+            msg: to_binary(&PairExecuteMsg::ProvideLiquidity {
+                assets: vec![
+                    native_asset(ntrn_denom.clone(), withdrawn_ntrn_amount),
+                    native_asset(paired_asset_denom.clone(), withdrawn_paired_asset_amount),
+                ],
+                slippage_tolerance: Some(slippage_tolerance),
+                auto_stake: None,
+                receiver: None,
+            })?,
+            funds: vec![
+                Coin::new(withdrawn_ntrn_amount.into(), ntrn_denom.clone()),
+                Coin::new(
+                    withdrawn_paired_asset_amount.into(),
+                    paired_asset_denom.clone(),
+                ),
+            ],
+        }),
+        // push the next migration step as a callback message
+        CallbackMsg::PostMigrationBalancesCheck {
+            ntrn_denom,
+            ntrn_init_balance,
+            paired_asset_denom,
+            paired_asset_init_balance,
+        }
+        .to_cosmos_msg(&env)?,
+    ];
+
+    Ok(Response::default().add_messages(msgs))
+}
+
+fn post_migration_balances_check_callback(
+    deps: DepsMut<NeutronQuery>,
+    env: Env,
+    ntrn_denom: String,
+    ntrn_init_balance: Uint128,
+    paired_asset_denom: String,
+    paired_asset_init_balance: Uint128,
+) -> Result<Response, ContractError> {
+    let ntrn_balance = deps
+        .querier
+        .query_balance(env.contract.address.to_string(), ntrn_denom.clone())?
+        .amount;
+    let paired_asset_balance = deps
+        .querier
+        .query_balance(env.contract.address.to_string(), paired_asset_denom.clone())?
+        .amount;
+
+    if !ntrn_balance.eq(&ntrn_init_balance) {
+        return Err(ContractError::MigrationBalancesMismatch {
+            denom: ntrn_denom,
+            initial_balance: ntrn_init_balance,
+            final_balance: ntrn_balance,
+        });
+    }
+    if !paired_asset_balance.eq(&paired_asset_init_balance) {
+        return Err(ContractError::MigrationBalancesMismatch {
+            denom: paired_asset_denom,
+            initial_balance: paired_asset_init_balance,
+            final_balance: paired_asset_balance,
+        });
+    }
+
+    Ok(Response::default())
+}
+
 //--------------------------------------------------------------------------------------------------
 // Queries
 //--------------------------------------------------------------------------------------------------
@@ -358,4 +685,27 @@ pub fn create_distribution_response(
     }
 
     Ok(resp)
+}
+
+//--------------------------------------------------------------------------------------------------
+// Migration
+//--------------------------------------------------------------------------------------------------
+
+/// Withdraws liquidity from Astroport xyk pairs and provides it to the concentrated liquidity ones.
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+    XYK_TO_CL_MIGRATION_CONFIG.save(
+        deps.storage,
+        &XykToClMigrationConfig {
+            max_slippage: msg.max_slippage,
+            ntrn_denom: msg.ntrn_denom,
+            atom_denom: msg.atom_denom,
+            ntrn_atom_xyk_pair: deps.api.addr_validate(msg.ntrn_atom_xyk_pair.as_str())?,
+            ntrn_atom_cl_pair: deps.api.addr_validate(msg.ntrn_atom_cl_pair.as_str())?,
+            usdc_denom: msg.usdc_denom,
+            ntrn_usdc_xyk_pair: deps.api.addr_validate(msg.ntrn_usdc_xyk_pair.as_str())?,
+            ntrn_usdc_cl_pair: deps.api.addr_validate(msg.ntrn_usdc_cl_pair.as_str())?,
+        },
+    )?;
+    Ok(Response::default())
 }
