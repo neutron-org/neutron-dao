@@ -11,6 +11,12 @@
         "update_config": {
           "type": "object",
           "properties": {
+            "atom_cl_pool_contract": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
             "description": {
               "type": [
                 "string",
@@ -29,19 +35,13 @@
                 "null"
               ]
             },
-            "oracle_atom_contract": {
-              "type": [
-                "string",
-                "null"
-              ]
-            },
-            "oracle_usdc_contract": {
-              "type": [
-                "string",
-                "null"
-              ]
-            },
             "owner": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "usdc_cl_pool_contract": {
               "type": [
                 "string",
                 "null"
