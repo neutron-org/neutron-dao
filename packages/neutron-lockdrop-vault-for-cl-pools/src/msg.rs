@@ -30,8 +30,8 @@ pub enum ExecuteMsg {
     UpdateConfig {
         owner: Option<String>,
         lockdrop_contract: Option<String>,
-        oracle_usdc_contract: Option<String>,
-        oracle_atom_contract: Option<String>,
+        usdc_cl_pool_contract: Option<String>,
+        atom_cl_pool_contract: Option<String>,
         name: Option<String>,
         description: Option<String>,
     },

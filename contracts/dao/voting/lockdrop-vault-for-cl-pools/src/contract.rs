@@ -65,8 +65,8 @@ pub fn execute(
         ExecuteMsg::UpdateConfig {
             owner,
             lockdrop_contract,
-            oracle_usdc_contract,
-            oracle_atom_contract,
+            usdc_cl_pool_contract,
+            atom_cl_pool_contract,
             name,
             description,
         } => execute_update_config(
@@ -74,8 +74,8 @@ pub fn execute(
             info,
             owner,
             lockdrop_contract,
-            oracle_usdc_contract,
-            oracle_atom_contract,
+            usdc_cl_pool_contract,
+            atom_cl_pool_contract,
             name,
             description,
         ),

@@ -18,12 +18,12 @@ const DESCRIPTION: &str = "description";
 const NEW_DESCRIPTION: &str = "new description";
 const ATOM_VESTING_LP_ADDR: &str = "atom_vesting_lp";
 const USDC_VESTING_LP_ADDR: &str = "usdc_vesting_lp";
-const ATOM_ORACLE_ADDR: &str = "atom_oracle";
-const USDC_ORACLE_ADDR: &str = "usdc_oracle";
+const ATOM_CL_POOL_ADDR: &str = "atom_cl_pool";
+const USDC_CL_POOL_ADDR: &str = "usdc_cl_pool";
 const NEW_ATOM_VESTING_LP_ADDR: &str = "new_atom_vesting_lp";
 const NEW_USDC_VESTING_LP_ADDR: &str = "new_usdc_vesting_lp";
-const NEW_ATOM_ORACLE_ADDR: &str = "new_atom_oracle";
-const NEW_USDC_ORACLE_ADDR: &str = "new_usdc_oracle";
+const NEW_ATOM_CL_POOL_ADDR: &str = "new_atom_cl_pool";
+const NEW_USDC_CL_POOL_ADDR: &str = "new_usdc_cl_pool";
 const ADDR1: &str = "addr1";
 const ADDR2: &str = "addr2";
 const DENOM: &str = "ujuno";
@@ -163,9 +163,9 @@ fn update_config(
     sender: &str,
     owner: String,
     atom_vesting_lp_contract: String,
-    atom_oracle_contract: String,
+    atom_cl_pool_contract: String,
     usdc_vesting_lp_contract: String,
-    usdc_oracle_contract: String,
+    usdc_cl_pool_contract: String,
     name: String,
     description: String,
 ) -> anyhow::Result<AppResponse> {
@@ -175,9 +175,9 @@ fn update_config(
         &ExecuteMsg::UpdateConfig {
             owner,
             atom_vesting_lp_contract,
-            atom_cl_pool_contract: atom_oracle_contract,
+            atom_cl_pool_contract,
             usdc_vesting_lp_contract,
-            usdc_cl_pool_contract: usdc_oracle_contract,
+            usdc_cl_pool_contract,
             name,
             description,
         },
@@ -234,9 +234,9 @@ fn test_instantiate() {
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
             atom_vesting_lp_contract: ATOM_VESTING_LP_ADDR.to_string(),
-            atom_cl_pool_contract: ATOM_ORACLE_ADDR.to_string(),
+            atom_cl_pool_contract: ATOM_CL_POOL_ADDR.to_string(),
             usdc_vesting_lp_contract: USDC_VESTING_LP_ADDR.to_string(),
-            usdc_cl_pool_contract: USDC_ORACLE_ADDR.to_string(),
+            usdc_cl_pool_contract: USDC_CL_POOL_ADDR.to_string(),
         },
     );
     assert_eq!(get_dao(&app, &addr), String::from(DAO_ADDR));
@@ -250,9 +250,9 @@ fn test_instantiate() {
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
             atom_vesting_lp_contract: ATOM_VESTING_LP_ADDR.to_string(),
-            atom_cl_pool_contract: ATOM_ORACLE_ADDR.to_string(),
+            atom_cl_pool_contract: ATOM_CL_POOL_ADDR.to_string(),
             usdc_vesting_lp_contract: USDC_VESTING_LP_ADDR.to_string(),
-            usdc_cl_pool_contract: USDC_ORACLE_ADDR.to_string(),
+            usdc_cl_pool_contract: USDC_CL_POOL_ADDR.to_string(),
         },
     );
     assert_eq!(get_dao(&app, &addr), String::from(DAO_ADDR));
@@ -271,9 +271,9 @@ fn test_bond() {
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
             atom_vesting_lp_contract: ATOM_VESTING_LP_ADDR.to_string(),
-            atom_cl_pool_contract: ATOM_ORACLE_ADDR.to_string(),
+            atom_cl_pool_contract: ATOM_CL_POOL_ADDR.to_string(),
             usdc_vesting_lp_contract: USDC_VESTING_LP_ADDR.to_string(),
-            usdc_cl_pool_contract: USDC_ORACLE_ADDR.to_string(),
+            usdc_cl_pool_contract: USDC_CL_POOL_ADDR.to_string(),
         },
     );
 
@@ -294,9 +294,9 @@ fn test_unbond() {
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
             atom_vesting_lp_contract: ATOM_VESTING_LP_ADDR.to_string(),
-            atom_cl_pool_contract: ATOM_ORACLE_ADDR.to_string(),
+            atom_cl_pool_contract: ATOM_CL_POOL_ADDR.to_string(),
             usdc_vesting_lp_contract: USDC_VESTING_LP_ADDR.to_string(),
-            usdc_cl_pool_contract: USDC_ORACLE_ADDR.to_string(),
+            usdc_cl_pool_contract: USDC_CL_POOL_ADDR.to_string(),
         },
     );
 
@@ -316,9 +316,9 @@ fn test_update_config_unauthorized() {
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
             atom_vesting_lp_contract: ATOM_VESTING_LP_ADDR.to_string(),
-            atom_cl_pool_contract: ATOM_ORACLE_ADDR.to_string(),
+            atom_cl_pool_contract: ATOM_CL_POOL_ADDR.to_string(),
             usdc_vesting_lp_contract: USDC_VESTING_LP_ADDR.to_string(),
-            usdc_cl_pool_contract: USDC_ORACLE_ADDR.to_string(),
+            usdc_cl_pool_contract: USDC_CL_POOL_ADDR.to_string(),
         },
     );
 
@@ -329,9 +329,9 @@ fn test_update_config_unauthorized() {
         ADDR2,
         ADDR1.to_string(),
         NEW_ATOM_VESTING_LP_ADDR.to_string(),
-        NEW_ATOM_ORACLE_ADDR.to_string(),
+        NEW_ATOM_CL_POOL_ADDR.to_string(),
         NEW_USDC_VESTING_LP_ADDR.to_string(),
-        NEW_USDC_ORACLE_ADDR.to_string(),
+        NEW_USDC_CL_POOL_ADDR.to_string(),
         NEW_NAME.to_string(),
         NEW_DESCRIPTION.to_string(),
     )
@@ -350,22 +350,22 @@ fn test_update_config() {
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
             atom_vesting_lp_contract: ATOM_VESTING_LP_ADDR.to_string(),
-            atom_cl_pool_contract: ATOM_ORACLE_ADDR.to_string(),
+            atom_cl_pool_contract: ATOM_CL_POOL_ADDR.to_string(),
             usdc_vesting_lp_contract: USDC_VESTING_LP_ADDR.to_string(),
-            usdc_cl_pool_contract: USDC_ORACLE_ADDR.to_string(),
+            usdc_cl_pool_contract: USDC_CL_POOL_ADDR.to_string(),
         },
     );
 
-    // Change owner, description, name, lp-vesting and oracle contracts
+    // Change owner, description, name, lp-vesting and cl pool contracts
     update_config(
         &mut app,
         addr.clone(),
         DAO_ADDR,
         ADDR1.to_string(),
         NEW_ATOM_VESTING_LP_ADDR.to_string(),
-        NEW_ATOM_ORACLE_ADDR.to_string(),
+        NEW_ATOM_CL_POOL_ADDR.to_string(),
         NEW_USDC_VESTING_LP_ADDR.to_string(),
-        NEW_USDC_ORACLE_ADDR.to_string(),
+        NEW_USDC_CL_POOL_ADDR.to_string(),
         NEW_NAME.to_string(),
         NEW_DESCRIPTION.to_string(),
     )
@@ -378,9 +378,9 @@ fn test_update_config() {
             description: NEW_DESCRIPTION.to_string(),
             owner: Addr::unchecked(ADDR1),
             atom_vesting_lp_contract: Addr::unchecked(NEW_ATOM_VESTING_LP_ADDR),
-            atom_cl_pool_contract: Addr::unchecked(NEW_ATOM_ORACLE_ADDR),
+            atom_cl_pool_contract: Addr::unchecked(NEW_ATOM_CL_POOL_ADDR),
             usdc_vesting_lp_contract: Addr::unchecked(NEW_USDC_VESTING_LP_ADDR),
-            usdc_cl_pool_contract: Addr::unchecked(NEW_USDC_ORACLE_ADDR),
+            usdc_cl_pool_contract: Addr::unchecked(NEW_USDC_CL_POOL_ADDR),
         },
         config
     );
@@ -399,9 +399,9 @@ fn test_update_config_invalid_description() {
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
             atom_vesting_lp_contract: ATOM_VESTING_LP_ADDR.to_string(),
-            atom_cl_pool_contract: ATOM_ORACLE_ADDR.to_string(),
+            atom_cl_pool_contract: ATOM_CL_POOL_ADDR.to_string(),
             usdc_vesting_lp_contract: USDC_VESTING_LP_ADDR.to_string(),
-            usdc_cl_pool_contract: USDC_ORACLE_ADDR.to_string(),
+            usdc_cl_pool_contract: USDC_CL_POOL_ADDR.to_string(),
         },
     );
 
@@ -412,9 +412,9 @@ fn test_update_config_invalid_description() {
         DAO_ADDR,
         DAO_ADDR.to_string(),
         ATOM_VESTING_LP_ADDR.to_string(),
-        ATOM_ORACLE_ADDR.to_string(),
+        ATOM_CL_POOL_ADDR.to_string(),
         USDC_VESTING_LP_ADDR.to_string(),
-        USDC_ORACLE_ADDR.to_string(),
+        USDC_CL_POOL_ADDR.to_string(),
         NEW_NAME.to_string(),
         String::from(""),
     )
@@ -434,9 +434,9 @@ fn test_update_config_invalid_name() {
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
             atom_vesting_lp_contract: ATOM_VESTING_LP_ADDR.to_string(),
-            atom_cl_pool_contract: ATOM_ORACLE_ADDR.to_string(),
+            atom_cl_pool_contract: ATOM_CL_POOL_ADDR.to_string(),
             usdc_vesting_lp_contract: USDC_VESTING_LP_ADDR.to_string(),
-            usdc_cl_pool_contract: USDC_ORACLE_ADDR.to_string(),
+            usdc_cl_pool_contract: USDC_CL_POOL_ADDR.to_string(),
         },
     );
 
@@ -447,9 +447,9 @@ fn test_update_config_invalid_name() {
         DAO_ADDR,
         DAO_ADDR.to_string(),
         ATOM_VESTING_LP_ADDR.to_string(),
-        ATOM_ORACLE_ADDR.to_string(),
+        ATOM_CL_POOL_ADDR.to_string(),
         USDC_VESTING_LP_ADDR.to_string(),
-        USDC_ORACLE_ADDR.to_string(),
+        USDC_CL_POOL_ADDR.to_string(),
         String::from(""),
         NEW_DESCRIPTION.to_string(),
     )
@@ -468,9 +468,9 @@ fn test_query_dao() {
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
             atom_vesting_lp_contract: ATOM_VESTING_LP_ADDR.to_string(),
-            atom_cl_pool_contract: ATOM_ORACLE_ADDR.to_string(),
+            atom_cl_pool_contract: ATOM_CL_POOL_ADDR.to_string(),
             usdc_vesting_lp_contract: USDC_VESTING_LP_ADDR.to_string(),
-            usdc_cl_pool_contract: USDC_ORACLE_ADDR.to_string(),
+            usdc_cl_pool_contract: USDC_CL_POOL_ADDR.to_string(),
         },
     );
 
@@ -491,9 +491,9 @@ fn test_query_info() {
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
             atom_vesting_lp_contract: ATOM_VESTING_LP_ADDR.to_string(),
-            atom_cl_pool_contract: ATOM_ORACLE_ADDR.to_string(),
+            atom_cl_pool_contract: ATOM_CL_POOL_ADDR.to_string(),
             usdc_vesting_lp_contract: USDC_VESTING_LP_ADDR.to_string(),
-            usdc_cl_pool_contract: USDC_ORACLE_ADDR.to_string(),
+            usdc_cl_pool_contract: USDC_CL_POOL_ADDR.to_string(),
         },
     );
 
@@ -517,9 +517,9 @@ fn test_query_get_config() {
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
             atom_vesting_lp_contract: ATOM_VESTING_LP_ADDR.to_string(),
-            atom_cl_pool_contract: ATOM_ORACLE_ADDR.to_string(),
+            atom_cl_pool_contract: ATOM_CL_POOL_ADDR.to_string(),
             usdc_vesting_lp_contract: USDC_VESTING_LP_ADDR.to_string(),
-            usdc_cl_pool_contract: USDC_ORACLE_ADDR.to_string(),
+            usdc_cl_pool_contract: USDC_CL_POOL_ADDR.to_string(),
         },
     );
 
@@ -531,9 +531,9 @@ fn test_query_get_config() {
             description: DESCRIPTION.to_string(),
             owner: Addr::unchecked(DAO_ADDR),
             atom_vesting_lp_contract: Addr::unchecked(ATOM_VESTING_LP_ADDR),
-            atom_cl_pool_contract: Addr::unchecked(ATOM_ORACLE_ADDR),
+            atom_cl_pool_contract: Addr::unchecked(ATOM_CL_POOL_ADDR),
             usdc_vesting_lp_contract: Addr::unchecked(USDC_VESTING_LP_ADDR),
-            usdc_cl_pool_contract: Addr::unchecked(USDC_ORACLE_ADDR),
+            usdc_cl_pool_contract: Addr::unchecked(USDC_CL_POOL_ADDR),
         }
     )
 }
@@ -615,9 +615,9 @@ fn test_voting_power_at_height() {
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
             atom_vesting_lp_contract: atom_vesting_lp_addr.to_string(),
-            atom_cl_pool_contract: ATOM_ORACLE_ADDR.to_string(),
+            atom_cl_pool_contract: ATOM_CL_POOL_ADDR.to_string(),
             usdc_vesting_lp_contract: usdc_vesting_lp_addr.to_string(),
-            usdc_cl_pool_contract: USDC_ORACLE_ADDR.to_string(),
+            usdc_cl_pool_contract: USDC_CL_POOL_ADDR.to_string(),
         },
     );
 
@@ -703,9 +703,9 @@ fn test_total_power_at_height() {
             description: DESCRIPTION.to_string(),
             owner: DAO_ADDR.to_string(),
             atom_vesting_lp_contract: atom_vesting_lp_addr.to_string(),
-            atom_cl_pool_contract: ATOM_ORACLE_ADDR.to_string(),
+            atom_cl_pool_contract: ATOM_CL_POOL_ADDR.to_string(),
             usdc_vesting_lp_contract: usdc_vesting_lp_addr.to_string(),
-            usdc_cl_pool_contract: USDC_ORACLE_ADDR.to_string(),
+            usdc_cl_pool_contract: USDC_CL_POOL_ADDR.to_string(),
         },
     );
 
