@@ -25,16 +25,36 @@
     {
       "type": "object",
       "required": [
-        "remove_voting_vault"
+        "deactivate_voting_vault"
       ],
       "properties": {
-        "remove_voting_vault": {
+        "deactivate_voting_vault": {
           "type": "object",
           "required": [
-            "old_voting_vault_contract"
+            "voting_vault_contract"
           ],
           "properties": {
-            "old_voting_vault_contract": {
+            "voting_vault_contract": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "activate_voting_vault"
+      ],
+      "properties": {
+        "activate_voting_vault": {
+          "type": "object",
+          "required": [
+            "voting_vault_contract"
+          ],
+          "properties": {
+            "voting_vault_contract": {
               "type": "string"
             }
           }

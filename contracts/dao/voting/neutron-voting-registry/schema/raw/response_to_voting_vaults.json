@@ -11,7 +11,8 @@
       "required": [
         "address",
         "description",
-        "name"
+        "name",
+        "state"
       ],
       "properties": {
         "address": {
@@ -22,8 +23,29 @@
         },
         "name": {
           "type": "string"
+        },
+        "state": {
+          "$ref": "#/definitions/VotingVaultState"
         }
       }
+    },
+    "VotingVaultState": {
+      "oneOf": [
+        {
+          "description": "Voting vault is active means that it's considered in voting power queries to the Neutron voting registry.",
+          "type": "string",
+          "enum": [
+            "Active"
+          ]
+        },
+        {
+          "description": "Voting vault is inactive means that it's not considered in voting power queries to the Neutron voting registry.",
+          "type": "string",
+          "enum": [
+            "Inactive"
+          ]
+        }
+      ]
     }
   }
 }

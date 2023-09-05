@@ -3,18 +3,11 @@
   "title": "Config",
   "type": "object",
   "required": [
-    "owner",
-    "voting_vaults"
+    "owner"
   ],
   "properties": {
     "owner": {
       "$ref": "#/definitions/Addr"
-    },
-    "voting_vaults": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/Addr"
-      }
     }
   },
   "definitions": {
