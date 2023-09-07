@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply, Response,
+    to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError,
     StdResult, SubMsg, WasmMsg,
 };
 use cw2::set_contract_version;
@@ -280,7 +280,10 @@ pub fn query_list_proposals(
 
 fn query_proposal_failed_execution_error(deps: Deps, proposal_id: u64) -> StdResult<Binary> {
     let errors = PROPOSAL_FAILED_EXECUTION_ERRORS.may_load(deps.storage, proposal_id)?;
-    to_binary(&FailedProposalErrors { errors })
+    let res = FailedProposalErrors {
+        errors: errors.unwrap_or_default(),
+    };
+    to_binary(&res)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -333,20 +336,21 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
     PROPOSAL_FAILED_EXECUTION_ERRORS.update::<_, ContractError>(
         deps.storage,
         proposal_id,
-        |maybe| {
-            let error = msg
-                .result
-                .into_result()
-                .err()
-                .unwrap_or_else(|| "result is not error".to_string());
+        |maybe_errors| {
+            let error = msg.result.into_result().err().ok_or_else(|| {
+                // should never happen since we reply only on failure
+                ContractError::Std(StdError::generic_err(
+                    "must be an error in the failed result",
+                ))
+            })?;
             let value = FailedExecutionError {
                 height: env.block.height,
                 error,
             };
-            match maybe {
-                Some(mut xs) => {
-                    xs.push(value);
-                    Ok(xs)
+            match maybe_errors {
+                Some(mut errors) => {
+                    errors.push(value);
+                    Ok(errors)
                 }
                 None => Ok(vec![value]),
             }
