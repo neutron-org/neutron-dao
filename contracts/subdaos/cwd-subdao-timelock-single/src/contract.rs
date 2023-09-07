@@ -278,7 +278,7 @@ pub fn query_list_proposals(
     to_binary(&ProposalListResponse { proposals: props })
 }
 
-fn query_proposal_failed_execution_error(deps: Deps, proposal_id: u64) -> StdResult<Binary> {
+pub fn query_proposal_failed_execution_error(deps: Deps, proposal_id: u64) -> StdResult<Binary> {
     let errors = PROPOSAL_FAILED_EXECUTION_ERRORS.may_load(deps.storage, proposal_id)?;
     let res = FailedProposalErrors {
         errors: errors.unwrap_or_default(),
