@@ -3,12 +3,12 @@
   "title": "FailedProposalErrors",
   "description": "A list of proposals returned by `ListProposals`.",
   "type": "object",
+  "required": [
+    "errors"
+  ],
   "properties": {
     "errors": {
-      "type": [
-        "array",
-        "null"
-      ],
+      "type": "array",
       "items": {
         "$ref": "#/definitions/FailedExecutionError"
       }
