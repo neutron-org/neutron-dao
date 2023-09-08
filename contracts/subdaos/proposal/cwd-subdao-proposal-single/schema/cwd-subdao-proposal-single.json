@@ -679,30 +679,6 @@
           {
             "type": "object",
             "required": [
-              "software_upgrade_proposal"
-            ],
-            "properties": {
-              "software_upgrade_proposal": {
-                "$ref": "#/definitions/SoftwareUpgradeProposal"
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "required": [
-              "cancel_software_upgrade_proposal"
-            ],
-            "properties": {
-              "cancel_software_upgrade_proposal": {
-                "$ref": "#/definitions/CancelSoftwareUpgradeProposal"
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "required": [
               "upgrade_proposal"
             ],
             "properties": {
@@ -727,59 +703,11 @@
           {
             "type": "object",
             "required": [
-              "pin_codes_proposal"
+              "proposal_execute_message"
             ],
             "properties": {
-              "pin_codes_proposal": {
-                "$ref": "#/definitions/PinCodesProposal"
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "required": [
-              "unpin_codes_proposal"
-            ],
-            "properties": {
-              "unpin_codes_proposal": {
-                "$ref": "#/definitions/UnpinCodesProposal"
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "required": [
-              "sudo_contract_proposal"
-            ],
-            "properties": {
-              "sudo_contract_proposal": {
-                "$ref": "#/definitions/SudoContractProposal"
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "required": [
-              "update_admin_proposal"
-            ],
-            "properties": {
-              "update_admin_proposal": {
-                "$ref": "#/definitions/UpdateAdminProposal"
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "required": [
-              "clear_admin_proposal"
-            ],
-            "properties": {
-              "clear_admin_proposal": {
-                "$ref": "#/definitions/ClearAdminProposal"
+              "proposal_execute_message": {
+                "$ref": "#/definitions/ProposalExecuteMessage"
               }
             },
             "additionalProperties": false
@@ -846,47 +774,6 @@
       "Binary": {
         "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization with serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>. See also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
         "type": "string"
-      },
-      "CancelSoftwareUpgradeProposal": {
-        "description": "CancelSoftwareUpgradeProposal defines the struct for cancel software upgrade proposal.",
-        "type": "object",
-        "required": [
-          "description",
-          "title"
-        ],
-        "properties": {
-          "description": {
-            "description": "*description** is a text description of proposal. Non unique.",
-            "type": "string"
-          },
-          "title": {
-            "description": "*title** is a text title of proposal. Non unique.",
-            "type": "string"
-          }
-        }
-      },
-      "ClearAdminProposal": {
-        "description": "SudoContractProposal defines the struct for clear admin proposal.",
-        "type": "object",
-        "required": [
-          "contract",
-          "description",
-          "title"
-        ],
-        "properties": {
-          "contract": {
-            "description": "*contract** is an address of contract admin will be removed.",
-            "type": "string"
-          },
-          "description": {
-            "description": "*description** is a text description of proposal.",
-            "type": "string"
-          },
-          "title": {
-            "description": "*title** is a text title of proposal.",
-            "type": "string"
-          }
-        }
       },
       "ClientUpdateProposal": {
         "description": "ClientUpdateProposal defines the struct for client update proposal.",
@@ -1961,34 +1848,6 @@
           }
         ]
       },
-      "PinCodesProposal": {
-        "description": "PinCodesProposal defines the struct for pin contract codes proposal.",
-        "type": "object",
-        "required": [
-          "code_ids",
-          "description",
-          "title"
-        ],
-        "properties": {
-          "code_ids": {
-            "description": "*code_ids** is an array of codes to be pined.",
-            "type": "array",
-            "items": {
-              "type": "integer",
-              "format": "uint64",
-              "minimum": 0.0
-            }
-          },
-          "description": {
-            "description": "*description** is a text description of proposal.",
-            "type": "string"
-          },
-          "title": {
-            "description": "*title** is a text title of proposal.",
-            "type": "string"
-          }
-        }
-      },
       "Plan": {
         "description": "Plan defines the struct for planned upgrade.",
         "type": "object",
@@ -2051,6 +1910,18 @@
           }
         ]
       },
+      "ProposalExecuteMessage": {
+        "description": "ProposalExecuteMessage defines the struct for sdk47 compatible update params admin proposal.",
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "properties": {
+          "message": {
+            "description": "*message** is a json representing a sdk message passed to admin module to execute."
+          }
+        }
+      },
       "ProtobufAny": {
         "description": "Type for wrapping any protobuf message",
         "type": "object",
@@ -2091,33 +1962,6 @@
             ],
             "format": "uint64",
             "minimum": 0.0
-          }
-        }
-      },
-      "SoftwareUpgradeProposal": {
-        "description": "SoftwareUpgradeProposal defines the struct for software upgrade proposal.",
-        "type": "object",
-        "required": [
-          "description",
-          "plan",
-          "title"
-        ],
-        "properties": {
-          "description": {
-            "description": "*description** is a text description of proposal. Non unique.",
-            "type": "string"
-          },
-          "plan": {
-            "description": "*plan** is a plan of upgrade.",
-            "allOf": [
-              {
-                "$ref": "#/definitions/Plan"
-              }
-            ]
-          },
-          "title": {
-            "description": "*title** is a text title of proposal. Non unique.",
-            "type": "string"
           }
         }
       },
@@ -2204,38 +2048,6 @@
             "additionalProperties": false
           }
         ]
-      },
-      "SudoContractProposal": {
-        "description": "SudoContractProposal defines the struct for sudo execution proposal.",
-        "type": "object",
-        "required": [
-          "contract",
-          "description",
-          "msg",
-          "title"
-        ],
-        "properties": {
-          "contract": {
-            "description": "*contract** is an address of contract to be executed.",
-            "type": "string"
-          },
-          "description": {
-            "description": "*description** is a text description of proposal.",
-            "type": "string"
-          },
-          "msg": {
-            "description": "**msg*** is a sudo message.",
-            "allOf": [
-              {
-                "$ref": "#/definitions/Binary"
-              }
-            ]
-          },
-          "title": {
-            "description": "*title** is a text title of proposal.",
-            "type": "string"
-          }
-        }
       },
       "Threshold": {
         "description": "The ways a proposal may reach its passing / failing threshold.",
@@ -2324,62 +2136,6 @@
       "Uint64": {
         "description": "A thin wrapper around u64 that is using strings for JSON encoding/decoding, such that the full u64 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u64` to get the value out:\n\n``` # use cosmwasm_std::Uint64; let a = Uint64::from(42u64); assert_eq!(a.u64(), 42);\n\nlet b = Uint64::from(70u32); assert_eq!(b.u64(), 70); ```",
         "type": "string"
-      },
-      "UnpinCodesProposal": {
-        "description": "UnpinCodesProposal defines the struct for unpin contract codes proposal.",
-        "type": "object",
-        "required": [
-          "code_ids",
-          "description",
-          "title"
-        ],
-        "properties": {
-          "code_ids": {
-            "description": "*code_ids** is an array of codes to be unpined.",
-            "type": "array",
-            "items": {
-              "type": "integer",
-              "format": "uint64",
-              "minimum": 0.0
-            }
-          },
-          "description": {
-            "description": "*description** is a text description of proposal.",
-            "type": "string"
-          },
-          "title": {
-            "description": "*title** is a text title of proposal.",
-            "type": "string"
-          }
-        }
-      },
-      "UpdateAdminProposal": {
-        "description": "UpdateAdminProposal defines the struct for  update admin proposal.",
-        "type": "object",
-        "required": [
-          "contract",
-          "description",
-          "new_admin",
-          "title"
-        ],
-        "properties": {
-          "contract": {
-            "description": "*contract** is an address of contract to update admin.",
-            "type": "string"
-          },
-          "description": {
-            "description": "*description** is a text description of proposal.",
-            "type": "string"
-          },
-          "new_admin": {
-            "description": "**new_admin*** is an address of new admin",
-            "type": "string"
-          },
-          "title": {
-            "description": "*title** is a text title of proposal.",
-            "type": "string"
-          }
-        }
       },
       "UpgradeProposal": {
         "description": "UpgradeProposal defines the struct for  upgrade proposal.",
@@ -3275,30 +3031,6 @@
             {
               "type": "object",
               "required": [
-                "software_upgrade_proposal"
-              ],
-              "properties": {
-                "software_upgrade_proposal": {
-                  "$ref": "#/definitions/SoftwareUpgradeProposal"
-                }
-              },
-              "additionalProperties": false
-            },
-            {
-              "type": "object",
-              "required": [
-                "cancel_software_upgrade_proposal"
-              ],
-              "properties": {
-                "cancel_software_upgrade_proposal": {
-                  "$ref": "#/definitions/CancelSoftwareUpgradeProposal"
-                }
-              },
-              "additionalProperties": false
-            },
-            {
-              "type": "object",
-              "required": [
                 "upgrade_proposal"
               ],
               "properties": {
@@ -3323,59 +3055,11 @@
             {
               "type": "object",
               "required": [
-                "pin_codes_proposal"
+                "proposal_execute_message"
               ],
               "properties": {
-                "pin_codes_proposal": {
-                  "$ref": "#/definitions/PinCodesProposal"
-                }
-              },
-              "additionalProperties": false
-            },
-            {
-              "type": "object",
-              "required": [
-                "unpin_codes_proposal"
-              ],
-              "properties": {
-                "unpin_codes_proposal": {
-                  "$ref": "#/definitions/UnpinCodesProposal"
-                }
-              },
-              "additionalProperties": false
-            },
-            {
-              "type": "object",
-              "required": [
-                "sudo_contract_proposal"
-              ],
-              "properties": {
-                "sudo_contract_proposal": {
-                  "$ref": "#/definitions/SudoContractProposal"
-                }
-              },
-              "additionalProperties": false
-            },
-            {
-              "type": "object",
-              "required": [
-                "update_admin_proposal"
-              ],
-              "properties": {
-                "update_admin_proposal": {
-                  "$ref": "#/definitions/UpdateAdminProposal"
-                }
-              },
-              "additionalProperties": false
-            },
-            {
-              "type": "object",
-              "required": [
-                "clear_admin_proposal"
-              ],
-              "properties": {
-                "clear_admin_proposal": {
-                  "$ref": "#/definitions/ClearAdminProposal"
+                "proposal_execute_message": {
+                  "$ref": "#/definitions/ProposalExecuteMessage"
                 }
               },
               "additionalProperties": false
@@ -3442,47 +3126,6 @@
         "Binary": {
           "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization with serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>. See also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
           "type": "string"
-        },
-        "CancelSoftwareUpgradeProposal": {
-          "description": "CancelSoftwareUpgradeProposal defines the struct for cancel software upgrade proposal.",
-          "type": "object",
-          "required": [
-            "description",
-            "title"
-          ],
-          "properties": {
-            "description": {
-              "description": "*description** is a text description of proposal. Non unique.",
-              "type": "string"
-            },
-            "title": {
-              "description": "*title** is a text title of proposal. Non unique.",
-              "type": "string"
-            }
-          }
-        },
-        "ClearAdminProposal": {
-          "description": "SudoContractProposal defines the struct for clear admin proposal.",
-          "type": "object",
-          "required": [
-            "contract",
-            "description",
-            "title"
-          ],
-          "properties": {
-            "contract": {
-              "description": "*contract** is an address of contract admin will be removed.",
-              "type": "string"
-            },
-            "description": {
-              "description": "*description** is a text description of proposal.",
-              "type": "string"
-            },
-            "title": {
-              "description": "*title** is a text title of proposal.",
-              "type": "string"
-            }
-          }
         },
         "ClientUpdateProposal": {
           "description": "ClientUpdateProposal defines the struct for client update proposal.",
@@ -4530,34 +4173,6 @@
             }
           ]
         },
-        "PinCodesProposal": {
-          "description": "PinCodesProposal defines the struct for pin contract codes proposal.",
-          "type": "object",
-          "required": [
-            "code_ids",
-            "description",
-            "title"
-          ],
-          "properties": {
-            "code_ids": {
-              "description": "*code_ids** is an array of codes to be pined.",
-              "type": "array",
-              "items": {
-                "type": "integer",
-                "format": "uint64",
-                "minimum": 0.0
-              }
-            },
-            "description": {
-              "description": "*description** is a text description of proposal.",
-              "type": "string"
-            },
-            "title": {
-              "description": "*title** is a text title of proposal.",
-              "type": "string"
-            }
-          }
-        },
         "Plan": {
           "description": "Plan defines the struct for planned upgrade.",
           "type": "object",
@@ -4579,6 +4194,18 @@
             "name": {
               "description": "*name** is a name for the upgrade",
               "type": "string"
+            }
+          }
+        },
+        "ProposalExecuteMessage": {
+          "description": "ProposalExecuteMessage defines the struct for sdk47 compatible update params admin proposal.",
+          "type": "object",
+          "required": [
+            "message"
+          ],
+          "properties": {
+            "message": {
+              "description": "*message** is a json representing a sdk message passed to admin module to execute."
             }
           }
         },
@@ -4733,33 +4360,6 @@
             }
           }
         },
-        "SoftwareUpgradeProposal": {
-          "description": "SoftwareUpgradeProposal defines the struct for software upgrade proposal.",
-          "type": "object",
-          "required": [
-            "description",
-            "plan",
-            "title"
-          ],
-          "properties": {
-            "description": {
-              "description": "*description** is a text description of proposal. Non unique.",
-              "type": "string"
-            },
-            "plan": {
-              "description": "*plan** is a plan of upgrade.",
-              "allOf": [
-                {
-                  "$ref": "#/definitions/Plan"
-                }
-              ]
-            },
-            "title": {
-              "description": "*title** is a text title of proposal. Non unique.",
-              "type": "string"
-            }
-          }
-        },
         "StakingMsg": {
           "description": "The message types of the staking module.\n\nSee https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/staking/v1beta1/tx.proto",
           "oneOf": [
@@ -4890,38 +4490,6 @@
             }
           ]
         },
-        "SudoContractProposal": {
-          "description": "SudoContractProposal defines the struct for sudo execution proposal.",
-          "type": "object",
-          "required": [
-            "contract",
-            "description",
-            "msg",
-            "title"
-          ],
-          "properties": {
-            "contract": {
-              "description": "*contract** is an address of contract to be executed.",
-              "type": "string"
-            },
-            "description": {
-              "description": "*description** is a text description of proposal.",
-              "type": "string"
-            },
-            "msg": {
-              "description": "**msg*** is a sudo message.",
-              "allOf": [
-                {
-                  "$ref": "#/definitions/Binary"
-                }
-              ]
-            },
-            "title": {
-              "description": "*title** is a text title of proposal.",
-              "type": "string"
-            }
-          }
-        },
         "Threshold": {
           "description": "The ways a proposal may reach its passing / failing threshold.",
           "oneOf": [
@@ -5009,62 +4577,6 @@
         "Uint64": {
           "description": "A thin wrapper around u64 that is using strings for JSON encoding/decoding, such that the full u64 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u64` to get the value out:\n\n``` # use cosmwasm_std::Uint64; let a = Uint64::from(42u64); assert_eq!(a.u64(), 42);\n\nlet b = Uint64::from(70u32); assert_eq!(b.u64(), 70); ```",
           "type": "string"
-        },
-        "UnpinCodesProposal": {
-          "description": "UnpinCodesProposal defines the struct for unpin contract codes proposal.",
-          "type": "object",
-          "required": [
-            "code_ids",
-            "description",
-            "title"
-          ],
-          "properties": {
-            "code_ids": {
-              "description": "*code_ids** is an array of codes to be unpined.",
-              "type": "array",
-              "items": {
-                "type": "integer",
-                "format": "uint64",
-                "minimum": 0.0
-              }
-            },
-            "description": {
-              "description": "*description** is a text description of proposal.",
-              "type": "string"
-            },
-            "title": {
-              "description": "*title** is a text title of proposal.",
-              "type": "string"
-            }
-          }
-        },
-        "UpdateAdminProposal": {
-          "description": "UpdateAdminProposal defines the struct for  update admin proposal.",
-          "type": "object",
-          "required": [
-            "contract",
-            "description",
-            "new_admin",
-            "title"
-          ],
-          "properties": {
-            "contract": {
-              "description": "*contract** is an address of contract to update admin.",
-              "type": "string"
-            },
-            "description": {
-              "description": "*description** is a text description of proposal.",
-              "type": "string"
-            },
-            "new_admin": {
-              "description": "**new_admin*** is an address of new admin",
-              "type": "string"
-            },
-            "title": {
-              "description": "*title** is a text title of proposal.",
-              "type": "string"
-            }
-          }
         },
         "UpgradeProposal": {
           "description": "UpgradeProposal defines the struct for  upgrade proposal.",
@@ -5437,30 +4949,6 @@
             {
               "type": "object",
               "required": [
-                "software_upgrade_proposal"
-              ],
-              "properties": {
-                "software_upgrade_proposal": {
-                  "$ref": "#/definitions/SoftwareUpgradeProposal"
-                }
-              },
-              "additionalProperties": false
-            },
-            {
-              "type": "object",
-              "required": [
-                "cancel_software_upgrade_proposal"
-              ],
-              "properties": {
-                "cancel_software_upgrade_proposal": {
-                  "$ref": "#/definitions/CancelSoftwareUpgradeProposal"
-                }
-              },
-              "additionalProperties": false
-            },
-            {
-              "type": "object",
-              "required": [
                 "upgrade_proposal"
               ],
               "properties": {
@@ -5485,59 +4973,11 @@
             {
               "type": "object",
               "required": [
-                "pin_codes_proposal"
+                "proposal_execute_message"
               ],
               "properties": {
-                "pin_codes_proposal": {
-                  "$ref": "#/definitions/PinCodesProposal"
-                }
-              },
-              "additionalProperties": false
-            },
-            {
-              "type": "object",
-              "required": [
-                "unpin_codes_proposal"
-              ],
-              "properties": {
-                "unpin_codes_proposal": {
-                  "$ref": "#/definitions/UnpinCodesProposal"
-                }
-              },
-              "additionalProperties": false
-            },
-            {
-              "type": "object",
-              "required": [
-                "sudo_contract_proposal"
-              ],
-              "properties": {
-                "sudo_contract_proposal": {
-                  "$ref": "#/definitions/SudoContractProposal"
-                }
-              },
-              "additionalProperties": false
-            },
-            {
-              "type": "object",
-              "required": [
-                "update_admin_proposal"
-              ],
-              "properties": {
-                "update_admin_proposal": {
-                  "$ref": "#/definitions/UpdateAdminProposal"
-                }
-              },
-              "additionalProperties": false
-            },
-            {
-              "type": "object",
-              "required": [
-                "clear_admin_proposal"
-              ],
-              "properties": {
-                "clear_admin_proposal": {
-                  "$ref": "#/definitions/ClearAdminProposal"
+                "proposal_execute_message": {
+                  "$ref": "#/definitions/ProposalExecuteMessage"
                 }
               },
               "additionalProperties": false
@@ -5604,47 +5044,6 @@
         "Binary": {
           "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization with serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>. See also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
           "type": "string"
-        },
-        "CancelSoftwareUpgradeProposal": {
-          "description": "CancelSoftwareUpgradeProposal defines the struct for cancel software upgrade proposal.",
-          "type": "object",
-          "required": [
-            "description",
-            "title"
-          ],
-          "properties": {
-            "description": {
-              "description": "*description** is a text description of proposal. Non unique.",
-              "type": "string"
-            },
-            "title": {
-              "description": "*title** is a text title of proposal. Non unique.",
-              "type": "string"
-            }
-          }
-        },
-        "ClearAdminProposal": {
-          "description": "SudoContractProposal defines the struct for clear admin proposal.",
-          "type": "object",
-          "required": [
-            "contract",
-            "description",
-            "title"
-          ],
-          "properties": {
-            "contract": {
-              "description": "*contract** is an address of contract admin will be removed.",
-              "type": "string"
-            },
-            "description": {
-              "description": "*description** is a text description of proposal.",
-              "type": "string"
-            },
-            "title": {
-              "description": "*title** is a text title of proposal.",
-              "type": "string"
-            }
-          }
         },
         "ClientUpdateProposal": {
           "description": "ClientUpdateProposal defines the struct for client update proposal.",
@@ -6692,34 +6091,6 @@
             }
           ]
         },
-        "PinCodesProposal": {
-          "description": "PinCodesProposal defines the struct for pin contract codes proposal.",
-          "type": "object",
-          "required": [
-            "code_ids",
-            "description",
-            "title"
-          ],
-          "properties": {
-            "code_ids": {
-              "description": "*code_ids** is an array of codes to be pined.",
-              "type": "array",
-              "items": {
-                "type": "integer",
-                "format": "uint64",
-                "minimum": 0.0
-              }
-            },
-            "description": {
-              "description": "*description** is a text description of proposal.",
-              "type": "string"
-            },
-            "title": {
-              "description": "*title** is a text title of proposal.",
-              "type": "string"
-            }
-          }
-        },
         "Plan": {
           "description": "Plan defines the struct for planned upgrade.",
           "type": "object",
@@ -6741,6 +6112,18 @@
             "name": {
               "description": "*name** is a name for the upgrade",
               "type": "string"
+            }
+          }
+        },
+        "ProposalExecuteMessage": {
+          "description": "ProposalExecuteMessage defines the struct for sdk47 compatible update params admin proposal.",
+          "type": "object",
+          "required": [
+            "message"
+          ],
+          "properties": {
+            "message": {
+              "description": "*message** is a json representing a sdk message passed to admin module to execute."
             }
           }
         },
@@ -6876,33 +6259,6 @@
             }
           }
         },
-        "SoftwareUpgradeProposal": {
-          "description": "SoftwareUpgradeProposal defines the struct for software upgrade proposal.",
-          "type": "object",
-          "required": [
-            "description",
-            "plan",
-            "title"
-          ],
-          "properties": {
-            "description": {
-              "description": "*description** is a text description of proposal. Non unique.",
-              "type": "string"
-            },
-            "plan": {
-              "description": "*plan** is a plan of upgrade.",
-              "allOf": [
-                {
-                  "$ref": "#/definitions/Plan"
-                }
-              ]
-            },
-            "title": {
-              "description": "*title** is a text title of proposal. Non unique.",
-              "type": "string"
-            }
-          }
-        },
         "StakingMsg": {
           "description": "The message types of the staking module.\n\nSee https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/staking/v1beta1/tx.proto",
           "oneOf": [
@@ -7033,38 +6389,6 @@
             }
           ]
         },
-        "SudoContractProposal": {
-          "description": "SudoContractProposal defines the struct for sudo execution proposal.",
-          "type": "object",
-          "required": [
-            "contract",
-            "description",
-            "msg",
-            "title"
-          ],
-          "properties": {
-            "contract": {
-              "description": "*contract** is an address of contract to be executed.",
-              "type": "string"
-            },
-            "description": {
-              "description": "*description** is a text description of proposal.",
-              "type": "string"
-            },
-            "msg": {
-              "description": "**msg*** is a sudo message.",
-              "allOf": [
-                {
-                  "$ref": "#/definitions/Binary"
-                }
-              ]
-            },
-            "title": {
-              "description": "*title** is a text title of proposal.",
-              "type": "string"
-            }
-          }
-        },
         "Threshold": {
           "description": "The ways a proposal may reach its passing / failing threshold.",
           "oneOf": [
@@ -7152,62 +6476,6 @@
         "Uint64": {
           "description": "A thin wrapper around u64 that is using strings for JSON encoding/decoding, such that the full u64 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u64` to get the value out:\n\n``` # use cosmwasm_std::Uint64; let a = Uint64::from(42u64); assert_eq!(a.u64(), 42);\n\nlet b = Uint64::from(70u32); assert_eq!(b.u64(), 70); ```",
           "type": "string"
-        },
-        "UnpinCodesProposal": {
-          "description": "UnpinCodesProposal defines the struct for unpin contract codes proposal.",
-          "type": "object",
-          "required": [
-            "code_ids",
-            "description",
-            "title"
-          ],
-          "properties": {
-            "code_ids": {
-              "description": "*code_ids** is an array of codes to be unpined.",
-              "type": "array",
-              "items": {
-                "type": "integer",
-                "format": "uint64",
-                "minimum": 0.0
-              }
-            },
-            "description": {
-              "description": "*description** is a text description of proposal.",
-              "type": "string"
-            },
-            "title": {
-              "description": "*title** is a text title of proposal.",
-              "type": "string"
-            }
-          }
-        },
-        "UpdateAdminProposal": {
-          "description": "UpdateAdminProposal defines the struct for  update admin proposal.",
-          "type": "object",
-          "required": [
-            "contract",
-            "description",
-            "new_admin",
-            "title"
-          ],
-          "properties": {
-            "contract": {
-              "description": "*contract** is an address of contract to update admin.",
-              "type": "string"
-            },
-            "description": {
-              "description": "*description** is a text description of proposal.",
-              "type": "string"
-            },
-            "new_admin": {
-              "description": "**new_admin*** is an address of new admin",
-              "type": "string"
-            },
-            "title": {
-              "description": "*title** is a text title of proposal.",
-              "type": "string"
-            }
-          }
         },
         "UpgradeProposal": {
           "description": "UpgradeProposal defines the struct for  upgrade proposal.",
@@ -7558,30 +6826,6 @@
             {
               "type": "object",
               "required": [
-                "software_upgrade_proposal"
-              ],
-              "properties": {
-                "software_upgrade_proposal": {
-                  "$ref": "#/definitions/SoftwareUpgradeProposal"
-                }
-              },
-              "additionalProperties": false
-            },
-            {
-              "type": "object",
-              "required": [
-                "cancel_software_upgrade_proposal"
-              ],
-              "properties": {
-                "cancel_software_upgrade_proposal": {
-                  "$ref": "#/definitions/CancelSoftwareUpgradeProposal"
-                }
-              },
-              "additionalProperties": false
-            },
-            {
-              "type": "object",
-              "required": [
                 "upgrade_proposal"
               ],
               "properties": {
@@ -7606,59 +6850,11 @@
             {
               "type": "object",
               "required": [
-                "pin_codes_proposal"
+                "proposal_execute_message"
               ],
               "properties": {
-                "pin_codes_proposal": {
-                  "$ref": "#/definitions/PinCodesProposal"
-                }
-              },
-              "additionalProperties": false
-            },
-            {
-              "type": "object",
-              "required": [
-                "unpin_codes_proposal"
-              ],
-              "properties": {
-                "unpin_codes_proposal": {
-                  "$ref": "#/definitions/UnpinCodesProposal"
-                }
-              },
-              "additionalProperties": false
-            },
-            {
-              "type": "object",
-              "required": [
-                "sudo_contract_proposal"
-              ],
-              "properties": {
-                "sudo_contract_proposal": {
-                  "$ref": "#/definitions/SudoContractProposal"
-                }
-              },
-              "additionalProperties": false
-            },
-            {
-              "type": "object",
-              "required": [
-                "update_admin_proposal"
-              ],
-              "properties": {
-                "update_admin_proposal": {
-                  "$ref": "#/definitions/UpdateAdminProposal"
-                }
-              },
-              "additionalProperties": false
-            },
-            {
-              "type": "object",
-              "required": [
-                "clear_admin_proposal"
-              ],
-              "properties": {
-                "clear_admin_proposal": {
-                  "$ref": "#/definitions/ClearAdminProposal"
+                "proposal_execute_message": {
+                  "$ref": "#/definitions/ProposalExecuteMessage"
                 }
               },
               "additionalProperties": false
@@ -7725,47 +6921,6 @@
         "Binary": {
           "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization with serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>. See also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
           "type": "string"
-        },
-        "CancelSoftwareUpgradeProposal": {
-          "description": "CancelSoftwareUpgradeProposal defines the struct for cancel software upgrade proposal.",
-          "type": "object",
-          "required": [
-            "description",
-            "title"
-          ],
-          "properties": {
-            "description": {
-              "description": "*description** is a text description of proposal. Non unique.",
-              "type": "string"
-            },
-            "title": {
-              "description": "*title** is a text title of proposal. Non unique.",
-              "type": "string"
-            }
-          }
-        },
-        "ClearAdminProposal": {
-          "description": "SudoContractProposal defines the struct for clear admin proposal.",
-          "type": "object",
-          "required": [
-            "contract",
-            "description",
-            "title"
-          ],
-          "properties": {
-            "contract": {
-              "description": "*contract** is an address of contract admin will be removed.",
-              "type": "string"
-            },
-            "description": {
-              "description": "*description** is a text description of proposal.",
-              "type": "string"
-            },
-            "title": {
-              "description": "*title** is a text title of proposal.",
-              "type": "string"
-            }
-          }
         },
         "ClientUpdateProposal": {
           "description": "ClientUpdateProposal defines the struct for client update proposal.",
@@ -8813,34 +7968,6 @@
             }
           ]
         },
-        "PinCodesProposal": {
-          "description": "PinCodesProposal defines the struct for pin contract codes proposal.",
-          "type": "object",
-          "required": [
-            "code_ids",
-            "description",
-            "title"
-          ],
-          "properties": {
-            "code_ids": {
-              "description": "*code_ids** is an array of codes to be pined.",
-              "type": "array",
-              "items": {
-                "type": "integer",
-                "format": "uint64",
-                "minimum": 0.0
-              }
-            },
-            "description": {
-              "description": "*description** is a text description of proposal.",
-              "type": "string"
-            },
-            "title": {
-              "description": "*title** is a text title of proposal.",
-              "type": "string"
-            }
-          }
-        },
         "Plan": {
           "description": "Plan defines the struct for planned upgrade.",
           "type": "object",
@@ -8862,6 +7989,18 @@
             "name": {
               "description": "*name** is a name for the upgrade",
               "type": "string"
+            }
+          }
+        },
+        "ProposalExecuteMessage": {
+          "description": "ProposalExecuteMessage defines the struct for sdk47 compatible update params admin proposal.",
+          "type": "object",
+          "required": [
+            "message"
+          ],
+          "properties": {
+            "message": {
+              "description": "*message** is a json representing a sdk message passed to admin module to execute."
             }
           }
         },
@@ -9016,33 +8155,6 @@
             }
           }
         },
-        "SoftwareUpgradeProposal": {
-          "description": "SoftwareUpgradeProposal defines the struct for software upgrade proposal.",
-          "type": "object",
-          "required": [
-            "description",
-            "plan",
-            "title"
-          ],
-          "properties": {
-            "description": {
-              "description": "*description** is a text description of proposal. Non unique.",
-              "type": "string"
-            },
-            "plan": {
-              "description": "*plan** is a plan of upgrade.",
-              "allOf": [
-                {
-                  "$ref": "#/definitions/Plan"
-                }
-              ]
-            },
-            "title": {
-              "description": "*title** is a text title of proposal. Non unique.",
-              "type": "string"
-            }
-          }
-        },
         "StakingMsg": {
           "description": "The message types of the staking module.\n\nSee https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/staking/v1beta1/tx.proto",
           "oneOf": [
@@ -9173,38 +8285,6 @@
             }
           ]
         },
-        "SudoContractProposal": {
-          "description": "SudoContractProposal defines the struct for sudo execution proposal.",
-          "type": "object",
-          "required": [
-            "contract",
-            "description",
-            "msg",
-            "title"
-          ],
-          "properties": {
-            "contract": {
-              "description": "*contract** is an address of contract to be executed.",
-              "type": "string"
-            },
-            "description": {
-              "description": "*description** is a text description of proposal.",
-              "type": "string"
-            },
-            "msg": {
-              "description": "**msg*** is a sudo message.",
-              "allOf": [
-                {
-                  "$ref": "#/definitions/Binary"
-                }
-              ]
-            },
-            "title": {
-              "description": "*title** is a text title of proposal.",
-              "type": "string"
-            }
-          }
-        },
         "Threshold": {
           "description": "The ways a proposal may reach its passing / failing threshold.",
           "oneOf": [
@@ -9292,62 +8372,6 @@
         "Uint64": {
           "description": "A thin wrapper around u64 that is using strings for JSON encoding/decoding, such that the full u64 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u64` to get the value out:\n\n``` # use cosmwasm_std::Uint64; let a = Uint64::from(42u64); assert_eq!(a.u64(), 42);\n\nlet b = Uint64::from(70u32); assert_eq!(b.u64(), 70); ```",
           "type": "string"
-        },
-        "UnpinCodesProposal": {
-          "description": "UnpinCodesProposal defines the struct for unpin contract codes proposal.",
-          "type": "object",
-          "required": [
-            "code_ids",
-            "description",
-            "title"
-          ],
-          "properties": {
-            "code_ids": {
-              "description": "*code_ids** is an array of codes to be unpined.",
-              "type": "array",
-              "items": {
-                "type": "integer",
-                "format": "uint64",
-                "minimum": 0.0
-              }
-            },
-            "description": {
-              "description": "*description** is a text description of proposal.",
-              "type": "string"
-            },
-            "title": {
-              "description": "*title** is a text title of proposal.",
-              "type": "string"
-            }
-          }
-        },
-        "UpdateAdminProposal": {
-          "description": "UpdateAdminProposal defines the struct for  update admin proposal.",
-          "type": "object",
-          "required": [
-            "contract",
-            "description",
-            "new_admin",
-            "title"
-          ],
-          "properties": {
-            "contract": {
-              "description": "*contract** is an address of contract to update admin.",
-              "type": "string"
-            },
-            "description": {
-              "description": "*description** is a text description of proposal.",
-              "type": "string"
-            },
-            "new_admin": {
-              "description": "**new_admin*** is an address of new admin",
-              "type": "string"
-            },
-            "title": {
-              "description": "*title** is a text title of proposal.",
-              "type": "string"
-            }
-          }
         },
         "UpgradeProposal": {
           "description": "UpgradeProposal defines the struct for  upgrade proposal.",
