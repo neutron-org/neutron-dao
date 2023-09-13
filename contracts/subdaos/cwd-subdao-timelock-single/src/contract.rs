@@ -18,6 +18,8 @@ use neutron_dao_pre_propose_overrule::msg::{
 use neutron_sdk::bindings::msg::NeutronMsg;
 use neutron_subdao_core::msg::QueryMsg as SubdaoQuery;
 use neutron_subdao_pre_propose_single::msg::QueryMsg as PreProposeQuery;
+use neutron_subdao_proposal_single::msg::QueryMsg as ProposalQueryMsg;
+use neutron_subdao_proposal_single::types::Config as ProposalConfig;
 use neutron_subdao_timelock_single::types::{FailedExecutionError, FailedProposalErrors};
 use neutron_subdao_timelock_single::{
     msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg},
@@ -144,7 +146,6 @@ pub fn execute_execute_proposal(
     proposal_id: u64,
 ) -> Result<Response<NeutronMsg>, ContractError> {
     let config = CONFIG.load(deps.storage)?;
-
     let mut proposal = PROPOSALS.load(deps.storage, proposal_id)?;
 
     // Check if proposal is timelocked
@@ -162,16 +163,31 @@ pub fn execute_execute_proposal(
     proposal.status = ProposalStatus::Executed;
     PROPOSALS.save(deps.storage, proposal_id, &proposal)?;
 
-    let msgs: Vec<SubMsg<NeutronMsg>> = proposal
-        .msgs
-        .iter()
-        .map(|msg| SubMsg::reply_on_error(msg.clone(), proposal_id))
-        .collect();
+    let response: Response<NeutronMsg> = {
+        let proposal_module: Addr = deps
+            .querier
+            .query_wasm_smart(config.subdao, &PreProposeQuery::ProposalModule {})?;
+        let proposal_config: ProposalConfig = deps
+            .querier
+            .query_wasm_smart(proposal_module, &ProposalQueryMsg::Config {})?;
+
+        match proposal_config.close_proposal_on_execution_failure {
+            true => {
+                let msgs: Vec<SubMsg<NeutronMsg>> = proposal
+                    .msgs
+                    .iter()
+                    .map(|msg| SubMsg::reply_on_error(msg.clone(), proposal_id))
+                    .collect();
+
+                Response::default().add_submessages(msgs)
+            }
+            false => Response::default().add_messages(proposal.msgs),
+        }
+    };
 
     // Note: we add the proposal messages as submessages to change the status to ExecutionFailed
     // in the reply handler if any of the submessages fail.
-    Ok(Response::new()
-        .add_submessages(msgs)
+    Ok(response
         .add_attribute("action", "execute_proposal")
         .add_attribute("sender", info.sender)
         .add_attribute("proposal_id", proposal_id.to_string()))
