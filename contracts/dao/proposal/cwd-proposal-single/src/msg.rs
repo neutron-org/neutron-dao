@@ -202,6 +202,11 @@ pub enum QueryMsg {
     /// module. Returns cwd_hooks::HooksResponse.
     #[returns(cwd_hooks::HooksResponse)]
     VoteHooks {},
+    /// Returns errors of the failed proposal.
+    /// Expected in the form of [execution_height, "codespace=? code=?"].
+    /// Returns `types::FailedProposalErrors`
+    #[returns(crate::query::FailedProposalErrors)]
+    ProposalFailedExecutionError { proposal_id: u64 },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]

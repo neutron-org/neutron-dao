@@ -54,7 +54,7 @@ pub struct ProposalListResponse {
     pub proposals: Vec<SingleChoiceProposal>,
 }
 
-/// A list of proposals returned by `ListProposals`.
+/// A list of proposals returned by `ProposalFailedExecutionError`.
 #[derive(Serialize, Deserialize, Clone, JsonSchema, Debug)]
 pub struct FailedProposalErrors {
     pub errors: Vec<FailedExecutionError>,

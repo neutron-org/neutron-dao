@@ -186,6 +186,11 @@ pub enum QueryMsg {
     /// module.
     #[returns(HooksResponse)]
     VoteHooks {},
+    /// Returns errors of the failed proposal.
+    /// Expected in the form of [execution_height, "codespace=? code=?"].
+    /// Returns `types::FailedProposalErrors`
+    #[returns(crate::query::FailedProposalErrors)]
+    ProposalFailedExecutionError { proposal_id: u64 },
 }
 
 #[cw_serde]

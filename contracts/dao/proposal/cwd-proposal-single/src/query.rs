@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use cwd_voting::voting::Vote;
 
 use crate::proposal::SingleChoiceProposal;
+use crate::state::FailedExecutionError;
 
 /// Information about a proposal returned by proposal queries.
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
@@ -43,4 +44,10 @@ pub struct VoteListResponse {
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 pub struct ProposalListResponse {
     pub proposals: Vec<ProposalResponse>,
+}
+
+/// A list of proposals returned by `ProposalFailedExecutionError`.
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+pub struct FailedProposalErrors {
+    pub errors: Vec<FailedExecutionError>,
 }

@@ -2,6 +2,7 @@ use crate::{proposal::MultipleChoiceProposal, state::Config};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Uint128};
 
+use crate::state::FailedExecutionError;
 use cwd_voting::multiple_choice::MultipleChoiceVote;
 
 #[cw_serde]
@@ -40,4 +41,10 @@ pub struct VoteListResponse {
 #[cw_serde]
 pub struct ConfigResponse {
     pub config: Config,
+}
+
+/// A list of proposals returned by `ProposalFailedExecutionError`.
+#[cw_serde]
+pub struct FailedProposalErrors {
+    pub errors: Vec<FailedExecutionError>,
 }

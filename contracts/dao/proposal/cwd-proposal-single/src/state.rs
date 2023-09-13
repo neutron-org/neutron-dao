@@ -50,6 +50,15 @@ pub struct Config {
     pub close_proposal_on_execution_failure: bool,
 }
 
+/// Proposal failed execution error
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+pub struct FailedExecutionError {
+    /// Block height of execution error
+    pub height: u64,
+    /// Error text. Error is reduced before cosmwasm reply and is expected in form of "codespace=? code=?"
+    pub error: String,
+}
+
 /// The current top level config for the module.  The "config" key was
 /// previously used to store configs for v1 DAOs.
 pub const CONFIG: Item<Config> = Item::new("config_v2");
@@ -64,3 +73,6 @@ pub const VOTE_HOOKS: Hooks = Hooks::new("vote_hooks");
 /// The address of the pre-propose module associated with this
 /// proposal module (if any).
 pub const CREATION_POLICY: Item<ProposalCreationPolicy> = Item::new("creation_policy");
+// Execution errors for proposals that do execute only once
+pub const PROPOSAL_FAILED_EXECUTION_ERRORS: Map<u64, Vec<FailedExecutionError>> =
+    Map::new("failed_proposal_errors");

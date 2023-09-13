@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply, Response,
+    to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError,
     StdResult, Storage, SubMsg, WasmMsg,
 };
 use cw2::set_contract_version;
@@ -23,8 +23,11 @@ use neutron_sdk::bindings::msg::NeutronMsg;
 
 use crate::msg::MigrateMsg;
 use crate::proposal::SingleChoiceProposal;
-use crate::state::{Config, CREATION_POLICY};
+use crate::state::{
+    Config, FailedExecutionError, CREATION_POLICY, PROPOSAL_FAILED_EXECUTION_ERRORS,
+};
 
+use crate::query::FailedProposalErrors;
 use crate::{
     error::ContractError,
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
@@ -667,6 +670,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::ProposalCreationPolicy {} => query_creation_policy(deps),
         QueryMsg::ProposalHooks {} => to_binary(&PROPOSAL_HOOKS.query_hooks(deps)?),
         QueryMsg::VoteHooks {} => to_binary(&VOTE_HOOKS.query_hooks(deps)?),
+        QueryMsg::ProposalFailedExecutionError { proposal_id } => {
+            query_proposal_failed_execution_error(deps, proposal_id)
+        }
     }
 }
 
@@ -778,24 +784,58 @@ pub fn query_info(deps: Deps) -> StdResult<Binary> {
     to_binary(&cwd_interface::voting::InfoResponse { info })
 }
 
+pub fn query_proposal_failed_execution_error(deps: Deps, proposal_id: u64) -> StdResult<Binary> {
+    let errors = PROPOSAL_FAILED_EXECUTION_ERRORS.may_load(deps.storage, proposal_id)?;
+    let res = FailedProposalErrors {
+        errors: errors.unwrap_or_default(),
+    };
+    to_binary(&res)
+}
+
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     Ok(Response::default())
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
+pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractError> {
     let repl = TaggedReplyId::new(msg.id)?;
     match repl {
         TaggedReplyId::FailedProposalExecution(proposal_id) => {
             PROPOSALS.update(deps.storage, proposal_id, |prop| match prop {
                 Some(mut prop) => {
                     prop.status = Status::ExecutionFailed;
+                    // here\
 
                     Ok(prop)
                 }
                 None => Err(ContractError::NoSuchProposal { id: proposal_id }),
             })?;
+
+            // Error is reduced before cosmwasm reply and is expected in form of "codespace=? code=?"
+            PROPOSAL_FAILED_EXECUTION_ERRORS.update::<_, ContractError>(
+                deps.storage,
+                proposal_id,
+                |maybe_errors| {
+                    let error = msg.result.into_result().err().ok_or_else(|| {
+                        // should never happen since we reply only on failure
+                        ContractError::Std(StdError::generic_err(
+                            "must be an error in the failed result",
+                        ))
+                    })?;
+                    let value = FailedExecutionError {
+                        height: env.block.height,
+                        error,
+                    };
+                    match maybe_errors {
+                        Some(mut errors) => {
+                            errors.push(value);
+                            Ok(errors)
+                        }
+                        None => Ok(vec![value]),
+                    }
+                },
+            )?;
 
             Ok(Response::new().add_attribute("proposal_execution_failed", proposal_id.to_string()))
         }
