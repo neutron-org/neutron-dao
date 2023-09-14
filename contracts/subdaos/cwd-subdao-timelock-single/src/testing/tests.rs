@@ -194,6 +194,8 @@ fn test_execute_proposal() {
         )
     }
 
+    // check execution with close_proposal_on_execution_failure = true
+    deps.querier.set_close_proposal_on_execution_failure(true);
     let proposal = SingleChoiceProposal {
         id: 10,
         msgs: vec![NeutronMsg::remove_interchain_query(1).into()],
@@ -208,7 +210,7 @@ fn test_execute_proposal() {
         let mut data_mut_ref = overrule_proposal_status.borrow_mut();
         *data_mut_ref = Status::Rejected;
     }
-    let res = execute(deps.as_mut(), env, info, msg).unwrap();
+    let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
     let expected_attributes = vec![
         Attribute::new("action", "execute_proposal"),
         Attribute::new("sender", "neutron1unknownsender"),
@@ -224,7 +226,34 @@ fn test_execute_proposal() {
         res.messages
     );
     let updated_prop = PROPOSALS.load(deps.as_mut().storage, 10).unwrap();
-    assert_eq!(ProposalStatus::Executed, updated_prop.status)
+    assert_eq!(ProposalStatus::Executed, updated_prop.status);
+
+    // check proposal execution close_proposal_on_execution_failure = false
+    deps.querier.set_close_proposal_on_execution_failure(false);
+    let proposal = SingleChoiceProposal {
+        id: 10,
+        msgs: vec![NeutronMsg::remove_interchain_query(1).into()],
+        status: ProposalStatus::Timelocked,
+    };
+    PROPOSALS
+        .save(deps.as_mut().storage, proposal.id, &proposal)
+        .unwrap();
+    let res = execute(deps.as_mut(), env, info, msg).unwrap();
+    let expected_attributes = vec![
+        Attribute::new("action", "execute_proposal"),
+        Attribute::new("sender", "neutron1unknownsender"),
+        Attribute::new("proposal_id", "10"),
+    ];
+    assert_eq!(expected_attributes, res.attributes);
+    // added as messages without reply
+    let expected_msgs = proposal
+        .msgs
+        .iter()
+        .map(|msg| SubMsg::new(msg.clone()))
+        .collect::<Vec<SubMsg<NeutronMsg>>>();
+    assert_eq!(expected_msgs, res.messages);
+    let updated_prop = PROPOSALS.load(deps.as_mut().storage, 10).unwrap();
+    assert_eq!(ProposalStatus::Executed, updated_prop.status);
 }
 
 #[test]

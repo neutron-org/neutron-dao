@@ -51,6 +51,7 @@ pub fn mock_dependencies(
 pub struct WasmMockQuerier {
     base: MockQuerier,
     overrule_proposal_status: Rc<RefCell<Status>>,
+    close_proposal_on_execution_failure: bool,
 }
 
 impl Querier for WasmMockQuerier {
@@ -175,7 +176,7 @@ impl WasmMockQuerier {
                             min_voting_period: None,
                             allow_revoting: false,
                             dao: Addr::unchecked(""),
-                            close_proposal_on_execution_failure: true,
+                            close_proposal_on_execution_failure: self.close_proposal_on_execution_failure,
                         }),
                         _ => todo!(),
                     };
@@ -188,6 +189,10 @@ impl WasmMockQuerier {
             _ => self.base.handle_query(request),
         }
     }
+
+    pub fn set_close_proposal_on_execution_failure(self: &mut Self, v: bool) {
+      self.close_proposal_on_execution_failure = v
+    }
 }
 
 impl WasmMockQuerier {
@@ -195,6 +200,7 @@ impl WasmMockQuerier {
         WasmMockQuerier {
             base,
             overrule_proposal_status: x,
+            close_proposal_on_execution_failure: true,
         }
     }
 }
