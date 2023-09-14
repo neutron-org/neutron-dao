@@ -164,9 +164,12 @@ pub fn execute_execute_proposal(
     PROPOSALS.save(deps.storage, proposal_id, &proposal)?;
 
     let response: Response<NeutronMsg> = {
-        let proposal_module: Addr = deps
-            .querier
-            .query_wasm_smart(config.subdao, &PreProposeQuery::ProposalModule {})?;
+        let proposal_module: Addr = deps.querier.query_wasm_smart(
+            config.subdao,
+            &SubdaoQuery::TimelockProposalModuleAddress {
+                timelock: env.contract.address.to_string(),
+            },
+        )?;
         let proposal_config: ProposalConfig = deps
             .querier
             .query_wasm_smart(proposal_module, &ProposalQueryMsg::Config {})?;
