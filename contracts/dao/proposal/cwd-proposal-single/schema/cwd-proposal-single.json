@@ -2864,6 +2864,30 @@
         "additionalProperties": false
       },
       {
+        "description": "Returns errors of the failed proposal. Expected in the form of [execution_height, \"codespace=? code=?\"]. Returns `types::FailedProposalErrors`",
+        "type": "object",
+        "required": [
+          "proposal_failed_execution_error"
+        ],
+        "properties": {
+          "proposal_failed_execution_error": {
+            "type": "object",
+            "required": [
+              "proposal_id"
+            ],
+            "properties": {
+              "proposal_id": {
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0.0
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
         "type": "object",
         "required": [
           "dao"
@@ -7499,6 +7523,45 @@
         "Addr": {
           "description": "A human readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multi-chain smart contracts no assumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways 1. Use `Addr::unchecked(input)` 2. Use `let checked: Addr = deps.api.addr_validate(input)?` 3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?` 4. Deserialize from JSON. This must only be done from JSON that was validated before such as a contract's state. `Addr` must not be used in messages sent by the user because this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create a mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String` instance.",
           "type": "string"
+        }
+      }
+    },
+    "proposal_failed_execution_error": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "FailedProposalErrors",
+      "description": "A list of proposals returned by `ProposalFailedExecutionError`.",
+      "type": "object",
+      "required": [
+        "errors"
+      ],
+      "properties": {
+        "errors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FailedExecutionError"
+          }
+        }
+      },
+      "definitions": {
+        "FailedExecutionError": {
+          "description": "Proposal failed execution error",
+          "type": "object",
+          "required": [
+            "error",
+            "height"
+          ],
+          "properties": {
+            "error": {
+              "description": "Error text. Error is reduced before cosmwasm reply and is expected in form of \"codespace=? code=?\"",
+              "type": "string"
+            },
+            "height": {
+              "description": "Block height of execution error",
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            }
+          }
         }
       }
     },

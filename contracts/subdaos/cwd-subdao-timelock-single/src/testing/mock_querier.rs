@@ -176,7 +176,8 @@ impl WasmMockQuerier {
                             min_voting_period: None,
                             allow_revoting: false,
                             dao: Addr::unchecked(""),
-                            close_proposal_on_execution_failure: self.close_proposal_on_execution_failure,
+                            close_proposal_on_execution_failure: self
+                                .close_proposal_on_execution_failure,
                         }),
                         _ => todo!(),
                     };
@@ -190,8 +191,8 @@ impl WasmMockQuerier {
         }
     }
 
-    pub fn set_close_proposal_on_execution_failure(self: &mut Self, v: bool) {
-      self.close_proposal_on_execution_failure = v
+    pub fn set_close_proposal_on_execution_failure(&mut self, v: bool) {
+        self.close_proposal_on_execution_failure = v
     }
 }
 
