@@ -28,7 +28,7 @@ cw20 = "1.1.0"
 cw721 = "0.18.0"
 cwd-interface = {path = "../../../packages/cwd-interface"}
 cwd-macros = {path = "../../../packages/cwd-macros"}
-neutron-sdk = {package = "neutron-sdk", version = "0.6.1"}
+neutron-sdk = {package = "neutron-sdk",  git="https://github.com/neutron-org/neutron-sdk", branch="feat/sdk47"}
 schemars = "0.8.8"
 serde = {version = "1.0.175", default-features = false, features = ["derive"]}
 thiserror = {version = "1.0"}
