@@ -1379,7 +1379,8 @@
       ],
       "properties": {
         "message": {
-          "description": "*message** is a json representing a sdk message passed to admin module to execute."
+          "description": "*message** is a json representing a sdk message passed to admin module to execute.",
+          "type": "string"
         }
       }
     },

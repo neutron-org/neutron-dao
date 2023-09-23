@@ -1918,7 +1918,8 @@
         ],
         "properties": {
           "message": {
-            "description": "*message** is a json representing a sdk message passed to admin module to execute."
+            "description": "*message** is a json representing a sdk message passed to admin module to execute.",
+            "type": "string"
           }
         }
       },
@@ -2650,8 +2651,7 @@
   "migrate": {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "title": "MigrateMsg",
-    "type": "string",
-    "enum": []
+    "type": "object"
   },
   "sudo": null,
   "responses": {
@@ -4205,7 +4205,8 @@
           ],
           "properties": {
             "message": {
-              "description": "*message** is a json representing a sdk message passed to admin module to execute."
+              "description": "*message** is a json representing a sdk message passed to admin module to execute.",
+              "type": "string"
             }
           }
         },
@@ -6123,7 +6124,8 @@
           ],
           "properties": {
             "message": {
-              "description": "*message** is a json representing a sdk message passed to admin module to execute."
+              "description": "*message** is a json representing a sdk message passed to admin module to execute.",
+              "type": "string"
             }
           }
         },
@@ -8000,7 +8002,8 @@
           ],
           "properties": {
             "message": {
-              "description": "*message** is a json representing a sdk message passed to admin module to execute."
+              "description": "*message** is a json representing a sdk message passed to admin module to execute.",
+              "type": "string"
             }
           }
         },
