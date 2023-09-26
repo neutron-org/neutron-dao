@@ -18,6 +18,7 @@
     ],
     "properties": {
       "denom": {
+        "description": "Denom of the main coin",
         "type": "string"
       },
       "distribution_contract": {
@@ -33,6 +34,7 @@
         ]
       },
       "main_dao_address": {
+        "description": "Address of the Neutron DAO contract",
         "type": "string"
       },
       "min_period": {
@@ -94,6 +96,7 @@
         "additionalProperties": false
       },
       {
+        "description": "Update config",
         "type": "object",
         "required": [
           "update_config"
@@ -212,6 +215,7 @@
         "additionalProperties": false
       },
       {
+        "description": "The contract's current stats; returns [`StatsResponse`]",
         "type": "object",
         "required": [
           "stats"
@@ -375,13 +379,28 @@
       ],
       "properties": {
         "total_distributed": {
-          "$ref": "#/definitions/Uint128"
+          "description": "Amount of coins distributed since contract instantiation",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Uint128"
+            }
+          ]
         },
         "total_processed_burned_coins": {
-          "$ref": "#/definitions/Uint128"
+          "description": "Total amount of burned coins processed by reserve contract",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Uint128"
+            }
+          ]
         },
         "total_reserved": {
-          "$ref": "#/definitions/Uint128"
+          "description": "Amount of coins reserved since contract instantiation",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Uint128"
+            }
+          ]
         }
       },
       "definitions": {

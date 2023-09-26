@@ -17,6 +17,7 @@
       "additionalProperties": false
     },
     {
+      "description": "The contract's current stats; returns [`StatsResponse`]",
       "type": "object",
       "required": [
         "stats"
