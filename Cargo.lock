@@ -1629,8 +1629,8 @@ dependencies = [
 
 [[package]]
 name = "neutron-sdk"
-version = "0.6.1"
-source = "git+https://github.com/neutron-org/neutron-sdk?branch=feat/sdk47#cfb3c83b56979f0592d8c4fd5be98031cfe8ec3e"
+version = "0.7.0"
+source = "git+https://github.com/neutron-org/neutron-sdk?branch=fix/deprecate-old-admin-proposals#6bcda2c0c59feae2de77edaa6a5bbe159c135863"
 dependencies = [
  "base64 0.21.2",
  "bech32",
