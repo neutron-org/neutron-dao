@@ -45,15 +45,6 @@ pub struct Config {
     pub close_proposal_on_execution_failure: bool,
 }
 
-/// Proposal failed execution error
-#[cw_serde]
-pub struct FailedExecutionError {
-    /// Block height of execution error
-    pub height: u64,
-    /// Error text. Error is reduced before cosmwasm reply and is expected in form of "codespace=? code=?"
-    pub error: String,
-}
-
 // we cast a ballot with our chosen vote and a given weight
 // stored under the key that voted
 #[cw_serde]
@@ -77,5 +68,4 @@ pub const VOTE_HOOKS: Hooks = Hooks::new("vote_hooks");
 /// proposal module (if any).
 pub const CREATION_POLICY: Item<ProposalCreationPolicy> = Item::new("creation_policy");
 // Execution errors for proposals that do execute only once
-pub const PROPOSAL_FAILED_EXECUTION_ERRORS: Map<u64, Vec<FailedExecutionError>> =
-    Map::new("failed_proposal_errors");
+pub const PROPOSAL_FAILED_EXECUTION_ERRORS: Map<u64, String> = Map::new("failed_proposal_errors");

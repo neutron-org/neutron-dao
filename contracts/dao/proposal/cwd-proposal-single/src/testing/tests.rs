@@ -27,7 +27,6 @@ use cwd_voting::{
 use neutron_sdk::bindings::msg::NeutronMsg;
 
 use crate::contract::query_proposal_failed_execution_error;
-use crate::query::FailedProposalErrors;
 use crate::testing::execute::{execute_proposal, execute_proposal_should_fail};
 use crate::{
     contract::{CONTRACT_NAME, CONTRACT_VERSION},
@@ -969,7 +968,7 @@ fn test_reply_proposal_mock() {
         id: m_proposal_id,
         result: SubMsgResult::Err("error".to_string()),
     };
-    let res = reply(deps.as_mut(), env.clone(), reply_msg).unwrap();
+    let res = reply(deps.as_mut(), env, reply_msg).unwrap();
     assert_eq!(
         res.attributes[0],
         Attribute {
@@ -983,31 +982,8 @@ fn test_reply_proposal_mock() {
 
     // reply writes the failed proposal error
     let query_res = query_proposal_failed_execution_error(deps.as_ref(), 1).unwrap();
-    let query_errs: FailedProposalErrors = from_binary(&query_res).unwrap();
-    assert_eq!(query_errs.errors.len(), 1);
-    let error = query_errs.errors.first().unwrap();
-    assert_eq!(error.error, "error".to_string());
-    assert_eq!(error.height, env.block.height);
-
-    // reply second time appends new error
-    let env2 = {
-        let mut e = env;
-        e.block.height += 10;
-        e
-    };
-    let msg2 = Reply {
-        id: m_proposal_id,
-        result: SubMsgResult::Err("error2".to_string()),
-    };
-    let res_ok = reply(deps.as_mut(), env2.clone(), msg2).unwrap();
-    assert_eq!(0, res_ok.messages.len());
-
-    let query_res = query_proposal_failed_execution_error(deps.as_ref(), 1).unwrap();
-    let query_errs: FailedProposalErrors = from_binary(&query_res).unwrap();
-    assert_eq!(query_errs.errors.len(), 2);
-    let error2 = query_errs.errors.last().unwrap();
-    assert_eq!(error2.error, "error2".to_string());
-    assert_eq!(error2.height, env2.block.height);
+    let error: String = from_binary(&query_res).unwrap();
+    assert_eq!(error, "error".to_string());
 }
 
 #[test]

@@ -24,7 +24,6 @@ use crate::{
 use neutron_dao_pre_propose_overrule::msg::{
     ExecuteMsg as OverruleExecuteMsg, ProposeMessage as OverruleProposeMessage,
 };
-use neutron_subdao_timelock_single::types::FailedProposalErrors;
 
 use super::mock_querier::{mock_dependencies, MOCK_SUBDAO_CORE_ADDR};
 
@@ -552,36 +551,13 @@ fn test_reply() {
     };
     let env = mock_env();
     PROPOSALS.save(deps.as_mut().storage, 10, &prop).unwrap();
-    let res_ok = reply(deps.as_mut(), env.clone(), msg).unwrap();
+    let res_ok = reply(deps.as_mut(), env, msg).unwrap();
     assert_eq!(0, res_ok.messages.len());
     let expected_attributes = vec![Attribute::new("timelocked_proposal_execution_failed", "10")];
     assert_eq!(expected_attributes, res_ok.attributes);
 
     // reply writes the failed proposal error
     let query_res = query_proposal_failed_execution_error(deps.as_ref(), 10).unwrap();
-    let query_errs: FailedProposalErrors = from_binary(&query_res).unwrap();
-    assert_eq!(query_errs.errors.len(), 1);
-    let error = query_errs.errors.first().unwrap();
-    assert_eq!(error.error, "error".to_string());
-    assert_eq!(error.height, env.block.height);
-
-    // reply second time appends new error
-    let env2 = {
-        let mut e = env;
-        e.block.height += 10;
-        e
-    };
-    let msg2 = Reply {
-        id: 10,
-        result: SubMsgResult::Err("error2".to_string()),
-    };
-    let res_ok = reply(deps.as_mut(), env2.clone(), msg2).unwrap();
-    assert_eq!(0, res_ok.messages.len());
-
-    let query_res = query_proposal_failed_execution_error(deps.as_ref(), 10).unwrap();
-    let query_errs: FailedProposalErrors = from_binary(&query_res).unwrap();
-    assert_eq!(query_errs.errors.len(), 2);
-    let error2 = query_errs.errors.last().unwrap();
-    assert_eq!(error2.error, "error2".to_string());
-    assert_eq!(error2.height, env2.block.height);
+    let error: String = from_binary(&query_res).unwrap();
+    assert_eq!(error, "error".to_string());
 }

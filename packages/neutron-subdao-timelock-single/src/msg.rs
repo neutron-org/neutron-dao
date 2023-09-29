@@ -58,7 +58,7 @@ pub enum QueryMsg {
     /// Returns errors of the failed proposal.
     /// Expected in the form of [execution_height, "codespace=? code=?"].
     /// Returns `types::FailedProposalErrors`
-    #[returns(crate::types::FailedProposalErrors)]
+    #[returns(String)]
     ProposalFailedExecutionError { proposal_id: u64 },
 }
 

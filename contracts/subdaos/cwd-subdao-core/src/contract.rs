@@ -677,7 +677,8 @@ pub(crate) fn execution_access_check(deps: Deps, sender: Addr) -> Result<(), Con
     }
 }
 
-// returns Unauthorized if not found
+/// Tries to find proposal module for a given timelock address (`sender`).
+/// Returns Ok(None) if not found
 fn proposal_from_timelock(deps: Deps, sender: String) -> Result<Option<ProposalModule>, StdError> {
     let proposal_modules = PROPOSAL_MODULES
         .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)

@@ -26,8 +26,7 @@ use cwd_voting::{
     voting::{get_total_power, get_voting_power, validate_voting_period},
 };
 
-use crate::query::FailedProposalErrors;
-use crate::state::{FailedExecutionError, PROPOSAL_FAILED_EXECUTION_ERRORS};
+use crate::state::PROPOSAL_FAILED_EXECUTION_ERRORS;
 use crate::{msg::MigrateMsg, state::CREATION_POLICY};
 use crate::{
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
@@ -847,15 +846,12 @@ pub fn query_info(deps: Deps) -> StdResult<Binary> {
 }
 
 pub fn query_proposal_failed_execution_error(deps: Deps, proposal_id: u64) -> StdResult<Binary> {
-    let errors = PROPOSAL_FAILED_EXECUTION_ERRORS.may_load(deps.storage, proposal_id)?;
-    let res = FailedProposalErrors {
-        errors: errors.unwrap_or_default(),
-    };
-    to_binary(&res)
+    let error = PROPOSAL_FAILED_EXECUTION_ERRORS.load(deps.storage, proposal_id)?;
+    to_binary(&error)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractError> {
+pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
     let repl = TaggedReplyId::new(msg.id)?;
     match repl {
         TaggedReplyId::FailedProposalExecution(proposal_id) => {
@@ -868,29 +864,13 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
             })?;
 
             // Error is reduced before cosmwasm reply and is expected in form of "codespace=? code=?"
-            PROPOSAL_FAILED_EXECUTION_ERRORS.update::<_, ContractError>(
-                deps.storage,
-                proposal_id,
-                |maybe_errors| {
-                    let error = msg.result.into_result().err().ok_or_else(|| {
-                        // should never happen since we reply only on failure
-                        ContractError::Std(StdError::generic_err(
-                            "must be an error in the failed result",
-                        ))
-                    })?;
-                    let value = FailedExecutionError {
-                        height: env.block.height,
-                        error,
-                    };
-                    match maybe_errors {
-                        Some(mut errors) => {
-                            errors.push(value);
-                            Ok(errors)
-                        }
-                        None => Ok(vec![value]),
-                    }
-                },
-            )?;
+            let error = msg.result.into_result().err().ok_or_else(|| {
+                // should never happen since we reply only on failure
+                ContractError::Std(StdError::generic_err(
+                    "must be an error in the failed result",
+                ))
+            })?;
+            PROPOSAL_FAILED_EXECUTION_ERRORS.save(deps.storage, proposal_id, &error)?;
 
             Ok(Response::new().add_attribute("proposal_execution_failed", proposal_id.to_string()))
         }

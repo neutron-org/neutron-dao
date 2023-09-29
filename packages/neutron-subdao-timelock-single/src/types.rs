@@ -54,17 +54,8 @@ pub struct ProposalListResponse {
     pub proposals: Vec<SingleChoiceProposal>,
 }
 
-/// A list of proposals returned by `ProposalFailedExecutionError`.
+/// A proposal error returned by `ProposalFailedExecutionError`.
 #[derive(Serialize, Deserialize, Clone, JsonSchema, Debug)]
-pub struct FailedProposalErrors {
-    pub errors: Vec<FailedExecutionError>,
-}
-
-/// Proposal failed execution error
-#[derive(Serialize, Deserialize, Clone, JsonSchema, Debug)]
-pub struct FailedExecutionError {
-    /// Block height of execution error
-    pub height: u64,
-    /// Error text. Error is reduced before cosmwasm reply and is expected in form of "codespace=? code=?"
+pub struct FailedProposalError {
     pub error: String,
 }
