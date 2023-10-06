@@ -2185,6 +2185,6 @@ fn test_reply_proposal_mock() {
 
     // reply writes the failed proposal error
     let query_res = query_proposal_failed_execution_error(deps.as_ref(), 1).unwrap();
-    let error: String = from_binary(&query_res).unwrap();
-    assert_eq!(error, "error".to_string());
+    let error: Option<String> = from_binary(&query_res).unwrap();
+    assert_eq!(error, Some("error".to_string()));
 }

@@ -1,39 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "FailedProposalErrors",
-  "description": "A list of proposals returned by `ProposalFailedExecutionError`.",
-  "type": "object",
-  "required": [
-    "errors"
-  ],
-  "properties": {
-    "errors": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/FailedExecutionError"
-      }
-    }
-  },
-  "definitions": {
-    "FailedExecutionError": {
-      "description": "Proposal failed execution error",
-      "type": "object",
-      "required": [
-        "error",
-        "height"
-      ],
-      "properties": {
-        "error": {
-          "description": "Error text. Error is reduced before cosmwasm reply and is expected in form of \"codespace=? code=?\"",
-          "type": "string"
-        },
-        "height": {
-          "description": "Block height of execution error",
-          "type": "integer",
-          "format": "uint64",
-          "minimum": 0.0
-        }
-      }
-    }
-  }
+  "title": "Nullable_String",
+  "type": [
+    "string",
+    "null"
+  ]
 }

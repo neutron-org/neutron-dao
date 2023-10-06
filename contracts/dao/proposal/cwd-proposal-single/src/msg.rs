@@ -204,8 +204,8 @@ pub enum QueryMsg {
     VoteHooks {},
     /// Returns errors of the failed proposal.
     /// Expected in the form of [execution_height, "codespace=? code=?"].
-    /// Returns `types::FailedProposalErrors`
-    #[returns(String)]
+    /// Returns `Option<String>`
+    #[returns(Option<String>)]
     ProposalFailedExecutionError { proposal_id: u64 },
 }
 

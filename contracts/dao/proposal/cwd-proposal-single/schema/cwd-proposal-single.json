@@ -1334,7 +1334,8 @@
                 "type": "object",
                 "required": [
                   "connection_id",
-                  "interchain_account_id"
+                  "interchain_account_id",
+                  "register_fee"
                 ],
                 "properties": {
                   "connection_id": {
@@ -1344,6 +1345,13 @@
                   "interchain_account_id": {
                     "description": "**interchain_account_id** is an identifier of your new interchain account. Can be any string. This identifier allows contracts to have multiple interchain accounts on remote chains.",
                     "type": "string"
+                  },
+                  "register_fee": {
+                    "description": "*register_fee** is a fees required to be payed to register interchain account",
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/definitions/Coin"
+                    }
                   }
                 }
               }
@@ -1709,6 +1717,31 @@
             "additionalProperties": false
           },
           {
+            "description": "TokenFactory message. Contracts can set before send hooks for denoms, namespaced under the contract's address.",
+            "type": "object",
+            "required": [
+              "set_before_send_hook"
+            ],
+            "properties": {
+              "set_before_send_hook": {
+                "type": "object",
+                "required": [
+                  "contract_addr",
+                  "denom"
+                ],
+                "properties": {
+                  "contract_addr": {
+                    "type": "string"
+                  },
+                  "denom": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          {
             "description": "AddSchedule adds new schedule with a given `name`. Until schedule is removed it will execute all `msgs` every `period` blocks. First execution is at least on `current_block + period` block. [Permissioned - DAO Only]",
             "type": "object",
             "required": [
@@ -1760,6 +1793,29 @@
                 "properties": {
                   "name": {
                     "type": "string"
+                  }
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Contractmanager message Resubmits failed acknowledgement. Acknowledgement failure is created when contract returns error or acknowledgement is out of gas. [Permissioned - only from contract that is initial caller of IBC transaction]",
+            "type": "object",
+            "required": [
+              "resubmit_failure"
+            ],
+            "properties": {
+              "resubmit_failure": {
+                "type": "object",
+                "required": [
+                  "failure_id"
+                ],
+                "properties": {
+                  "failure_id": {
+                    "type": "integer",
+                    "format": "uint64",
+                    "minimum": 0.0
                   }
                 }
               }
@@ -1911,14 +1967,15 @@
         ]
       },
       "ProposalExecuteMessage": {
-        "description": "ProposalExecuteMessage defines the struct for sdk47 compatible update params admin proposal.",
+        "description": "ProposalExecuteMessage defines the struct for sdk47 compatible admin proposal.",
         "type": "object",
         "required": [
           "message"
         ],
         "properties": {
           "message": {
-            "description": "*message** is a json representing a sdk message passed to admin module to execute."
+            "description": "*message** is a json representing an sdk message passed to admin module to execute.",
+            "type": "string"
           }
         }
       },
@@ -2620,7 +2677,7 @@
         "additionalProperties": false
       },
       {
-        "description": "Returns errors of the failed proposal. Expected in the form of [execution_height, \"codespace=? code=?\"]. Returns `types::FailedProposalErrors`",
+        "description": "Returns errors of the failed proposal. Expected in the form of [execution_height, \"codespace=? code=?\"]. Returns `Option<String>`",
         "type": "object",
         "required": [
           "proposal_failed_execution_error"
@@ -3682,7 +3739,8 @@
                   "type": "object",
                   "required": [
                     "connection_id",
-                    "interchain_account_id"
+                    "interchain_account_id",
+                    "register_fee"
                   ],
                   "properties": {
                     "connection_id": {
@@ -3692,6 +3750,13 @@
                     "interchain_account_id": {
                       "description": "**interchain_account_id** is an identifier of your new interchain account. Can be any string. This identifier allows contracts to have multiple interchain accounts on remote chains.",
                       "type": "string"
+                    },
+                    "register_fee": {
+                      "description": "*register_fee** is a fees required to be payed to register interchain account",
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/Coin"
+                      }
                     }
                   }
                 }
@@ -4057,6 +4122,31 @@
               "additionalProperties": false
             },
             {
+              "description": "TokenFactory message. Contracts can set before send hooks for denoms, namespaced under the contract's address.",
+              "type": "object",
+              "required": [
+                "set_before_send_hook"
+              ],
+              "properties": {
+                "set_before_send_hook": {
+                  "type": "object",
+                  "required": [
+                    "contract_addr",
+                    "denom"
+                  ],
+                  "properties": {
+                    "contract_addr": {
+                      "type": "string"
+                    },
+                    "denom": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "additionalProperties": false
+            },
+            {
               "description": "AddSchedule adds new schedule with a given `name`. Until schedule is removed it will execute all `msgs` every `period` blocks. First execution is at least on `current_block + period` block. [Permissioned - DAO Only]",
               "type": "object",
               "required": [
@@ -4108,6 +4198,29 @@
                   "properties": {
                     "name": {
                       "type": "string"
+                    }
+                  }
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "description": "Contractmanager message Resubmits failed acknowledgement. Acknowledgement failure is created when contract returns error or acknowledgement is out of gas. [Permissioned - only from contract that is initial caller of IBC transaction]",
+              "type": "object",
+              "required": [
+                "resubmit_failure"
+              ],
+              "properties": {
+                "resubmit_failure": {
+                  "type": "object",
+                  "required": [
+                    "failure_id"
+                  ],
+                  "properties": {
+                    "failure_id": {
+                      "type": "integer",
+                      "format": "uint64",
+                      "minimum": 0.0
                     }
                   }
                 }
@@ -4221,14 +4334,15 @@
           }
         },
         "ProposalExecuteMessage": {
-          "description": "ProposalExecuteMessage defines the struct for sdk47 compatible update params admin proposal.",
+          "description": "ProposalExecuteMessage defines the struct for sdk47 compatible admin proposal.",
           "type": "object",
           "required": [
             "message"
           ],
           "properties": {
             "message": {
-              "description": "*message** is a json representing a sdk message passed to admin module to execute."
+              "description": "*message** is a json representing an sdk message passed to admin module to execute.",
+              "type": "string"
             }
           }
         },
@@ -5600,7 +5714,8 @@
                   "type": "object",
                   "required": [
                     "connection_id",
-                    "interchain_account_id"
+                    "interchain_account_id",
+                    "register_fee"
                   ],
                   "properties": {
                     "connection_id": {
@@ -5610,6 +5725,13 @@
                     "interchain_account_id": {
                       "description": "**interchain_account_id** is an identifier of your new interchain account. Can be any string. This identifier allows contracts to have multiple interchain accounts on remote chains.",
                       "type": "string"
+                    },
+                    "register_fee": {
+                      "description": "*register_fee** is a fees required to be payed to register interchain account",
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/Coin"
+                      }
                     }
                   }
                 }
@@ -5975,6 +6097,31 @@
               "additionalProperties": false
             },
             {
+              "description": "TokenFactory message. Contracts can set before send hooks for denoms, namespaced under the contract's address.",
+              "type": "object",
+              "required": [
+                "set_before_send_hook"
+              ],
+              "properties": {
+                "set_before_send_hook": {
+                  "type": "object",
+                  "required": [
+                    "contract_addr",
+                    "denom"
+                  ],
+                  "properties": {
+                    "contract_addr": {
+                      "type": "string"
+                    },
+                    "denom": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "additionalProperties": false
+            },
+            {
               "description": "AddSchedule adds new schedule with a given `name`. Until schedule is removed it will execute all `msgs` every `period` blocks. First execution is at least on `current_block + period` block. [Permissioned - DAO Only]",
               "type": "object",
               "required": [
@@ -6026,6 +6173,29 @@
                   "properties": {
                     "name": {
                       "type": "string"
+                    }
+                  }
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "description": "Contractmanager message Resubmits failed acknowledgement. Acknowledgement failure is created when contract returns error or acknowledgement is out of gas. [Permissioned - only from contract that is initial caller of IBC transaction]",
+              "type": "object",
+              "required": [
+                "resubmit_failure"
+              ],
+              "properties": {
+                "resubmit_failure": {
+                  "type": "object",
+                  "required": [
+                    "failure_id"
+                  ],
+                  "properties": {
+                    "failure_id": {
+                      "type": "integer",
+                      "format": "uint64",
+                      "minimum": 0.0
                     }
                   }
                 }
@@ -6139,14 +6309,15 @@
           }
         },
         "ProposalExecuteMessage": {
-          "description": "ProposalExecuteMessage defines the struct for sdk47 compatible update params admin proposal.",
+          "description": "ProposalExecuteMessage defines the struct for sdk47 compatible admin proposal.",
           "type": "object",
           "required": [
             "message"
           ],
           "properties": {
             "message": {
-              "description": "*message** is a json representing a sdk message passed to admin module to execute."
+              "description": "*message** is a json representing an sdk message passed to admin module to execute.",
+              "type": "string"
             }
           }
         },
@@ -6796,42 +6967,11 @@
     },
     "proposal_failed_execution_error": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "FailedProposalErrors",
-      "description": "A list of proposals returned by `ProposalFailedExecutionError`.",
-      "type": "object",
-      "required": [
-        "errors"
-      ],
-      "properties": {
-        "errors": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/FailedExecutionError"
-          }
-        }
-      },
-      "definitions": {
-        "FailedExecutionError": {
-          "description": "Proposal failed execution error",
-          "type": "object",
-          "required": [
-            "error",
-            "height"
-          ],
-          "properties": {
-            "error": {
-              "description": "Error text. Error is reduced before cosmwasm reply and is expected in form of \"codespace=? code=?\"",
-              "type": "string"
-            },
-            "height": {
-              "description": "Block height of execution error",
-              "type": "integer",
-              "format": "uint64",
-              "minimum": 0.0
-            }
-          }
-        }
-      }
+      "title": "Nullable_String",
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "proposal_hooks": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -7516,7 +7656,8 @@
                   "type": "object",
                   "required": [
                     "connection_id",
-                    "interchain_account_id"
+                    "interchain_account_id",
+                    "register_fee"
                   ],
                   "properties": {
                     "connection_id": {
@@ -7526,6 +7667,13 @@
                     "interchain_account_id": {
                       "description": "**interchain_account_id** is an identifier of your new interchain account. Can be any string. This identifier allows contracts to have multiple interchain accounts on remote chains.",
                       "type": "string"
+                    },
+                    "register_fee": {
+                      "description": "*register_fee** is a fees required to be payed to register interchain account",
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/Coin"
+                      }
                     }
                   }
                 }
@@ -7891,6 +8039,31 @@
               "additionalProperties": false
             },
             {
+              "description": "TokenFactory message. Contracts can set before send hooks for denoms, namespaced under the contract's address.",
+              "type": "object",
+              "required": [
+                "set_before_send_hook"
+              ],
+              "properties": {
+                "set_before_send_hook": {
+                  "type": "object",
+                  "required": [
+                    "contract_addr",
+                    "denom"
+                  ],
+                  "properties": {
+                    "contract_addr": {
+                      "type": "string"
+                    },
+                    "denom": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "additionalProperties": false
+            },
+            {
               "description": "AddSchedule adds new schedule with a given `name`. Until schedule is removed it will execute all `msgs` every `period` blocks. First execution is at least on `current_block + period` block. [Permissioned - DAO Only]",
               "type": "object",
               "required": [
@@ -7942,6 +8115,29 @@
                   "properties": {
                     "name": {
                       "type": "string"
+                    }
+                  }
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "description": "Contractmanager message Resubmits failed acknowledgement. Acknowledgement failure is created when contract returns error or acknowledgement is out of gas. [Permissioned - only from contract that is initial caller of IBC transaction]",
+              "type": "object",
+              "required": [
+                "resubmit_failure"
+              ],
+              "properties": {
+                "resubmit_failure": {
+                  "type": "object",
+                  "required": [
+                    "failure_id"
+                  ],
+                  "properties": {
+                    "failure_id": {
+                      "type": "integer",
+                      "format": "uint64",
+                      "minimum": 0.0
                     }
                   }
                 }
@@ -8055,14 +8251,15 @@
           }
         },
         "ProposalExecuteMessage": {
-          "description": "ProposalExecuteMessage defines the struct for sdk47 compatible update params admin proposal.",
+          "description": "ProposalExecuteMessage defines the struct for sdk47 compatible admin proposal.",
           "type": "object",
           "required": [
             "message"
           ],
           "properties": {
             "message": {
-              "description": "*message** is a json representing a sdk message passed to admin module to execute."
+              "description": "*message** is a json representing an sdk message passed to admin module to execute.",
+              "type": "string"
             }
           }
         },
