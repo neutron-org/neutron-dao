@@ -229,13 +229,13 @@ fn test_execute_proposal() {
 
     // check proposal execution close_proposal_on_execution_failure = false
     deps.querier.set_close_proposal_on_execution_failure(false);
-    let proposal = SingleChoiceProposal {
+    let proposal2 = SingleChoiceProposal {
         id: 10,
         msgs: vec![NeutronMsg::remove_interchain_query(1).into()],
         status: ProposalStatus::Timelocked,
     };
     PROPOSALS
-        .save(deps.as_mut().storage, proposal.id, &proposal)
+        .save(deps.as_mut().storage, proposal2.id, &proposal2)
         .unwrap();
     let res = execute(deps.as_mut(), env, info, msg).unwrap();
     let expected_attributes = vec![
@@ -245,14 +245,14 @@ fn test_execute_proposal() {
     ];
     assert_eq!(expected_attributes, res.attributes);
     // added as messages without reply
-    let expected_msgs = proposal
+    let expected_msgs = proposal2
         .msgs
         .iter()
         .map(|msg| SubMsg::new(msg.clone()))
         .collect::<Vec<SubMsg<NeutronMsg>>>();
     assert_eq!(expected_msgs, res.messages);
-    let updated_prop = PROPOSALS.load(deps.as_mut().storage, 10).unwrap();
-    assert_eq!(ProposalStatus::Executed, updated_prop.status);
+    let updated_prop_2 = PROPOSALS.load(deps.as_mut().storage, 10).unwrap();
+    assert_eq!(ProposalStatus::Executed, updated_prop_2.status);
 }
 
 #[test]

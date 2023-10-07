@@ -67,5 +67,5 @@ pub const VOTE_HOOKS: Hooks = Hooks::new("vote_hooks");
 /// The address of the pre-propose module associated with this
 /// proposal module (if any).
 pub const CREATION_POLICY: Item<ProposalCreationPolicy> = Item::new("creation_policy");
-// Execution errors for proposals that do execute only once
+/// Execution errors for proposals that do execute only once
 pub const PROPOSAL_FAILED_EXECUTION_ERRORS: Map<u64, String> = Map::new("failed_proposal_errors");
