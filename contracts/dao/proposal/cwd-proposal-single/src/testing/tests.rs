@@ -586,7 +586,7 @@ fn test_min_voting_period_no_early_pass() {
     let proposal_response = query_proposal(&app, &proposal_module, proposal_id);
     assert_eq!(proposal_response.proposal.status, Status::Open);
 
-    app.update_block(|block| block.height += 10);
+    app.update_block(|b| b.height += 10);
     let proposal_response = query_proposal(&app, &proposal_module, proposal_id);
     assert_eq!(proposal_response.proposal.status, Status::Passed);
 }
