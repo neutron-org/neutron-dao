@@ -2008,7 +2008,7 @@ fn test_close_failed_proposal() {
 
     // Update block
     let timestamp = Timestamp::from_seconds(300_000_000);
-    app.update_block(|block| block.time = timestamp);
+    app.update_block(|b| b.time = timestamp);
 
     // Execute proposal
     app.execute_contract(

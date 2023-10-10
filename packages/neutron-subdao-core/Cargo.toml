@@ -17,7 +17,7 @@ cwd-interface = {path = "../cwd-interface"}
 cwd-macros = {path = "../cwd-macros"}
 cwd-voting = {path = "../cwd-voting"}
 exec-control = {path = "../exec-control"}
-neutron-sdk = {package = "neutron-sdk",  git="https://github.com/neutron-org/neutron-sdk", branch="feat/sdk47"}
+neutron-sdk = {package = "neutron-sdk",  git="https://github.com/neutron-org/neutron-sdk", branch="sdk/47", version="0.7.0"}
 schemars = "0.8.8"
 serde = {version = "1.0.175", default-features = false, features = ["derive"]}
 thiserror = {version = "1.0"}
