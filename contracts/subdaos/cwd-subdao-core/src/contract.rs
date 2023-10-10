@@ -604,7 +604,7 @@ pub fn query_verify_timelock(deps: Deps, timelock: String) -> StdResult<Binary> 
 }
 
 pub fn query_timelock_proposal_module_address(deps: Deps, timelock: String) -> StdResult<Binary> {
-    let maybe_proposal = proposal_from_timelock(deps, timelock)?;
+    let maybe_proposal = proposal_from_timelock(deps, deps.api.addr_validate(&timelock)?)?;
     let proposal =
         maybe_proposal.ok_or_else(|| StdError::generic_err("incorrect timelock addr provided"))?;
     to_binary(&proposal.address)
@@ -670,7 +670,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
 /// Validates the sender permissions to execute contract's messages. Valid senders are timelock
 /// contracts behind proposal modules of the DAO.
 pub(crate) fn execution_access_check(deps: Deps, sender: Addr) -> Result<(), ContractError> {
-    let res = proposal_from_timelock(deps, sender.to_string())?;
+    let res = proposal_from_timelock(deps, sender)?;
     match res {
         Some(_) => Ok(()),
         None => Err(ContractError::Unauthorized {}),
@@ -679,7 +679,10 @@ pub(crate) fn execution_access_check(deps: Deps, sender: Addr) -> Result<(), Con
 
 /// Tries to find proposal module for a given timelock contract (`timelock_contract`).
 /// Returns Ok(None) if not found
-fn proposal_from_timelock(deps: Deps, timelock_contract: String) -> Result<Option<ProposalModule>, StdError> {
+fn proposal_from_timelock(
+    deps: Deps,
+    timelock_contract: Addr,
+) -> Result<Option<ProposalModule>, StdError> {
     let proposal_modules = PROPOSAL_MODULES
         .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
         .map(|kv| Ok(kv?.1))
