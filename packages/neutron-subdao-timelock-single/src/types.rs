@@ -53,9 +53,3 @@ impl std::fmt::Display for ProposalStatus {
 pub struct ProposalListResponse {
     pub proposals: Vec<SingleChoiceProposal>,
 }
-
-/// A proposal error returned by `ProposalFailedExecutionError`.
-#[derive(Serialize, Deserialize, Clone, JsonSchema, Debug)]
-pub struct FailedProposalError {
-    pub error: String,
-}

@@ -14,7 +14,7 @@ use neutron_subdao_timelock_single::{
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use crate::contract::query_proposal_failed_execution_error;
+use crate::contract::query_proposal_execution_error;
 use crate::testing::mock_querier::{MOCK_MAIN_DAO_ADDR, MOCK_OVERRULE_PREPROPOSAL};
 use crate::{
     contract::{execute, instantiate, query, reply},
@@ -557,7 +557,7 @@ fn test_reply() {
     assert_eq!(expected_attributes, res_ok.attributes);
 
     // reply writes the failed proposal error
-    let query_res = query_proposal_failed_execution_error(deps.as_ref(), 10).unwrap();
+    let query_res = query_proposal_execution_error(deps.as_ref(), 10).unwrap();
     let error: Option<String> = from_binary(&query_res).unwrap();
     assert_eq!(error, Some("error".to_string()));
 }

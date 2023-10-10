@@ -45,7 +45,7 @@ use crate::{
 };
 use cwd_pre_propose_multiple as cppm;
 
-use crate::contract::query_proposal_failed_execution_error;
+use crate::contract::query_proposal_execution_error;
 use crate::testing::execute::mint_natives;
 use cwd_testing::ShouldExecute;
 use cwd_voting::reply::mask_proposal_execution_proposal_id;
@@ -2184,7 +2184,7 @@ fn test_reply_proposal_mock() {
     assert_eq!(prop.status, Status::ExecutionFailed);
 
     // reply writes the failed proposal error
-    let query_res = query_proposal_failed_execution_error(deps.as_ref(), 1).unwrap();
+    let query_res = query_proposal_execution_error(deps.as_ref(), 1).unwrap();
     let error: Option<String> = from_binary(&query_res).unwrap();
     assert_eq!(error, Some("error".to_string()));
 }

@@ -23,7 +23,7 @@ use neutron_sdk::bindings::msg::NeutronMsg;
 
 use crate::msg::MigrateMsg;
 use crate::proposal::SingleChoiceProposal;
-use crate::state::{Config, CREATION_POLICY, PROPOSAL_FAILED_EXECUTION_ERRORS};
+use crate::state::{Config, CREATION_POLICY, PROPOSAL_EXECUTION_ERRORS};
 
 use crate::{
     error::ContractError,
@@ -667,8 +667,8 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::ProposalCreationPolicy {} => query_creation_policy(deps),
         QueryMsg::ProposalHooks {} => to_binary(&PROPOSAL_HOOKS.query_hooks(deps)?),
         QueryMsg::VoteHooks {} => to_binary(&VOTE_HOOKS.query_hooks(deps)?),
-        QueryMsg::ProposalFailedExecutionError { proposal_id } => {
-            query_proposal_failed_execution_error(deps, proposal_id)
+        QueryMsg::ProposalExecutionError { proposal_id } => {
+            query_proposal_execution_error(deps, proposal_id)
         }
     }
 }
@@ -781,8 +781,8 @@ pub fn query_info(deps: Deps) -> StdResult<Binary> {
     to_binary(&cwd_interface::voting::InfoResponse { info })
 }
 
-pub fn query_proposal_failed_execution_error(deps: Deps, proposal_id: u64) -> StdResult<Binary> {
-    let error = PROPOSAL_FAILED_EXECUTION_ERRORS.may_load(deps.storage, proposal_id)?;
+pub fn query_proposal_execution_error(deps: Deps, proposal_id: u64) -> StdResult<Binary> {
+    let error = PROPOSAL_EXECUTION_ERRORS.may_load(deps.storage, proposal_id)?;
     to_binary(&error)
 }
 
@@ -812,7 +812,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
                     "must be an error in the failed result",
                 ))
             })?;
-            PROPOSAL_FAILED_EXECUTION_ERRORS.save(deps.storage, proposal_id, &error)?;
+            PROPOSAL_EXECUTION_ERRORS.save(deps.storage, proposal_id, &error)?;
 
             Ok(Response::new().add_attribute("proposal_execution_failed", proposal_id.to_string()))
         }
