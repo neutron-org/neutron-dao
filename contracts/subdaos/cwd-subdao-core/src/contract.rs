@@ -677,9 +677,9 @@ pub(crate) fn execution_access_check(deps: Deps, sender: Addr) -> Result<(), Con
     }
 }
 
-/// Tries to find proposal module for a given timelock address (`sender`).
+/// Tries to find proposal module for a given timelock contract (`timelock_contract`).
 /// Returns Ok(None) if not found
-fn proposal_from_timelock(deps: Deps, sender: String) -> Result<Option<ProposalModule>, StdError> {
+fn proposal_from_timelock(deps: Deps, timelock_contract: String) -> Result<Option<ProposalModule>, StdError> {
     let proposal_modules = PROPOSAL_MODULES
         .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
         .map(|kv| Ok(kv?.1))
@@ -690,13 +690,13 @@ fn proposal_from_timelock(deps: Deps, sender: String) -> Result<Option<ProposalM
             &ProposeQueryMsg::ProposalCreationPolicy {},
         )?;
         if let ProposalCreationPolicy::Module { addr } = policy {
-            if let Ok(timelock_contract) = deps.querier.query_wasm_smart::<Addr>(
+            if let Ok(proposal_timelock_contract) = deps.querier.query_wasm_smart::<Addr>(
                 &addr,
                 &PreProposeQueryMsg::QueryExtension {
                     msg: PreProposeQueryExt::TimelockAddress {},
                 },
             ) {
-                if sender == timelock_contract {
+                if timelock_contract == proposal_timelock_contract {
                     return Ok(Some(proposal_module));
                 }
             }
