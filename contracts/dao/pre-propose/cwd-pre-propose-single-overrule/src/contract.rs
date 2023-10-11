@@ -198,7 +198,11 @@ fn is_subdao_legit(deps: &DepsMut, subdao_core: &Addr) -> Result<bool, PrePropos
     );
 
     match subdao {
-        Ok(subdao) => Ok(subdao.addr == *subdao_core),
+        Ok(subdao) => {
+            // sanity check to make sure that query returned correct subdao
+            let correct_subdao = subdao.addr == *subdao_core;
+            Ok(correct_subdao)
+        }
         Err(_) => Ok(false),
     }
 }

@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Addr, Binary, Deps, DepsMut, Empty, Env, MessageInfo, Reply, Response, StdResult,
-    Storage, SubMsg, WasmMsg,
+    to_binary, Addr, Binary, Deps, DepsMut, Empty, Env, MessageInfo, Reply, Response, StdError,
+    StdResult, Storage, SubMsg, WasmMsg,
 };
 
 use cw2::set_contract_version;
@@ -26,6 +26,7 @@ use cwd_voting::{
     voting::{get_total_power, get_voting_power, validate_voting_period},
 };
 
+use crate::state::PROPOSAL_EXECUTION_ERRORS;
 use crate::{msg::MigrateMsg, state::CREATION_POLICY};
 use crate::{
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
@@ -730,6 +731,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::ProposalHooks {} => to_binary(&PROPOSAL_HOOKS.query_hooks(deps)?),
         QueryMsg::VoteHooks {} => to_binary(&VOTE_HOOKS.query_hooks(deps)?),
         QueryMsg::Dao {} => query_dao(deps),
+        QueryMsg::ProposalExecutionError { proposal_id } => {
+            query_proposal_execution_error(deps, proposal_id)
+        }
     }
 }
 
@@ -841,6 +845,11 @@ pub fn query_info(deps: Deps) -> StdResult<Binary> {
     to_binary(&cwd_interface::voting::InfoResponse { info })
 }
 
+pub fn query_proposal_execution_error(deps: Deps, proposal_id: u64) -> StdResult<Binary> {
+    let error = PROPOSAL_EXECUTION_ERRORS.may_load(deps.storage, proposal_id)?;
+    to_binary(&error)
+}
+
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
     let repl = TaggedReplyId::new(msg.id)?;
@@ -853,7 +862,16 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
                 }
                 None => Err(ContractError::NoSuchProposal { id: proposal_id }),
             })?;
-            Ok(Response::new().add_attribute("proposal execution failed", proposal_id.to_string()))
+            // Error is reduced before cosmwasm reply and is expected in form of "codespace=? code=?"
+            let error = msg.result.into_result().err().ok_or_else(|| {
+                // should never happen since we reply only on failure
+                ContractError::Std(StdError::generic_err(
+                    "must be an error in the failed result",
+                ))
+            })?;
+            PROPOSAL_EXECUTION_ERRORS.save(deps.storage, proposal_id, &error)?;
+
+            Ok(Response::new().add_attribute("proposal_execution_failed", proposal_id.to_string()))
         }
         TaggedReplyId::FailedProposalHook(idx) => {
             let addr = PROPOSAL_HOOKS.remove_hook_by_index(deps.storage, idx)?;

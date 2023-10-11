@@ -34,6 +34,7 @@ neutron-subdao-core = { path = "../../../packages/neutron-subdao-core" }
 neutron-dao-pre-propose-overrule = { path = "../../../packages/neutron-dao-pre-propose-overrule" }
 cwd-proposal-single = { path = "../../../contracts/dao/proposal/cwd-proposal-single", features = ["library"]}
 cwd-voting = { path = "../../../packages/cwd-voting" }
+neutron-subdao-proposal-single = { path = "../../../packages/neutron-subdao-proposal-single" }
 
 [dev-dependencies]
 cosmwasm-schema = { version = "1.3.0" }

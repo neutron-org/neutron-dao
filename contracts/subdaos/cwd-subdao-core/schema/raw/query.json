@@ -237,6 +237,28 @@
       "additionalProperties": false
     },
     {
+      "description": "Returns proposal module address for timelock contract if it's correct",
+      "type": "object",
+      "required": [
+        "timelock_proposal_module_address"
+      ],
+      "properties": {
+        "timelock_proposal_module_address": {
+          "type": "object",
+          "required": [
+            "timelock"
+          ],
+          "properties": {
+            "timelock": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
       "type": "object",
       "required": [
         "pause_info"
