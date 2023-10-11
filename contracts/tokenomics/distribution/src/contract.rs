@@ -1,5 +1,5 @@
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::state::{Config, CONFIG, FUND_COUNTER, PAUSED_UNTIL, PENDING_DISTRIBUTION, SHARES};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
@@ -7,9 +7,13 @@ use cosmwasm_std::{
     to_binary, Addr, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Order,
     Response, StdResult, Storage, Uint128,
 };
+use cw2::set_contract_version;
 use exec_control::pause::{
     can_pause, can_unpause, validate_duration, PauseError, PauseInfoResponse,
 };
+
+pub(crate) const CONTRACT_NAME: &str = "crates.io:distribution";
+pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 //--------------------------------------------------------------------------------------------------
 // Instantiation
@@ -72,6 +76,12 @@ pub fn execute(
         // permissioned - owner of the share
         ExecuteMsg::Claim {} => execute_claim(deps, info),
     }
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    Ok(Response::default())
 }
 
 pub fn execute_pause(
