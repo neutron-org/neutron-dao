@@ -1067,7 +1067,7 @@ dependencies = [
 
 [[package]]
 name = "cwd-pre-propose-overrule"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -1127,7 +1127,7 @@ dependencies = [
 
 [[package]]
 name = "cwd-proposal-multiple"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -1166,7 +1166,7 @@ dependencies = [
 
 [[package]]
 name = "cwd-proposal-single"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -1204,7 +1204,7 @@ dependencies = [
 
 [[package]]
 name = "cwd-subdao-core"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -1314,7 +1314,7 @@ dependencies = [
 
 [[package]]
 name = "cwd-subdao-timelock-single"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "cosmwasm-schema",
@@ -1858,7 +1858,7 @@ dependencies = [
 
 [[package]]
 name = "neutron-reserve"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "astroport 2.5.0",
  "cosmwasm-schema",
@@ -2024,7 +2024,7 @@ dependencies = [
 
 [[package]]
 name = "neutron-voting-registry"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "cosmwasm-schema",

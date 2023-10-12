@@ -1,6 +1,6 @@
 [package]
 name = "cwd-subdao-timelock-single"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Andrei Zavgorodnii <andrei.z@p2p.org>"]
 edition = "2021"
 repository = "https://github.com/neutron-org/neutron-dao"
