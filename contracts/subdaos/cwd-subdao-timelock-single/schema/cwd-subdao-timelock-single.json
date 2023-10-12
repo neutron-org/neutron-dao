@@ -1918,6 +1918,30 @@
           }
         },
         "additionalProperties": false
+      },
+      {
+        "description": "Returns errors of the failed proposal. Expected in the form of \"codespace=? code=?\". Returns `Option<String>`",
+        "type": "object",
+        "required": [
+          "proposal_execution_error"
+        ],
+        "properties": {
+          "proposal_execution_error": {
+            "type": "object",
+            "required": [
+              "proposal_id"
+            ],
+            "properties": {
+              "proposal_id": {
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0.0
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
       }
     ]
   },
@@ -5535,6 +5559,14 @@
           ]
         }
       }
+    },
+    "proposal_execution_error": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Nullable_String",
+      "type": [
+        "string",
+        "null"
+      ]
     }
   }
 }
