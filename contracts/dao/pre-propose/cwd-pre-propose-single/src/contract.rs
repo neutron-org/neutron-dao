@@ -3,8 +3,8 @@ use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, Response, StdResult,
 };
-use cw20_base::msg::MigrateMsg;
 use cw2::set_contract_version;
+use cw20_base::msg::MigrateMsg;
 use neutron_sdk::bindings::msg::NeutronMsg;
 
 use cwd_pre_propose_base::{
