@@ -501,7 +501,7 @@ fn test_query_info() {
     let resp: InfoResponse = app.wrap().query_wasm_smart(addr, &msg).unwrap();
     assert_eq!(
         resp.info.contract,
-        "crates.io:neutron-vesting-lp-vault-for-cl-pools-for-cl-pools"
+        "crates.io:neutron-vesting-lp-vault-for-cl-pools"
     );
 }
 

@@ -119,3 +119,7 @@ pub struct DepositInfoResponse {
     /// The address that created the proposal.
     pub proposer: cosmwasm_std::Addr,
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub struct MigrateMsg {}

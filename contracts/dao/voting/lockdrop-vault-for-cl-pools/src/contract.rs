@@ -16,7 +16,7 @@ use neutron_lockdrop_vault_for_cl_pools::error::{ContractError, ContractResult};
 use neutron_lockdrop_vault_for_cl_pools::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use neutron_lockdrop_vault_for_cl_pools::types::Config;
 
-pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-lockdrop-vault-for-cl-pools-for-cl-pools";
+pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-lockdrop-vault-for-cl-pools";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg_attr(not(feature = "library"), entry_point)]

@@ -34,7 +34,7 @@ use crate::{
     state::{Ballot, BALLOTS, CONFIG, PROPOSALS, PROPOSAL_COUNT, PROPOSAL_HOOKS, VOTE_HOOKS},
 };
 
-pub(crate) const CONTRACT_NAME: &str = "crates.io:cwd-subdao-proposal-single";
+pub(crate) const CONTRACT_NAME: &str = "crates.io:cwd-proposal-single";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -787,7 +787,8 @@ pub fn query_proposal_execution_error(deps: Deps, proposal_id: u64) -> StdResult
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     Ok(Response::default())
 }
 
