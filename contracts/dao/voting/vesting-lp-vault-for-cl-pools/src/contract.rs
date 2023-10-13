@@ -20,8 +20,7 @@ use neutron_voting_power::voting_power::voting_power_from_lp_tokens;
 use vesting_base::msg::{QueryMsg as VestingLpQueryMsg, QueryMsgHistorical};
 use vesting_base::types::Config as VestingBaseConfig;
 
-pub(crate) const CONTRACT_NAME: &str =
-    "crates.io:neutron-vesting-lp-vault-for-cl-pools-for-cl-pools";
+pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-vesting-lp-vault-for-cl-pools";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg_attr(not(feature = "library"), entry_point)]
