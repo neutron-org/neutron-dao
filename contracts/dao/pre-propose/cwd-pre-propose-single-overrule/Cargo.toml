@@ -1,6 +1,6 @@
 [package]
 name = "cwd-pre-propose-overrule"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["oldremez"]
 edition = "2021"
 repository = "https://github.com/neutron-org/neutron-dao"
