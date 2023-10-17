@@ -1,5 +1,6 @@
+use crate::contract::query_proposal_execution_error;
 use cosmwasm_std::{
-    coins,
+    coins, from_binary,
     testing::{mock_dependencies, mock_env},
     to_binary, Addr, Attribute, BankMsg, ContractInfoResponse, CosmosMsg, Decimal, Empty, Reply,
     StdError, StdResult, SubMsgResult, Uint128, WasmMsg, WasmQuery,
@@ -978,6 +979,11 @@ fn test_reply_proposal_mock() {
 
     let prop = PROPOSALS.load(deps.as_mut().storage, 1).unwrap();
     assert_eq!(prop.status, Status::ExecutionFailed);
+
+    // reply writes the failed proposal error
+    let query_res = query_proposal_execution_error(deps.as_ref(), 1).unwrap();
+    let error: Option<String> = from_binary(&query_res).unwrap();
+    assert_eq!(error, Some("error_msg".to_string()));
 }
 
 #[test]

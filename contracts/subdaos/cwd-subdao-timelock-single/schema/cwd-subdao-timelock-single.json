@@ -1,6 +1,6 @@
 {
   "contract_name": "cwd-subdao-timelock-single",
-  "contract_version": "0.2.0",
+  "contract_version": "0.2.1",
   "idl_version": "1.0.0",
   "instantiate": {
     "$schema": "http://json-schema.org/draft-07/schema#",
@@ -1910,6 +1910,30 @@
                   "integer",
                   "null"
                 ],
+                "format": "uint64",
+                "minimum": 0.0
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "description": "Returns errors of the failed proposal. Expected in the form of \"codespace=? code=?\". Returns `Option<String>`",
+        "type": "object",
+        "required": [
+          "proposal_execution_error"
+        ],
+        "properties": {
+          "proposal_execution_error": {
+            "type": "object",
+            "required": [
+              "proposal_id"
+            ],
+            "properties": {
+              "proposal_id": {
+                "type": "integer",
                 "format": "uint64",
                 "minimum": 0.0
               }
@@ -5535,6 +5559,14 @@
           ]
         }
       }
+    },
+    "proposal_execution_error": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Nullable_String",
+      "type": [
+        "string",
+        "null"
+      ]
     }
   }
 }

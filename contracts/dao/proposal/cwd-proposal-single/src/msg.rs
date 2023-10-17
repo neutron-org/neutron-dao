@@ -202,6 +202,11 @@ pub enum QueryMsg {
     /// module. Returns cwd_hooks::HooksResponse.
     #[returns(cwd_hooks::HooksResponse)]
     VoteHooks {},
+    /// Returns errors of the failed proposal.
+    /// Expected in the form of "codespace=? code=?".
+    /// Returns `Option<String>`
+    #[returns(Option<String>)]
+    ProposalExecutionError { proposal_id: u64 },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]

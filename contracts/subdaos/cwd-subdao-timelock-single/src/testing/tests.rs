@@ -1,3 +1,4 @@
+use crate::contract::query_proposal_execution_error;
 use cosmwasm_std::testing::MOCK_CONTRACT_ADDR;
 use cosmwasm_std::{
     from_binary,
@@ -192,6 +193,8 @@ fn test_execute_proposal() {
         )
     }
 
+    // check execution with close_proposal_on_execution_failure = true
+    deps.querier.set_close_proposal_on_execution_failure(true);
     let proposal = SingleChoiceProposal {
         id: 10,
         msgs: vec![NeutronMsg::remove_interchain_query(1).into()],
@@ -206,7 +209,7 @@ fn test_execute_proposal() {
         let mut data_mut_ref = overrule_proposal_status.borrow_mut();
         *data_mut_ref = Status::Rejected;
     }
-    let res = execute(deps.as_mut(), env, info, msg).unwrap();
+    let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
     let expected_attributes = vec![
         Attribute::new("action", "execute_proposal"),
         Attribute::new("sender", "neutron1unknownsender"),
@@ -222,7 +225,34 @@ fn test_execute_proposal() {
         res.messages
     );
     let updated_prop = PROPOSALS.load(deps.as_mut().storage, 10).unwrap();
-    assert_eq!(ProposalStatus::Executed, updated_prop.status)
+    assert_eq!(ProposalStatus::Executed, updated_prop.status);
+
+    // check proposal execution close_proposal_on_execution_failure = false
+    deps.querier.set_close_proposal_on_execution_failure(false);
+    let proposal2 = SingleChoiceProposal {
+        id: 10,
+        msgs: vec![NeutronMsg::remove_interchain_query(1).into()],
+        status: ProposalStatus::Timelocked,
+    };
+    PROPOSALS
+        .save(deps.as_mut().storage, proposal2.id, &proposal2)
+        .unwrap();
+    let res = execute(deps.as_mut(), env, info, msg).unwrap();
+    let expected_attributes = vec![
+        Attribute::new("action", "execute_proposal"),
+        Attribute::new("sender", "neutron1unknownsender"),
+        Attribute::new("proposal_id", "10"),
+    ];
+    assert_eq!(expected_attributes, res.attributes);
+    // added as messages without reply
+    let expected_msgs = proposal2
+        .msgs
+        .iter()
+        .map(|msg| SubMsg::new(msg.clone()))
+        .collect::<Vec<SubMsg<NeutronMsg>>>();
+    assert_eq!(expected_msgs, res.messages);
+    let updated_prop_2 = PROPOSALS.load(deps.as_mut().storage, 10).unwrap();
+    assert_eq!(ProposalStatus::Executed, updated_prop_2.status);
 }
 
 #[test]
@@ -519,9 +549,14 @@ fn test_reply() {
         msgs: vec![NeutronMsg::remove_interchain_query(1).into()],
         status: ProposalStatus::Timelocked,
     };
+    let env = mock_env();
     PROPOSALS.save(deps.as_mut().storage, 10, &prop).unwrap();
-    let res_ok = reply(deps.as_mut(), mock_env(), msg).unwrap();
+    let res_ok = reply(deps.as_mut(), env, msg).unwrap();
     assert_eq!(0, res_ok.messages.len());
     let expected_attributes = vec![Attribute::new("timelocked_proposal_execution_failed", "10")];
     assert_eq!(expected_attributes, res_ok.attributes);
+    // reply writes the failed proposal error
+    let query_res = query_proposal_execution_error(deps.as_ref(), 10).unwrap();
+    let error: Option<String> = from_binary(&query_res).unwrap();
+    assert_eq!(error, Some("error".to_string()));
 }

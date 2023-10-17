@@ -1,6 +1,7 @@
+use cosmwasm_std::testing::{mock_dependencies, mock_env};
 use cosmwasm_std::{
-    coins, to_binary, Addr, Api, Coin, CosmosMsg, Decimal, Empty, Storage, Timestamp, Uint128,
-    WasmMsg,
+    coins, from_binary, to_binary, Addr, Api, Attribute, Coin, CosmosMsg, Decimal, Empty, Reply,
+    Storage, SubMsgResult, Timestamp, Uint128, WasmMsg,
 };
 use cw20::Cw20Coin;
 use cw_denom::{CheckedDenom, UncheckedDenom};
@@ -44,8 +45,10 @@ use crate::{
 };
 use cwd_pre_propose_multiple as cppm;
 
+use crate::contract::query_proposal_execution_error;
 use crate::testing::execute::mint_natives;
 use cwd_testing::ShouldExecute;
+use cwd_voting::reply::mask_proposal_execution_proposal_id;
 
 pub const CREATOR_ADDR: &str = "creator";
 
@@ -2127,4 +2130,61 @@ fn test_close_failed_proposal() {
 
     // not reverted
     assert_eq!(updated.proposal.status, Status::Passed);
+}
+
+#[test]
+fn test_reply_proposal_mock() {
+    use crate::contract::reply;
+    use crate::state::PROPOSALS;
+
+    let mut deps = mock_dependencies();
+    let env = mock_env();
+
+    let m_proposal_id = mask_proposal_execution_proposal_id(1);
+    PROPOSALS
+        .save(
+            deps.as_mut().storage,
+            1,
+            &MultipleChoiceProposal {
+                title: "A simple text proposal".to_string(),
+                description: "This is a simple text proposal".to_string(),
+                proposer: Addr::unchecked(CREATOR_ADDR),
+                start_height: env.block.height,
+                expiration: Duration::Height(6).after(&env.block),
+                min_voting_period: None,
+                allow_revoting: false,
+                total_power: Uint128::new(100_000_000),
+                status: Status::Open,
+                votes: MultipleChoiceVotes {
+                    vote_weights: vec![Uint128::zero(); 3],
+                },
+                choices: vec![],
+                voting_strategy: VotingStrategy::SingleChoice {
+                    quorum: PercentageThreshold::Majority {},
+                },
+            },
+        )
+        .unwrap();
+
+    // PROPOSALS
+    let reply_msg = Reply {
+        id: m_proposal_id,
+        result: SubMsgResult::Err("error".to_string()),
+    };
+    let res = reply(deps.as_mut(), env, reply_msg).unwrap();
+    assert_eq!(
+        res.attributes[0],
+        Attribute {
+            key: "proposal_execution_failed".to_string(),
+            value: 1.to_string()
+        }
+    );
+
+    let prop = PROPOSALS.load(deps.as_mut().storage, 1).unwrap();
+    assert_eq!(prop.status, Status::ExecutionFailed);
+
+    // reply writes the failed proposal error
+    let query_res = query_proposal_execution_error(deps.as_ref(), 1).unwrap();
+    let error: Option<String> = from_binary(&query_res).unwrap();
+    assert_eq!(error, Some("error".to_string()));
 }

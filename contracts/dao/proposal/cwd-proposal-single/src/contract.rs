@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply, Response,
+    to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError,
     StdResult, Storage, SubMsg, WasmMsg,
 };
 use cw2::set_contract_version;
@@ -23,7 +23,7 @@ use neutron_sdk::bindings::msg::NeutronMsg;
 
 use crate::msg::MigrateMsg;
 use crate::proposal::SingleChoiceProposal;
-use crate::state::{Config, CREATION_POLICY};
+use crate::state::{Config, CREATION_POLICY, PROPOSAL_EXECUTION_ERRORS};
 
 use crate::{
     error::ContractError,
@@ -34,7 +34,7 @@ use crate::{
     state::{Ballot, BALLOTS, CONFIG, PROPOSALS, PROPOSAL_COUNT, PROPOSAL_HOOKS, VOTE_HOOKS},
 };
 
-pub(crate) const CONTRACT_NAME: &str = "crates.io:cwd-subdao-proposal-single";
+pub(crate) const CONTRACT_NAME: &str = "crates.io:cwd-proposal-single";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -667,6 +667,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::ProposalCreationPolicy {} => query_creation_policy(deps),
         QueryMsg::ProposalHooks {} => to_binary(&PROPOSAL_HOOKS.query_hooks(deps)?),
         QueryMsg::VoteHooks {} => to_binary(&VOTE_HOOKS.query_hooks(deps)?),
+        QueryMsg::ProposalExecutionError { proposal_id } => {
+            query_proposal_execution_error(deps, proposal_id)
+        }
     }
 }
 
@@ -778,8 +781,14 @@ pub fn query_info(deps: Deps) -> StdResult<Binary> {
     to_binary(&cwd_interface::voting::InfoResponse { info })
 }
 
+pub fn query_proposal_execution_error(deps: Deps, proposal_id: u64) -> StdResult<Binary> {
+    let error = PROPOSAL_EXECUTION_ERRORS.may_load(deps.storage, proposal_id)?;
+    to_binary(&error)
+}
+
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     Ok(Response::default())
 }
 
@@ -796,6 +805,15 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
                 }
                 None => Err(ContractError::NoSuchProposal { id: proposal_id }),
             })?;
+
+            // Error is reduced before cosmwasm reply and is expected in form of "codespace=? code=?"
+            let error = msg.result.into_result().err().ok_or_else(|| {
+                // should never happen since we reply only on failure
+                ContractError::Std(StdError::generic_err(
+                    "must be an error in the failed result",
+                ))
+            })?;
+            PROPOSAL_EXECUTION_ERRORS.save(deps.storage, proposal_id, &error)?;
 
             Ok(Response::new().add_attribute("proposal_execution_failed", proposal_id.to_string()))
         }
