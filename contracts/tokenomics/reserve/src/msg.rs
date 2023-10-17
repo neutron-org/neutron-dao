@@ -7,7 +7,9 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct InstantiateMsg {
+    /// Address of the Neutron DAO contract
     pub main_dao_address: String,
+    /// Denom of the main coin
     pub denom: String,
     /// Distribution rate (0-1) which goes to distribution contract
     pub distribution_rate: Decimal,
@@ -101,6 +103,7 @@ pub enum QueryMsg {
     /// The contract's configurations; returns [`ConfigResponse`]
     #[returns(crate::state::Config)]
     Config {},
+    /// The contract's current stats; returns [`StatsResponse`]    
     #[returns(StatsResponse)]
     Stats {},
 }
@@ -108,8 +111,11 @@ pub enum QueryMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct StatsResponse {
+    /// Amount of coins distributed since contract instantiation
     pub total_distributed: Uint128,
+    /// Amount of coins reserved since contract instantiation
     pub total_reserved: Uint128,
+    /// Total amount of burned coins processed by reserve contract
     pub total_processed_burned_coins: Uint128,
 }
 
