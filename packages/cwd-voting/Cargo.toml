@@ -7,7 +7,7 @@ repository = "https://github.com/DA0-DA0/dao-contracts"
 description = "Types and methods for CosmWasm DAO voting."
 
 [dependencies]
-neutron-sdk = { package = "neutron-sdk", version = "0.6.1" }
+neutron-sdk = { package = "neutron-sdk", version = "0.7.0" }
 cosmwasm-std = { version = "1.3.0" }
 schemars = "0.8.8"
 serde = { version = "1.0.175", default-features = false, features = ["derive"] }

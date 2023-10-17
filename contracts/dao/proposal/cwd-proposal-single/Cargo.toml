@@ -24,7 +24,7 @@ cw-utils = {version = "1.0.1"}
 cw2 = "1.1.0"
 cw20 = "1.1.0"
 cw3 = "1.1.0"
-neutron-sdk = {package = "neutron-sdk", version = "0.6.1"}
+neutron-sdk = {package = "neutron-sdk", version = "0.7.0"}
 schemars = "0.8.8"
 serde = {version = "1.0.175", default-features = false, features = ["derive"]}
 thiserror = {version = "1.0"}
