@@ -47,9 +47,8 @@ impl PreProposeInfo {
         Ok(match self {
             Self::AnyoneMayPropose {} => (ProposalCreationPolicy::Anyone {}, vec![]),
             Self::ModuleMayPropose { info } => (
-                // Anyone can propose will be set until instantiation succeeds, then
-                // `ModuleMayPropose` will be set. This ensures that we fail open
-                // upon instantiation failure.
+                // If we got an error on pre-propose instantiate,
+                // practically the whole DAO/propose module instantiate tx will fail.
                 ProposalCreationPolicy::Anyone {},
                 vec![SubMsg::reply_on_success(
                     info.into_wasm_msg(dao_address),
