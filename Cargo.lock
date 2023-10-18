@@ -1719,13 +1719,12 @@ dependencies = [
 
 [[package]]
 name = "neutron-reserve"
-version = "0.1.1"
+version = "0.1.0"
 dependencies = [
- "astroport 2.5.0",
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-storage-plus 1.1.0",
- "cw20 0.13.4",
+ "cw2 1.1.1",
  "cwd-macros",
  "exec-control",
  "neutron-sdk",

@@ -44,20 +44,6 @@ impl Config {
     }
 }
 
-/// Config for xyk->CL liquidity migration.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-pub struct XykToClMigrationConfig {
-    /// The maximum allowed slippage tolerance for xyk to CL liquidity migration calls.
-    pub max_slippage: Decimal,
-    pub ntrn_denom: String,
-    pub atom_denom: String,
-    pub ntrn_atom_xyk_pair: Addr,
-    pub ntrn_atom_cl_pair: Addr,
-    pub usdc_denom: String,
-    pub ntrn_usdc_xyk_pair: Addr,
-    pub ntrn_usdc_cl_pair: Addr,
-}
-
 pub const TOTAL_DISTRIBUTED: Item<Uint128> = Item::new("total_distributed");
 pub const TOTAL_RESERVED: Item<Uint128> = Item::new("total_reserved");
 
@@ -68,9 +54,6 @@ pub const CONFIG: Item<Config> = Item::new("config");
 
 /// The height the contract is paused until. If it's None, the contract is not paused.
 pub const PAUSED_UNTIL: Item<Option<u64>> = Item::new("paused_until");
-
-pub const XYK_TO_CL_MIGRATION_CONFIG: Item<XykToClMigrationConfig> =
-    Item::new("xyk_to_cl_migration_config");
 
 #[cfg(test)]
 mod tests {
