@@ -1719,7 +1719,7 @@ dependencies = [
 
 [[package]]
 name = "neutron-reserve"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
