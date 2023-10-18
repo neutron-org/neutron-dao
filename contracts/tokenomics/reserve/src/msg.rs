@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Decimal, Uint128};
+use cosmwasm_std::{to_binary, Addr, CosmosMsg, Decimal, Env, StdResult, Uint128, WasmMsg};
 use cwd_macros::{pausable, pausable_query};
 use exec_control::pause::PauseInfoResponse;
 use schemars::JsonSchema;
@@ -44,6 +44,56 @@ pub enum ExecuteMsg {
         security_dao_address: Option<String>,
         vesting_denominator: Option<u128>,
     },
+
+    /// Processes either partial or full xyk->CL migration of contract's liquidity.
+    MigrateFromXykToCl {
+        slippage_tolerance: Option<Decimal>,
+        ntrn_atom_amount: Option<Uint128>,
+        ntrn_usdc_amount: Option<Uint128>,
+    },
+
+    /// Callbacks; only callable by the contract itself.
+    Callback(CallbackMsg),
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum CallbackMsg {
+    MigrateLiquidityToClPair {
+        xyk_pair: Addr,
+        xyk_lp_token: Addr,
+        amount: Uint128,
+        slippage_tolerance: Decimal,
+        cl_pair: Addr,
+        ntrn_denom: String,
+        paired_asset_denom: String,
+    },
+    ProvideLiquidityToClPairAfterWithdrawal {
+        ntrn_denom: String,
+        ntrn_init_balance: Uint128,
+        paired_asset_denom: String,
+        paired_asset_init_balance: Uint128,
+        cl_pair: Addr,
+        slippage_tolerance: Decimal,
+    },
+    PostMigrationBalancesCheck {
+        ntrn_denom: String,
+        ntrn_init_balance: Uint128,
+        paired_asset_denom: String,
+        paired_asset_init_balance: Uint128,
+    },
+}
+
+// Modified from
+// https://github.com/CosmWasm/cosmwasm-plus/blob/v0.2.3/packages/cw20/src/receiver.rs#L15
+impl CallbackMsg {
+    pub fn to_cosmos_msg(self, env: &Env) -> StdResult<CosmosMsg> {
+        Ok(CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr: env.contract.address.to_string(),
+            msg: to_binary(&ExecuteMsg::Callback(self))?,
+            funds: vec![],
+        }))
+    }
 }
 
 #[pausable_query]
@@ -77,4 +127,13 @@ pub enum DistributeMsg {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub enum MigrateMsg {}
+pub struct MigrateMsg {
+    pub max_slippage: Decimal,
+    pub ntrn_denom: String,
+    pub atom_denom: String,
+    pub ntrn_atom_xyk_pair: String,
+    pub ntrn_atom_cl_pair: String,
+    pub usdc_denom: String,
+    pub ntrn_usdc_xyk_pair: String,
+    pub ntrn_usdc_cl_pair: String,
+}

@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "InstantiateMsg",
+  "type": "object",
+  "required": [
+    "atom_cl_pool_contract",
+    "description",
+    "lockdrop_contract",
+    "name",
+    "owner",
+    "usdc_cl_pool_contract"
+  ],
+  "properties": {
+    "atom_cl_pool_contract": {
+      "description": "The ATOM/NTRN CL pool oracle contract.",
+      "type": "string"
+    },
+    "description": {
+      "description": "Description contains information that characterizes the vault.",
+      "type": "string"
+    },
+    "lockdrop_contract": {
+      "description": "The lockdrop contract behind the vault.",
+      "type": "string"
+    },
+    "name": {
+      "description": "Name contains the vault name which is used to ease the vault's recognition.",
+      "type": "string"
+    },
+    "owner": {
+      "description": "Owner can update all configs including changing the owner. This will generally be a DAO.",
+      "type": "string"
+    },
+    "usdc_cl_pool_contract": {
+      "description": "The USDC/NTRN CL pool contract.",
+      "type": "string"
+    }
+  }
+}
