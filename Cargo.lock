@@ -1043,7 +1043,7 @@ dependencies = [
 
 [[package]]
 name = "cwd-pre-propose-multiple"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -1231,7 +1231,7 @@ dependencies = [
 
 [[package]]
 name = "cwd-subdao-pre-propose-single"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -1277,7 +1277,7 @@ dependencies = [
 
 [[package]]
 name = "cwd-subdao-proposal-single"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
