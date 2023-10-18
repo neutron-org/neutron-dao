@@ -1,6 +1,6 @@
 [package]
 name = "cwd-subdao-pre-propose-single"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["ekez <zekemedley@gmail.com>"]
 edition = "2021"
 repository = "https://github.com/DA0-DA0/dao-contracts"
@@ -23,7 +23,7 @@ cw-utils = { version = "1.0.1" }
 serde = { version = "1.0.175", default-features = false, features = ["derive"] }
 cwd-pre-propose-base = { version = "*", path = "../../../../packages/cwd-pre-propose-base" }
 cwd-voting = { path = "../../../../packages/cwd-voting" }
-neutron-sdk = { package = "neutron-sdk", version = "0.6.1" }
+neutron-sdk = { package = "neutron-sdk", version = "0.7.0" }
 neutron-subdao-core = { path = "../../../../packages/neutron-subdao-core" }
 neutron-subdao-timelock-single = { path = "../../../../packages/neutron-subdao-timelock-single" }
 neutron-subdao-proposal-single = { path = "../../../../packages/neutron-subdao-proposal-single" }

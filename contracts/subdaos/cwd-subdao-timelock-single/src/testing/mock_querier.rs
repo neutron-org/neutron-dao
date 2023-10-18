@@ -10,21 +10,23 @@ use cosmwasm_std::{
 };
 use cw_utils::Duration;
 use cwd_proposal_single::{
-    msg::{QueryMsg as ProposeQuery, QueryMsg},
-    proposal::SingleChoiceProposal as MainDaoSingleChoiceProposal,
-    query::ProposalResponse as MainDaoProposalResponse,
-    state::Config as OverrulProposalConfig,
+    msg::QueryMsg as ProposeQuery, proposal::SingleChoiceProposal as MainDaoSingleChoiceProposal,
+    query::ProposalResponse as MainDaoProposalResponse, state::Config as OverruleProposalConfig,
 };
 use cwd_voting::status::Status;
+use cwd_voting::threshold::PercentageThreshold::Majority;
 use cwd_voting::threshold::Threshold;
 use cwd_voting::voting::Votes;
 use neutron_dao_pre_propose_overrule::msg::{
     QueryExt as PreProposeOverruleQueryExt, QueryMsg as PreProposeOverruleQuery,
 };
+use neutron_subdao_core::msg::QueryMsg as CoreSubdaoQuery;
 use neutron_subdao_pre_propose_single::msg::{
     QueryExt as PreProposeQueryExt, QueryMsg as PreProposeQuery,
 };
+use neutron_subdao_proposal_single::types::Config as ProposalConfig;
 
+pub const MOCK_PROPOSAL_ADDR: &str = "neutron1subdao_proposal_contract";
 pub const MOCK_SUBDAO_CORE_ADDR: &str = "neutron1subdao_core_contract";
 pub const MOCK_TIMELOCK_INITIALIZER: &str = "neutron1timelock_initializer";
 pub const MOCK_MAIN_DAO_ADDR: &str = "neutron1main_dao_core_contract";
@@ -48,6 +50,7 @@ pub fn mock_dependencies(
 pub struct WasmMockQuerier {
     base: MockQuerier,
     overrule_proposal_status: Rc<RefCell<Status>>,
+    close_proposal_on_execution_failure: bool,
 }
 
 impl Querier for WasmMockQuerier {
@@ -85,7 +88,14 @@ impl WasmMockQuerier {
                     return SystemResult::Ok(ContractResult::from(to_binary(addr)));
                 }
                 if contract_addr == MOCK_SUBDAO_CORE_ADDR {
-                    let addr = { MOCK_MAIN_DAO_ADDR };
+                    let q: CoreSubdaoQuery = from_binary(msg).unwrap();
+                    let addr = match q {
+                        CoreSubdaoQuery::MainDao {} => MOCK_MAIN_DAO_ADDR,
+                        CoreSubdaoQuery::TimelockProposalModuleAddress { timelock: _ } => {
+                            MOCK_PROPOSAL_ADDR
+                        }
+                        _ => todo!(),
+                    };
                     return SystemResult::Ok(ContractResult::from(to_binary(addr)));
                 }
                 if contract_addr == MOCK_OVERRULE_PREPROPOSAL {
@@ -108,7 +118,7 @@ impl WasmMockQuerier {
                 if contract_addr == MOCK_OVERRULE_PROPOSAL {
                     let q: ProposeQuery = from_binary(msg).unwrap();
                     let reply = match q {
-                        QueryMsg::Config {} => to_binary(&OverrulProposalConfig {
+                        ProposeQuery::Config {} => to_binary(&OverruleProposalConfig {
                             threshold: Threshold::AbsoluteCount {
                                 threshold: Default::default(),
                             },
@@ -118,7 +128,7 @@ impl WasmMockQuerier {
                             dao: Addr::unchecked(MOCK_MAIN_DAO_ADDR),
                             close_proposal_on_execution_failure: false,
                         }),
-                        QueryMsg::Proposal { .. } => to_binary(&MainDaoProposalResponse {
+                        ProposeQuery::Proposal { .. } => to_binary(&MainDaoProposalResponse {
                             id: 1,
                             proposal: MainDaoSingleChoiceProposal {
                                 title: "".to_string(),
@@ -142,14 +152,32 @@ impl WasmMockQuerier {
                                 allow_revoting: false,
                             },
                         }),
-                        QueryMsg::ListProposals { .. } => todo!(),
-                        QueryMsg::ReverseProposals { .. } => todo!(),
-                        QueryMsg::ProposalCount { .. } => todo!(),
-                        QueryMsg::GetVote { .. } => todo!(),
-                        QueryMsg::ListVotes { .. } => todo!(),
-                        QueryMsg::ProposalCreationPolicy { .. } => todo!(),
-                        QueryMsg::ProposalHooks { .. } => todo!(),
-                        QueryMsg::VoteHooks { .. } => todo!(),
+                        ProposeQuery::ListProposals { .. } => todo!(),
+                        ProposeQuery::ReverseProposals { .. } => todo!(),
+                        ProposeQuery::ProposalCount { .. } => todo!(),
+                        ProposeQuery::GetVote { .. } => todo!(),
+                        ProposeQuery::ListVotes { .. } => todo!(),
+                        ProposeQuery::ProposalCreationPolicy { .. } => todo!(),
+                        ProposeQuery::ProposalHooks { .. } => todo!(),
+                        ProposeQuery::VoteHooks { .. } => todo!(),
+                        _ => todo!(),
+                    };
+                    return SystemResult::Ok(ContractResult::from(reply));
+                }
+                if contract_addr == MOCK_PROPOSAL_ADDR {
+                    let q: ProposeQuery = from_binary(msg).unwrap();
+                    let reply = match q {
+                        ProposeQuery::Config {} => to_binary(&ProposalConfig {
+                            threshold: Threshold::AbsolutePercentage {
+                                percentage: Majority {},
+                            },
+                            max_voting_period: Duration::Time(1),
+                            min_voting_period: None,
+                            allow_revoting: false,
+                            dao: Addr::unchecked(""),
+                            close_proposal_on_execution_failure: self
+                                .close_proposal_on_execution_failure,
+                        }),
                         _ => todo!(),
                     };
                     return SystemResult::Ok(ContractResult::from(reply));
@@ -161,6 +189,10 @@ impl WasmMockQuerier {
             _ => self.base.handle_query(request),
         }
     }
+
+    pub fn set_close_proposal_on_execution_failure(&mut self, v: bool) {
+        self.close_proposal_on_execution_failure = v
+    }
 }
 
 impl WasmMockQuerier {
@@ -168,6 +200,7 @@ impl WasmMockQuerier {
         WasmMockQuerier {
             base,
             overrule_proposal_status: x,
+            close_proposal_on_execution_failure: true,
         }
     }
 }

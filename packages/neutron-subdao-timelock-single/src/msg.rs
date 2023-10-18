@@ -54,6 +54,11 @@ pub enum QueryMsg {
         /// returned.
         limit: Option<u64>,
     },
+    /// Returns errors of the failed proposal.
+    /// Expected in the form of "codespace=? code=?".
+    /// Returns `Option<String>`
+    #[returns(Option<String>)]
+    ProposalExecutionError { proposal_id: u64 },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]

@@ -74,3 +74,7 @@ pub struct StatsResponse {
 pub enum DistributeMsg {
     Fund {},
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum MigrateMsg {}

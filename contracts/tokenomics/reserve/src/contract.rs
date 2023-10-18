@@ -11,7 +11,7 @@ use exec_control::pause::{
 };
 use neutron_sdk::bindings::query::NeutronQuery;
 
-use crate::msg::{DistributeMsg, ExecuteMsg, InstantiateMsg, QueryMsg, StatsResponse};
+use crate::msg::{DistributeMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, StatsResponse};
 use crate::state::{
     Config, CONFIG, LAST_BURNED_COINS_AMOUNT, LAST_DISTRIBUTION_TIME, PAUSED_UNTIL,
     TOTAL_DISTRIBUTED, TOTAL_RESERVED,
@@ -19,6 +19,10 @@ use crate::state::{
 use crate::vesting::{
     get_burned_coins, safe_burned_coins_for_period, update_distribution_stats, vesting_function,
 };
+use cw2::set_contract_version;
+
+pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-reserve";
+pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 //--------------------------------------------------------------------------------------------------
 // Instantiation
@@ -358,4 +362,11 @@ pub fn create_distribution_response(
     }
 
     Ok(resp)
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    // Set contract to version to latest
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    Ok(Response::default())
 }

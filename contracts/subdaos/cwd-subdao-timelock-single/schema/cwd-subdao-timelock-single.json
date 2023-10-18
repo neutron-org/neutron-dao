@@ -1,6 +1,6 @@
 {
   "contract_name": "cwd-subdao-timelock-single",
-  "contract_version": "0.2.0",
+  "contract_version": "0.2.1",
   "idl_version": "1.0.0",
   "instantiate": {
     "$schema": "http://json-schema.org/draft-07/schema#",
@@ -649,7 +649,7 @@
                     ]
                   },
                   "channel_id": {
-                    "description": "exisiting channel to send the tokens over",
+                    "description": "existing channel to send the tokens over",
                     "type": "string"
                   },
                   "timeout": {
@@ -767,7 +767,7 @@
             "minimum": 0.0
           },
           "revision": {
-            "description": "the version that the client is currently on (eg. after reseting the chain this could increment 1 as height drops to 0)",
+            "description": "the version that the client is currently on (e.g. after resetting the chain this could increment 1 as height drops to 0)",
             "type": "integer",
             "format": "uint64",
             "minimum": 0.0
@@ -1740,7 +1740,7 @@
                     }
                   },
                   "label": {
-                    "description": "A human-readbale label for the contract",
+                    "description": "A human-readable label for the contract.\n\nValid values should: - not be empty - not be bigger than 128 bytes (or some chain-specific limit) - not start / end with whitespace",
                     "type": "string"
                   },
                   "msg": {
@@ -1910,6 +1910,30 @@
                   "integer",
                   "null"
                 ],
+                "format": "uint64",
+                "minimum": 0.0
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "description": "Returns errors of the failed proposal. Expected in the form of \"codespace=? code=?\". Returns `Option<String>`",
+        "type": "object",
+        "required": [
+          "proposal_execution_error"
+        ],
+        "properties": {
+          "proposal_execution_error": {
+            "type": "object",
+            "required": [
+              "proposal_id"
+            ],
+            "properties": {
+              "proposal_id": {
+                "type": "integer",
                 "format": "uint64",
                 "minimum": 0.0
               }
@@ -2501,7 +2525,7 @@
                       ]
                     },
                     "channel_id": {
-                      "description": "exisiting channel to send the tokens over",
+                      "description": "existing channel to send the tokens over",
                       "type": "string"
                     },
                     "timeout": {
@@ -2619,7 +2643,7 @@
               "minimum": 0.0
             },
             "revision": {
-              "description": "the version that the client is currently on (eg. after reseting the chain this could increment 1 as height drops to 0)",
+              "description": "the version that the client is currently on (e.g. after resetting the chain this could increment 1 as height drops to 0)",
               "type": "integer",
               "format": "uint64",
               "minimum": 0.0
@@ -3650,7 +3674,7 @@
                       }
                     },
                     "label": {
-                      "description": "A human-readbale label for the contract",
+                      "description": "A human-readable label for the contract.\n\nValid values should: - not be empty - not be bigger than 128 bytes (or some chain-specific limit) - not start / end with whitespace",
                       "type": "string"
                     },
                     "msg": {
@@ -4310,7 +4334,7 @@
                       ]
                     },
                     "channel_id": {
-                      "description": "exisiting channel to send the tokens over",
+                      "description": "existing channel to send the tokens over",
                       "type": "string"
                     },
                     "timeout": {
@@ -4428,7 +4452,7 @@
               "minimum": 0.0
             },
             "revision": {
-              "description": "the version that the client is currently on (eg. after reseting the chain this could increment 1 as height drops to 0)",
+              "description": "the version that the client is currently on (e.g. after resetting the chain this could increment 1 as height drops to 0)",
               "type": "integer",
               "format": "uint64",
               "minimum": 0.0
@@ -5433,7 +5457,7 @@
                       }
                     },
                     "label": {
-                      "description": "A human-readbale label for the contract",
+                      "description": "A human-readable label for the contract.\n\nValid values should: - not be empty - not be bigger than 128 bytes (or some chain-specific limit) - not start / end with whitespace",
                       "type": "string"
                     },
                     "msg": {
@@ -5535,6 +5559,14 @@
           ]
         }
       }
+    },
+    "proposal_execution_error": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Nullable_String",
+      "type": [
+        "string",
+        "null"
+      ]
     }
   }
 }

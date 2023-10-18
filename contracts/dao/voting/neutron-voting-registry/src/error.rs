@@ -16,6 +16,9 @@ pub enum ContractError {
     #[error("Voting vault already exists")]
     VotingVaultAlreadyExists {},
 
-    #[error("Removing last vault is forbidden")]
-    RemoveLastVault {},
+    #[error("Voting vault is already in the active state")]
+    VotingVaultAlreadyActive {},
+
+    #[error("Voting vault is already in the inactive state")]
+    VotingVaultAlreadyInactive {},
 }

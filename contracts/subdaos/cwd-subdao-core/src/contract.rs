@@ -401,6 +401,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::DaoURI {} => query_dao_uri(deps),
         QueryMsg::MainDao {} => query_main_dao(deps),
         QueryMsg::VerifyTimelock { timelock } => query_verify_timelock(deps, timelock),
+        QueryMsg::TimelockProposalModuleAddress { timelock } => {
+            query_timelock_proposal_module_address(deps, timelock)
+        }
     }
 }
 
@@ -600,8 +603,16 @@ pub fn query_verify_timelock(deps: Deps, timelock: String) -> StdResult<Binary> 
     to_binary(&(execution_access_check(deps, deps.api.addr_validate(&timelock)?).is_ok()))
 }
 
+pub fn query_timelock_proposal_module_address(deps: Deps, timelock: String) -> StdResult<Binary> {
+    let maybe_proposal = proposal_from_timelock(deps, deps.api.addr_validate(&timelock)?)?;
+    let proposal =
+        maybe_proposal.ok_or_else(|| StdError::generic_err("incorrect timelock addr provided"))?;
+    to_binary(&proposal.address)
+}
+
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     Ok(Response::default())
 }
 
@@ -660,29 +671,42 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
 /// Validates the sender permissions to execute contract's messages. Valid senders are timelock
 /// contracts behind proposal modules of the DAO.
 pub(crate) fn execution_access_check(deps: Deps, sender: Addr) -> Result<(), ContractError> {
+    let res = proposal_from_timelock(deps, sender)?;
+    match res {
+        Some(_) => Ok(()),
+        None => Err(ContractError::Unauthorized {}),
+    }
+}
+
+/// Tries to find proposal module for a given timelock contract (`timelock_contract`).
+/// Returns Ok(None) if not found
+fn proposal_from_timelock(
+    deps: Deps,
+    timelock_contract: Addr,
+) -> Result<Option<ProposalModule>, StdError> {
     let proposal_modules = PROPOSAL_MODULES
         .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
         .map(|kv| Ok(kv?.1))
         .collect::<StdResult<Vec<ProposalModule>>>()?;
-    for proposal_module in proposal_modules.iter() {
+    for proposal_module in proposal_modules.into_iter() {
         let policy: ProposalCreationPolicy = deps.querier.query_wasm_smart(
             &proposal_module.address,
             &ProposeQueryMsg::ProposalCreationPolicy {},
         )?;
         if let ProposalCreationPolicy::Module { addr } = policy {
-            if let Ok(timelock_contract) = deps.querier.query_wasm_smart::<Addr>(
+            if let Ok(proposal_timelock_contract) = deps.querier.query_wasm_smart::<Addr>(
                 &addr,
                 &PreProposeQueryMsg::QueryExtension {
                     msg: PreProposeQueryExt::TimelockAddress {},
                 },
             ) {
-                if sender == timelock_contract {
-                    return Ok(());
+                if timelock_contract == proposal_timelock_contract {
+                    return Ok(Some(proposal_module));
                 }
             }
         };
     }
-    Err(ContractError::Unauthorized {})
+    Ok(None)
 }
 
 pub(crate) fn derive_proposal_module_prefix(mut dividend: usize) -> StdResult<String> {

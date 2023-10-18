@@ -13,7 +13,7 @@ fmt:
 	@cargo fmt -- --check
 
 check_contracts:
-	@cargo install cosmwasm-check
+	@cargo install cosmwasm-check --locked
 	@cosmwasm-check --available-capabilities iterator,staking,stargate,neutron artifacts/*.wasm
 
 compile:

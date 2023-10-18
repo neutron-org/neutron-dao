@@ -8,7 +8,10 @@ use neutron_sdk::bindings::msg::NeutronMsg;
 
 use cwd_pre_propose_base::{
     error::PreProposeError,
-    msg::{ExecuteMsg as ExecuteBase, InstantiateMsg as InstantiateBase, QueryMsg as QueryBase},
+    msg::{
+        ExecuteMsg as ExecuteBase, InstantiateMsg as InstantiateBase, MigrateMsg,
+        QueryMsg as QueryBase,
+    },
     state::PreProposeContract,
 };
 use schemars::JsonSchema;
@@ -118,4 +121,10 @@ pub fn execute(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     PrePropose::default().query(deps, env, msg)
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, PreProposeError> {
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    Ok(Response::default())
 }

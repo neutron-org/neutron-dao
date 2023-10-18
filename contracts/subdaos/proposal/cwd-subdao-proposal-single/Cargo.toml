@@ -1,6 +1,6 @@
 [package]
 name = "cwd-subdao-proposal-single"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["ekez <ekez@withoutdoing.com>"]
 edition = "2021"
 repository = "https://github.com/DA0-DA0/dao-contracts"
@@ -16,7 +16,7 @@ backtraces = ["cosmwasm-std/backtraces"]
 library = []
 
 [dependencies]
-neutron-sdk = { package = "neutron-sdk", version = "0.6.1" }
+neutron-sdk = { package = "neutron-sdk", version = "0.7.0" }
 cosmwasm-std = { version = "1.3.0", features = ["ibc3"] }
 cosmwasm-storage = { version = "1.3.0" }
 cw-storage-plus = "1.1.0"
