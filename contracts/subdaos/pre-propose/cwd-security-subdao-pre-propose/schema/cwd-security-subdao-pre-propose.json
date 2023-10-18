@@ -1,6 +1,6 @@
 {
-  "contract_name": "cwd-subdao-pre-propose-single-no-timelock",
-  "contract_version": "0.2.0",
+  "contract_name": "cwd-security-subdao-pre-propose",
+  "contract_version": "0.2.1",
   "idl_version": "1.0.0",
   "instantiate": {
     "$schema": "http://json-schema.org/draft-07/schema#",
