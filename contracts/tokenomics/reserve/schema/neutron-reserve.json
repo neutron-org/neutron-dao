@@ -243,7 +243,11 @@
       }
     ]
   },
-  "migrate": null,
+  "migrate": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "MigrateMsg",
+    "type": "object"
+  },
   "sudo": null,
   "responses": {
     "config": {
