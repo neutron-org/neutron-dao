@@ -16,6 +16,7 @@ backtraces = ["cosmwasm-std/backtraces"]
 cosmwasm-schema = { version = "1.3.0", default-features = false }
 cosmwasm-std = { version = "1.3.0" }
 cw-storage-plus = "1.1.0"
+cw2 = "1.1.0"
 cwd-macros = { path = "../../../packages/cwd-macros" }
 exec-control = { path = "../../../packages/exec-control" }
 neutron-sdk = { package = "neutron-sdk", version = "0.7.0" }

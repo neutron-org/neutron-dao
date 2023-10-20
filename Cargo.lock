@@ -1876,6 +1876,7 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-storage-plus 1.1.0",
+ "cw2 1.1.1",
  "cw20 0.13.4",
  "cwd-macros",
  "exec-control",
