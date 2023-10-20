@@ -361,35 +361,29 @@ fn execute_migrate_from_xyk_to_cl(
         return Err(ContractError::MigrationComplete {});
     }
 
-    // validate parameters to the max available values
-    if let Some(ntrn_atom_amount) = ntrn_atom_amount {
-        if ntrn_atom_amount.gt(&max_available_ntrn_atom_amount) {
-            return Err(ContractError::MigrationAmountUnavailable {
-                amount: ntrn_atom_amount,
-                max_amount: max_available_ntrn_atom_amount,
-            });
-        }
-    }
-    if let Some(ntrn_usdc_amount) = ntrn_usdc_amount {
-        if ntrn_usdc_amount.gt(&max_available_ntrn_usdc_amount) {
-            return Err(ContractError::MigrationAmountUnavailable {
-                amount: ntrn_usdc_amount,
-                max_amount: max_available_ntrn_usdc_amount,
-            });
-        }
-    }
-    if let Some(slippage_tolerance) = slippage_tolerance {
-        if slippage_tolerance.gt(&migration_config.max_slippage) {
-            return Err(ContractError::MigrationSlippageToBig {
-                slippage_tolerance,
-                max_slippage_tolerance: migration_config.max_slippage,
-            });
-        }
-    }
-
     let ntrn_atom_amount = ntrn_atom_amount.unwrap_or(max_available_ntrn_atom_amount);
     let ntrn_usdc_amount = ntrn_usdc_amount.unwrap_or(max_available_ntrn_usdc_amount);
     let slippage_tolerance = slippage_tolerance.unwrap_or(migration_config.max_slippage);
+
+    // validate parameters to the max available values
+    if ntrn_atom_amount.gt(&max_available_ntrn_atom_amount) {
+        return Err(ContractError::MigrationAmountUnavailable {
+            amount: ntrn_atom_amount,
+            max_amount: max_available_ntrn_atom_amount,
+        });
+    }
+    if ntrn_usdc_amount.gt(&max_available_ntrn_usdc_amount) {
+        return Err(ContractError::MigrationAmountUnavailable {
+            amount: ntrn_usdc_amount,
+            max_amount: max_available_ntrn_usdc_amount,
+        });
+    }
+    if slippage_tolerance.gt(&migration_config.max_slippage) {
+        return Err(ContractError::MigrationSlippageToBig {
+            slippage_tolerance,
+            max_slippage_tolerance: migration_config.max_slippage,
+        });
+    }
 
     let mut resp = Response::default();
     if !ntrn_atom_amount.is_zero() {
