@@ -7,9 +7,13 @@ use cosmwasm_std::{
     to_binary, Addr, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Order,
     Response, StdResult, Storage, Uint128,
 };
+use cw2::set_contract_version;
 use exec_control::pause::{
     can_pause, can_unpause, validate_duration, PauseError, PauseInfoResponse,
 };
+
+pub(crate) const CONTRACT_NAME: &str = "neutron-distribution";
+pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 //--------------------------------------------------------------------------------------------------
 // Instantiation
@@ -22,6 +26,8 @@ pub fn instantiate(
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> StdResult<Response> {
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
     let config = Config {
         denom: msg.denom,
         main_dao_address: deps.api.addr_validate(&msg.main_dao_address)?,
