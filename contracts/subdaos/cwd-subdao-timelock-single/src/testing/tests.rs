@@ -227,6 +227,24 @@ fn test_execute_proposal() {
     let updated_prop = PROPOSALS.load(deps.as_mut().storage, 10).unwrap();
     assert_eq!(ProposalStatus::Executed, updated_prop.status);
 
+    // check that execution fails when there not exactly one message in proposal
+    let proposal = SingleChoiceProposal {
+        id: 10,
+        msgs: vec![
+            NeutronMsg::remove_interchain_query(1).into(),
+            NeutronMsg::remove_interchain_query(2).into(),
+        ],
+        status: ProposalStatus::Timelocked,
+    };
+    PROPOSALS
+        .save(deps.as_mut().storage, proposal.id, &proposal)
+        .unwrap();
+    let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone());
+    assert_eq!(
+        "Can only execute proposals with exactly one message. Got 2 messages.",
+        res.unwrap_err().to_string()
+    );
+
     // check proposal execution close_proposal_on_execution_failure = false
     deps.querier.set_close_proposal_on_execution_failure(false);
     let proposal2 = SingleChoiceProposal {
@@ -542,7 +560,7 @@ fn test_reply() {
         result: SubMsgResult::Err("error".to_string()),
     };
     let err = reply(deps.as_mut(), mock_env(), msg.clone()).unwrap_err();
-    assert_eq!("no such proposal (10)", err.to_string());
+    assert_eq!("No such proposal (10)", err.to_string());
 
     let prop = SingleChoiceProposal {
         id: 10,

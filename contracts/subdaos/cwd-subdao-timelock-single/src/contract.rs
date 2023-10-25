@@ -176,17 +176,25 @@ pub fn execute_execute_proposal(
             .querier
             .query_wasm_smart(proposal_module, &ProposalQueryMsg::Config {})?;
 
+        // expect exactly one `ExecuteMsg::ExecuteTimelockedMsgs` message
+        if proposal.msgs.len() != 1 {
+            return Err(
+                ContractError::CanOnlyExecuteProposalsWithExactlyOneMessage {
+                    len: proposal.msgs.len(),
+                },
+            );
+        }
+        let msg: &CosmosMsg<NeutronMsg> = proposal.msgs.first().ok_or(
+            ContractError::CanOnlyExecuteProposalsWithExactlyOneMessage {
+                len: proposal.msgs.len(),
+            },
+        )?;
+
         match proposal_config.close_proposal_on_execution_failure {
             true => {
-                let msgs: Vec<SubMsg<NeutronMsg>> = proposal
-                    .msgs
-                    .iter()
-                    .map(|msg| SubMsg::reply_on_error(msg.clone(), proposal_id))
-                    .collect();
-
-                Response::default().add_submessages(msgs)
+                Response::default().add_submessage(SubMsg::reply_on_error(msg.clone(), proposal_id))
             }
-            false => Response::default().add_messages(proposal.msgs),
+            false => Response::default().add_message(msg.clone()),
         }
     };
 
