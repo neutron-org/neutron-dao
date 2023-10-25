@@ -1,5 +1,5 @@
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::state::{Config, CONFIG, FUND_COUNTER, PAUSED_UNTIL, PENDING_DISTRIBUTION, SHARES};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
@@ -311,4 +311,10 @@ fn get_pause_info(deps: Deps, env: &Env) -> StdResult<PauseInfoResponse> {
         }
         None => PauseInfoResponse::Unpaused {},
     })
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    Ok(Response::default())
 }
