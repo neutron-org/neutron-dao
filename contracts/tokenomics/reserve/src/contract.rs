@@ -27,7 +27,7 @@ use exec_control::pause::{
 };
 use neutron_sdk::bindings::query::NeutronQuery;
 
-pub(crate) const CONTRACT_NAME: &str = "crates.io:reserve";
+pub(crate) const CONTRACT_NAME: &str = "neutron-reserve";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 //--------------------------------------------------------------------------------------------------
