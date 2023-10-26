@@ -178,7 +178,7 @@ pub fn execute_execute_proposal(
             .query_wasm_smart(proposal_module, &ProposalQueryMsg::Config {})?;
 
         // We expect only one specific message `ExecuteMsg::ExecuteTimelockedMsgs` inside
-        let msg = unpack_execute_msg(proposal.msgs)?;
+        let msg = verify_msg(proposal.msgs)?;
 
         match proposal_config.close_proposal_on_execution_failure {
             true => Response::default().add_submessage(SubMsg::reply_on_error(msg, proposal_id)),
@@ -194,9 +194,9 @@ pub fn execute_execute_proposal(
         .add_attribute("proposal_id", proposal_id.to_string()))
 }
 
-fn unpack_execute_msg(
-    msgs: Vec<CosmosMsg<NeutronMsg>>,
-) -> Result<CosmosMsg<NeutronMsg>, ContractError> {
+/// `verify_msg` checks that there is only one message inside `msgs`
+/// and verifies type inside of `CoreExecuteMsg::ExecuteTimelockedMsgs`
+fn verify_msg(msgs: Vec<CosmosMsg<NeutronMsg>>) -> Result<CosmosMsg<NeutronMsg>, ContractError> {
     let msgs_len = msgs.len();
     // Expect exactly one message
     if msgs_len != 1 {
@@ -210,16 +210,13 @@ fn unpack_execute_msg(
     // Expect only `ExecuteMsg::ExecuteTimelockedMsgs`
     match &msg {
         &CosmosMsg::Wasm(WasmMsg::Execute {
+            msg: ref core_execute_msg,
             contract_addr: _,
             funds: _,
-            ref msg,
-        }) => {
-            let unwrap_res: StdResult<CoreExecuteMsg> = from_binary(msg);
-            match unwrap_res {
-                Ok(CoreExecuteMsg::ExecuteTimelockedMsgs { msgs: _ }) => {}
-                _ => return Err(ContractError::CanOnlyExecuteExecuteTimelockedMsgs {}),
-            }
-        }
+        }) => match from_binary::<CoreExecuteMsg>(core_execute_msg) {
+            Ok(CoreExecuteMsg::ExecuteTimelockedMsgs { msgs: _ }) => {}
+            _ => return Err(ContractError::CanOnlyExecuteExecuteTimelockedMsgs {}),
+        },
         _ => return Err(ContractError::CanOnlyExecuteExecuteTimelockedMsgs {}),
     }
 
