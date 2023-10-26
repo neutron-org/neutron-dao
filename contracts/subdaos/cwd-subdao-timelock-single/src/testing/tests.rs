@@ -7,6 +7,7 @@ use cosmwasm_std::{
 };
 use cwd_voting::status::Status;
 use neutron_sdk::bindings::msg::NeutronMsg;
+use neutron_subdao_core::msg::ExecuteMsg as CoreExecuteMsg;
 use neutron_subdao_timelock_single::{
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
     types::{Config, ProposalListResponse, ProposalStatus, SingleChoiceProposal},
@@ -197,7 +198,11 @@ fn test_execute_proposal() {
     deps.querier.set_close_proposal_on_execution_failure(true);
     let proposal = SingleChoiceProposal {
         id: 10,
-        msgs: vec![NeutronMsg::remove_interchain_query(1).into()],
+        msgs: vec![CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr: "".to_string(),
+            msg: to_binary(&CoreExecuteMsg::ExecuteTimelockedMsgs { msgs: vec![] }).unwrap(),
+            funds: vec![],
+        })],
         status: ProposalStatus::Timelocked,
     };
     PROPOSALS
@@ -231,8 +236,16 @@ fn test_execute_proposal() {
     let proposal = SingleChoiceProposal {
         id: 10,
         msgs: vec![
-            NeutronMsg::remove_interchain_query(1).into(),
-            NeutronMsg::remove_interchain_query(2).into(),
+            CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: "".to_string(),
+                msg: to_binary(&CoreExecuteMsg::ExecuteTimelockedMsgs { msgs: vec![] }).unwrap(),
+                funds: vec![],
+            }),
+            CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: "".to_string(),
+                msg: to_binary(&CoreExecuteMsg::ExecuteTimelockedMsgs { msgs: vec![] }).unwrap(),
+                funds: vec![],
+            }),
         ],
         status: ProposalStatus::Timelocked,
     };
@@ -241,7 +254,37 @@ fn test_execute_proposal() {
         .unwrap();
     let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone());
     assert_eq!(
-        "Can only execute proposals with exactly one message. Got 2 messages.",
+        "Can only execute proposals with exactly one message that of ExecuteTimelockedMsgs type. Got 2 messages.",
+        res.unwrap_err().to_string()
+    );
+
+    // check that execution fails when there is a wrong type of message inside
+    let proposal = SingleChoiceProposal {
+        id: 10,
+        msgs: vec![NeutronMsg::remove_interchain_query(1).into()],
+        status: ProposalStatus::Timelocked,
+    };
+    PROPOSALS
+        .save(deps.as_mut().storage, proposal.id, &proposal)
+        .unwrap();
+    let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone());
+    assert_eq!(
+        "Can only execute msg of ExecuteTimelockedMsgs type",
+        res.unwrap_err().to_string()
+    );
+
+    // check that execution fails when there are no messages inside
+    let proposal = SingleChoiceProposal {
+        id: 10,
+        msgs: vec![],
+        status: ProposalStatus::Timelocked,
+    };
+    PROPOSALS
+        .save(deps.as_mut().storage, proposal.id, &proposal)
+        .unwrap();
+    let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone());
+    assert_eq!(
+        "Can only execute proposals with exactly one message that of ExecuteTimelockedMsgs type. Got 0 messages.",
         res.unwrap_err().to_string()
     );
 
@@ -249,7 +292,11 @@ fn test_execute_proposal() {
     deps.querier.set_close_proposal_on_execution_failure(false);
     let proposal2 = SingleChoiceProposal {
         id: 10,
-        msgs: vec![NeutronMsg::remove_interchain_query(1).into()],
+        msgs: vec![CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr: "".to_string(),
+            msg: to_binary(&CoreExecuteMsg::ExecuteTimelockedMsgs { msgs: vec![] }).unwrap(),
+            funds: vec![],
+        })],
         status: ProposalStatus::Timelocked,
     };
     PROPOSALS

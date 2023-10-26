@@ -24,6 +24,9 @@ pub enum ContractError {
     #[error("Can not create overrule proposal for main DAO")]
     CantCreateOverrule {},
 
-    #[error("Can only execute proposals with exactly one message. Got {len} messages.")]
-    CanOnlyExecuteProposalsWithExactlyOneMessage { len: usize },
+    #[error("Can only execute proposals with exactly one message that of ExecuteTimelockedMsgs type. Got {len} messages.")]
+    CanOnlyExecuteOneMsg { len: usize },
+
+    #[error("Can only execute msg of ExecuteTimelockedMsgs type")]
+    CanOnlyExecuteExecuteTimelockedMsgs {},
 }

@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError,
-    StdResult, SubMsg, WasmMsg,
+    from_binary, to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply,
+    Response, StdError, StdResult, SubMsg, WasmMsg,
 };
 use cw2::set_contract_version;
 use cw_storage_plus::Bound;
@@ -16,6 +16,7 @@ use neutron_dao_pre_propose_overrule::msg::{
     QueryExt as OverruleQueryExt, QueryMsg as OverruleQueryMsg,
 };
 use neutron_sdk::bindings::msg::NeutronMsg;
+use neutron_subdao_core::msg::ExecuteMsg as CoreExecuteMsg;
 use neutron_subdao_core::msg::QueryMsg as SubdaoQuery;
 use neutron_subdao_pre_propose_single::msg::QueryMsg as PreProposeQuery;
 use neutron_subdao_proposal_single::msg::QueryMsg as ProposalQueryMsg;
@@ -176,25 +177,12 @@ pub fn execute_execute_proposal(
             .querier
             .query_wasm_smart(proposal_module, &ProposalQueryMsg::Config {})?;
 
-        // expect exactly one `ExecuteMsg::ExecuteTimelockedMsgs` message
-        if proposal.msgs.len() != 1 {
-            return Err(
-                ContractError::CanOnlyExecuteProposalsWithExactlyOneMessage {
-                    len: proposal.msgs.len(),
-                },
-            );
-        }
-        let msg: &CosmosMsg<NeutronMsg> = proposal.msgs.first().ok_or(
-            ContractError::CanOnlyExecuteProposalsWithExactlyOneMessage {
-                len: proposal.msgs.len(),
-            },
-        )?;
+        // We expect only one specific message `ExecuteMsg::ExecuteTimelockedMsgs` inside
+        let msg = unpack_execute_msg(proposal.msgs)?;
 
         match proposal_config.close_proposal_on_execution_failure {
-            true => {
-                Response::default().add_submessage(SubMsg::reply_on_error(msg.clone(), proposal_id))
-            }
-            false => Response::default().add_message(msg.clone()),
+            true => Response::default().add_submessage(SubMsg::reply_on_error(msg, proposal_id)),
+            false => Response::default().add_message(msg),
         }
     };
 
@@ -204,6 +192,38 @@ pub fn execute_execute_proposal(
         .add_attribute("action", "execute_proposal")
         .add_attribute("sender", info.sender)
         .add_attribute("proposal_id", proposal_id.to_string()))
+}
+
+fn unpack_execute_msg(
+    msgs: Vec<CosmosMsg<NeutronMsg>>,
+) -> Result<CosmosMsg<NeutronMsg>, ContractError> {
+    let msgs_len = msgs.len();
+    // Expect exactly one message
+    if msgs_len != 1 {
+        return Err(ContractError::CanOnlyExecuteOneMsg { len: msgs_len });
+    }
+    let msg: CosmosMsg<NeutronMsg> = msgs
+        .into_iter()
+        .next()
+        .ok_or(ContractError::CanOnlyExecuteOneMsg { len: msgs_len })?;
+
+    // Expect only `ExecuteMsg::ExecuteTimelockedMsgs`
+    match &msg {
+        &CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr: _,
+            funds: _,
+            ref msg,
+        }) => {
+            let unwrap_res: StdResult<CoreExecuteMsg> = from_binary(msg);
+            match unwrap_res {
+                Ok(CoreExecuteMsg::ExecuteTimelockedMsgs { msgs: _ }) => {}
+                _ => return Err(ContractError::CanOnlyExecuteExecuteTimelockedMsgs {}),
+            }
+        }
+        _ => return Err(ContractError::CanOnlyExecuteExecuteTimelockedMsgs {}),
+    }
+
+    Ok(msg)
 }
 
 pub fn execute_overrule_proposal(
