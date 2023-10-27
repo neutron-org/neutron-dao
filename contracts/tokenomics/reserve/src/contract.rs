@@ -553,6 +553,8 @@ fn provide_liquidity_to_cl_pair_after_withdrawal_callback(
     let withdrawn_paired_asset_amount =
         paired_asset_balance_after_withdrawal.checked_sub(paired_asset_init_balance)?;
 
+    let config = CONFIG.load(deps.storage)?;
+
     let msgs: Vec<CosmosMsg> = vec![
         // push message to provide liquidity to the CL pair
         CosmosMsg::Wasm(WasmMsg::Execute {
@@ -564,7 +566,7 @@ fn provide_liquidity_to_cl_pair_after_withdrawal_callback(
                 ],
                 slippage_tolerance: Some(slippage_tolerance),
                 auto_stake: None,
-                receiver: None,
+                receiver: Option::from(config.main_dao_address.to_string()),
             })?,
             funds: vec![
                 Coin::new(withdrawn_ntrn_amount.into(), ntrn_denom.clone()),
