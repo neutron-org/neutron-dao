@@ -110,9 +110,12 @@ pub fn execute_timelock_proposal(
         return Err(ContractError::Unauthorized {});
     }
 
+    // We expect only one specific message `ExecuteMsg::ExecuteTimelockedMsgs` inside
+    let msg = verify_msg(msgs)?;
+
     let proposal = SingleChoiceProposal {
         id: proposal_id,
-        msgs,
+        msgs: vec![msg],
         status: ProposalStatus::Timelocked,
     };
 
