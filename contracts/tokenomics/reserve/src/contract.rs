@@ -20,11 +20,15 @@ use cosmwasm_std::{
     coins, to_binary, Addr, BankMsg, Binary, Coin, CosmosMsg, Decimal, Deps, DepsMut, Env,
     MessageInfo, Response, StdResult, Uint128, WasmMsg,
 };
+use cw2::set_contract_version;
 use cw20::{BalanceResponse, Cw20ExecuteMsg, Cw20QueryMsg};
 use exec_control::pause::{
     can_pause, can_unpause, validate_duration, PauseError, PauseInfoResponse,
 };
 use neutron_sdk::bindings::query::NeutronQuery;
+
+pub(crate) const CONTRACT_NAME: &str = "neutron-reserve";
+pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 //--------------------------------------------------------------------------------------------------
 // Instantiation
@@ -37,6 +41,8 @@ pub fn instantiate(
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
     let config = Config {
         denom: msg.denom,
         min_period: msg.min_period,
@@ -355,35 +361,29 @@ fn execute_migrate_from_xyk_to_cl(
         return Err(ContractError::MigrationComplete {});
     }
 
-    // validate parameters to the max available values
-    if let Some(ntrn_atom_amount) = ntrn_atom_amount {
-        if ntrn_atom_amount.gt(&max_available_ntrn_atom_amount) {
-            return Err(ContractError::MigrationAmountUnavailable {
-                amount: ntrn_atom_amount,
-                max_amount: max_available_ntrn_atom_amount,
-            });
-        }
-    }
-    if let Some(ntrn_usdc_amount) = ntrn_usdc_amount {
-        if ntrn_usdc_amount.gt(&max_available_ntrn_usdc_amount) {
-            return Err(ContractError::MigrationAmountUnavailable {
-                amount: ntrn_usdc_amount,
-                max_amount: max_available_ntrn_usdc_amount,
-            });
-        }
-    }
-    if let Some(slippage_tolerance) = slippage_tolerance {
-        if slippage_tolerance.gt(&migration_config.max_slippage) {
-            return Err(ContractError::MigrationSlippageToBig {
-                slippage_tolerance,
-                max_slippage_tolerance: migration_config.max_slippage,
-            });
-        }
-    }
-
     let ntrn_atom_amount = ntrn_atom_amount.unwrap_or(max_available_ntrn_atom_amount);
     let ntrn_usdc_amount = ntrn_usdc_amount.unwrap_or(max_available_ntrn_usdc_amount);
     let slippage_tolerance = slippage_tolerance.unwrap_or(migration_config.max_slippage);
+
+    // validate parameters to the max available values
+    if ntrn_atom_amount.gt(&max_available_ntrn_atom_amount) {
+        return Err(ContractError::MigrationAmountUnavailable {
+            amount: ntrn_atom_amount,
+            max_amount: max_available_ntrn_atom_amount,
+        });
+    }
+    if ntrn_usdc_amount.gt(&max_available_ntrn_usdc_amount) {
+        return Err(ContractError::MigrationAmountUnavailable {
+            amount: ntrn_usdc_amount,
+            max_amount: max_available_ntrn_usdc_amount,
+        });
+    }
+    if slippage_tolerance.gt(&migration_config.max_slippage) {
+        return Err(ContractError::MigrationSlippageToBig {
+            slippage_tolerance,
+            max_slippage_tolerance: migration_config.max_slippage,
+        });
+    }
 
     let mut resp = Response::default();
     if !ntrn_atom_amount.is_zero() {
@@ -707,5 +707,7 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
             ntrn_usdc_cl_pair: deps.api.addr_validate(msg.ntrn_usdc_cl_pair.as_str())?,
         },
     )?;
+
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     Ok(Response::default())
 }
