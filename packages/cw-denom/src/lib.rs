@@ -18,7 +18,7 @@ mod integration_tests;
 use std::fmt::{self};
 
 use cosmwasm_std::{
-    to_binary, Addr, BankMsg, Coin, CosmosMsg, CustomQuery, Deps, QuerierWrapper, StdError,
+    to_json_binary, Addr, BankMsg, Coin, CosmosMsg, CustomQuery, Deps, QuerierWrapper, StdError,
     StdResult, Uint128, WasmMsg,
 };
 use schemars::JsonSchema;
@@ -127,7 +127,7 @@ impl CheckedDenom {
             .into(),
             CheckedDenom::Cw20(address) => WasmMsg::Execute {
                 contract_addr: address.to_string(),
-                msg: to_binary(&cw20::Cw20ExecuteMsg::Transfer {
+                msg: to_json_binary(&cw20::Cw20ExecuteMsg::Transfer {
                     recipient: who.to_string(),
                     amount,
                 })?,
@@ -179,7 +179,8 @@ impl fmt::Display for CheckedDenom {
 mod tests {
     use cosmwasm_std::{
         testing::{mock_dependencies, MockQuerier},
-        to_binary, Addr, ContractResult, QuerierResult, StdError, SystemError, Uint128, WasmQuery,
+        to_json_binary, Addr, ContractResult, QuerierResult, StdError, SystemError, Uint128,
+        WasmQuery,
     };
 
     use super::*;
@@ -193,7 +194,7 @@ mod tests {
                     if *contract_addr == CW20_ADDR {
                         if works {
                             QuerierResult::Ok(ContractResult::Ok(
-                                to_binary(&cw20::TokenInfoResponse {
+                                to_json_binary(&cw20::TokenInfoResponse {
                                     name: "coin".to_string(),
                                     symbol: "symbol".to_string(),
                                     decimals: 6,
@@ -243,7 +244,7 @@ mod tests {
             err,
             DenomError::InvalidCw20 {
                 err: StdError::GenericErr {
-                    msg: format!("Querier system error: No such contract: {}", CW20_ADDR)
+                    msg: format!("Querier system error: No such contract: {}", CW20_ADDR),
                 }
             }
         )
@@ -275,8 +276,8 @@ mod tests {
             "1abc".to_string(),                        // Starts with non alphabetic character.
             "abc~d".to_string(),                       // Contains invalid character.
             "".to_string(),                            // Too short, also empty.
-            "🥵abc".to_string(),                     // Weird unicode start.
-            "ab:12🥵a".to_string(),                  // Weird unocide in non-head position.
+            "🥵abc".to_string(),                       // Weird unicode start.
+            "ab:12🥵a".to_string(),                    // Weird unocide in non-head position.
             "ab,cd".to_string(),                       // Comma is not a valid seperator.
         ];
 

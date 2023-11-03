@@ -25,5 +25,3 @@ serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0" }
 astroport = { git = "https://github.com/astroport-fi/astroport-core.git", tag = "v2.5.0" }
 cw20 = "0.13"
-
-[dev-dependencies]

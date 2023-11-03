@@ -429,7 +429,53 @@
       }
     ]
   },
-  "migrate": null,
+  "migrate": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "MigrateMsg",
+    "type": "object",
+    "required": [
+      "atom_denom",
+      "max_slippage",
+      "ntrn_atom_cl_pair",
+      "ntrn_atom_xyk_pair",
+      "ntrn_denom",
+      "ntrn_usdc_cl_pair",
+      "ntrn_usdc_xyk_pair",
+      "usdc_denom"
+    ],
+    "properties": {
+      "atom_denom": {
+        "type": "string"
+      },
+      "max_slippage": {
+        "$ref": "#/definitions/Decimal"
+      },
+      "ntrn_atom_cl_pair": {
+        "type": "string"
+      },
+      "ntrn_atom_xyk_pair": {
+        "type": "string"
+      },
+      "ntrn_denom": {
+        "type": "string"
+      },
+      "ntrn_usdc_cl_pair": {
+        "type": "string"
+      },
+      "ntrn_usdc_xyk_pair": {
+        "type": "string"
+      },
+      "usdc_denom": {
+        "type": "string"
+      }
+    },
+    "definitions": {
+      "Decimal": {
+        "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0\n\nThe greatest possible value that can be represented is 340282366920938463463.374607431768211455 (which is (2^128 - 1) / 10^18)",
+        "type": "string"
+      }
+    }
+  },
   "sudo": null,
   "responses": {
     "config": {

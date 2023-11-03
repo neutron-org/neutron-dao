@@ -17,7 +17,7 @@ use astroport::pair::{
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    coins, to_binary, Addr, BankMsg, Binary, Coin, CosmosMsg, Decimal, Deps, DepsMut, Env,
+    coins, to_json_binary, Addr, BankMsg, Binary, Coin, CosmosMsg, Decimal, Deps, DepsMut, Env,
     MessageInfo, Response, StdResult, Uint128, WasmMsg,
 };
 use cw2::set_contract_version;
@@ -506,10 +506,10 @@ fn migrate_liquidity_to_cl_pair_callback(
         // push message to withdraw liquidity from the xyk pair
         CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: xyk_lp_token.to_string(),
-            msg: to_binary(&Cw20ExecuteMsg::Send {
+            msg: to_json_binary(&Cw20ExecuteMsg::Send {
                 contract: xyk_pair.to_string(),
                 amount,
-                msg: to_binary(&PairCw20HookMsg::WithdrawLiquidity { assets: vec![] })?,
+                msg: to_json_binary(&PairCw20HookMsg::WithdrawLiquidity { assets: vec![] })?,
             })?,
             funds: vec![],
         }),
@@ -559,7 +559,7 @@ fn provide_liquidity_to_cl_pair_after_withdrawal_callback(
         // push message to provide liquidity to the CL pair
         CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: cl_pair_address.to_string(),
-            msg: to_binary(&PairExecuteMsg::ProvideLiquidity {
+            msg: to_json_binary(&PairExecuteMsg::ProvideLiquidity {
                 assets: vec![
                     native_asset(ntrn_denom.clone(), withdrawn_ntrn_amount),
                     native_asset(paired_asset_denom.clone(), withdrawn_paired_asset_amount),
@@ -631,14 +631,14 @@ fn post_migration_balances_check_callback(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps<NeutronQuery>, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::Config {} => to_binary(&query_config(deps)?),
-        QueryMsg::Stats {} => to_binary(&query_stats(deps)?),
+        QueryMsg::Config {} => to_json_binary(&query_config(deps)?),
+        QueryMsg::Stats {} => to_json_binary(&query_stats(deps)?),
         QueryMsg::PauseInfo {} => query_paused(deps, env),
     }
 }
 
 pub fn query_paused(deps: Deps<NeutronQuery>, env: Env) -> StdResult<Binary> {
-    to_binary(&get_pause_info(deps, &env)?)
+    to_json_binary(&get_pause_info(deps, &env)?)
 }
 
 pub fn query_config(deps: Deps<NeutronQuery>) -> StdResult<Config> {
@@ -673,7 +673,7 @@ pub fn create_distribution_response(
         let msg = CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: config.distribution_contract.to_string(),
             funds: coins(to_distribute.u128(), denom.clone()),
-            msg: to_binary(&DistributeMsg::Fund {})?,
+            msg: to_json_binary(&DistributeMsg::Fund {})?,
         });
         resp = resp.add_message(msg)
     }

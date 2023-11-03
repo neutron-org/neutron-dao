@@ -1,9 +1,9 @@
 use crate::contract::query_proposal_execution_error;
 use cosmwasm_std::{
-    coins, from_binary,
+    coins, from_json,
     testing::{mock_dependencies, mock_env},
-    to_binary, Addr, Attribute, BankMsg, ContractInfoResponse, CosmosMsg, Decimal, Empty, Reply,
-    StdError, StdResult, SubMsgResult, Uint128, WasmMsg, WasmQuery,
+    to_json_binary, Addr, Attribute, BankMsg, ContractInfoResponse, CosmosMsg, Decimal, Empty,
+    Reply, StdError, StdResult, SubMsgResult, Uint128, WasmMsg, WasmQuery,
 };
 use cosmwasm_std::{Api, Storage};
 use cw2::ContractVersion;
@@ -165,7 +165,7 @@ fn test_proposal_close_after_expiry() {
     assert!(matches!(err, ContractError::WrongCloseStatus {}));
 
     // Expire the proposal. Now it should be closable.
-    app.update_block(|mut b| b.time = b.time.plus_seconds(604800));
+    app.update_block(|b| b.time = b.time.plus_seconds(604800));
     close_proposal(&mut app, &proposal_module, CREATOR_ADDR, proposal_id);
     let proposal = query_proposal(&app, &proposal_module, proposal_id);
     assert_eq!(proposal.proposal.status, Status::Closed);
@@ -208,7 +208,7 @@ fn test_proposal_cant_close_after_expiry_is_passed() {
     assert_eq!(proposal.proposal.status, Status::Open);
 
     // Expire the proposal. This should pass it.
-    app.update_block(|mut b| b.time = b.time.plus_seconds(604800));
+    app.update_block(|b| b.time = b.time.plus_seconds(604800));
     let proposal = query_proposal(&app, &proposal_module, proposal_id);
     assert_eq!(proposal.proposal.status, Status::Passed);
 
@@ -244,7 +244,7 @@ fn test_execute_no_non_passed_execution() {
     assert!(matches!(err, ContractError::NotPassed {}));
 
     // Expire the proposal.
-    app.update_block(|mut b| b.time = b.time.plus_seconds(604800));
+    app.update_block(|b| b.time = b.time.plus_seconds(604800));
     let err = execute_proposal_should_fail(&mut app, &proposal_module, CREATOR_ADDR, proposal_id);
     assert!(matches!(err, ContractError::NotPassed {}));
 
@@ -286,7 +286,7 @@ fn test_update_config() {
         CREATOR_ADDR,
         vec![WasmMsg::Execute {
             contract_addr: proposal_module.to_string(),
-            msg: to_binary(&ExecuteMsg::UpdateConfig {
+            msg: to_json_binary(&ExecuteMsg::UpdateConfig {
                 threshold: Threshold::AbsoluteCount {
                     threshold: Uint128::new(10_000),
                 },
@@ -586,7 +586,7 @@ fn test_min_voting_period_no_early_pass() {
     let proposal_response = query_proposal(&app, &proposal_module, proposal_id);
     assert_eq!(proposal_response.proposal.status, Status::Open);
 
-    app.update_block(|mut block| block.height += 10);
+    app.update_block(|block| block.height += 10);
     let proposal_response = query_proposal(&app, &proposal_module, proposal_id);
     assert_eq!(proposal_response.proposal.status, Status::Passed);
 }
@@ -623,7 +623,7 @@ fn test_min_duration_same_as_proposal_duration() {
     vote_on_proposal(&mut app, &proposal_module, "whale", proposal_id, Vote::Yes);
     vote_on_proposal(&mut app, &proposal_module, "ekez", proposal_id, Vote::No);
 
-    app.update_block(|mut b| b.height += 100);
+    app.update_block(|b| b.height += 100);
     let proposal_response = query_proposal(&app, &proposal_module, proposal_id);
     assert_eq!(proposal_response.proposal.status, Status::Passed);
 }
@@ -982,7 +982,7 @@ fn test_reply_proposal_mock() {
 
     // reply writes the failed proposal error
     let query_res = query_proposal_execution_error(deps.as_ref(), 1).unwrap();
-    let error: Option<String> = from_binary(&query_res).unwrap();
+    let error: Option<String> = from_json(query_res).unwrap();
     assert_eq!(error, Some("error_msg".to_string()));
 }
 

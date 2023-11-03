@@ -1,12 +1,13 @@
 use crate::contract::query_proposal_execution_error;
 use cosmwasm_std::testing::MOCK_CONTRACT_ADDR;
 use cosmwasm_std::{
-    from_binary,
+    from_json,
     testing::{mock_env, mock_info},
-    to_binary, Addr, Attribute, CosmosMsg, Reply, SubMsg, SubMsgResult, WasmMsg,
+    to_json_binary, Addr, Attribute, CosmosMsg, Reply, SubMsg, SubMsgResult, WasmMsg,
 };
 use cwd_voting::status::Status;
 use neutron_sdk::bindings::msg::NeutronMsg;
+use neutron_subdao_core::msg::ExecuteMsg as CoreExecuteMsg;
 use neutron_subdao_timelock_single::{
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
     types::{Config, ProposalListResponse, ProposalStatus, SingleChoiceProposal},
@@ -90,12 +91,17 @@ fn test_execute_timelock_proposal() {
     let env = mock_env();
     let info = mock_info("neutron1unknownsender", &[]);
 
-    let msg = ExecuteMsg::TimelockProposal {
+    // No config set case
+    let correct_msg = ExecuteMsg::TimelockProposal {
         proposal_id: 10,
-        msgs: vec![NeutronMsg::remove_interchain_query(1).into()],
+        msgs: vec![correct_proposal_msg()],
     };
-
-    let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone());
+    let res = execute(
+        deps.as_mut(),
+        env.clone(),
+        info.clone(),
+        correct_msg.clone(),
+    );
     assert_eq!(
         "neutron_subdao_timelock_single::types::Config not found",
         res.unwrap_err().to_string()
@@ -107,11 +113,48 @@ fn test_execute_timelock_proposal() {
         subdao: Addr::unchecked(MOCK_SUBDAO_CORE_ADDR),
     };
     CONFIG.save(deps.as_mut().storage, &config).unwrap();
-    let res = execute(deps.as_mut(), env.clone(), info, msg.clone());
+
+    // Unauthorized case
+    let res = execute(deps.as_mut(), env.clone(), info, correct_msg.clone());
     assert_eq!("Unauthorized", res.unwrap_err().to_string());
 
     let info = mock_info(MOCK_SUBDAO_CORE_ADDR, &[]);
-    let res_ok = execute(deps.as_mut(), env, info, msg).unwrap();
+
+    // check that execution fails when there is a wrong type of message inside
+    let incorrect_type_msg = ExecuteMsg::TimelockProposal {
+        proposal_id: 10,
+        msgs: vec![NeutronMsg::remove_interchain_query(1).into()],
+    };
+    let res = execute(deps.as_mut(), env.clone(), info.clone(), incorrect_type_msg);
+    assert_eq!(
+        "Can only execute msg of ExecuteTimelockedMsgs type",
+        res.unwrap_err().to_string()
+    );
+
+    // check that execution fails when there are no messages inside
+    let empty_msgs_msg = ExecuteMsg::TimelockProposal {
+        proposal_id: 10,
+        msgs: vec![],
+    };
+    let res = execute(deps.as_mut(), env.clone(), info.clone(), empty_msgs_msg);
+    assert_eq!(
+        "Can only execute proposals with exactly one message that of ExecuteTimelockedMsgs type. Got 0 messages.",
+        res.unwrap_err().to_string()
+    );
+
+    // check that execution fails when there are 2 messages inside
+    let too_many_msgs_msg = ExecuteMsg::TimelockProposal {
+        proposal_id: 10,
+        msgs: vec![correct_proposal_msg(), correct_proposal_msg()],
+    };
+    let res = execute(deps.as_mut(), env.clone(), info.clone(), too_many_msgs_msg);
+    assert_eq!(
+        "Can only execute proposals with exactly one message that of ExecuteTimelockedMsgs type. Got 2 messages.",
+        res.unwrap_err().to_string()
+    );
+
+    // successful case
+    let res_ok = execute(deps.as_mut(), env, info, correct_msg).unwrap();
     let expected_attributes = vec![
         Attribute::new("action", "timelock_proposal"),
         Attribute::new("sender", MOCK_SUBDAO_CORE_ADDR),
@@ -125,7 +168,7 @@ fn test_execute_timelock_proposal() {
         res_ok.messages,
         vec![SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: MOCK_OVERRULE_PREPROPOSAL.to_string(),
-            msg: to_binary(&OverruleExecuteMsg::Propose {
+            msg: to_json_binary(&OverruleExecuteMsg::Propose {
                 msg: OverruleProposeMessage::ProposeOverrule {
                     timelock_contract: MOCK_CONTRACT_ADDR.to_string(),
                     proposal_id: 10,
@@ -138,7 +181,7 @@ fn test_execute_timelock_proposal() {
 
     let expected_proposal = SingleChoiceProposal {
         id: 10,
-        msgs: vec![NeutronMsg::remove_interchain_query(1).into()],
+        msgs: vec![correct_proposal_msg()],
         status: ProposalStatus::Timelocked,
     };
     let prop = PROPOSALS.load(deps.as_mut().storage, 10u64).unwrap();
@@ -180,7 +223,7 @@ fn test_execute_proposal() {
     for s in wrong_prop_statuses {
         let proposal = SingleChoiceProposal {
             id: 10,
-            msgs: vec![NeutronMsg::remove_interchain_query(1).into()],
+            msgs: vec![correct_proposal_msg()],
             status: s,
         };
         PROPOSALS
@@ -197,7 +240,7 @@ fn test_execute_proposal() {
     deps.querier.set_close_proposal_on_execution_failure(true);
     let proposal = SingleChoiceProposal {
         id: 10,
-        msgs: vec![NeutronMsg::remove_interchain_query(1).into()],
+        msgs: vec![correct_proposal_msg()],
         status: ProposalStatus::Timelocked,
     };
     PROPOSALS
@@ -227,11 +270,56 @@ fn test_execute_proposal() {
     let updated_prop = PROPOSALS.load(deps.as_mut().storage, 10).unwrap();
     assert_eq!(ProposalStatus::Executed, updated_prop.status);
 
+    // check that execution fails when there not exactly one message in proposal
+    let proposal = SingleChoiceProposal {
+        id: 10,
+        msgs: vec![correct_proposal_msg(), correct_proposal_msg()],
+        status: ProposalStatus::Timelocked,
+    };
+    PROPOSALS
+        .save(deps.as_mut().storage, proposal.id, &proposal)
+        .unwrap();
+    let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone());
+    assert_eq!(
+        "Can only execute proposals with exactly one message that of ExecuteTimelockedMsgs type. Got 2 messages.",
+        res.unwrap_err().to_string()
+    );
+
+    // check that execution fails when there is a wrong type of message inside
+    let proposal = SingleChoiceProposal {
+        id: 10,
+        msgs: vec![NeutronMsg::remove_interchain_query(1).into()],
+        status: ProposalStatus::Timelocked,
+    };
+    PROPOSALS
+        .save(deps.as_mut().storage, proposal.id, &proposal)
+        .unwrap();
+    let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone());
+    assert_eq!(
+        "Can only execute msg of ExecuteTimelockedMsgs type",
+        res.unwrap_err().to_string()
+    );
+
+    // check that execution fails when there are no messages inside
+    let proposal = SingleChoiceProposal {
+        id: 10,
+        msgs: vec![],
+        status: ProposalStatus::Timelocked,
+    };
+    PROPOSALS
+        .save(deps.as_mut().storage, proposal.id, &proposal)
+        .unwrap();
+    let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone());
+    assert_eq!(
+        "Can only execute proposals with exactly one message that of ExecuteTimelockedMsgs type. Got 0 messages.",
+        res.unwrap_err().to_string()
+    );
+
     // check proposal execution close_proposal_on_execution_failure = false
     deps.querier.set_close_proposal_on_execution_failure(false);
     let proposal2 = SingleChoiceProposal {
         id: 10,
-        msgs: vec![NeutronMsg::remove_interchain_query(1).into()],
+        msgs: vec![correct_proposal_msg()],
         status: ProposalStatus::Timelocked,
     };
     PROPOSALS
@@ -289,7 +377,7 @@ fn test_overrule_proposal() {
     for s in wrong_prop_statuses {
         let proposal = SingleChoiceProposal {
             id: 10,
-            msgs: vec![NeutronMsg::remove_interchain_query(1).into()],
+            msgs: vec![correct_proposal_msg()],
             status: s,
         };
         PROPOSALS
@@ -304,7 +392,7 @@ fn test_overrule_proposal() {
 
     let proposal = SingleChoiceProposal {
         id: 10,
-        msgs: vec![NeutronMsg::remove_interchain_query(1).into()],
+        msgs: vec![correct_proposal_msg()],
         status: ProposalStatus::Timelocked,
     };
     PROPOSALS
@@ -424,7 +512,7 @@ fn test_query_config() {
     CONFIG.save(deps.as_mut().storage, &config).unwrap();
     let query_msg = QueryMsg::Config {};
     let res = query(deps.as_ref(), mock_env(), query_msg).unwrap();
-    let queried_config: Config = from_binary(&res).unwrap();
+    let queried_config: Config = from_json(res).unwrap();
     assert_eq!(config, queried_config)
 }
 
@@ -435,7 +523,7 @@ fn test_query_proposals() {
     for i in 1..=100 {
         let prop = SingleChoiceProposal {
             id: i,
-            msgs: vec![NeutronMsg::remove_interchain_query(i).into()],
+            msgs: vec![correct_proposal_msg()],
             status: ProposalStatus::Timelocked,
         };
         PROPOSALS.save(deps.as_mut().storage, i, &prop).unwrap();
@@ -443,10 +531,10 @@ fn test_query_proposals() {
     for i in 1..=100 {
         let query_msg = QueryMsg::Proposal { proposal_id: i };
         let res = query(deps.as_ref(), mock_env(), query_msg).unwrap();
-        let queried_prop: SingleChoiceProposal = from_binary(&res).unwrap();
+        let queried_prop: SingleChoiceProposal = from_json(&res).unwrap();
         let expected_prop = SingleChoiceProposal {
             id: i,
-            msgs: vec![NeutronMsg::remove_interchain_query(i).into()],
+            msgs: vec![correct_proposal_msg()],
             status: ProposalStatus::Timelocked,
         };
         assert_eq!(expected_prop, queried_prop)
@@ -457,11 +545,11 @@ fn test_query_proposals() {
         limit: None,
     };
     let res = query(deps.as_ref(), mock_env(), query_msg).unwrap();
-    let queried_props: ProposalListResponse = from_binary(&res).unwrap();
+    let queried_props: ProposalListResponse = from_json(&res).unwrap();
     for (p, i) in queried_props.proposals.iter().zip(1..) {
         let expected_prop = SingleChoiceProposal {
             id: i,
-            msgs: vec![NeutronMsg::remove_interchain_query(i).into()],
+            msgs: vec![correct_proposal_msg()],
             status: ProposalStatus::Timelocked,
         };
         assert_eq!(expected_prop, *p);
@@ -473,11 +561,11 @@ fn test_query_proposals() {
         limit: Some(100),
     };
     let res = query(deps.as_ref(), mock_env(), query_msg).unwrap();
-    let queried_props: ProposalListResponse = from_binary(&res).unwrap();
+    let queried_props: ProposalListResponse = from_json(&res).unwrap();
     for (p, i) in queried_props.proposals.iter().zip(1..) {
         let expected_prop = SingleChoiceProposal {
             id: i,
-            msgs: vec![NeutronMsg::remove_interchain_query(i).into()],
+            msgs: vec![correct_proposal_msg()],
             status: ProposalStatus::Timelocked,
         };
         assert_eq!(expected_prop, *p);
@@ -489,11 +577,11 @@ fn test_query_proposals() {
         limit: Some(10),
     };
     let res = query(deps.as_ref(), mock_env(), query_msg).unwrap();
-    let queried_props: ProposalListResponse = from_binary(&res).unwrap();
+    let queried_props: ProposalListResponse = from_json(&res).unwrap();
     for (p, i) in queried_props.proposals.iter().zip(1..) {
         let expected_prop = SingleChoiceProposal {
             id: i,
-            msgs: vec![NeutronMsg::remove_interchain_query(i).into()],
+            msgs: vec![correct_proposal_msg()],
             status: ProposalStatus::Timelocked,
         };
         assert_eq!(expected_prop, *p);
@@ -505,11 +593,11 @@ fn test_query_proposals() {
         limit: None,
     };
     let res = query(deps.as_ref(), mock_env(), query_msg).unwrap();
-    let queried_props: ProposalListResponse = from_binary(&res).unwrap();
+    let queried_props: ProposalListResponse = from_json(&res).unwrap();
     for (p, i) in queried_props.proposals.iter().zip(51..) {
         let expected_prop = SingleChoiceProposal {
             id: i,
-            msgs: vec![NeutronMsg::remove_interchain_query(i).into()],
+            msgs: vec![correct_proposal_msg()],
             status: ProposalStatus::Timelocked,
         };
         assert_eq!(expected_prop, *p);
@@ -521,11 +609,11 @@ fn test_query_proposals() {
         limit: None,
     };
     let res = query(deps.as_ref(), mock_env(), query_msg).unwrap();
-    let queried_props: ProposalListResponse = from_binary(&res).unwrap();
+    let queried_props: ProposalListResponse = from_json(&res).unwrap();
     for (p, i) in queried_props.proposals.iter().zip(91..) {
         let expected_prop = SingleChoiceProposal {
             id: i,
-            msgs: vec![NeutronMsg::remove_interchain_query(i).into()],
+            msgs: vec![correct_proposal_msg()],
             status: ProposalStatus::Timelocked,
         };
         assert_eq!(expected_prop, *p);
@@ -542,11 +630,11 @@ fn test_reply() {
         result: SubMsgResult::Err("error".to_string()),
     };
     let err = reply(deps.as_mut(), mock_env(), msg.clone()).unwrap_err();
-    assert_eq!("no such proposal (10)", err.to_string());
+    assert_eq!("No such proposal (10)", err.to_string());
 
     let prop = SingleChoiceProposal {
         id: 10,
-        msgs: vec![NeutronMsg::remove_interchain_query(1).into()],
+        msgs: vec![correct_proposal_msg()],
         status: ProposalStatus::Timelocked,
     };
     let env = mock_env();
@@ -557,6 +645,14 @@ fn test_reply() {
     assert_eq!(expected_attributes, res_ok.attributes);
     // reply writes the failed proposal error
     let query_res = query_proposal_execution_error(deps.as_ref(), 10).unwrap();
-    let error: Option<String> = from_binary(&query_res).unwrap();
+    let error: Option<String> = from_json(query_res).unwrap();
     assert_eq!(error, Some("error".to_string()));
+}
+
+fn correct_proposal_msg() -> CosmosMsg<NeutronMsg> {
+    CosmosMsg::Wasm(WasmMsg::Execute {
+        contract_addr: "".to_string(),
+        msg: to_json_binary(&CoreExecuteMsg::ExecuteTimelockedMsgs { msgs: vec![] }).unwrap(),
+        funds: vec![],
+    })
 }

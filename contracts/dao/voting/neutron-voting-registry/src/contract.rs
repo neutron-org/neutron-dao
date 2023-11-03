@@ -3,7 +3,7 @@ use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, VotingVault};
 use crate::state::{Config, VotingVaultState, CONFIG, DAO, VAULT_STATES};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::{
-    entry_point, to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Order, Response,
+    entry_point, to_json_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Order, Response,
     StdError, StdResult,
 };
 use cw2::set_contract_version;
@@ -180,15 +180,17 @@ pub fn execute_update_config(
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::VotingPowerAtHeight { address, height } => {
-            to_binary(&query_voting_power_at_height(deps, env, address, height)?)
+            to_json_binary(&query_voting_power_at_height(deps, env, address, height)?)
         }
         QueryMsg::TotalPowerAtHeight { height } => {
-            to_binary(&query_total_power_at_height(deps, env, height)?)
+            to_json_binary(&query_total_power_at_height(deps, env, height)?)
         }
         QueryMsg::Info {} => query_info(deps),
         QueryMsg::Dao {} => query_dao(deps),
-        QueryMsg::Config {} => to_binary(&CONFIG.load(deps.storage)?),
-        QueryMsg::VotingVaults { height } => to_binary(&query_voting_vaults(deps, env, height)?),
+        QueryMsg::Config {} => to_json_binary(&CONFIG.load(deps.storage)?),
+        QueryMsg::VotingVaults { height } => {
+            to_json_binary(&query_voting_vaults(deps, env, height)?)
+        }
     }
 }
 
@@ -296,12 +298,12 @@ pub fn query_total_power_at_height(
 
 pub fn query_info(deps: Deps) -> StdResult<Binary> {
     let info = cw2::get_contract_version(deps.storage)?;
-    to_binary(&voting::InfoResponse { info })
+    to_json_binary(&voting::InfoResponse { info })
 }
 
 pub fn query_dao(deps: Deps) -> StdResult<Binary> {
     let dao = DAO.load(deps.storage)?;
-    to_binary(&dao)
+    to_json_binary(&dao)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

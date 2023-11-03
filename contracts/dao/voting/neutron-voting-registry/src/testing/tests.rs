@@ -8,7 +8,7 @@ use crate::testing::mock_querier::{
     MOCK_VAULT_3_DESC, MOCK_VAULT_3_NAME, MOCK_VAULT_MEMBER,
 };
 use cosmwasm_std::testing::{mock_env, mock_info};
-use cosmwasm_std::{from_binary, Addr, Deps, DepsMut, Env, MessageInfo, Response, Uint128};
+use cosmwasm_std::{from_json, Addr, Deps, DepsMut, Env, MessageInfo, Response, Uint128};
 use cw_storage_plus::Item;
 use cwd_interface::voting::{
     InfoResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
@@ -870,22 +870,22 @@ pub fn test_migrate() {
 
 fn get_voting_vaults(deps: Deps, env: Env, height: Option<u64>) -> Vec<VotingVault> {
     let res = query(deps, env, QueryMsg::VotingVaults { height }).unwrap();
-    from_binary(&res).unwrap()
+    from_json(res).unwrap()
 }
 
 fn get_config(deps: Deps, env: Env) -> Config {
     let res = query(deps, env, QueryMsg::Config {}).unwrap();
-    from_binary(&res).unwrap()
+    from_json(res).unwrap()
 }
 
 fn get_dao(deps: Deps, env: Env) -> Addr {
     let res = query(deps, env, QueryMsg::Dao {}).unwrap();
-    from_binary(&res).unwrap()
+    from_json(res).unwrap()
 }
 
 fn get_info(deps: Deps, env: Env) -> InfoResponse {
     let res = query(deps, env, QueryMsg::Info {}).unwrap();
-    from_binary(&res).unwrap()
+    from_json(res).unwrap()
 }
 
 fn get_voting_power(
@@ -895,12 +895,12 @@ fn get_voting_power(
     height: Option<u64>,
 ) -> VotingPowerAtHeightResponse {
     let res = query(deps, env, QueryMsg::VotingPowerAtHeight { address, height }).unwrap();
-    from_binary(&res).unwrap()
+    from_json(res).unwrap()
 }
 
 fn get_total_voting_power(deps: Deps, env: Env, height: Option<u64>) -> TotalPowerAtHeightResponse {
     let res = query(deps, env, QueryMsg::TotalPowerAtHeight { height }).unwrap();
-    from_binary(&res).unwrap()
+    from_json(res).unwrap()
 }
 
 fn add_voting_vault(

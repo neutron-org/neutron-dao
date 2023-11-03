@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, Reply, Response,
+    to_json_binary, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, Reply, Response,
     StdResult, SubMsg, WasmMsg,
 };
 use cw2::set_contract_version;
@@ -108,11 +108,12 @@ pub fn execute(
             // Here, we wrap the original messages in a message to the Timelock module.
             let timelock_msg = CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: timelock_module.to_string(),
-                msg: to_binary(&TimelockExecuteMsg::TimelockProposal {
+                msg: to_json_binary(&TimelockExecuteMsg::TimelockProposal {
                     proposal_id: last_proposal_id + 1,
                     msgs: vec![CosmosMsg::Wasm(WasmMsg::Execute {
                         contract_addr: sub_dao_core.to_string(),
-                        msg: to_binary(&CoreExecuteMsg::ExecuteTimelockedMsgs { msgs }).unwrap(),
+                        msg: to_json_binary(&CoreExecuteMsg::ExecuteTimelockedMsgs { msgs })
+                            .unwrap(),
                         funds: vec![],
                     })],
                 })
@@ -169,7 +170,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 
 pub fn query_timelock_address(deps: Deps) -> StdResult<Binary> {
     let timelock = TIMELOCK_MODULE.load(deps.storage)?;
-    to_binary(&timelock)
+    to_json_binary(&timelock)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

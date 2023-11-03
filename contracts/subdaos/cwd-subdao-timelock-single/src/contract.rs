@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError,
-    StdResult, SubMsg, WasmMsg,
+    from_json, to_json_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply,
+    Response, StdError, StdResult, SubMsg, WasmMsg,
 };
 use cw2::set_contract_version;
 use cw_storage_plus::Bound;
@@ -16,6 +16,7 @@ use neutron_dao_pre_propose_overrule::msg::{
     QueryExt as OverruleQueryExt, QueryMsg as OverruleQueryMsg,
 };
 use neutron_sdk::bindings::msg::NeutronMsg;
+use neutron_subdao_core::msg::ExecuteMsg as CoreExecuteMsg;
 use neutron_subdao_core::msg::QueryMsg as SubdaoQuery;
 use neutron_subdao_pre_propose_single::msg::QueryMsg as PreProposeQuery;
 use neutron_subdao_proposal_single::msg::QueryMsg as ProposalQueryMsg;
@@ -109,9 +110,12 @@ pub fn execute_timelock_proposal(
         return Err(ContractError::Unauthorized {});
     }
 
+    // We expect only one specific message `ExecuteMsg::ExecuteTimelockedMsgs` inside
+    let msg = verify_msg(msgs)?;
+
     let proposal = SingleChoiceProposal {
         id: proposal_id,
-        msgs,
+        msgs: vec![msg],
         status: ProposalStatus::Timelocked,
     };
 
@@ -119,7 +123,7 @@ pub fn execute_timelock_proposal(
 
     let create_overrule_proposal = WasmMsg::Execute {
         contract_addr: config.overrule_pre_propose.to_string(),
-        msg: to_binary(&OverruleExecuteMsg::Propose {
+        msg: to_json_binary(&OverruleExecuteMsg::Propose {
             msg: OverruleProposeMessage::ProposeOverrule {
                 timelock_contract: env.contract.address.to_string(),
                 proposal_id,
@@ -176,17 +180,12 @@ pub fn execute_execute_proposal(
             .querier
             .query_wasm_smart(proposal_module, &ProposalQueryMsg::Config {})?;
 
-        match proposal_config.close_proposal_on_execution_failure {
-            true => {
-                let msgs: Vec<SubMsg<NeutronMsg>> = proposal
-                    .msgs
-                    .iter()
-                    .map(|msg| SubMsg::reply_on_error(msg.clone(), proposal_id))
-                    .collect();
+        // We expect only one specific message `ExecuteMsg::ExecuteTimelockedMsgs` inside
+        let msg = verify_msg(proposal.msgs)?;
 
-                Response::default().add_submessages(msgs)
-            }
-            false => Response::default().add_messages(proposal.msgs),
+        match proposal_config.close_proposal_on_execution_failure {
+            true => Response::default().add_submessage(SubMsg::reply_on_error(msg, proposal_id)),
+            false => Response::default().add_message(msg),
         }
     };
 
@@ -196,6 +195,35 @@ pub fn execute_execute_proposal(
         .add_attribute("action", "execute_proposal")
         .add_attribute("sender", info.sender)
         .add_attribute("proposal_id", proposal_id.to_string()))
+}
+
+/// `verify_msg` checks that there is only one message inside `msgs`
+/// and verifies type inside of `CoreExecuteMsg::ExecuteTimelockedMsgs`
+fn verify_msg(msgs: Vec<CosmosMsg<NeutronMsg>>) -> Result<CosmosMsg<NeutronMsg>, ContractError> {
+    let msgs_len = msgs.len();
+    // Expect exactly one message
+    if msgs_len != 1 {
+        return Err(ContractError::CanOnlyExecuteOneMsg { len: msgs_len });
+    }
+    let msg: CosmosMsg<NeutronMsg> = msgs
+        .into_iter()
+        .next()
+        .ok_or(ContractError::CanOnlyExecuteOneMsg { len: msgs_len })?;
+
+    // Expect only `ExecuteMsg::ExecuteTimelockedMsgs`
+    match &msg {
+        &CosmosMsg::Wasm(WasmMsg::Execute {
+            msg: ref core_execute_msg,
+            contract_addr: _,
+            funds: _,
+        }) => match from_json::<CoreExecuteMsg>(core_execute_msg) {
+            Ok(CoreExecuteMsg::ExecuteTimelockedMsgs { msgs: _ }) => {}
+            _ => return Err(ContractError::CanOnlyExecuteExecuteTimelockedMsgs {}),
+        },
+        _ => return Err(ContractError::CanOnlyExecuteExecuteTimelockedMsgs {}),
+    }
+
+    Ok(msg)
 }
 
 pub fn execute_overrule_proposal(
@@ -265,7 +293,7 @@ pub fn execute_update_config(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::Config {} => to_binary(&CONFIG.load(deps.storage)?),
+        QueryMsg::Config {} => to_json_binary(&CONFIG.load(deps.storage)?),
         QueryMsg::Proposal { proposal_id } => query_proposal(deps, proposal_id),
         QueryMsg::ListProposals { start_after, limit } => {
             query_list_proposals(deps, start_after, limit)
@@ -278,7 +306,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 
 pub fn query_proposal(deps: Deps, id: u64) -> StdResult<Binary> {
     let proposal = PROPOSALS.load(deps.storage, id)?;
-    to_binary(&proposal)
+    to_json_binary(&proposal)
 }
 
 pub fn query_list_proposals(
@@ -296,12 +324,12 @@ pub fn query_list_proposals(
         .map(|(_, proposal)| proposal)
         .collect();
 
-    to_binary(&ProposalListResponse { proposals: props })
+    to_json_binary(&ProposalListResponse { proposals: props })
 }
 
 pub fn query_proposal_execution_error(deps: Deps, proposal_id: u64) -> StdResult<Binary> {
     let error = PROPOSAL_EXECUTION_ERRORS.may_load(deps.storage, proposal_id)?;
-    to_binary(&error)
+    to_json_binary(&error)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

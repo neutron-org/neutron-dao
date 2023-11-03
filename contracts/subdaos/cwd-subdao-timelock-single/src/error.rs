@@ -18,9 +18,15 @@ pub enum ContractError {
     #[error("Wrong proposal status ({status})")]
     WrongStatus { status: String },
 
-    #[error("no such proposal ({id})")]
+    #[error("No such proposal ({id})")]
     NoSuchProposal { id: u64 },
 
     #[error("Can not create overrule proposal for main DAO")]
     CantCreateOverrule {},
+
+    #[error("Can only execute proposals with exactly one message that of ExecuteTimelockedMsgs type. Got {len} messages.")]
+    CanOnlyExecuteOneMsg { len: usize },
+
+    #[error("Can only execute msg of ExecuteTimelockedMsgs type")]
+    CanOnlyExecuteExecuteTimelockedMsgs {},
 }

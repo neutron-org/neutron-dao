@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, WasmMsg,
+    to_json_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, WasmMsg,
 };
 use std::fmt::Debug;
 
@@ -103,12 +103,14 @@ where
 
     pub fn query(&self, deps: Deps, _env: Env, msg: QueryMsg<QueryExt>) -> StdResult<Binary> {
         match msg {
-            QueryMsg::ProposalModule {} => to_binary(&self.proposal_module.load(deps.storage)?),
-            QueryMsg::Dao {} => to_binary(&self.dao.load(deps.storage)?),
-            QueryMsg::Config {} => to_binary(&self.config.load(deps.storage)?),
+            QueryMsg::ProposalModule {} => {
+                to_json_binary(&self.proposal_module.load(deps.storage)?)
+            }
+            QueryMsg::Dao {} => to_json_binary(&self.dao.load(deps.storage)?),
+            QueryMsg::Config {} => to_json_binary(&self.config.load(deps.storage)?),
             QueryMsg::DepositInfo { proposal_id } => {
                 let (deposit_info, proposer) = self.deposits.load(deps.storage, proposal_id)?;
-                to_binary(&DepositInfoResponse {
+                to_json_binary(&DepositInfoResponse {
                     deposit_info,
                     proposer,
                 })
@@ -150,14 +152,17 @@ where
         let proposal_module = self.proposal_module.load(deps.storage)?;
         let propose_messsage = WasmMsg::Execute {
             contract_addr: proposal_module.into_string(),
-            msg: to_binary(&msg)?,
+            msg: to_json_binary(&msg)?,
             funds: vec![],
         };
 
         Ok(Response::default()
             .add_attribute("method", "execute_propose")
             .add_attribute("sender", info.sender)
-            .add_attribute("deposit_info", to_binary(&config.deposit_info)?.to_string())
+            .add_attribute(
+                "deposit_info",
+                to_json_binary(&config.deposit_info)?.to_string(),
+            )
             .add_messages(deposit_messages)
             .add_message(propose_messsage))
     }
@@ -269,7 +274,7 @@ where
                 Ok(Response::default()
                     .add_attribute("method", "execute_proposal_completed_hook")
                     .add_attribute("proposal", id.to_string())
-                    .add_attribute("deposit_info", to_binary(&deposit_info)?.to_string())
+                    .add_attribute("deposit_info", to_json_binary(&deposit_info)?.to_string())
                     .add_messages(messages))
             }
 

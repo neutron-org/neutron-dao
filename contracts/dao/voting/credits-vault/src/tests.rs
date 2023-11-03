@@ -3,7 +3,7 @@ use crate::msg::{CreditsQueryMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryM
 use crate::state::{Config, TotalSupplyResponse};
 use crate::ContractError;
 use cosmwasm_std::testing::{mock_dependencies, mock_env};
-use cosmwasm_std::{to_binary, Addr, Binary, Deps, Empty, Env, Response, StdResult, Uint128};
+use cosmwasm_std::{to_json_binary, Addr, Binary, Deps, Empty, Env, Response, StdResult, Uint128};
 use cw_multi_test::{custom_app, App, AppResponse, Contract, ContractWrapper, Executor};
 use cwd_interface::voting::{
     InfoResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
@@ -39,13 +39,13 @@ fn credits_query(_deps: Deps, _env: Env, msg: CreditsQueryMsg) -> StdResult<Bina
                     6000u64
                 }),
             };
-            to_binary(&response)
+            to_json_binary(&response)
         }
         CreditsQueryMsg::TotalSupplyAtHeight { height: _ } => {
             let response = TotalSupplyResponse {
                 total_supply: Uint128::from(10000u64),
             };
-            to_binary(&response)
+            to_json_binary(&response)
         }
     }
 }

@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{to_binary, Addr, CosmosMsg, Decimal, Env, StdResult, Uint128, WasmMsg};
+use cosmwasm_std::{to_json_binary, Addr, CosmosMsg, Decimal, Env, StdResult, Uint128, WasmMsg};
 use cwd_macros::{pausable, pausable_query};
 use exec_control::pause::PauseInfoResponse;
 use schemars::JsonSchema;
@@ -90,7 +90,7 @@ impl CallbackMsg {
     pub fn to_cosmos_msg(self, env: &Env) -> StdResult<CosmosMsg> {
         Ok(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: env.contract.address.to_string(),
-            msg: to_binary(&ExecuteMsg::Callback(self))?,
+            msg: to_json_binary(&ExecuteMsg::Callback(self))?,
             funds: vec![],
         }))
     }

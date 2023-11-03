@@ -1,7 +1,7 @@
 use cosmwasm_std::{
-    from_binary,
+    from_json,
     testing::{mock_env, mock_info},
-    to_binary, Addr, CosmosMsg, DepsMut, Empty, SubMsg, WasmMsg,
+    to_json_binary, Addr, CosmosMsg, DepsMut, Empty, SubMsg, WasmMsg,
 };
 use std::collections::HashMap;
 
@@ -62,12 +62,12 @@ overrule the proposal #{} of '{}' subdao (address {})",
         res.unwrap().messages,
         vec![SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: MOCK_DAO_PROPOSE_MODULE.to_string(),
-            msg: to_binary(&ProposeMessageInternal::Propose {
+            msg: to_json_binary(&ProposeMessageInternal::Propose {
                 title: prop_name,
                 description: prop_desc,
                 msgs: vec![CosmosMsg::Wasm(WasmMsg::Execute {
                     contract_addr: MOCK_TIMELOCK_CONTRACT.to_string(),
-                    msg: to_binary(&TimelockMsg::ExecuteMsg::OverruleProposal {
+                    msg: to_json_binary(&TimelockMsg::ExecuteMsg::OverruleProposal {
                         proposal_id: PROPOSAL_ID
                     })
                     .unwrap(),
@@ -88,7 +88,7 @@ fn test_base_queries() {
     init_base_contract(deps.as_mut());
 
     let res_config = query(deps.as_ref(), mock_env(), QueryMsg::Config {}).unwrap();
-    let queried_config = from_binary(&res_config).unwrap();
+    let queried_config = from_json(res_config).unwrap();
     let expected_config = Config {
         deposit_info: None,
         open_proposal_submission: true,
@@ -96,13 +96,13 @@ fn test_base_queries() {
     assert_eq!(expected_config, queried_config);
 
     let res_dao = query(deps.as_ref(), mock_env(), QueryMsg::Dao {}).unwrap();
-    let queried_dao: Addr = from_binary(&res_dao).unwrap();
+    let queried_dao: Addr = from_json(res_dao).unwrap();
     let expected_dao = Addr::unchecked(MOCK_DAO_CORE);
     assert_eq!(expected_dao, queried_dao);
 
     let res_proposal_module =
         query(deps.as_ref(), mock_env(), QueryMsg::ProposalModule {}).unwrap();
-    let queried_proposal_module: Addr = from_binary(&res_proposal_module).unwrap();
+    let queried_proposal_module: Addr = from_json(res_proposal_module).unwrap();
     let expected_proposal_module = Addr::unchecked(MOCK_DAO_PROPOSE_MODULE);
     assert_eq!(expected_proposal_module, queried_proposal_module);
 
@@ -141,7 +141,7 @@ fn test_proposal_id_query() {
         },
     )
     .unwrap();
-    let queried_id: u64 = from_binary(&res_id).unwrap();
+    let queried_id: u64 = from_json(res_id).unwrap();
     let expected_id = PROPOSALS_COUNT + 1;
     assert_eq!(expected_id, queried_id);
 }

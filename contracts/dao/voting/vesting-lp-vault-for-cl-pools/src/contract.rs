@@ -2,7 +2,7 @@ use astroport::asset::AssetInfo;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError, Uint128,
+    to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError, Uint128,
 };
 use cw2::set_contract_version;
 use cwd_interface::voting::{
@@ -149,12 +149,12 @@ pub fn execute_update_config(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
     match msg {
-        QueryMsg::VotingPowerAtHeight { address, height } => Ok(to_binary(
+        QueryMsg::VotingPowerAtHeight { address, height } => Ok(to_json_binary(
             &query_voting_power_at_height(deps, env, address, height)?,
         )?),
-        QueryMsg::TotalPowerAtHeight { height } => {
-            Ok(to_binary(&query_total_power_at_height(deps, env, height)?)?)
-        }
+        QueryMsg::TotalPowerAtHeight { height } => Ok(to_json_binary(
+            &query_total_power_at_height(deps, env, height)?,
+        )?),
         QueryMsg::Info {} => query_info(deps),
         QueryMsg::Dao {} => query_dao(deps),
         QueryMsg::Name {} => query_name(deps),
@@ -163,7 +163,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
         QueryMsg::ListBonders { start_after, limit } => {
             query_list_bonders(deps, start_after, limit)
         }
-        QueryMsg::BondingStatus { height, address } => Ok(to_binary(&query_bonding_status(
+        QueryMsg::BondingStatus { height, address } => Ok(to_json_binary(&query_bonding_status(
             deps, env, height, address,
         )?)?),
     }
@@ -253,27 +253,29 @@ pub fn query_total_power_at_height(
 
 pub fn query_info(deps: Deps) -> ContractResult<Binary> {
     let info = cw2::get_contract_version(deps.storage)?;
-    Ok(to_binary(&cwd_interface::voting::InfoResponse { info })?)
+    Ok(to_json_binary(&cwd_interface::voting::InfoResponse {
+        info,
+    })?)
 }
 
 pub fn query_dao(deps: Deps) -> ContractResult<Binary> {
     let dao = DAO.load(deps.storage)?;
-    Ok(to_binary(&dao)?)
+    Ok(to_json_binary(&dao)?)
 }
 
 pub fn query_name(deps: Deps) -> ContractResult<Binary> {
     let config = CONFIG.load(deps.storage)?;
-    Ok(to_binary(&config.name)?)
+    Ok(to_json_binary(&config.name)?)
 }
 
 pub fn query_description(deps: Deps) -> ContractResult<Binary> {
     let config = CONFIG.load(deps.storage)?;
-    Ok(to_binary(&config.description)?)
+    Ok(to_json_binary(&config.description)?)
 }
 
 pub fn query_config(deps: Deps) -> ContractResult<Binary> {
     let config = CONFIG.load(deps.storage)?;
-    Ok(to_binary(&config)?)
+    Ok(to_json_binary(&config)?)
 }
 
 pub fn query_list_bonders(

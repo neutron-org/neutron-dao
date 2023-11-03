@@ -4,7 +4,7 @@ use astroport::oracle::QueryMsg as OracleQueryMsg;
 use astroport_periphery::lockdrop::{PoolType, QueryMsg as LockdropQueryMsg};
 use cosmwasm_std::testing::{mock_dependencies, mock_env};
 use cosmwasm_std::{
-    coins, to_binary, Addr, Binary, Coin, Decimal256, Deps, Empty, Env, Response, StdResult,
+    coins, to_json_binary, Addr, Binary, Coin, Decimal256, Deps, Empty, Env, Response, StdResult,
     Uint128,
 };
 use cw_multi_test::{custom_app, App, AppResponse, Contract, ContractWrapper, Executor};
@@ -98,7 +98,7 @@ fn lockdrop_query(_deps: Deps, _env: Env, msg: LockdropQueryMsg) -> StdResult<Bi
                 PoolType::USDC => Uint128::from(USER_USDC_LOCKUP_AT_HEIGHT),
             };
 
-            to_binary(&response)
+            to_json_binary(&response)
         }
         LockdropQueryMsg::QueryLockupTotalAtHeight {
             pool_type,
@@ -109,7 +109,7 @@ fn lockdrop_query(_deps: Deps, _env: Env, msg: LockdropQueryMsg) -> StdResult<Bi
                 PoolType::USDC => Uint128::from(TOTAL_USDC_LOCKUP_AT_HEIGHT),
             };
 
-            to_binary(&response)
+            to_json_binary(&response)
         }
         _ => unreachable!(),
     }
@@ -158,7 +158,7 @@ fn oracle_query(_deps: Deps, _env: Env, msg: OracleQueryMsg) -> StdResult<Binary
             };
 
             let response = vec![(token, twap)];
-            to_binary(&response)
+            to_json_binary(&response)
         }
         _ => unreachable!(),
     }
