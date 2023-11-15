@@ -6,16 +6,18 @@ use cosmwasm_std::{
 use cw2::set_contract_version;
 use neutron_sdk::bindings::msg::NeutronMsg;
 
-use cwd_pre_propose_base::msg::MigrateMsg;
 use cwd_pre_propose_base::{
     error::PreProposeError,
-    msg::{ExecuteMsg as ExecuteBase, InstantiateMsg as InstantiateBase, QueryMsg as QueryBase},
+    msg::{
+        ExecuteMsg as ExecuteBase, InstantiateMsg as InstantiateBase, MigrateMsg,
+        QueryMsg as QueryBase,
+    },
     state::PreProposeContract,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-pub(crate) const CONTRACT_NAME: &str = "crates.io:cwd-subdao-pre-propose-single";
+pub(crate) const CONTRACT_NAME: &str = "crates.io:cwd-pre-propose-single";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[derive(Serialize, JsonSchema, Deserialize, Debug, Clone)]

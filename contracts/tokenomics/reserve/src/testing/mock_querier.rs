@@ -1,9 +1,9 @@
 use std::marker::PhantomData;
 
 use cosmwasm_std::{
-    from_slice,
+    from_json,
     testing::{MockApi, MockQuerier, MockStorage},
-    to_binary, Binary, Coin, ContractResult, OwnedDeps, Querier, QuerierResult, QueryRequest,
+    to_json_binary, Binary, Coin, ContractResult, OwnedDeps, Querier, QuerierResult, QueryRequest,
     SystemError, SystemResult,
 };
 use neutron_sdk::{
@@ -35,7 +35,7 @@ pub struct WasmMockQuerier {
 
 impl Querier for WasmMockQuerier {
     fn raw_query(&self, bin_request: &[u8]) -> QuerierResult {
-        let request: QueryRequest<NeutronQuery> = match from_slice(bin_request) {
+        let request: QueryRequest<NeutronQuery> = match from_json(bin_request) {
             Ok(v) => v,
             Err(e) => {
                 return QuerierResult::Err(SystemError::InvalidRequest {
@@ -52,7 +52,7 @@ impl WasmMockQuerier {
     pub fn new(base: MockQuerier<NeutronQuery>) -> Self {
         WasmMockQuerier {
             base,
-            total_burned_neutrons: to_binary(&Vec::<Coin>::with_capacity(0)).unwrap(),
+            total_burned_neutrons: to_json_binary(&Vec::<Coin>::with_capacity(0)).unwrap(),
             throw_error: false,
         }
     }
@@ -70,7 +70,8 @@ impl WasmMockQuerier {
     }
 
     pub fn set_total_burned_neutrons(&mut self, coin: Coin) {
-        self.total_burned_neutrons = to_binary(&TotalBurnedNeutronsAmountResponse { coin }).unwrap()
+        self.total_burned_neutrons =
+            to_json_binary(&TotalBurnedNeutronsAmountResponse { coin }).unwrap()
     }
 
     pub fn set_total_burned_neutrons_error(&mut self, error_state: bool) {

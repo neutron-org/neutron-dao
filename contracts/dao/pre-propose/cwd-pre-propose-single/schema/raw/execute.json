@@ -761,7 +761,7 @@
                   ]
                 },
                 "channel_id": {
-                  "description": "exisiting channel to send the tokens over",
+                  "description": "existing channel to send the tokens over",
                   "type": "string"
                 },
                 "timeout": {
@@ -879,7 +879,7 @@
           "minimum": 0.0
         },
         "revision": {
-          "description": "the version that the client is currently on (eg. after reseting the chain this could increment 1 as height drops to 0)",
+          "description": "the version that the client is currently on (e.g. after resetting the chain this could increment 1 as height drops to 0)",
           "type": "integer",
           "format": "uint64",
           "minimum": 0.0
@@ -940,8 +940,7 @@
               "type": "object",
               "required": [
                 "connection_id",
-                "interchain_account_id",
-                "register_fee"
+                "interchain_account_id"
               ],
               "properties": {
                 "connection_id": {
@@ -954,7 +953,10 @@
                 },
                 "register_fee": {
                   "description": "*register_fee** is a fees required to be payed to register interchain account",
-                  "type": "array",
+                  "type": [
+                    "array",
+                    "null"
+                  ],
                   "items": {
                     "$ref": "#/definitions/Coin"
                   }
@@ -2073,7 +2075,7 @@
                   }
                 },
                 "label": {
-                  "description": "A human-readbale label for the contract",
+                  "description": "A human-readable label for the contract.\n\nValid values should: - not be empty - not be bigger than 128 bytes (or some chain-specific limit) - not start / end with whitespace",
                   "type": "string"
                 },
                 "msg": {

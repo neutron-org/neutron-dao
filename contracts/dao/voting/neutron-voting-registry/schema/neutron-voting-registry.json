@@ -1,6 +1,6 @@
 {
   "contract_name": "neutron-voting-registry",
-  "contract_version": "0.2.0",
+  "contract_version": "0.3.0",
   "idl_version": "1.0.0",
   "instantiate": {
     "$schema": "http://json-schema.org/draft-07/schema#",
@@ -49,16 +49,36 @@
       {
         "type": "object",
         "required": [
-          "remove_voting_vault"
+          "deactivate_voting_vault"
         ],
         "properties": {
-          "remove_voting_vault": {
+          "deactivate_voting_vault": {
             "type": "object",
             "required": [
-              "old_voting_vault_contract"
+              "voting_vault_contract"
             ],
             "properties": {
-              "old_voting_vault_contract": {
+              "voting_vault_contract": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "activate_voting_vault"
+        ],
+        "properties": {
+          "activate_voting_vault": {
+            "type": "object",
+            "required": [
+              "voting_vault_contract"
+            ],
+            "properties": {
+              "voting_vault_contract": {
                 "type": "string"
               }
             }
@@ -126,6 +146,16 @@
         "properties": {
           "voting_vaults": {
             "type": "object",
+            "properties": {
+              "height": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint64",
+                "minimum": 0.0
+              }
+            },
             "additionalProperties": false
           }
         },
@@ -206,18 +236,11 @@
       "title": "Config",
       "type": "object",
       "required": [
-        "owner",
-        "voting_vaults"
+        "owner"
       ],
       "properties": {
         "owner": {
           "$ref": "#/definitions/Addr"
-        },
-        "voting_vaults": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/Addr"
-          }
         }
       },
       "definitions": {
@@ -329,7 +352,8 @@
           "required": [
             "address",
             "description",
-            "name"
+            "name",
+            "state"
           ],
           "properties": {
             "address": {
@@ -340,8 +364,29 @@
             },
             "name": {
               "type": "string"
+            },
+            "state": {
+              "$ref": "#/definitions/VotingVaultState"
             }
           }
+        },
+        "VotingVaultState": {
+          "oneOf": [
+            {
+              "description": "Voting vault is active means that it's considered in voting power queries to the Neutron voting registry.",
+              "type": "string",
+              "enum": [
+                "Active"
+              ]
+            },
+            {
+              "description": "Voting vault is inactive means that it's not considered in voting power queries to the Neutron voting registry.",
+              "type": "string",
+              "enum": [
+                "Inactive"
+              ]
+            }
+          ]
         }
       }
     }

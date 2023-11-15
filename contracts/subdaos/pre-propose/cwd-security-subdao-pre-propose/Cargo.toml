@@ -1,6 +1,6 @@
 [package]
-name = "cwd-subdao-pre-propose-single-no-timelock"
-version = "0.2.0"
+name = "cwd-security-subdao-pre-propose"
+version = "0.2.1"
 authors = ["Pavel Kalinin <pavel.kalinin@p2p.org>"]
 edition = "2021"
 repository = "https://github.com/DA0-DA0/dao-contracts"

@@ -1,4 +1,4 @@
-use cosmwasm_std::{to_binary, StdResult, Storage, SubMsg, WasmMsg};
+use cosmwasm_std::{to_json_binary, StdResult, Storage, SubMsg, WasmMsg};
 use cwd_hooks::Hooks;
 use cwd_voting::reply::mask_vote_hook_index;
 use schemars::JsonSchema;
@@ -31,7 +31,7 @@ pub fn new_vote_hooks(
     voter: String,
     vote: String,
 ) -> StdResult<Vec<SubMsg>> {
-    let msg = to_binary(&VoteHookExecuteMsg::VoteHook(VoteHookMsg::NewVote {
+    let msg = to_json_binary(&VoteHookExecuteMsg::VoteHook(VoteHookMsg::NewVote {
         proposal_id,
         voter,
         vote,

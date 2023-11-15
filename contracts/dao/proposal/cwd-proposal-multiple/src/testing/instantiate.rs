@@ -1,4 +1,4 @@
-use cosmwasm_std::{to_binary, Addr, Coin, Uint128};
+use cosmwasm_std::{to_json_binary, Addr, Coin, Uint128};
 use cw20::Cw20Coin;
 
 use cw_multi_test::{next_block, BankSudo, BasicApp, Contract, ContractWrapper, Executor, SudoMsg};
@@ -25,7 +25,7 @@ fn get_pre_propose_info(
     PreProposeInfo::ModuleMayPropose {
         info: ModuleInstantiateInfo {
             code_id: pre_propose_contract,
-            msg: to_binary(&cppm::InstantiateMsg {
+            msg: to_json_binary(&cppm::InstantiateMsg {
                 deposit_info,
                 open_proposal_submission,
             })
@@ -125,7 +125,7 @@ pub(crate) fn instantiate_with_native_bonded_balances_governance(
         dao_uri: None,
         voting_registry_module_instantiate_info: ModuleInstantiateInfo {
             code_id: voting_registry_id,
-            msg: to_binary(&neutron_voting_registry::msg::InstantiateMsg {
+            msg: to_json_binary(&neutron_voting_registry::msg::InstantiateMsg {
                 owner: DAO_ADDR.to_string(),
                 voting_vaults: vec![vault_addr.to_string()],
             })
@@ -137,7 +137,7 @@ pub(crate) fn instantiate_with_native_bonded_balances_governance(
             code_id: proposal_module_code_id,
             label: "DAO DAO governance module.".to_string(),
             admin: Some(Admin::CoreModule {}),
-            msg: to_binary(&proposal_module_instantiate).unwrap(),
+            msg: to_json_binary(&proposal_module_instantiate).unwrap(),
         }],
         initial_items: None,
     };

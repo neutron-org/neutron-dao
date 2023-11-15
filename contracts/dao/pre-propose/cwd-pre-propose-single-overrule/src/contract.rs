@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
+    to_json_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
     WasmMsg,
 };
 use cw2::set_contract_version;
@@ -102,7 +102,7 @@ pub fn execute(
 
             let overrule_msg = CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: timelock_contract_addr.to_string(),
-                msg: to_binary(&TimelockMsg::ExecuteMsg::OverruleProposal { proposal_id })?,
+                msg: to_json_binary(&TimelockMsg::ExecuteMsg::OverruleProposal { proposal_id })?,
                 funds: vec![],
             });
 
@@ -198,7 +198,11 @@ fn is_subdao_legit(deps: &DepsMut, subdao_core: &Addr) -> Result<bool, PrePropos
     );
 
     match subdao {
-        Ok(subdao) => Ok(subdao.addr == *subdao_core),
+        Ok(subdao) => {
+            // sanity check to make sure that query returned correct subdao
+            let correct_subdao = subdao.addr == *subdao_core;
+            Ok(correct_subdao)
+        }
         Err(_) => Ok(false),
     }
 }
@@ -254,7 +258,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
                     deps.api.addr_validate(&timelock_address)?,
                 ),
             )?;
-            to_binary(&overrule_proposal_id)
+            to_json_binary(&overrule_proposal_id)
         }
         _ => PrePropose::default().query(deps, env, msg),
     }

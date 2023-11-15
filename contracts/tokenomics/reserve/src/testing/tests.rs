@@ -1,9 +1,9 @@
 use std::str::FromStr;
 
 use cosmwasm_std::{
-    coin, coins, from_binary,
+    coin, coins, from_json,
     testing::{mock_env, mock_info},
-    to_binary, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, StdError, Uint128, WasmMsg,
+    to_json_binary, BankMsg, Coin, CosmosMsg, Decimal, DepsMut, StdError, Uint128, WasmMsg,
 };
 use exec_control::pause::{PauseError, PauseInfoResponse};
 use neutron_sdk::bindings::query::NeutronQuery;
@@ -58,7 +58,7 @@ fn test_pause() {
     let res = execute(deps.as_mut(), mock_env(), mock_info("main_dao", &[]), msg);
     assert!(res.is_ok());
     let pause_info: PauseInfoResponse =
-        from_binary(&query(deps.as_ref(), mock_env(), QueryMsg::PauseInfo {}).unwrap()).unwrap();
+        from_json(query(deps.as_ref(), mock_env(), QueryMsg::PauseInfo {}).unwrap()).unwrap();
     assert_eq!(
         pause_info,
         PauseInfoResponse::Paused {
@@ -107,7 +107,7 @@ fn test_pause() {
     );
     assert!(res.is_ok());
     let pause_info: PauseInfoResponse =
-        from_binary(&query(deps.as_ref(), env.clone(), QueryMsg::PauseInfo {}).unwrap()).unwrap();
+        from_json(query(deps.as_ref(), env.clone(), QueryMsg::PauseInfo {}).unwrap()).unwrap();
     assert_eq!(
         pause_info,
         PauseInfoResponse::Paused {
@@ -120,7 +120,7 @@ fn test_pause() {
     let res = execute(deps.as_mut(), mock_env(), mock_info("main_dao", &[]), msg);
     assert!(res.is_ok(),);
     let pause_info: PauseInfoResponse =
-        from_binary(&query(deps.as_ref(), mock_env(), QueryMsg::PauseInfo {}).unwrap()).unwrap();
+        from_json(query(deps.as_ref(), mock_env(), QueryMsg::PauseInfo {}).unwrap()).unwrap();
     assert_eq!(pause_info, PauseInfoResponse::Unpaused {});
 }
 
@@ -143,7 +143,7 @@ fn test_distribute_success() {
                 denom: DENOM.to_string(),
                 amount: Uint128::from(23u128)
             }],
-            msg: to_binary(&DistributeMsg::Fund {}).unwrap(),
+            msg: to_json_binary(&DistributeMsg::Fund {}).unwrap(),
         })
     );
     assert_eq!(
@@ -283,7 +283,7 @@ fn test_distribute_zero_to_reserve() {
                 denom: DENOM.to_string(),
                 amount: Uint128::from(100u128)
             }],
-            msg: to_binary(&DistributeMsg::Fund {}).unwrap(),
+            msg: to_json_binary(&DistributeMsg::Fund {}).unwrap(),
         })
     );
 

@@ -21,7 +21,7 @@ pub fn query_list_items(
     start_after: Option<String>,
     limit: Option<u32>,
 ) -> StdResult<Binary> {
-    to_binary(&paginate_map(
+    to_json_binary(&paginate_map(
         deps,
         &ITEMS,
         start_after,

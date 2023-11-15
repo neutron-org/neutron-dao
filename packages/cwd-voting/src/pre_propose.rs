@@ -47,9 +47,8 @@ impl PreProposeInfo {
         Ok(match self {
             Self::AnyoneMayPropose {} => (ProposalCreationPolicy::Anyone {}, vec![]),
             Self::ModuleMayPropose { info } => (
-                // Anyone can propose will be set until instantiation succeeds, then
-                // `ModuleMayPropose` will be set. This ensures that we fail open
-                // upon instantiation failure.
+                // If we got an error on pre-propose instantiate,
+                // practically the whole DAO/propose module instantiate tx will fail.
                 ProposalCreationPolicy::Anyone {},
                 vec![SubMsg::reply_on_success(
                     info.into_wasm_msg(dao_address),
@@ -62,7 +61,7 @@ impl PreProposeInfo {
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{to_binary, WasmMsg};
+    use cosmwasm_std::{to_json_binary, WasmMsg};
 
     use super::*;
 
@@ -116,7 +115,7 @@ mod tests {
         let info = PreProposeInfo::ModuleMayPropose {
             info: ModuleInstantiateInfo {
                 code_id: 42,
-                msg: to_binary("foo").unwrap(),
+                msg: to_json_binary("foo").unwrap(),
                 admin: None,
                 label: "pre-propose-9000".to_string(),
             },
@@ -137,7 +136,7 @@ mod tests {
                 WasmMsg::Instantiate {
                     admin: None,
                     code_id: 42,
-                    msg: to_binary("foo").unwrap(),
+                    msg: to_json_binary("foo").unwrap(),
                     funds: vec![],
                     label: "pre-propose-9000".to_string()
                 },

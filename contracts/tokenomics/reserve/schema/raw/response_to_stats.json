@@ -9,13 +9,28 @@
   ],
   "properties": {
     "total_distributed": {
-      "$ref": "#/definitions/Uint128"
+      "description": "Amount of coins distributed since contract instantiation",
+      "allOf": [
+        {
+          "$ref": "#/definitions/Uint128"
+        }
+      ]
     },
     "total_processed_burned_coins": {
-      "$ref": "#/definitions/Uint128"
+      "description": "Total amount of burned coins processed by reserve contract",
+      "allOf": [
+        {
+          "$ref": "#/definitions/Uint128"
+        }
+      ]
     },
     "total_reserved": {
-      "$ref": "#/definitions/Uint128"
+      "description": "Amount of coins reserved since contract instantiation",
+      "allOf": [
+        {
+          "$ref": "#/definitions/Uint128"
+        }
+      ]
     }
   },
   "definitions": {

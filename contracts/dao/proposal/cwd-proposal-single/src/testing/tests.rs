@@ -1,8 +1,9 @@
+use crate::contract::query_proposal_execution_error;
 use cosmwasm_std::{
-    coins,
+    coins, from_json,
     testing::{mock_dependencies, mock_env},
-    to_binary, Addr, Attribute, BankMsg, ContractInfoResponse, CosmosMsg, Decimal, Empty, Reply,
-    StdError, StdResult, SubMsgResult, Uint128, WasmMsg, WasmQuery,
+    to_json_binary, Addr, Attribute, BankMsg, ContractInfoResponse, CosmosMsg, Decimal, Empty,
+    Reply, StdError, StdResult, SubMsgResult, Uint128, WasmMsg, WasmQuery,
 };
 use cosmwasm_std::{Api, Storage};
 use cw2::ContractVersion;
@@ -285,7 +286,7 @@ fn test_update_config() {
         CREATOR_ADDR,
         vec![WasmMsg::Execute {
             contract_addr: proposal_module.to_string(),
-            msg: to_binary(&ExecuteMsg::UpdateConfig {
+            msg: to_json_binary(&ExecuteMsg::UpdateConfig {
                 threshold: Threshold::AbsoluteCount {
                     threshold: Uint128::new(10_000),
                 },
@@ -585,7 +586,7 @@ fn test_min_voting_period_no_early_pass() {
     let proposal_response = query_proposal(&app, &proposal_module, proposal_id);
     assert_eq!(proposal_response.proposal.status, Status::Open);
 
-    app.update_block(|b| b.height += 10);
+    app.update_block(|block| block.height += 10);
     let proposal_response = query_proposal(&app, &proposal_module, proposal_id);
     assert_eq!(proposal_response.proposal.status, Status::Passed);
 }
@@ -978,6 +979,11 @@ fn test_reply_proposal_mock() {
 
     let prop = PROPOSALS.load(deps.as_mut().storage, 1).unwrap();
     assert_eq!(prop.status, Status::ExecutionFailed);
+
+    // reply writes the failed proposal error
+    let query_res = query_proposal_execution_error(deps.as_ref(), 1).unwrap();
+    let error: Option<String> = from_json(query_res).unwrap();
+    assert_eq!(error, Some("error_msg".to_string()));
 }
 
 #[test]

@@ -155,6 +155,9 @@ pub enum QueryMsg {
     /// Verify timelock. Returns bool.
     #[returns(bool)]
     VerifyTimelock { timelock: String },
+    /// Returns proposal module address for timelock contract if it's correct
+    #[returns(Addr)]
+    TimelockProposalModuleAddress { timelock: String },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]

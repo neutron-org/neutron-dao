@@ -13,6 +13,7 @@
     ],
     "properties": {
       "denom": {
+        "description": "Denom used for rewards distribution. All funds in any other denoms will be ignored.",
         "type": "string"
       },
       "main_dao_address": {
@@ -43,6 +44,7 @@
         "additionalProperties": false
       },
       {
+        "description": "Alter shareholder's weights",
         "type": "object",
         "required": [
           "set_shares"
@@ -76,7 +78,7 @@
         "additionalProperties": false
       },
       {
-        "description": "Distribute funds between share holders. It is called from reserve contract only when part of the fund is going to distribution betrween share holders.",
+        "description": "Distribute funds between share holders. It is called from reserve contract only when part of the fund is going to distribution between share holders.",
         "type": "object",
         "required": [
           "fund"
@@ -162,6 +164,7 @@
         "additionalProperties": false
       },
       {
+        "description": "List of pending funds to addresses (to be distributed); returns [`Vec<(Addr, Uint128)>`]",
         "type": "object",
         "required": [
           "pending"
@@ -175,6 +178,7 @@
         "additionalProperties": false
       },
       {
+        "description": "List of current shareholder weights; returns [`Vec<(Addr, Uint128)>`]",
         "type": "object",
         "required": [
           "shares"

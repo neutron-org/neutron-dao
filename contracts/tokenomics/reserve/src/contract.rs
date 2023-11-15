@@ -3,8 +3,8 @@ use crate::error::ContractError;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    coins, to_binary, Addr, BankMsg, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response,
-    StdResult, Uint128, WasmMsg,
+    coins, to_json_binary, Addr, BankMsg, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
+    Response, StdResult, Uint128, WasmMsg,
 };
 use cw2::set_contract_version;
 use exec_control::pause::{
@@ -21,7 +21,7 @@ use crate::vesting::{
     get_burned_coins, safe_burned_coins_for_period, update_distribution_stats, vesting_function,
 };
 
-pub(crate) const CONTRACT_NAME: &str = "crates.io:reserve";
+pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-reserve";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 //--------------------------------------------------------------------------------------------------
@@ -174,13 +174,6 @@ pub fn execute(
         ExecuteMsg::Unpause {} => execute_unpause(deps, info.sender),
     }
 }
-
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
-    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-    Ok(Response::default())
-}
-
 pub fn execute_transfer_ownership(
     deps: DepsMut<NeutronQuery>,
     info: MessageInfo,
@@ -312,14 +305,14 @@ pub fn execute_distribute(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps<NeutronQuery>, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::Config {} => to_binary(&query_config(deps)?),
-        QueryMsg::Stats {} => to_binary(&query_stats(deps)?),
+        QueryMsg::Config {} => to_json_binary(&query_config(deps)?),
+        QueryMsg::Stats {} => to_json_binary(&query_stats(deps)?),
         QueryMsg::PauseInfo {} => query_paused(deps, env),
     }
 }
 
 pub fn query_paused(deps: Deps<NeutronQuery>, env: Env) -> StdResult<Binary> {
-    to_binary(&get_pause_info(deps, &env)?)
+    to_json_binary(&get_pause_info(deps, &env)?)
 }
 
 pub fn query_config(deps: Deps<NeutronQuery>) -> StdResult<Config> {
@@ -354,7 +347,7 @@ pub fn create_distribution_response(
         let msg = CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: config.distribution_contract.to_string(),
             funds: coins(to_distribute.u128(), denom.clone()),
-            msg: to_binary(&DistributeMsg::Fund {})?,
+            msg: to_json_binary(&DistributeMsg::Fund {})?,
         });
         resp = resp.add_message(msg)
     }
@@ -368,4 +361,11 @@ pub fn create_distribution_response(
     }
 
     Ok(resp)
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    // Set contract to version to latest
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    Ok(Response::default())
 }
