@@ -1,6 +1,6 @@
 use crate::contract::{execute, instantiate, query};
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, VotingVault};
+use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, VotingVault};
 use crate::state::{Config, VotingVaultState};
 use crate::testing::mock_querier::{
     mock_dependencies, MOCK_VAULT_1, MOCK_VAULT_1_DESC, MOCK_VAULT_1_NAME, MOCK_VAULT_1_VP,
@@ -8,7 +8,7 @@ use crate::testing::mock_querier::{
     MOCK_VAULT_3_DESC, MOCK_VAULT_3_NAME, MOCK_VAULT_MEMBER,
 };
 use cosmwasm_std::testing::{mock_env, mock_info};
-use cosmwasm_std::{from_json, Addr, Deps, DepsMut, Env, Response, Uint128};
+use cosmwasm_std::{from_json, Addr, Deps, DepsMut, Env, MessageInfo, Response, Uint128};
 use cwd_interface::voting::{
     InfoResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
