@@ -7,11 +7,8 @@ use cosmwasm_std::{
     StdError, StdResult,
 };
 use cw2::set_contract_version;
-use cw_storage_plus::Item;
 use cwd_interface::voting::{self, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse};
 use neutron_vault::msg::QueryMsg as VaultQueryMsg;
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
 pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-voting-registry";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
