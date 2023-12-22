@@ -682,7 +682,7 @@ fn test_revoting_playthrough() {
     assert!(matches!(err, ContractError::AlreadyCast {}));
 
     // Expire the proposal allowing the votes to be tallied.
-    app.update_block(| b| b.time = b.time.plus_seconds(604800));
+    app.update_block(|b| b.time = b.time.plus_seconds(604800));
     let proposal_response = query_proposal(&app, &proposal_module, proposal_id);
     assert_eq!(proposal_response.proposal.status, Status::Passed);
     execute_proposal(&mut app, &proposal_module, CREATOR_ADDR, proposal_id);
@@ -790,18 +790,19 @@ fn test_proposal_count_initialized_to_zero() {
     let instantiate = get_proposal_module_instantiate(&mut app);
     // let pre_propose_info = get_pre_propose_info(&mut app, None, false);
     let core_addr = instantiate_with_native_bonded_balances_governance(
-        &mut app, 
-        instantiate, 
+        &mut app,
+        instantiate,
         Some(vec![
-        Cw20Coin {
-            address: "ekez".to_string(),
-            amount: Uint128::new(10),
-        },
-        Cw20Coin {
-            address: "innactive".to_string(),
-            amount: Uint128::new(90),
-        },
-    ]),);
+            Cw20Coin {
+                address: "ekez".to_string(),
+                amount: Uint128::new(10),
+            },
+            Cw20Coin {
+                address: "innactive".to_string(),
+                amount: Uint128::new(90),
+            },
+        ]),
+    );
 
     let core_state: cwd_core::query::DumpStateResponse = app
         .wrap()
@@ -825,7 +826,7 @@ fn test_proposal_count_initialized_to_zero() {
 // - Make the same proposal again.
 // - Update the config to disable close on execution failure.
 // - Make sure that proposal doesn't close on execution (this config
-//   feature gets applied retroactively). 
+//   feature gets applied retroactively).
 #[test]
 fn test_execution_failed() {
     let CommonTest {
