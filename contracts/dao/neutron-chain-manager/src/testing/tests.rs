@@ -331,7 +331,10 @@ fn test_remove_strategy_invalid_demotion() {
 pub fn test_execute_execute_message_update_params_cron_authorized() {
     let msg = CosmosMsg::Custom(NeutronMsg::SubmitAdminProposal {
         admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
-            message: r#"{"@type":"/neutron.cron.MsgUpdateParams", "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z", "params": {"security_address": "addr1", "limit": 16}}"#.to_string(),
+            message: r#"{"@type":"/neutron.cron.MsgUpdateParams",
+            "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
+            "params": {"security_address": "addr1", "limit": 16}}"#
+                .to_string(),
         }),
     });
 
