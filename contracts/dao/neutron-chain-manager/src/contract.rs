@@ -143,22 +143,15 @@ fn is_authorized(deps: Deps, address: Addr) -> Result<(), ContractError> {
 }
 
 fn get_allow_all_count(deps: Deps) -> Result<u64, ContractError> {
-    let mut allow_all_count: u64 = 0;
-
-    let strategies: Vec<Strategy> = STRATEGIES
+    let allow_all_strategies: Vec<Strategy> = STRATEGIES
         .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
         .collect::<Result<Vec<(Addr, Strategy)>, _>>()?
         .into_iter()
         .map(|(_addr, strategy)| strategy)
+        .filter(|strategy| matches!(strategy, Strategy::AllowAll))
         .collect();
 
-    for strategy in strategies {
-        if let Strategy::AllowAll = strategy {
-            allow_all_count += 1;
-        }
-    }
-
-    Ok(allow_all_count)
+    Ok(allow_all_strategies.len() as u64)
 }
 
 /// For every message, check whether we have the permission to execute it.
