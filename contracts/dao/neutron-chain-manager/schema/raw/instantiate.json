@@ -3,15 +3,25 @@
   "title": "InstantiateMsg",
   "type": "object",
   "required": [
-    "initial_strategies"
+    "initial_strategy",
+    "initial_strategy_address"
   ],
   "properties": {
-    "initial_strategies": {
-      "description": "Defines the initial list of strategies.",
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/Strategy"
-      }
+    "initial_strategy": {
+      "description": "Defines the initial strategy. Must be an ALLOW_ALL strategy.",
+      "allOf": [
+        {
+          "$ref": "#/definitions/Strategy"
+        }
+      ]
+    },
+    "initial_strategy_address": {
+      "description": "Defines the address for the initial strategy.",
+      "allOf": [
+        {
+          "$ref": "#/definitions/Addr"
+        }
+      ]
     }
   },
   "definitions": {
@@ -49,7 +59,21 @@
         }
       }
     },
-    "LegacyParamPermission": {
+    "ParamChangePermission": {
+      "type": "object",
+      "required": [
+        "params"
+      ],
+      "properties": {
+        "params": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ParamPermission"
+          }
+        }
+      }
+    },
+    "ParamPermission": {
       "type": "object",
       "required": [
         "key",
@@ -61,20 +85,6 @@
         },
         "subspace": {
           "type": "string"
-        }
-      }
-    },
-    "ParamChangePermission": {
-      "type": "object",
-      "required": [
-        "params"
-      ],
-      "properties": {
-        "params": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/LegacyParamPermission"
-          }
         }
       }
     },
@@ -119,22 +129,29 @@
       ]
     },
     "Strategy": {
-      "type": "object",
-      "required": [
-        "address",
-        "permissions"
-      ],
-      "properties": {
-        "address": {
-          "$ref": "#/definitions/Addr"
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "AllowAll"
+          ]
         },
-        "permissions": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/Permission"
-          }
+        {
+          "type": "object",
+          "required": [
+            "AllowOnly"
+          ],
+          "properties": {
+            "AllowOnly": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Permission"
+              }
+            }
+          },
+          "additionalProperties": false
         }
-      }
+      ]
     },
     "UpdateParamsPermission": {
       "oneOf": [

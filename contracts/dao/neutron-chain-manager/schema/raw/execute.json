@@ -11,9 +11,13 @@
         "add_strategy": {
           "type": "object",
           "required": [
+            "address",
             "strategy"
           ],
           "properties": {
+            "address": {
+              "$ref": "#/definitions/Addr"
+            },
             "strategy": {
               "$ref": "#/definitions/Strategy"
             }
@@ -809,21 +813,6 @@
         }
       }
     },
-    "LegacyParamPermission": {
-      "type": "object",
-      "required": [
-        "key",
-        "subspace"
-      ],
-      "properties": {
-        "key": {
-          "type": "string"
-        },
-        "subspace": {
-          "type": "string"
-        }
-      }
-    },
     "MsgExecuteContract": {
       "description": "MsgExecuteContract defines a call to the contract execution",
       "type": "object",
@@ -1380,7 +1369,7 @@
         "params": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/LegacyParamPermission"
+            "$ref": "#/definitions/ParamPermission"
           }
         }
       }
@@ -1407,6 +1396,21 @@
         },
         "title": {
           "description": "*title** is a text title of proposal. Non unique.",
+          "type": "string"
+        }
+      }
+    },
+    "ParamPermission": {
+      "type": "object",
+      "required": [
+        "key",
+        "subspace"
+      ],
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "subspace": {
           "type": "string"
         }
       }
@@ -1673,22 +1677,29 @@
       ]
     },
     "Strategy": {
-      "type": "object",
-      "required": [
-        "address",
-        "permissions"
-      ],
-      "properties": {
-        "address": {
-          "$ref": "#/definitions/Addr"
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "AllowAll"
+          ]
         },
-        "permissions": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/Permission"
-          }
+        {
+          "type": "object",
+          "required": [
+            "AllowOnly"
+          ],
+          "properties": {
+            "AllowOnly": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Permission"
+              }
+            }
+          },
+          "additionalProperties": false
         }
-      }
+      ]
     },
     "SudoContractProposal": {
       "description": "Deprecated. SudoContractProposal defines the struct for sudo execution proposal.",

@@ -7,15 +7,25 @@
     "title": "InstantiateMsg",
     "type": "object",
     "required": [
-      "initial_strategies"
+      "initial_strategy",
+      "initial_strategy_address"
     ],
     "properties": {
-      "initial_strategies": {
-        "description": "Defines the initial list of strategies.",
-        "type": "array",
-        "items": {
-          "$ref": "#/definitions/Strategy"
-        }
+      "initial_strategy": {
+        "description": "Defines the initial strategy. Must be an ALLOW_ALL strategy.",
+        "allOf": [
+          {
+            "$ref": "#/definitions/Strategy"
+          }
+        ]
+      },
+      "initial_strategy_address": {
+        "description": "Defines the address for the initial strategy.",
+        "allOf": [
+          {
+            "$ref": "#/definitions/Addr"
+          }
+        ]
       }
     },
     "definitions": {
@@ -53,7 +63,21 @@
           }
         }
       },
-      "LegacyParamPermission": {
+      "ParamChangePermission": {
+        "type": "object",
+        "required": [
+          "params"
+        ],
+        "properties": {
+          "params": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/ParamPermission"
+            }
+          }
+        }
+      },
+      "ParamPermission": {
         "type": "object",
         "required": [
           "key",
@@ -65,20 +89,6 @@
           },
           "subspace": {
             "type": "string"
-          }
-        }
-      },
-      "ParamChangePermission": {
-        "type": "object",
-        "required": [
-          "params"
-        ],
-        "properties": {
-          "params": {
-            "type": "array",
-            "items": {
-              "$ref": "#/definitions/LegacyParamPermission"
-            }
           }
         }
       },
@@ -123,22 +133,29 @@
         ]
       },
       "Strategy": {
-        "type": "object",
-        "required": [
-          "address",
-          "permissions"
-        ],
-        "properties": {
-          "address": {
-            "$ref": "#/definitions/Addr"
+        "oneOf": [
+          {
+            "type": "string",
+            "enum": [
+              "AllowAll"
+            ]
           },
-          "permissions": {
-            "type": "array",
-            "items": {
-              "$ref": "#/definitions/Permission"
-            }
+          {
+            "type": "object",
+            "required": [
+              "AllowOnly"
+            ],
+            "properties": {
+              "AllowOnly": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/Permission"
+                }
+              }
+            },
+            "additionalProperties": false
           }
-        }
+        ]
       },
       "UpdateParamsPermission": {
         "oneOf": [
@@ -171,9 +188,13 @@
           "add_strategy": {
             "type": "object",
             "required": [
+              "address",
               "strategy"
             ],
             "properties": {
+              "address": {
+                "$ref": "#/definitions/Addr"
+              },
               "strategy": {
                 "$ref": "#/definitions/Strategy"
               }
@@ -969,21 +990,6 @@
           }
         }
       },
-      "LegacyParamPermission": {
-        "type": "object",
-        "required": [
-          "key",
-          "subspace"
-        ],
-        "properties": {
-          "key": {
-            "type": "string"
-          },
-          "subspace": {
-            "type": "string"
-          }
-        }
-      },
       "MsgExecuteContract": {
         "description": "MsgExecuteContract defines a call to the contract execution",
         "type": "object",
@@ -1540,7 +1546,7 @@
           "params": {
             "type": "array",
             "items": {
-              "$ref": "#/definitions/LegacyParamPermission"
+              "$ref": "#/definitions/ParamPermission"
             }
           }
         }
@@ -1567,6 +1573,21 @@
           },
           "title": {
             "description": "*title** is a text title of proposal. Non unique.",
+            "type": "string"
+          }
+        }
+      },
+      "ParamPermission": {
+        "type": "object",
+        "required": [
+          "key",
+          "subspace"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "subspace": {
             "type": "string"
           }
         }
@@ -1833,22 +1854,29 @@
         ]
       },
       "Strategy": {
-        "type": "object",
-        "required": [
-          "address",
-          "permissions"
-        ],
-        "properties": {
-          "address": {
-            "$ref": "#/definitions/Addr"
+        "oneOf": [
+          {
+            "type": "string",
+            "enum": [
+              "AllowAll"
+            ]
           },
-          "permissions": {
-            "type": "array",
-            "items": {
-              "$ref": "#/definitions/Permission"
-            }
+          {
+            "type": "object",
+            "required": [
+              "AllowOnly"
+            ],
+            "properties": {
+              "AllowOnly": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/Permission"
+                }
+              }
+            },
+            "additionalProperties": false
           }
-        }
+        ]
       },
       "SudoContractProposal": {
         "description": "Deprecated. SudoContractProposal defines the struct for sudo execution proposal.",
@@ -2214,7 +2242,11 @@
       }
     ]
   },
-  "migrate": null,
+  "migrate": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "MigrateMsg",
+    "type": "object"
+  },
   "sudo": null,
   "responses": {
     "strategies": {
@@ -2225,10 +2257,6 @@
         "$ref": "#/definitions/Strategy"
       },
       "definitions": {
-        "Addr": {
-          "description": "A human readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multi-chain smart contracts no assumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways 1. Use `Addr::unchecked(input)` 2. Use `let checked: Addr = deps.api.addr_validate(input)?` 3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?` 4. Deserialize from JSON. This must only be done from JSON that was validated before such as a contract's state. `Addr` must not be used in messages sent by the user because this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create a mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String` instance.",
-          "type": "string"
-        },
         "CronPermission": {
           "type": "object",
           "required": [
@@ -2259,7 +2287,21 @@
             }
           }
         },
-        "LegacyParamPermission": {
+        "ParamChangePermission": {
+          "type": "object",
+          "required": [
+            "params"
+          ],
+          "properties": {
+            "params": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ParamPermission"
+              }
+            }
+          }
+        },
+        "ParamPermission": {
           "type": "object",
           "required": [
             "key",
@@ -2271,20 +2313,6 @@
             },
             "subspace": {
               "type": "string"
-            }
-          }
-        },
-        "ParamChangePermission": {
-          "type": "object",
-          "required": [
-            "params"
-          ],
-          "properties": {
-            "params": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/LegacyParamPermission"
-              }
             }
           }
         },
@@ -2329,22 +2357,29 @@
           ]
         },
         "Strategy": {
-          "type": "object",
-          "required": [
-            "address",
-            "permissions"
-          ],
-          "properties": {
-            "address": {
-              "$ref": "#/definitions/Addr"
+          "oneOf": [
+            {
+              "type": "string",
+              "enum": [
+                "AllowAll"
+              ]
             },
-            "permissions": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/Permission"
-              }
+            {
+              "type": "object",
+              "required": [
+                "AllowOnly"
+              ],
+              "properties": {
+                "AllowOnly": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/Permission"
+                  }
+                }
+              },
+              "additionalProperties": false
             }
-          }
+          ]
         },
         "UpdateParamsPermission": {
           "oneOf": [
