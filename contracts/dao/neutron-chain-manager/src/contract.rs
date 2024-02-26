@@ -4,8 +4,7 @@ use crate::cron_module_param_types::{
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Order, Response,
-    StdResult,
+    to_json_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
 };
 use cw2::set_contract_version;
 use neutron_sdk::bindings::msg::{AdminProposal, NeutronMsg, ProposalExecuteMessage};
@@ -16,7 +15,7 @@ use crate::error::ContractError;
 use crate::msg::{
     ExecuteMsg, InstantiateMsg, MigrateMsg, ProposalExecuteMessageJSON, QueryMsg, Strategy,
 };
-use crate::state::{STRATEGIES_ALLOW_ALL, STRATEGIES_ALLOW_ONLY};
+use crate::state::STRATEGIES;
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-chain-manager";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -30,19 +29,19 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    if !msg.initial_strategy.permissions.is_empty() {
+    if let Strategy::AllowOnly(_) = msg.initial_strategy {
         return Err(ContractError::InvalidInitialStrategy {});
     }
 
-    STRATEGIES_ALLOW_ALL.save(
+    STRATEGIES.save(
         deps.storage,
-        msg.initial_strategy.address.clone(),
+        msg.initial_strategy_address.clone(),
         &msg.initial_strategy,
     )?;
 
     Ok(Response::new()
         .add_attribute("action", "instantiate")
-        .add_attribute("init_allow_all_address", msg.initial_strategy.address))
+        .add_attribute("init_allow_all_address", msg.initial_strategy_address))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -53,7 +52,9 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response<NeutronMsg>, ContractError> {
     match msg {
-        ExecuteMsg::AddStrategy { strategy } => execute_add_strategy(deps, info, strategy),
+        ExecuteMsg::AddStrategy { address, strategy } => {
+            execute_add_strategy(deps, info, address, strategy)
+        }
         ExecuteMsg::RemoveStrategy { address } => execute_remove_strategy(deps, info, address),
         ExecuteMsg::ExecuteMessages { messages } => execute_execute_messages(deps, info, messages),
     }
@@ -62,35 +63,23 @@ pub fn execute(
 pub fn execute_add_strategy(
     deps: DepsMut,
     info: MessageInfo,
+    address: Addr,
     strategy: Strategy,
 ) -> Result<Response<NeutronMsg>, ContractError> {
-    if !STRATEGIES_ALLOW_ALL.has(deps.storage, info.sender) {
-        return Err(ContractError::Unauthorized {});
-    }
+    is_authorized(deps.as_ref(), info.sender.clone())?;
 
-    // An address cannot have both an ALLOW_ALL strategy and an ALLOW_ONLY
-    // strategy associated with it.
-    if strategy.permissions.is_empty() {
-        STRATEGIES_ALLOW_ALL.save(deps.storage, strategy.address.clone(), &strategy)?;
-        // If an address was *promoted* to an ALLOW_ALL permission strategy,
-        // we remove its ALLOW_ONLY entry.
-        STRATEGIES_ALLOW_ONLY.remove(deps.storage, strategy.address.clone());
-    } else {
-        STRATEGIES_ALLOW_ONLY.save(deps.storage, strategy.address.clone(), &strategy)?;
-
-        // If an address was *demoted* to an ALLOW_ONLY permission strategy, we
-        // remove its ALLOW_ALL entry. If this operation leaves us without a
-        // single ALLOW_ALL strategy, we abort the operation.
-        STRATEGIES_ALLOW_ALL.remove(deps.storage, strategy.address.clone());
-        if STRATEGIES_ALLOW_ALL.is_empty(deps.storage) {
+    // We add the new strategy, and then we check that it did not replace
+    // the only existing ALLOW_ALL strategy.
+    STRATEGIES.save(deps.storage, address.clone(), &strategy)?;
+    if let Strategy::AllowOnly(_) = strategy {
+        if get_allow_all_count(deps.as_ref())? == 0 {
             return Err(ContractError::InvalidDemotion {});
         }
     }
 
     Ok(Response::new()
         .add_attribute("action", "execute_add_strategy")
-        .add_attribute("address", strategy.address)
-        .add_attribute("permissions_count", strategy.permissions.len().to_string()))
+        .add_attribute("address", address))
 }
 
 pub fn execute_remove_strategy(
@@ -98,15 +87,12 @@ pub fn execute_remove_strategy(
     info: MessageInfo,
     address: Addr,
 ) -> Result<Response<NeutronMsg>, ContractError> {
-    if !STRATEGIES_ALLOW_ALL.has(deps.storage, info.sender) {
-        return Err(ContractError::Unauthorized {});
-    }
+    is_authorized(deps.as_ref(), info.sender.clone())?;
 
-    STRATEGIES_ALLOW_ONLY.remove(deps.storage, address.clone());
-    // If this operation leaves us without a single ALLOW_ALL strategy, we
-    // abort the operation.
-    STRATEGIES_ALLOW_ALL.remove(deps.storage, address.clone());
-    if STRATEGIES_ALLOW_ALL.is_empty(deps.storage) {
+    // First we remove the strategy, then we check that it was not the only
+    // ALLOW_ALL strategy we had.
+    STRATEGIES.remove(deps.storage, address.clone());
+    if get_allow_all_count(deps.as_ref())? == 0 {
         return Err(ContractError::InvalidDemotion {});
     }
 
@@ -120,27 +106,59 @@ pub fn execute_execute_messages(
     info: MessageInfo,
     messages: Vec<CosmosMsg<NeutronMsg>>,
 ) -> Result<Response<NeutronMsg>, ContractError> {
-    if STRATEGIES_ALLOW_ALL.has(deps.storage, info.sender.clone()) {
-        return Ok(Response::new()
-            .add_attribute("action", "execute_execute_messages")
-            .add_attribute("strategy", "allow_all")
-            .add_attribute("address", info.sender.clone())
-            .add_messages(messages));
-    }
-
     // If the sender doesn't have a strategy associated with them, abort immediately.
-    if !STRATEGIES_ALLOW_ONLY.has(deps.storage, info.sender.clone()) {
+    if !STRATEGIES.has(deps.storage, info.sender.clone()) {
         return Err(ContractError::Unauthorized {});
     }
 
-    let strategy = STRATEGIES_ALLOW_ONLY.load(deps.storage, info.sender.clone())?;
-    check_allow_only_permissions(deps.as_ref(), strategy, messages.clone())?;
-
-    Ok(Response::new()
+    let response = Response::new()
         .add_attribute("action", "execute_execute_messages")
-        .add_attribute("strategy", "allow_only")
-        .add_attribute("address", info.sender.clone())
-        .add_messages(messages))
+        .add_attribute("address", info.sender.clone());
+
+    let strategy = STRATEGIES.load(deps.storage, info.sender)?;
+    match strategy {
+        Strategy::AllowAll => Ok(response
+            .add_attribute("strategy", "allow_all")
+            .add_messages(messages)),
+        Strategy::AllowOnly(_) => {
+            check_allow_only_permissions(deps.as_ref(), strategy.clone(), messages.clone())?;
+            Ok(response
+                .add_attribute("strategy", "allow_only")
+                .add_messages(messages))
+        }
+    }
+}
+
+fn is_authorized(deps: Deps, address: Addr) -> Result<(), ContractError> {
+    match STRATEGIES.load(deps.storage, address) {
+        Ok(strategy) => {
+            if let Strategy::AllowOnly(_) = strategy {
+                return Err(ContractError::Unauthorized {});
+            }
+
+            Ok(())
+        }
+        Err(_) => Err(ContractError::Unauthorized {}),
+    }
+}
+
+fn get_allow_all_count(deps: Deps) -> Result<u64, ContractError> {
+    let mut allow_all_count: u64 = 0;
+
+    let strategies: Vec<Strategy> = STRATEGIES
+        .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
+        .collect::<Result<Vec<(Addr, Strategy)>, _>>()?
+        .into_iter()
+        .map(|(_addr, strategy)| strategy)
+        .collect();
+
+    for strategy in strategies {
+        if let Strategy::AllowAll = strategy {
+            allow_all_count += 1;
+        }
+    }
+
+    Ok(allow_all_count)
 }
 
 /// For every message, check whether we have the permission to execute it.
@@ -279,22 +297,10 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 
 /// No pagination is added because it's unlikely that there is going
 /// to be more than 10 strategies.
-pub fn query_strategies(deps: Deps) -> StdResult<Vec<Strategy>> {
-    let mut all_strategies: Vec<Strategy> = vec![];
-
-    let allow_all_strategies = STRATEGIES_ALLOW_ALL
-        .range_raw(deps.storage, None, None, Order::Ascending)
-        .map(|item| item.map(|(_key, value)| value))
-        .collect::<StdResult<Vec<Strategy>>>()?;
-
-    let allow_only_strategies = STRATEGIES_ALLOW_ONLY
-        .range_raw(deps.storage, None, None, Order::Ascending)
-        .map(|item| item.map(|(_key, value)| value))
-        .collect::<StdResult<Vec<Strategy>>>()?;
-
-    all_strategies.extend(allow_all_strategies);
-    all_strategies.extend(allow_only_strategies);
-
+pub fn query_strategies(deps: Deps) -> StdResult<Vec<(Addr, Strategy)>> {
+    let all_strategies: Vec<(Addr, Strategy)> = STRATEGIES
+        .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
+        .collect::<Result<Vec<(Addr, Strategy)>, _>>()?;
     Ok(all_strategies)
 }
 

@@ -12,6 +12,8 @@ pub enum ContractError {
     #[error("Unauthorized")]
     Unauthorized {},
 
+    // This error is returned when you try to remove the only existing
+    // ALLOW_ALL strategy.
     #[error("InvalidDemotion")]
     InvalidDemotion {},
 
