@@ -159,7 +159,7 @@ pub fn execute_execute_proposal(
         });
     }
 
-    if !is_overrule_proposal_rejected(&deps, &env, &config.overrule_pre_propose, proposal.id)? {
+    if !is_overrule_proposal_denied(&deps, &env, &config.overrule_pre_propose, proposal.id)? {
         return Err(ContractError::TimeLocked {});
     }
 
@@ -339,7 +339,7 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
     Ok(Response::default())
 }
 
-fn is_overrule_proposal_rejected(
+fn is_overrule_proposal_denied(
     deps: &DepsMut,
     env: &Env,
     overrule_pre_propose: &Addr,
@@ -363,7 +363,8 @@ fn is_overrule_proposal_rejected(
             proposal_id: overrule_proposal_id,
         },
     )?;
-    Ok(overrule_proposal.proposal.status == Status::Rejected)
+    Ok(overrule_proposal.proposal.status == Status::Rejected
+        || overrule_proposal.proposal.status == Status::Closed)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
