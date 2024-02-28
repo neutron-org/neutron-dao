@@ -162,5 +162,4 @@ pub struct CronPermission {
 pub struct ProposalExecuteMessageJSON {
     #[serde(rename = "@type")]
     pub type_field: String,
-    pub authority: String,
 }
