@@ -5,6 +5,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 use std::fmt;
 
 pub const PARAMS_QUERY_PATH_CRON: &str = "/neutron.cron.Query/Params";
+pub const MSG_TYPE_UPDATE_PARAMS_CRON: &str = "/neutron.cron.MsgUpdateParams";
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]

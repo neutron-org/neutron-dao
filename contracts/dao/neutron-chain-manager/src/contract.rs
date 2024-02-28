@@ -1,5 +1,6 @@
 use crate::cron_module_param_types::{
-    MsgUpdateParamsCron, ParamsRequestCron, ParamsResponseCron, PARAMS_QUERY_PATH_CRON,
+    MsgUpdateParamsCron, ParamsRequestCron, ParamsResponseCron, MSG_TYPE_UPDATE_PARAMS_CRON,
+    PARAMS_QUERY_PATH_CRON,
 };
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
@@ -72,7 +73,7 @@ pub fn execute_add_strategy(
     // the only existing ALLOW_ALL strategy.
     STRATEGIES.save(deps.storage, address.clone(), &strategy)?;
     if let Strategy::AllowOnly(_) = strategy {
-        if get_allow_all_count(deps.as_ref())? == 0 {
+        if no_admins_left(deps.as_ref())? {
             return Err(ContractError::InvalidDemotion {});
         }
     }
@@ -92,7 +93,7 @@ pub fn execute_remove_strategy(
     // First we remove the strategy, then we check that it was not the only
     // ALLOW_ALL strategy we had.
     STRATEGIES.remove(deps.storage, address.clone());
-    if get_allow_all_count(deps.as_ref())? == 0 {
+    if no_admins_left(deps.as_ref())? {
         return Err(ContractError::InvalidDemotion {});
     }
 
@@ -131,27 +132,21 @@ pub fn execute_execute_messages(
 
 fn is_authorized(deps: Deps, address: Addr) -> Result<(), ContractError> {
     match STRATEGIES.load(deps.storage, address) {
-        Ok(strategy) => {
-            if let Strategy::AllowOnly(_) = strategy {
-                return Err(ContractError::Unauthorized {});
-            }
-
-            Ok(())
-        }
-        Err(_) => Err(ContractError::Unauthorized {}),
+        Ok(Strategy::AllowAll) => Ok(()),
+        _ => Err(ContractError::Unauthorized {})
     }
 }
 
-fn get_allow_all_count(deps: Deps) -> Result<u64, ContractError> {
-    let allow_all_strategies: Vec<Strategy> = STRATEGIES
+/// This function returns true if there is no more allow_all strategies left.
+fn no_admins_left(deps: Deps) -> Result<bool, ContractError> {
+    let not_found: bool = STRATEGIES
         .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
         .collect::<Result<Vec<(Addr, Strategy)>, _>>()?
         .into_iter()
-        .map(|(_addr, strategy)| strategy)
-        .filter(|strategy| matches!(strategy, Strategy::AllowAll))
-        .collect();
+        .find(|(_, strategy)| matches!(strategy, Strategy::AllowAll))
+        .is_none();
 
-    Ok(allow_all_strategies.len() as u64)
+    Ok(not_found)
 }
 
 /// For every message, check whether we have the permission to execute it.
@@ -179,11 +174,7 @@ fn check_neutron_msg(
     neutron_msg: NeutronMsg,
 ) -> Result<(), ContractError> {
     match neutron_msg {
-        NeutronMsg::AddSchedule {
-            name: _,
-            period: _,
-            msgs: _,
-        } => {
+        NeutronMsg::AddSchedule { .. } => {
             if !strategy.has_cron_add_schedule_permission() {
                 return Err(ContractError::Unauthorized {});
             }
@@ -239,7 +230,7 @@ fn check_proposal_execute_message(
     let typed_proposal: ProposalExecuteMessageJSON =
         serde_json_wasm::from_str(proposal.message.as_str())?;
 
-    if typed_proposal.type_field.as_str() == "/neutron.cron.MsgUpdateParams" {
+    if typed_proposal.type_field.as_str() == MSG_TYPE_UPDATE_PARAMS_CRON {
         check_cron_update_msg_params(deps, strategy, proposal)?;
     }
 

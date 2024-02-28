@@ -124,6 +124,7 @@ impl Strategy {
 pub enum Permission {
     // Deprecated, for legacy parameter updates using `params` module.
     ParamChangePermission(ParamChangePermission),
+    // For new-style parameter updates.
     UpdateParamsPermission(UpdateParamsPermission),
     CronPermission(CronPermission),
 }
