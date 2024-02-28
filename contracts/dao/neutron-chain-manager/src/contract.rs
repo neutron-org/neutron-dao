@@ -133,18 +133,17 @@ pub fn execute_execute_messages(
 fn is_authorized(deps: Deps, address: Addr) -> Result<(), ContractError> {
     match STRATEGIES.load(deps.storage, address) {
         Ok(Strategy::AllowAll) => Ok(()),
-        _ => Err(ContractError::Unauthorized {})
+        _ => Err(ContractError::Unauthorized {}),
     }
 }
 
 /// This function returns true if there is no more allow_all strategies left.
 fn no_admins_left(deps: Deps) -> Result<bool, ContractError> {
-    let not_found: bool = STRATEGIES
+    let not_found: bool = !STRATEGIES
         .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
         .collect::<Result<Vec<(Addr, Strategy)>, _>>()?
         .into_iter()
-        .find(|(_, strategy)| matches!(strategy, Strategy::AllowAll))
-        .is_none();
+        .any(|(_, strategy)| matches!(strategy, Strategy::AllowAll));
 
     Ok(not_found)
 }
