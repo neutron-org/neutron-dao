@@ -333,9 +333,44 @@ pub fn query_proposal_execution_error(deps: Deps, proposal_id: u64) -> StdResult
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(deps: DepsMut, env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     // Set contract to version to latest
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
+    let config = CONFIG.load(deps.storage)?;
+    let props: Vec<SingleChoiceProposal> = PROPOSALS
+        .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
+        .collect::<Result<Vec<(u64, SingleChoiceProposal)>, _>>()?
+        .into_iter()
+        .map(|(_, proposal)| proposal)
+        .collect();
+    for mut item in props {
+        let overrule_proposal_id: u64 = deps.querier.query_wasm_smart(
+            &config.overrule_pre_propose,
+            &OverruleQueryMsg::QueryExtension {
+                msg: OverruleQueryExt::OverruleProposalId {
+                    timelock_address: env.contract.address.to_string(),
+                    subdao_proposal_id: item.id,
+                },
+            },
+        )?;
+        let propose: Addr = deps.querier.query_wasm_smart(
+            &config.overrule_pre_propose,
+            &OverruleQueryMsg::ProposalModule {},
+        )?;
+        let overrule_proposal: MainDaoProposalResponse = deps.querier.query_wasm_smart(
+            propose,
+            &MainDaoProposalModuleQueryMsg::Proposal {
+                proposal_id: overrule_proposal_id,
+            },
+        )?;
+
+        if overrule_proposal.proposal.status == Status::Closed {
+            item.status = ProposalStatus::Overruled;
+            PROPOSALS.save(deps.storage, item.id, &item)?;
+        }
+    }
+
     Ok(Response::default())
 }
 
