@@ -344,7 +344,8 @@ pub fn migrate(deps: DepsMut, env: Env, _msg: MigrateMsg) -> Result<Response, Co
         .into_iter()
         .map(|(_, proposal)| proposal)
         .collect();
-    let mut res: Vec<String> = vec![];
+    let mut migrated_ids: Vec<String> = vec![];
+    let mut overrule_statuses: Vec<String> = vec![];
     for mut item in props {
         let overrule_proposal_id: u64 = deps.querier.query_wasm_smart(
             &config.overrule_pre_propose,
@@ -365,15 +366,22 @@ pub fn migrate(deps: DepsMut, env: Env, _msg: MigrateMsg) -> Result<Response, Co
                 proposal_id: overrule_proposal_id,
             },
         )?;
+        overrule_statuses.push(format!(
+            "{:?}:{:?}",
+            overrule_proposal.id.to_string(),
+            overrule_proposal.proposal.status.to_string()
+        ));
 
         if overrule_proposal.proposal.status == Status::Closed {
             item.status = ProposalStatus::Overruled;
-            res.push(item.id.to_string());
+            migrated_ids.push(item.id.to_string());
             PROPOSALS.save(deps.storage, item.id, &item)?;
         }
     }
 
-    Ok(Response::default().add_attribute("migrated_proposal_ids", res.join(",")))
+    Ok(Response::default()
+        .add_attribute("migrated_proposal_ids", migrated_ids.join(","))
+        .add_attribute("migrated_overrule_statuses", overrule_statuses.join(",")))
 }
 
 fn is_overrule_proposal_denied(
