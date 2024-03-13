@@ -159,7 +159,7 @@ pub fn execute_execute_proposal(
         });
     }
 
-    if !is_overrule_proposal_denied(&deps, &env, &config.overrule_pre_propose, proposal.id)? {
+    if !is_overrule_proposal_declined(&deps, &env, &config.overrule_pre_propose, proposal.id)? {
         return Err(ContractError::TimeLocked {});
     }
 
@@ -366,6 +366,10 @@ pub fn migrate(deps: DepsMut, env: Env, _msg: MigrateMsg) -> Result<Response, Co
             },
         )?;
 
+        // As we had stuck proposals with Overrules in Status::Closed
+        // and didn't have an ability to execute them, new proposals with same messages were recreated.
+        // Because of that now we want to make old closed proposals non-executable anymore.
+        // Setting their status to `Overruled` is a good way to make sure we cannot execute these proposals.
         if overrule_proposal.proposal.status == Status::Closed {
             item.status = ProposalStatus::Overruled;
             migrated_ids.push(item.id.to_string());
@@ -376,7 +380,9 @@ pub fn migrate(deps: DepsMut, env: Env, _msg: MigrateMsg) -> Result<Response, Co
     Ok(Response::default().add_attribute("migrated_proposal_ids", migrated_ids.join(",")))
 }
 
-fn is_overrule_proposal_denied(
+// Returns true if overrule proposal for this subdao proposal
+// was declined. (voting is over, and overrule is not accepted).
+fn is_overrule_proposal_declined(
     deps: &DepsMut,
     env: &Env,
     overrule_pre_propose: &Addr,
@@ -400,6 +406,8 @@ fn is_overrule_proposal_denied(
             proposal_id: overrule_proposal_id,
         },
     )?;
+    // we check for both Rejected and Closed status
+    // since anybody can close rejected overrule proposals
     Ok(overrule_proposal.proposal.status == Status::Rejected
         || overrule_proposal.proposal.status == Status::Closed)
 }
