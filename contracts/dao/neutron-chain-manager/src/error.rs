@@ -6,7 +6,7 @@ pub enum ContractError {
     #[error("{0}")]
     Std(#[from] StdError),
 
-    #[error("MissingInitialStrategy")]
+    #[error("Initial strategy of a wrong type was submitted")]
     InvalidInitialStrategy {},
 
     #[error("Unauthorized")]
@@ -14,7 +14,7 @@ pub enum ContractError {
 
     // This error is returned when you try to remove the only existing
     // ALLOW_ALL strategy.
-    #[error("InvalidDemotion")]
+    #[error("An invalid demotion was attempted")]
     InvalidDemotion {},
 
     // A variant for serde_json_wasm deserialization errors.
