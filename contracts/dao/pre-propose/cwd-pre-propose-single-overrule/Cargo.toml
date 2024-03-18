@@ -22,14 +22,14 @@ cw-storage-plus = "1.1.0"
 serde = { version = "1.0.175", default-features = false, features = ["derive"] }
 cwd-pre-propose-base = { version = "*", path = "../../../../packages/cwd-pre-propose-base" }
 cwd-voting = { path = "../../../../packages/cwd-voting" }
-neutron-sdk = "0.8.0"
+neutron-sdk = "0.9.0"
 schemars = "0.8.8"
 thiserror = { version = "1.0.31" }
 neutron-subdao-core = { version = "*", path = "../../../../packages/neutron-subdao-core" }
-cwd-core = { version = "*", path = "../../../../contracts/dao/cwd-core", features = ["library"]  }
+cwd-core = { version = "*", path = "../../../../contracts/dao/cwd-core", features = ["library"] }
 neutron-subdao-timelock-single = { version = "*", path = "../../../../packages/neutron-subdao-timelock-single" }
 neutron-dao-pre-propose-overrule = { version = "*", path = "../../../../packages/neutron-dao-pre-propose-overrule" }
-cwd-proposal-single = { version = "*", path = "../../../../contracts/dao/proposal/cwd-proposal-single", features = ["library"]  }
+cwd-proposal-single = { version = "*", path = "../../../../contracts/dao/proposal/cwd-proposal-single", features = ["library"] }
 
 [dev-dependencies]
 cosmwasm-schema = "1.3.0"
