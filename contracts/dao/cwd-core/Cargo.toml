@@ -16,19 +16,19 @@ backtraces = ["cosmwasm-std/backtraces"]
 library = []
 
 [dependencies]
-cosmwasm-schema = {version = "1.3.0"}
-cosmwasm-std = {version = "1.3.0", features = ["ibc3"]}
-cosmwasm-storage = {version = "1.3.0"}
-cw-core-v1 = {package = "cw-core", version = "0.1.0", git = "https://github.com/DA0-DA0/dao-contracts.git", tag = "v1.0.0"}
-cw-paginate = {path = "../../../packages/cw-paginate"}
+cosmwasm-schema = { version = "1.3.0" }
+cosmwasm-std = { version = "1.3.0", features = ["ibc3"] }
+cosmwasm-storage = { version = "1.3.0" }
+cw-core-v1 = { package = "cw-core", version = "0.1.0", git = "https://github.com/DA0-DA0/dao-contracts.git", tag = "v1.0.0" }
+cw-paginate = { path = "../../../packages/cw-paginate" }
 cw-storage-plus = "1.1.0"
-cw-utils = {version = "1.0.1"}
+cw-utils = { version = "1.0.1" }
 cw2 = "1.1.0"
 cw20 = "1.1.0"
 cw721 = "0.18.0"
-cwd-interface = {path = "../../../packages/cwd-interface"}
-cwd-macros = {path = "../../../packages/cwd-macros"}
-neutron-sdk = "0.8.0"
+cwd-interface = { path = "../../../packages/cwd-interface" }
+cwd-macros = { path = "../../../packages/cwd-macros" }
+neutron-sdk = "0.9.0"
 schemars = "0.8.8"
-serde = {version = "1.0.175", default-features = false, features = ["derive"]}
-thiserror = {version = "1.0"}
+serde = { version = "1.0.175", default-features = false, features = ["derive"] }
+thiserror = { version = "1.0" }

@@ -13,13 +13,13 @@ crate-type = ["cdylib", "rlib"]
 backtraces = ["cosmwasm-std/backtraces"]
 
 [dependencies]
-cosmwasm-schema = {version = "1.3.0", default-features = false}
-cosmwasm-std = {version = "1.3.0"}
+cosmwasm-schema = { version = "1.3.0", default-features = false }
+cosmwasm-std = { version = "1.3.0" }
 cw-storage-plus = "1.1.0"
-cwd-macros = {path = "../../../packages/cwd-macros"}
-exec-control = {path = "../../../packages/exec-control"}
-neutron-sdk = "0.8.0"
+cwd-macros = { path = "../../../packages/cwd-macros" }
+exec-control = { path = "../../../packages/exec-control" }
+neutron-sdk = "0.9.0"
 schemars = "0.8.8"
-serde = {version = "1.0.103", default-features = false, features = ["derive"]}
-thiserror = {version = "1.0"}
+serde = { version = "1.0.103", default-features = false, features = ["derive"] }
+thiserror = { version = "1.0" }
 cw2 = "1.1.0"
