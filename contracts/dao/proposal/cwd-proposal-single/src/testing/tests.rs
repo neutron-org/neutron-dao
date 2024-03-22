@@ -628,206 +628,197 @@ fn test_min_duration_same_as_proposal_duration() {
     assert_eq!(proposal_response.proposal.status, Status::Passed);
 }
 
-// #[test]
-// fn test_revoting_playthrough() {
-//     let mut app = App::default();
-//     let mut instantiate = get_default_token_dao_proposal_module_instantiate(&mut app);
-//     instantiate.allow_revoting = true;
-//     let core_addr = instantiate_with_native_staked_balances_governance(&mut app, instantiate, None);
-//     let gov_token = query_dao_token(&app, &core_addr);
-//     let proposal_module = query_single_proposal_module(&app, &core_addr);
-//
-//     mint_cw20s(&mut app, &gov_token, &core_addr, CREATOR_ADDR, 10_000_000);
-//     let proposal_id = make_proposal(&mut app, &proposal_module, CREATOR_ADDR, vec![]);
-//
-//     // Vote and change our minds a couple times.
-//     vote_on_proposal(
-//         &mut app,
-//         &proposal_module,
-//         CREATOR_ADDR,
-//         proposal_id,
-//         Vote::Yes,
-//     );
-//     let proposal_response = query_proposal(&app, &proposal_module, proposal_id);
-//     assert_eq!(proposal_response.proposal.status, Status::Open);
-//
-//     vote_on_proposal(
-//         &mut app,
-//         &proposal_module,
-//         CREATOR_ADDR,
-//         proposal_id,
-//         Vote::No,
-//     );
-//     let proposal_response = query_proposal(&app, &proposal_module, proposal_id);
-//     assert_eq!(proposal_response.proposal.status, Status::Open);
-//
-//     vote_on_proposal(
-//         &mut app,
-//         &proposal_module,
-//         CREATOR_ADDR,
-//         proposal_id,
-//         Vote::Yes,
-//     );
-//     let proposal_response = query_proposal(&app, &proposal_module, proposal_id);
-//     assert_eq!(proposal_response.proposal.status, Status::Open);
-//
-//     // Can't cast the same vote more than once.
-//     let err = vote_on_proposal_should_fail(
-//         &mut app,
-//         &proposal_module,
-//         CREATOR_ADDR,
-//         proposal_id,
-//         Vote::Yes,
-//     );
-//     assert!(matches!(err, ContractError::AlreadyCast {}));
-//
-//     // Expire the proposal allowing the votes to be tallied.
-//     app.update_block(|b| b.time = b.time.plus_seconds(604800));
-//     let proposal_response = query_proposal(&app, &proposal_module, proposal_id);
-//     assert_eq!(proposal_response.proposal.status, Status::Passed);
-//     execute_proposal(&mut app, &proposal_module, CREATOR_ADDR, proposal_id);
-//
-//     // Can't vote once the proposal is passed.
-//     let err = vote_on_proposal_should_fail(
-//         &mut app,
-//         &proposal_module,
-//         CREATOR_ADDR,
-//         proposal_id,
-//         Vote::Yes,
-//     );
-//     assert!(matches!(err, ContractError::NotOpen { .. }));
-// }
-//
-// /// Tests that revoting is stored at a per-proposal level. Proposals
-// /// created while revoting is enabled should not have it disabled if a
-// /// config change turns if off.
-// #[test]
-// fn test_allow_revoting_config_changes() {
-//     let mut app = App::default();
-//     let mut instantiate = get_default_token_dao_proposal_module_instantiate(&mut app);
-//     instantiate.allow_revoting = true;
-//     let core_addr = instantiate_with_native_staked_balances_governance(&mut app, instantiate, None);
-//     let gov_token = query_dao_token(&app, &core_addr);
-//     let proposal_module = query_single_proposal_module(&app, &core_addr);
-//
-//     mint_cw20s(&mut app, &gov_token, &core_addr, CREATOR_ADDR, 10_000_000);
-//     // This proposal should have revoting enable for its entire
-//     // lifetime.
-//     let revoting_proposal = make_proposal(&mut app, &proposal_module, CREATOR_ADDR, vec![]);
-//
-//     // Update the config of the proposal module to disable revoting.
-//     app.execute_contract(
-//         core_addr.clone(),
-//         proposal_module.clone(),
-//         &ExecuteMsg::UpdateConfig {
-//             threshold: Threshold::ThresholdQuorum {
-//                 quorum: PercentageThreshold::Percent(Decimal::percent(15)),
-//                 threshold: PercentageThreshold::Majority {},
-//             },
-//             max_voting_period: Duration::Height(10),
-//             min_voting_period: None,
-//             // Turn off revoting.
-//             allow_revoting: false,
-//             dao: core_addr.to_string(),
-//             close_proposal_on_execution_failure: false,
-//         },
-//         &[],
-//     )
-//     .unwrap();
-//
-//     mint_cw20s(&mut app, &gov_token, &core_addr, CREATOR_ADDR, 10_000_000);
-//     let no_revoting_proposal = make_proposal(&mut app, &proposal_module, CREATOR_ADDR, vec![]);
-//
-//     vote_on_proposal(
-//         &mut app,
-//         &proposal_module,
-//         CREATOR_ADDR,
-//         revoting_proposal,
-//         Vote::Yes,
-//     );
-//     vote_on_proposal(
-//         &mut app,
-//         &proposal_module,
-//         CREATOR_ADDR,
-//         no_revoting_proposal,
-//         Vote::Yes,
-//     );
-//
-//     // Proposal without revoting should have passed.
-//     let proposal_resp = query_proposal(&app, &proposal_module, no_revoting_proposal);
-//     assert_eq!(proposal_resp.proposal.status, Status::Passed);
-//
-//     // Proposal with revoting should not have passed.
-//     let proposal_resp = query_proposal(&app, &proposal_module, revoting_proposal);
-//     assert_eq!(proposal_resp.proposal.status, Status::Open);
-//
-//     // Can not vote again on the no revoting proposal.
-//     let err = vote_on_proposal_should_fail(
-//         &mut app,
-//         &proposal_module,
-//         CREATOR_ADDR,
-//         no_revoting_proposal,
-//         Vote::No,
-//     );
-//     assert!(matches!(err, ContractError::NotOpen { .. }));
-//
-//     // Can change vote on the revoting proposal.
-//     vote_on_proposal(
-//         &mut app,
-//         &proposal_module,
-//         CREATOR_ADDR,
-//         revoting_proposal,
-//         Vote::No,
-//     );
-//     // Expire the revoting proposal and close it.
-//     app.update_block(|b| b.time = b.time.plus_seconds(604800));
-//     close_proposal(&mut app, &proposal_module, CREATOR_ADDR, revoting_proposal);
-// }
-//
-// #[test]
-// fn test_proposal_count_initialized_to_zero() {
-//     let mut app = App::default();
-//     let pre_propose_info = get_pre_propose_info(&mut app, None, false);
-//     let core_addr = instantiate_with_native_staked_balances_governance(
-//         &mut app,
-//         InstantiateMsg {
-//             threshold: Threshold::ThresholdQuorum {
-//                 threshold: PercentageThreshold::Majority {},
-//                 quorum: PercentageThreshold::Percent(Decimal::percent(10)),
-//             },
-//             max_voting_period: Duration::Height(10),
-//             min_voting_period: None,
-//             allow_revoting: false,
-//             pre_propose_info,
-//             close_proposal_on_execution_failure: true,
-//         },
-//         Some(vec![
-//             Cw20Coin {
-//                 address: "ekez".to_string(),
-//                 amount: Uint128::new(10),
-//             },
-//             Cw20Coin {
-//                 address: "innactive".to_string(),
-//                 amount: Uint128::new(90),
-//             },
-//         ]),
-//     );
-//
-//     let core_state: cwd_core::query::DumpStateResponse = app
-//         .wrap()
-//         .query_wasm_smart(core_addr, &cwd_core::msg::QueryMsg::DumpState {})
-//         .unwrap();
-//     let proposal_modules = core_state.proposal_modules;
-//
-//     assert_eq!(proposal_modules.len(), 1);
-//     let proposal_single = proposal_modules.into_iter().next().unwrap().address;
-//
-//     let proposal_count: u64 = app
-//         .wrap()
-//         .query_wasm_smart(proposal_single, &QueryMsg::ProposalCount {})
-//         .unwrap();
-//     assert_eq!(proposal_count, 0);
-// }
+#[test]
+fn test_revoting_playthrough() {
+    let mut app = custom_app::<NeutronMsg, Empty, _>(no_init);
+    let mut instantiate = get_proposal_module_instantiate(&mut app);
+    instantiate.allow_revoting = true;
+    let core_addr = instantiate_with_native_bonded_balances_governance(&mut app, instantiate, None);
+    let gov_token = "ujuno";
+    let proposal_module = query_single_proposal_module(&app, &core_addr);
+
+    mint_natives(&mut app, CREATOR_ADDR, coins(10_000_000, gov_token));
+    let proposal_id = make_proposal(&mut app, &proposal_module, CREATOR_ADDR, vec![]);
+
+    // Vote and change our minds a couple times.
+    vote_on_proposal(
+        &mut app,
+        &proposal_module,
+        CREATOR_ADDR,
+        proposal_id,
+        Vote::Yes,
+    );
+    let proposal_response = query_proposal(&app, &proposal_module, proposal_id);
+    assert_eq!(proposal_response.proposal.status, Status::Open);
+
+    vote_on_proposal(
+        &mut app,
+        &proposal_module,
+        CREATOR_ADDR,
+        proposal_id,
+        Vote::No,
+    );
+    let proposal_response = query_proposal(&app, &proposal_module, proposal_id);
+    assert_eq!(proposal_response.proposal.status, Status::Open);
+
+    vote_on_proposal(
+        &mut app,
+        &proposal_module,
+        CREATOR_ADDR,
+        proposal_id,
+        Vote::Yes,
+    );
+    let proposal_response = query_proposal(&app, &proposal_module, proposal_id);
+    assert_eq!(proposal_response.proposal.status, Status::Open);
+
+    // Can't cast the same vote more than once.
+    let err = vote_on_proposal_should_fail(
+        &mut app,
+        &proposal_module,
+        CREATOR_ADDR,
+        proposal_id,
+        Vote::Yes,
+    );
+    assert!(matches!(err, ContractError::AlreadyCast {}));
+
+    // Expire the proposal allowing the votes to be tallied.
+    app.update_block(|b| b.time = b.time.plus_seconds(604800));
+    let proposal_response = query_proposal(&app, &proposal_module, proposal_id);
+    assert_eq!(proposal_response.proposal.status, Status::Passed);
+    execute_proposal(&mut app, &proposal_module, CREATOR_ADDR, proposal_id);
+
+    // Can't vote once the proposal is passed.
+    let err = vote_on_proposal_should_fail(
+        &mut app,
+        &proposal_module,
+        CREATOR_ADDR,
+        proposal_id,
+        Vote::Yes,
+    );
+    assert!(matches!(err, ContractError::NotOpen { .. }));
+}
+
+/// Tests that revoting is stored at a per-proposal level. Proposals
+/// created while revoting is enabled should not have it disabled if a
+/// config change turns if off.
+#[test]
+fn test_allow_revoting_config_changes() {
+    let mut app = custom_app::<NeutronMsg, Empty, _>(no_init);
+    let mut instantiate = get_proposal_module_instantiate(&mut app);
+    instantiate.allow_revoting = true;
+    let core_addr = instantiate_with_native_bonded_balances_governance(&mut app, instantiate, None);
+    let gov_token = "ujuno";
+    let proposal_module = query_single_proposal_module(&app, &core_addr);
+
+    mint_natives(&mut app, CREATOR_ADDR, coins(10_000_000, gov_token));
+    // This proposal should have revoting enable for its entire
+    // lifetime.
+    let revoting_proposal = make_proposal(&mut app, &proposal_module, CREATOR_ADDR, vec![]);
+
+    // Update the config of the proposal module to disable revoting.
+    app.execute_contract(
+        core_addr.clone(),
+        proposal_module.clone(),
+        &ExecuteMsg::UpdateConfig {
+            threshold: Threshold::ThresholdQuorum {
+                quorum: PercentageThreshold::Percent(Decimal::percent(15)),
+                threshold: PercentageThreshold::Majority {},
+            },
+            max_voting_period: Duration::Height(10),
+            min_voting_period: None,
+            // Turn off revoting.
+            allow_revoting: false,
+            dao: core_addr.to_string(),
+            close_proposal_on_execution_failure: false,
+        },
+        &[],
+    )
+    .unwrap();
+
+    mint_natives(&mut app, CREATOR_ADDR, coins(10_000_000, gov_token));
+    let no_revoting_proposal = make_proposal(&mut app, &proposal_module, CREATOR_ADDR, vec![]);
+
+    vote_on_proposal(
+        &mut app,
+        &proposal_module,
+        CREATOR_ADDR,
+        revoting_proposal,
+        Vote::Yes,
+    );
+    vote_on_proposal(
+        &mut app,
+        &proposal_module,
+        CREATOR_ADDR,
+        no_revoting_proposal,
+        Vote::Yes,
+    );
+
+    // Proposal without revoting should have passed.
+    let proposal_resp = query_proposal(&app, &proposal_module, no_revoting_proposal);
+    assert_eq!(proposal_resp.proposal.status, Status::Passed);
+
+    // Proposal with revoting should not have passed.
+    let proposal_resp = query_proposal(&app, &proposal_module, revoting_proposal);
+    assert_eq!(proposal_resp.proposal.status, Status::Open);
+
+    // Can not vote again on the no revoting proposal.
+    let err = vote_on_proposal_should_fail(
+        &mut app,
+        &proposal_module,
+        CREATOR_ADDR,
+        no_revoting_proposal,
+        Vote::No,
+    );
+    assert!(matches!(err, ContractError::NotOpen { .. }));
+
+    // Can change vote on the revoting proposal.
+    vote_on_proposal(
+        &mut app,
+        &proposal_module,
+        CREATOR_ADDR,
+        revoting_proposal,
+        Vote::No,
+    );
+    // Expire the revoting proposal and close it.
+    app.update_block(|b| b.time = b.time.plus_seconds(604800));
+    close_proposal(&mut app, &proposal_module, CREATOR_ADDR, revoting_proposal);
+}
+
+#[test]
+fn test_proposal_count_initialized_to_zero() {
+    let mut app = custom_app::<NeutronMsg, Empty, _>(no_init);
+    let instantiate = get_proposal_module_instantiate(&mut app);
+    // let pre_propose_info = get_pre_propose_info(&mut app, None, false);
+    let core_addr = instantiate_with_native_bonded_balances_governance(
+        &mut app,
+        instantiate,
+        Some(vec![
+            Cw20Coin {
+                address: "ekez".to_string(),
+                amount: Uint128::new(10),
+            },
+            Cw20Coin {
+                address: "innactive".to_string(),
+                amount: Uint128::new(90),
+            },
+        ]),
+    );
+
+    let core_state: cwd_core::query::DumpStateResponse = app
+        .wrap()
+        .query_wasm_smart(core_addr, &cwd_core::msg::QueryMsg::DumpState {})
+        .unwrap();
+    let proposal_modules = core_state.proposal_modules;
+
+    assert_eq!(proposal_modules.len(), 1);
+    let proposal_single = proposal_modules.into_iter().next().unwrap().address;
+
+    let proposal_count: u64 = app
+        .wrap()
+        .query_wasm_smart(proposal_single, &QueryMsg::ProposalCount {})
+        .unwrap();
+    assert_eq!(proposal_count, 0);
+}
 
 // - Make a proposal that will fail to execute.
 // - Verify that it goes to execution failed and that proposal
