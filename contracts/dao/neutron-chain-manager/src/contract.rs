@@ -231,9 +231,10 @@ fn check_proposal_execute_message(
 
     if typed_proposal.type_field.as_str() == MSG_TYPE_UPDATE_PARAMS_CRON {
         check_cron_update_msg_params(deps, strategy, proposal)?;
+        Ok(())
+    } else {
+        Err(ContractError::Unauthorized {})
     }
-
-    Ok(())
 }
 /// Checks that the strategy owner is authorised to change the parameters of the
 /// cron module. We query the current values for each parameter & compare them to
