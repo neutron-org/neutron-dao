@@ -261,7 +261,7 @@ dependencies = [
 
 [[package]]
 name = "credits-vault"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "anyhow",
  "cosmwasm-schema",
@@ -1579,7 +1579,7 @@ dependencies = [
 
 [[package]]
 name = "investors-vesting-vault"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "anyhow",
  "cosmwasm-schema",
@@ -1659,7 +1659,7 @@ checksum = "302d7ab3130588088d277783b1e2d2e10c9e9e4a16dd9050e6ec93fb3e7048f4"
 
 [[package]]
 name = "lockdrop-vault"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "astroport 2.0.0 (git+https://github.com/neutron-org/neutron-tge-contracts.git?branch=main)",
@@ -1690,7 +1690,7 @@ dependencies = [
 
 [[package]]
 name = "neutron-distribution"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -1838,7 +1838,7 @@ dependencies = [
 
 [[package]]
 name = "neutron-vault"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "anyhow",
  "cosmwasm-schema",
@@ -1873,7 +1873,7 @@ dependencies = [
 
 [[package]]
 name = "neutron-voting-registry"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "anyhow",
  "cosmwasm-schema",
@@ -2540,7 +2540,7 @@ dependencies = [
 
 [[package]]
 name = "vesting-lp-vault"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "cosmwasm-schema",
