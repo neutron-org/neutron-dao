@@ -1,6 +1,6 @@
 [package]
 name = "cwd-subdao-timelock-single"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["Andrei Zavgorodnii <andrei.z@p2p.org>"]
 edition = "2021"
 repository = "https://github.com/neutron-org/neutron-dao"
@@ -16,7 +16,7 @@ backtraces = ["cosmwasm-std/backtraces"]
 library = []
 
 [dependencies]
-neutron-sdk = "0.9.0"
+neutron-sdk = "0.10.0"
 cosmwasm-std = { version = "1.3.0" }
 cosmwasm-storage = { version = "1.3.0" }
 cw-storage-plus = "1.1.0"
