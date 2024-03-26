@@ -103,7 +103,7 @@ fn test_execute_timelock_proposal() {
         correct_msg.clone(),
     );
     assert_eq!(
-        "neutron_subdao_timelock_single::types::Config not found",
+        "type: neutron_subdao_timelock_single::types::Config; key: [63, 6F, 6E, 66, 69, 67] not found",
         res.unwrap_err().to_string()
     );
 
@@ -199,7 +199,7 @@ fn test_execute_proposal() {
 
     let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone());
     assert_eq!(
-        "neutron_subdao_timelock_single::types::Config not found",
+        "type: neutron_subdao_timelock_single::types::Config; key: [63, 6F, 6E, 66, 69, 67] not found",
         res.unwrap_err().to_string()
     );
 
@@ -211,7 +211,7 @@ fn test_execute_proposal() {
     CONFIG.save(deps.as_mut().storage, &config).unwrap();
     let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone());
     assert_eq!(
-        "neutron_subdao_timelock_single::types::SingleChoiceProposal not found",
+        "type: neutron_subdao_timelock_single::types::SingleChoiceProposal; key: [00, 09, 70, 72, 6F, 70, 6F, 73, 61, 6C, 73, 00, 00, 00, 00, 00, 00, 00, 0A] not found",
         res.unwrap_err().to_string()
     );
 
@@ -354,7 +354,7 @@ fn test_overrule_proposal() {
 
     let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone());
     assert_eq!(
-        "neutron_subdao_timelock_single::types::Config not found",
+        "type: neutron_subdao_timelock_single::types::Config; key: [63, 6F, 6E, 66, 69, 67] not found",
         res.unwrap_err().to_string()
     );
 
@@ -424,7 +424,7 @@ fn execute_update_config() {
 
     let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone());
     assert_eq!(
-        "neutron_subdao_timelock_single::types::Config not found",
+        "type: neutron_subdao_timelock_single::types::Config; key: [63, 6F, 6E, 66, 69, 67] not found",
         res.unwrap_err().to_string()
     );
 

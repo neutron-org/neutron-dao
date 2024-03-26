@@ -1,6 +1,6 @@
-use crate::contract::{execute, instantiate, migrate, query, CONTRACT_NAME, CONTRACT_VERSION};
+use crate::contract::{execute, instantiate, query};
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, VotingVault};
+use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, VotingVault};
 use crate::state::{Config, VotingVaultState};
 use crate::testing::mock_querier::{
     mock_dependencies, MOCK_VAULT_1, MOCK_VAULT_1_DESC, MOCK_VAULT_1_NAME, MOCK_VAULT_1_VP,
@@ -9,13 +9,9 @@ use crate::testing::mock_querier::{
 };
 use cosmwasm_std::testing::{mock_env, mock_info};
 use cosmwasm_std::{from_json, Addr, Deps, DepsMut, Env, MessageInfo, Response, Uint128};
-use cw_storage_plus::Item;
 use cwd_interface::voting::{
     InfoResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
-
 const DAO_ADDR: &str = "dao";
 const ADDR1: &str = "addr1";
 
@@ -791,80 +787,6 @@ fn test_vaults_activation_deactivation_wrong_switch() {
     assert_eq!(
         err.to_string(),
         ContractError::VotingVaultAlreadyInactive {}.to_string()
-    );
-}
-
-#[test]
-pub fn test_migrate() {
-    let mut deps = mock_dependencies();
-    let env = mock_env();
-    let migration_height = env.block.height;
-    cw2::set_contract_version(&mut deps.storage, "my-contract", "old-version").unwrap();
-
-    // define and store the previous version of config
-    #[derive(Serialize, Deserialize, JsonSchema)]
-    struct OldConfig {
-        pub owner: Addr,
-        pub voting_vaults: Vec<Addr>,
-    }
-    Item::new("config")
-        .save(
-            deps.as_mut().storage,
-            &OldConfig {
-                owner: Addr::unchecked(DAO_ADDR),
-                voting_vaults: vec![Addr::unchecked(MOCK_VAULT_1), Addr::unchecked(MOCK_VAULT_2)],
-            },
-        )
-        .unwrap();
-
-    migrate(deps.as_mut(), env.clone(), MigrateMsg {}).unwrap();
-
-    let version = cw2::get_contract_version(&deps.storage).unwrap();
-    assert_eq!(version.version, CONTRACT_VERSION);
-    assert_eq!(version.contract, CONTRACT_NAME);
-    assert_eq!(
-        get_voting_vaults(deps.as_ref(), env.clone(), Some(migration_height)),
-        vec![
-            VotingVault {
-                address: String::from(MOCK_VAULT_1),
-                name: String::from(MOCK_VAULT_1_NAME),
-                description: String::from(MOCK_VAULT_1_DESC),
-                state: VotingVaultState::Active,
-            },
-            VotingVault {
-                address: String::from(MOCK_VAULT_2),
-                name: String::from(MOCK_VAULT_2_NAME),
-                description: String::from(MOCK_VAULT_2_DESC),
-                state: VotingVaultState::Active,
-            }
-        ],
-    );
-    assert_eq!(
-        get_total_voting_power(deps.as_ref(), env.clone(), Some(migration_height)).power,
-        Uint128::from(MOCK_VAULT_1_VP + MOCK_VAULT_2_VP),
-    );
-
-    // make sure vaults are active starting with the height next to the beginning of the chain
-    assert_eq!(
-        get_voting_vaults(deps.as_ref(), env.clone(), Some(2u64)),
-        vec![
-            VotingVault {
-                address: String::from(MOCK_VAULT_1),
-                name: String::from(MOCK_VAULT_1_NAME),
-                description: String::from(MOCK_VAULT_1_DESC),
-                state: VotingVaultState::Active,
-            },
-            VotingVault {
-                address: String::from(MOCK_VAULT_2),
-                name: String::from(MOCK_VAULT_2_NAME),
-                description: String::from(MOCK_VAULT_2_DESC),
-                state: VotingVaultState::Active,
-            }
-        ],
-    );
-    assert_eq!(
-        get_total_voting_power(deps.as_ref(), env, Some(2u64)).power,
-        Uint128::from(MOCK_VAULT_1_VP + MOCK_VAULT_2_VP),
     );
 }
 

@@ -4,7 +4,7 @@ edition = "2021"
 license = "Apache-2.0"
 name = "neutron-distribution"
 repository = "https://github.com/neutron/neutron-dao"
-version = "0.1.0"
+version = "0.1.1"
 
 [lib]
 crate-type = ["cdylib", "rlib"]

@@ -1,6 +1,6 @@
 [package]
 name = "vesting-lp-vault"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Sergei Sotnikov <sergei.s@p2p.org>", "Murad Karammaev <karammaev.murad@p2p.org>"]
 edition = "2021"
 license = "Apache-2.0"

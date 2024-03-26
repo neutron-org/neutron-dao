@@ -7,11 +7,8 @@ use cosmwasm_std::{
     StdError, StdResult,
 };
 use cw2::set_contract_version;
-use cw_storage_plus::Item;
 use cwd_interface::voting::{self, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse};
 use neutron_vault::msg::QueryMsg as VaultQueryMsg;
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
 pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-voting-registry";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -308,27 +305,6 @@ pub fn query_dao(deps: Deps) -> StdResult<Binary> {
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
-    // read the prev version config
-    #[derive(Serialize, Deserialize, JsonSchema)]
-    struct OldConfig {
-        pub owner: Addr,
-        pub voting_vaults: Vec<Addr>,
-    }
-    let old_config: OldConfig = Item::new("config").load(deps.storage)?;
-
-    // move vaults from old config to a dedicated Item
-    for vault in old_config.voting_vaults {
-        VAULT_STATES.save(deps.storage, vault, &VotingVaultState::Active, 1u64)?;
-    }
-
-    // overwrite value behind config key
-    CONFIG.save(
-        deps.storage,
-        &Config {
-            owner: old_config.owner,
-        },
-    )?;
-
     // Set contract to version to latest
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     Ok(Response::default())

@@ -540,7 +540,7 @@ fn test_no_double_refund_on_execute_fail_and_close() {
     .unwrap();
 
     let timestamp = Timestamp::from_seconds(300_000_000);
-    app.update_block(|block| block.time = timestamp);
+    app.update_block(|b| b.time = timestamp);
 
     // Execute proposal
     app.execute_contract(

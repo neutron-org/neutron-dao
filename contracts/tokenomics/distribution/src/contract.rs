@@ -12,7 +12,7 @@ use exec_control::pause::{
     can_pause, can_unpause, validate_duration, PauseError, PauseInfoResponse,
 };
 
-pub(crate) const CONTRACT_NAME: &str = "neutron-distribution";
+pub(crate) const CONTRACT_NAME: &str = "crates.io:distribution";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 //--------------------------------------------------------------------------------------------------

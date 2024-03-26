@@ -27,7 +27,7 @@ use exec_control::pause::{
 };
 use neutron_sdk::bindings::query::NeutronQuery;
 
-pub(crate) const CONTRACT_NAME: &str = "neutron-reserve";
+pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-reserve";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 //--------------------------------------------------------------------------------------------------
@@ -194,7 +194,6 @@ pub fn execute(
         ExecuteMsg::Callback(msg) => _handle_callback(deps, env, info, msg),
     }
 }
-
 pub fn execute_transfer_ownership(
     deps: DepsMut<NeutronQuery>,
     info: MessageInfo,

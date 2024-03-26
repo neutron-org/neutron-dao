@@ -4,7 +4,7 @@ description = "A DAO DAO proposal module for single choice (yes / no) voting."
 edition = "2021"
 name = "cwd-proposal-single"
 repository = "https://github.com/DA0-DA0/dao-contracts"
-version = "0.2.1"
+version = "0.2.2"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -16,39 +16,39 @@ backtraces = ["cosmwasm-std/backtraces"]
 library = []
 
 [dependencies]
-cosmwasm-schema = {version = "1.3.0"}
-cosmwasm-std = {version = "1.3.0", features = ["ibc3"]}
-cosmwasm-storage = {version = "1.3.0"}
+cosmwasm-schema = { version = "1.3.0" }
+cosmwasm-std = { version = "1.3.0", features = ["ibc3"] }
+cosmwasm-storage = { version = "1.3.0" }
 cw-storage-plus = "1.1.0"
-cw-utils = {version = "1.0.1"}
+cw-utils = { version = "1.0.1" }
 cw2 = "1.1.0"
 cw20 = "1.1.0"
 cw3 = "1.1.0"
-neutron-sdk = {package = "neutron-sdk", version = "0.7.0"}
+neutron-sdk = "0.10.0"
 schemars = "0.8.8"
-serde = {version = "1.0.175", default-features = false, features = ["derive"]}
-thiserror = {version = "1.0"}
+serde = { version = "1.0.175", default-features = false, features = ["derive"] }
+thiserror = { version = "1.0" }
 
-cwd-core = {path = "../../cwd-core", features = ["library"]}
-cwd-hooks = {path = "../../../../packages/cwd-hooks"}
-cwd-interface = {path = "../../../../packages/cwd-interface"}
-cwd-macros = {path = "../../../../packages/cwd-macros"}
-cwd-pre-propose-base = {path = "../../../../packages/cwd-pre-propose-base"}
-cwd-pre-propose-single = {path = "../../pre-propose/cwd-pre-propose-single"}
-cwd-proposal-hooks = {path = "../../../../packages/cwd-proposal-hooks"}
-cwd-vote-hooks = {path = "../../../../packages/cwd-vote-hooks"}
-cwd-voting = {path = "../../../../packages/cwd-voting"}
+cwd-core = { path = "../../cwd-core", features = ["library"] }
+cwd-hooks = { path = "../../../../packages/cwd-hooks" }
+cwd-interface = { path = "../../../../packages/cwd-interface" }
+cwd-macros = { path = "../../../../packages/cwd-macros" }
+cwd-pre-propose-base = { path = "../../../../packages/cwd-pre-propose-base" }
+cwd-pre-propose-single = { path = "../../pre-propose/cwd-pre-propose-single" }
+cwd-proposal-hooks = { path = "../../../../packages/cwd-proposal-hooks" }
+cwd-vote-hooks = { path = "../../../../packages/cwd-vote-hooks" }
+cwd-voting = { path = "../../../../packages/cwd-voting" }
 
-cw-proposal-single-v1 = {package = "cw-proposal-single", version = "0.1.0", git = "https://github.com/DA0-DA0/dao-contracts.git", tag = "v1.0.0"}
-voting-v1 = {package = "voting", version = "0.1.0", git = "https://github.com/DA0-DA0/dao-contracts.git", tag = "v1.0.0"}
+cw-proposal-single-v1 = { package = "cw-proposal-single", version = "0.1.0", git = "https://github.com/DA0-DA0/dao-contracts.git", tag = "v1.0.0" }
+voting-v1 = { package = "voting", version = "0.1.0", git = "https://github.com/DA0-DA0/dao-contracts.git", tag = "v1.0.0" }
 
 [dev-dependencies]
-cw-denom = {path = "../../../../packages/cw-denom"}
+cw-denom = { path = "../../../../packages/cw-denom" }
 cw-multi-test = "0.16.5"
 cw20-base = "1.1.0"
 cw4 = "1.1.0"
 cw4-group = "1.1.0"
 cw721-base = "0.18.0"
-cwd-testing = {path = "../../../../packages/cwd-testing"}
-neutron-vault = {path = "../../voting/neutron-vault"}
-neutron-voting-registry = {path = "../../voting/neutron-voting-registry"}
+cwd-testing = { path = "../../../../packages/cwd-testing" }
+neutron-vault = { path = "../../voting/neutron-vault" }
+neutron-voting-registry = { path = "../../voting/neutron-voting-registry" }
