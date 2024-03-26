@@ -244,7 +244,7 @@ mod tests {
             err,
             DenomError::InvalidCw20 {
                 err: StdError::GenericErr {
-                    msg: format!("Querier system error: No such contract: {}", CW20_ADDR)
+                    msg: format!("Querier system error: No such contract: {}", CW20_ADDR),
                 }
             }
         )

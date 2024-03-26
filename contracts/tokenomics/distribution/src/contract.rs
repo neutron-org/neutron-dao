@@ -26,6 +26,8 @@ pub fn instantiate(
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> StdResult<Response> {
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
     let config = Config {
         denom: msg.denom,
         main_dao_address: deps.api.addr_validate(&msg.main_dao_address)?,
@@ -76,12 +78,6 @@ pub fn execute(
         // permissioned - owner of the share
         ExecuteMsg::Claim {} => execute_claim(deps, info),
     }
-}
-
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
-    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-    Ok(Response::default())
 }
 
 pub fn execute_pause(
@@ -315,4 +311,10 @@ fn get_pause_info(deps: Deps, env: &Env) -> StdResult<PauseInfoResponse> {
         }
         None => PauseInfoResponse::Unpaused {},
     })
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    Ok(Response::default())
 }

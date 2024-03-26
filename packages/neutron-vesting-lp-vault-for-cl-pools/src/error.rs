@@ -6,9 +6,6 @@ pub enum ContractError {
     #[error("{0}")]
     Std(#[from] StdError),
 
-    #[error("Overflow {0}")]
-    Overflow(#[from] OverflowError),
-
     #[error("Unauthorized")]
     Unauthorized {},
 
@@ -23,6 +20,9 @@ pub enum ContractError {
 
     #[error("config description cannot be empty.")]
     DescriptionIsEmpty {},
+
+    #[error("{0}")]
+    OverflowError(#[from] OverflowError),
 }
 
 pub type ContractResult<T> = Result<T, ContractError>;

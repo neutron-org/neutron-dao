@@ -531,7 +531,7 @@ fn test_query_proposals() {
     for i in 1..=100 {
         let query_msg = QueryMsg::Proposal { proposal_id: i };
         let res = query(deps.as_ref(), mock_env(), query_msg).unwrap();
-        let queried_prop: SingleChoiceProposal = from_json(res).unwrap();
+        let queried_prop: SingleChoiceProposal = from_json(&res).unwrap();
         let expected_prop = SingleChoiceProposal {
             id: i,
             msgs: vec![correct_proposal_msg()],
@@ -545,7 +545,7 @@ fn test_query_proposals() {
         limit: None,
     };
     let res = query(deps.as_ref(), mock_env(), query_msg).unwrap();
-    let queried_props: ProposalListResponse = from_json(res).unwrap();
+    let queried_props: ProposalListResponse = from_json(&res).unwrap();
     for (p, i) in queried_props.proposals.iter().zip(1..) {
         let expected_prop = SingleChoiceProposal {
             id: i,
@@ -561,7 +561,7 @@ fn test_query_proposals() {
         limit: Some(100),
     };
     let res = query(deps.as_ref(), mock_env(), query_msg).unwrap();
-    let queried_props: ProposalListResponse = from_json(res).unwrap();
+    let queried_props: ProposalListResponse = from_json(&res).unwrap();
     for (p, i) in queried_props.proposals.iter().zip(1..) {
         let expected_prop = SingleChoiceProposal {
             id: i,
@@ -577,7 +577,7 @@ fn test_query_proposals() {
         limit: Some(10),
     };
     let res = query(deps.as_ref(), mock_env(), query_msg).unwrap();
-    let queried_props: ProposalListResponse = from_json(res).unwrap();
+    let queried_props: ProposalListResponse = from_json(&res).unwrap();
     for (p, i) in queried_props.proposals.iter().zip(1..) {
         let expected_prop = SingleChoiceProposal {
             id: i,
@@ -593,7 +593,7 @@ fn test_query_proposals() {
         limit: None,
     };
     let res = query(deps.as_ref(), mock_env(), query_msg).unwrap();
-    let queried_props: ProposalListResponse = from_json(res).unwrap();
+    let queried_props: ProposalListResponse = from_json(&res).unwrap();
     for (p, i) in queried_props.proposals.iter().zip(51..) {
         let expected_prop = SingleChoiceProposal {
             id: i,
@@ -609,7 +609,7 @@ fn test_query_proposals() {
         limit: None,
     };
     let res = query(deps.as_ref(), mock_env(), query_msg).unwrap();
-    let queried_props: ProposalListResponse = from_json(res).unwrap();
+    let queried_props: ProposalListResponse = from_json(&res).unwrap();
     for (p, i) in queried_props.proposals.iter().zip(91..) {
         let expected_prop = SingleChoiceProposal {
             id: i,
