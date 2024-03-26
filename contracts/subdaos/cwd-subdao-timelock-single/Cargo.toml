@@ -1,6 +1,6 @@
 [package]
 name = "cwd-subdao-timelock-single"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["Andrei Zavgorodnii <andrei.z@p2p.org>"]
 edition = "2021"
 repository = "https://github.com/neutron-org/neutron-dao"
@@ -16,7 +16,7 @@ backtraces = ["cosmwasm-std/backtraces"]
 library = []
 
 [dependencies]
-neutron-sdk = { package = "neutron-sdk", version = "0.7.0" }
+neutron-sdk = "0.10.0"
 cosmwasm-std = { version = "1.3.0" }
 cosmwasm-storage = { version = "1.3.0" }
 cw-storage-plus = "1.1.0"
@@ -32,7 +32,7 @@ neutron-subdao-timelock-single = { path = "../../../packages/neutron-subdao-time
 cwd-pre-propose-base = { path = "../../../packages/cwd-pre-propose-base" }
 neutron-subdao-core = { path = "../../../packages/neutron-subdao-core" }
 neutron-dao-pre-propose-overrule = { path = "../../../packages/neutron-dao-pre-propose-overrule" }
-cwd-proposal-single = { path = "../../../contracts/dao/proposal/cwd-proposal-single", features = ["library"]}
+cwd-proposal-single = { path = "../../../contracts/dao/proposal/cwd-proposal-single", features = ["library"] }
 cwd-voting = { path = "../../../packages/cwd-voting" }
 neutron-subdao-proposal-single = { path = "../../../packages/neutron-subdao-proposal-single" }
 

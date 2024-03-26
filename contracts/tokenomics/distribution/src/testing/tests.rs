@@ -6,7 +6,7 @@ use crate::{
     testing::mock_querier::mock_dependencies,
 };
 use cosmwasm_std::{
-    coin, coins, from_binary,
+    coin, coins, from_json,
     testing::{mock_env, mock_info},
     Addr, BankMsg, CosmosMsg, DepsMut, Empty, Uint128,
 };
@@ -289,7 +289,7 @@ fn test_query_shares() {
     let msg = QueryMsg::Shares {};
     let res = query(deps.as_ref(), mock_env(), msg);
     assert!(res.is_ok());
-    let value: Vec<(String, Uint128)> = from_binary(&res.unwrap()).unwrap();
+    let value: Vec<(String, Uint128)> = from_json(res.unwrap()).unwrap();
     assert_eq!(
         value,
         vec![
@@ -320,7 +320,7 @@ fn test_query_pending() {
     let msg = QueryMsg::Pending {};
     let res = query(deps.as_ref(), mock_env(), msg);
     assert!(res.is_ok());
-    let value: Vec<(String, Uint128)> = from_binary(&res.unwrap()).unwrap();
+    let value: Vec<(String, Uint128)> = from_json(res.unwrap()).unwrap();
     assert_eq!(
         value,
         vec![
@@ -345,7 +345,7 @@ fn test_pause() {
     );
     assert!(res.is_ok());
     let pause_info: PauseInfoResponse =
-        from_binary(&query(deps.as_ref(), mock_env(), QueryMsg::PauseInfo {}).unwrap()).unwrap();
+        from_json(query(deps.as_ref(), mock_env(), QueryMsg::PauseInfo {}).unwrap()).unwrap();
     assert_eq!(
         pause_info,
         PauseInfoResponse::Paused {
@@ -404,7 +404,7 @@ fn test_pause() {
     );
     assert!(res.is_ok());
     let pause_info: PauseInfoResponse =
-        from_binary(&query(deps.as_ref(), env.clone(), QueryMsg::PauseInfo {}).unwrap()).unwrap();
+        from_json(query(deps.as_ref(), env.clone(), QueryMsg::PauseInfo {}).unwrap()).unwrap();
     assert_eq!(
         pause_info,
         PauseInfoResponse::Paused {
@@ -422,6 +422,6 @@ fn test_pause() {
     );
     assert!(res.is_ok(),);
     let pause_info: PauseInfoResponse =
-        from_binary(&query(deps.as_ref(), mock_env(), QueryMsg::PauseInfo {}).unwrap()).unwrap();
+        from_json(query(deps.as_ref(), mock_env(), QueryMsg::PauseInfo {}).unwrap()).unwrap();
     assert_eq!(pause_info, PauseInfoResponse::Unpaused {});
 }

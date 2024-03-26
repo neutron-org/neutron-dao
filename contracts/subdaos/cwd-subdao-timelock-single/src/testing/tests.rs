@@ -1,9 +1,9 @@
 use crate::contract::query_proposal_execution_error;
 use cosmwasm_std::testing::MOCK_CONTRACT_ADDR;
 use cosmwasm_std::{
-    from_binary,
+    from_json,
     testing::{mock_env, mock_info},
-    to_binary, Addr, Attribute, CosmosMsg, Reply, SubMsg, SubMsgResult, WasmMsg,
+    to_json_binary, Addr, Attribute, CosmosMsg, Reply, SubMsg, SubMsgResult, WasmMsg,
 };
 use cwd_voting::status::Status;
 use neutron_sdk::bindings::msg::NeutronMsg;
@@ -103,7 +103,7 @@ fn test_execute_timelock_proposal() {
         correct_msg.clone(),
     );
     assert_eq!(
-        "neutron_subdao_timelock_single::types::Config not found",
+        "type: neutron_subdao_timelock_single::types::Config; key: [63, 6F, 6E, 66, 69, 67] not found",
         res.unwrap_err().to_string()
     );
 
@@ -168,7 +168,7 @@ fn test_execute_timelock_proposal() {
         res_ok.messages,
         vec![SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: MOCK_OVERRULE_PREPROPOSAL.to_string(),
-            msg: to_binary(&OverruleExecuteMsg::Propose {
+            msg: to_json_binary(&OverruleExecuteMsg::Propose {
                 msg: OverruleProposeMessage::ProposeOverrule {
                     timelock_contract: MOCK_CONTRACT_ADDR.to_string(),
                     proposal_id: 10,
@@ -199,7 +199,7 @@ fn test_execute_proposal() {
 
     let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone());
     assert_eq!(
-        "neutron_subdao_timelock_single::types::Config not found",
+        "type: neutron_subdao_timelock_single::types::Config; key: [63, 6F, 6E, 66, 69, 67] not found",
         res.unwrap_err().to_string()
     );
 
@@ -211,7 +211,7 @@ fn test_execute_proposal() {
     CONFIG.save(deps.as_mut().storage, &config).unwrap();
     let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone());
     assert_eq!(
-        "neutron_subdao_timelock_single::types::SingleChoiceProposal not found",
+        "type: neutron_subdao_timelock_single::types::SingleChoiceProposal; key: [00, 09, 70, 72, 6F, 70, 6F, 73, 61, 6C, 73, 00, 00, 00, 00, 00, 00, 00, 0A] not found",
         res.unwrap_err().to_string()
     );
 
@@ -354,7 +354,7 @@ fn test_overrule_proposal() {
 
     let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone());
     assert_eq!(
-        "neutron_subdao_timelock_single::types::Config not found",
+        "type: neutron_subdao_timelock_single::types::Config; key: [63, 6F, 6E, 66, 69, 67] not found",
         res.unwrap_err().to_string()
     );
 
@@ -424,7 +424,7 @@ fn execute_update_config() {
 
     let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone());
     assert_eq!(
-        "neutron_subdao_timelock_single::types::Config not found",
+        "type: neutron_subdao_timelock_single::types::Config; key: [63, 6F, 6E, 66, 69, 67] not found",
         res.unwrap_err().to_string()
     );
 
@@ -512,7 +512,7 @@ fn test_query_config() {
     CONFIG.save(deps.as_mut().storage, &config).unwrap();
     let query_msg = QueryMsg::Config {};
     let res = query(deps.as_ref(), mock_env(), query_msg).unwrap();
-    let queried_config: Config = from_binary(&res).unwrap();
+    let queried_config: Config = from_json(res).unwrap();
     assert_eq!(config, queried_config)
 }
 
@@ -531,7 +531,7 @@ fn test_query_proposals() {
     for i in 1..=100 {
         let query_msg = QueryMsg::Proposal { proposal_id: i };
         let res = query(deps.as_ref(), mock_env(), query_msg).unwrap();
-        let queried_prop: SingleChoiceProposal = from_binary(&res).unwrap();
+        let queried_prop: SingleChoiceProposal = from_json(res).unwrap();
         let expected_prop = SingleChoiceProposal {
             id: i,
             msgs: vec![correct_proposal_msg()],
@@ -545,7 +545,7 @@ fn test_query_proposals() {
         limit: None,
     };
     let res = query(deps.as_ref(), mock_env(), query_msg).unwrap();
-    let queried_props: ProposalListResponse = from_binary(&res).unwrap();
+    let queried_props: ProposalListResponse = from_json(res).unwrap();
     for (p, i) in queried_props.proposals.iter().zip(1..) {
         let expected_prop = SingleChoiceProposal {
             id: i,
@@ -561,7 +561,7 @@ fn test_query_proposals() {
         limit: Some(100),
     };
     let res = query(deps.as_ref(), mock_env(), query_msg).unwrap();
-    let queried_props: ProposalListResponse = from_binary(&res).unwrap();
+    let queried_props: ProposalListResponse = from_json(res).unwrap();
     for (p, i) in queried_props.proposals.iter().zip(1..) {
         let expected_prop = SingleChoiceProposal {
             id: i,
@@ -577,7 +577,7 @@ fn test_query_proposals() {
         limit: Some(10),
     };
     let res = query(deps.as_ref(), mock_env(), query_msg).unwrap();
-    let queried_props: ProposalListResponse = from_binary(&res).unwrap();
+    let queried_props: ProposalListResponse = from_json(res).unwrap();
     for (p, i) in queried_props.proposals.iter().zip(1..) {
         let expected_prop = SingleChoiceProposal {
             id: i,
@@ -593,7 +593,7 @@ fn test_query_proposals() {
         limit: None,
     };
     let res = query(deps.as_ref(), mock_env(), query_msg).unwrap();
-    let queried_props: ProposalListResponse = from_binary(&res).unwrap();
+    let queried_props: ProposalListResponse = from_json(res).unwrap();
     for (p, i) in queried_props.proposals.iter().zip(51..) {
         let expected_prop = SingleChoiceProposal {
             id: i,
@@ -609,7 +609,7 @@ fn test_query_proposals() {
         limit: None,
     };
     let res = query(deps.as_ref(), mock_env(), query_msg).unwrap();
-    let queried_props: ProposalListResponse = from_binary(&res).unwrap();
+    let queried_props: ProposalListResponse = from_json(res).unwrap();
     for (p, i) in queried_props.proposals.iter().zip(91..) {
         let expected_prop = SingleChoiceProposal {
             id: i,
@@ -645,14 +645,14 @@ fn test_reply() {
     assert_eq!(expected_attributes, res_ok.attributes);
     // reply writes the failed proposal error
     let query_res = query_proposal_execution_error(deps.as_ref(), 10).unwrap();
-    let error: Option<String> = from_binary(&query_res).unwrap();
+    let error: Option<String> = from_json(query_res).unwrap();
     assert_eq!(error, Some("error".to_string()));
 }
 
 fn correct_proposal_msg() -> CosmosMsg<NeutronMsg> {
     CosmosMsg::Wasm(WasmMsg::Execute {
         contract_addr: "".to_string(),
-        msg: to_binary(&CoreExecuteMsg::ExecuteTimelockedMsgs { msgs: vec![] }).unwrap(),
+        msg: to_json_binary(&CoreExecuteMsg::ExecuteTimelockedMsgs { msgs: vec![] }).unwrap(),
         funds: vec![],
     })
 }

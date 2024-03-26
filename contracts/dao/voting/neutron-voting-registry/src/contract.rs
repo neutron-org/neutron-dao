@@ -3,15 +3,12 @@ use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, VotingVault};
 use crate::state::{Config, VotingVaultState, CONFIG, DAO, VAULT_STATES};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::{
-    entry_point, to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Order, Response,
+    entry_point, to_json_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Order, Response,
     StdError, StdResult,
 };
 use cw2::set_contract_version;
-use cw_storage_plus::Item;
 use cwd_interface::voting::{self, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse};
 use neutron_vault::msg::QueryMsg as VaultQueryMsg;
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
 pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-voting-registry";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -180,15 +177,17 @@ pub fn execute_update_config(
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::VotingPowerAtHeight { address, height } => {
-            to_binary(&query_voting_power_at_height(deps, env, address, height)?)
+            to_json_binary(&query_voting_power_at_height(deps, env, address, height)?)
         }
         QueryMsg::TotalPowerAtHeight { height } => {
-            to_binary(&query_total_power_at_height(deps, env, height)?)
+            to_json_binary(&query_total_power_at_height(deps, env, height)?)
         }
         QueryMsg::Info {} => query_info(deps),
         QueryMsg::Dao {} => query_dao(deps),
-        QueryMsg::Config {} => to_binary(&CONFIG.load(deps.storage)?),
-        QueryMsg::VotingVaults { height } => to_binary(&query_voting_vaults(deps, env, height)?),
+        QueryMsg::Config {} => to_json_binary(&CONFIG.load(deps.storage)?),
+        QueryMsg::VotingVaults { height } => {
+            to_json_binary(&query_voting_vaults(deps, env, height)?)
+        }
     }
 }
 
@@ -296,37 +295,16 @@ pub fn query_total_power_at_height(
 
 pub fn query_info(deps: Deps) -> StdResult<Binary> {
     let info = cw2::get_contract_version(deps.storage)?;
-    to_binary(&voting::InfoResponse { info })
+    to_json_binary(&voting::InfoResponse { info })
 }
 
 pub fn query_dao(deps: Deps) -> StdResult<Binary> {
     let dao = DAO.load(deps.storage)?;
-    to_binary(&dao)
+    to_json_binary(&dao)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
-    // read the prev version config
-    #[derive(Serialize, Deserialize, JsonSchema)]
-    struct OldConfig {
-        pub owner: Addr,
-        pub voting_vaults: Vec<Addr>,
-    }
-    let old_config: OldConfig = Item::new("config").load(deps.storage)?;
-
-    // move vaults from old config to a dedicated Item
-    for vault in old_config.voting_vaults {
-        VAULT_STATES.save(deps.storage, vault, &VotingVaultState::Active, 1u64)?;
-    }
-
-    // overwrite value behind config key
-    CONFIG.save(
-        deps.storage,
-        &Config {
-            owner: old_config.owner,
-        },
-    )?;
-
     // Set contract to version to latest
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     Ok(Response::default())

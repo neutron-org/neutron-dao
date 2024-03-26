@@ -1,15 +1,19 @@
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::state::{Config, CONFIG, FUND_COUNTER, PAUSED_UNTIL, PENDING_DISTRIBUTION, SHARES};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Addr, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Order,
+    to_json_binary, Addr, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Order,
     Response, StdResult, Storage, Uint128,
 };
+use cw2::set_contract_version;
 use exec_control::pause::{
     can_pause, can_unpause, validate_duration, PauseError, PauseInfoResponse,
 };
+
+pub(crate) const CONTRACT_NAME: &str = "crates.io:distribution";
+pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 //--------------------------------------------------------------------------------------------------
 // Instantiation
@@ -72,6 +76,12 @@ pub fn execute(
         // permissioned - owner of the share
         ExecuteMsg::Claim {} => execute_claim(deps, info),
     }
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    Ok(Response::default())
 }
 
 pub fn execute_pause(
@@ -262,9 +272,9 @@ pub fn execute_claim(deps: DepsMut, info: MessageInfo) -> Result<Response, Contr
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::Config {} => to_binary(&query_config(deps)?),
-        QueryMsg::Pending {} => to_binary(&query_pending(deps)?),
-        QueryMsg::Shares {} => to_binary(&query_shares(deps)?),
+        QueryMsg::Config {} => to_json_binary(&query_config(deps)?),
+        QueryMsg::Pending {} => to_json_binary(&query_pending(deps)?),
+        QueryMsg::Shares {} => to_json_binary(&query_shares(deps)?),
         QueryMsg::PauseInfo {} => query_paused(deps, env),
     }
 }
@@ -289,7 +299,7 @@ pub fn query_pending(deps: Deps) -> StdResult<Vec<(Addr, Uint128)>> {
 }
 
 pub fn query_paused(deps: Deps, env: Env) -> StdResult<Binary> {
-    to_binary(&get_pause_info(deps, &env)?)
+    to_json_binary(&get_pause_info(deps, &env)?)
 }
 
 fn get_pause_info(deps: Deps, env: &Env) -> StdResult<PauseInfoResponse> {

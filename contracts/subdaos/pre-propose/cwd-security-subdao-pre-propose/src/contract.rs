@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    from_binary, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, Response, StdResult,
+    from_json, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, Response, StdResult,
     WasmMsg,
 };
 use cw2::set_contract_version;
@@ -81,8 +81,8 @@ pub fn execute(
                         msg,
                         funds,
                     }) => {
-                        if (from_binary::<ExecuteMsgPauseTypedDuration>(msg).is_err()
-                            && from_binary::<ExecuteMsgPauseUntypedDuration>(msg).is_err())
+                        if (from_json::<ExecuteMsgPauseTypedDuration>(msg).is_err()
+                            && from_json::<ExecuteMsgPauseUntypedDuration>(msg).is_err())
                             || !funds.is_empty()
                         {
                             return Err(PreProposeError::MalformedProposal {});

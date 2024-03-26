@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, Reply, Response,
-    StdError, StdResult, SubMsg,
+    to_json_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, Reply,
+    Response, StdError, StdResult, SubMsg,
 };
 use cw2::{get_contract_version, set_contract_version};
 use cw_paginate::{paginate_map, paginate_map_values};
@@ -409,12 +409,12 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 
 pub fn query_config(deps: Deps) -> StdResult<Binary> {
     let config = CONFIG.load(deps.storage)?;
-    to_binary(&config)
+    to_json_binary(&config)
 }
 
 pub fn query_voting_module(deps: Deps) -> StdResult<Binary> {
     let voting_module = VOTE_MODULE.load(deps.storage)?;
-    to_binary(&voting_module)
+    to_json_binary(&voting_module)
 }
 
 pub fn query_proposal_modules(
@@ -435,7 +435,7 @@ pub fn query_proposal_modules(
     //
     // Even if this does lock up one can determine the existing
     // proposal modules by looking at past transactions on chain.
-    to_binary(&paginate_map_values(
+    to_json_binary(&paginate_map_values(
         deps,
         &PROPOSAL_MODULES,
         start_after
@@ -465,7 +465,7 @@ pub fn query_active_proposal_modules(
 
     let limit = limit.unwrap_or(values.len() as u32);
 
-    to_binary::<Vec<ProposalModule>>(
+    to_json_binary::<Vec<ProposalModule>>(
         &values
             .into_iter()
             .filter(|module: &ProposalModule| module.status == ProposalModuleStatus::Enabled)
@@ -490,7 +490,7 @@ fn get_pause_info(deps: Deps, env: &Env) -> StdResult<PauseInfoResponse> {
 }
 
 pub fn query_paused(deps: Deps, env: Env) -> StdResult<Binary> {
-    to_binary(&get_pause_info(deps, &env)?)
+    to_json_binary(&get_pause_info(deps, &env)?)
 }
 
 pub fn query_dump_state(deps: Deps, env: Env) -> StdResult<Binary> {
@@ -504,7 +504,7 @@ pub fn query_dump_state(deps: Deps, env: Env) -> StdResult<Binary> {
     let version = get_contract_version(deps.storage)?;
     let active_proposal_module_count = ACTIVE_PROPOSAL_MODULE_COUNT.load(deps.storage)?;
     let total_proposal_module_count = TOTAL_PROPOSAL_MODULE_COUNT.load(deps.storage)?;
-    to_binary(&DumpStateResponse {
+    to_json_binary(&DumpStateResponse {
         config,
         version,
         pause_info,
@@ -525,7 +525,7 @@ pub fn query_voting_power_at_height(
         voting_registry_module,
         &voting::Query::VotingPowerAtHeight { height, address },
     )?;
-    to_binary(&voting_power)
+    to_json_binary(&voting_power)
 }
 
 pub fn query_total_power_at_height(deps: Deps, height: Option<u64>) -> StdResult<Binary> {
@@ -534,17 +534,17 @@ pub fn query_total_power_at_height(deps: Deps, height: Option<u64>) -> StdResult
         voting_registry_module,
         &voting::Query::TotalPowerAtHeight { height },
     )?;
-    to_binary(&total_power)
+    to_json_binary(&total_power)
 }
 
 pub fn query_get_item(deps: Deps, item: String) -> StdResult<Binary> {
     let item = ITEMS.may_load(deps.storage, item)?;
-    to_binary(&GetItemResponse { item })
+    to_json_binary(&GetItemResponse { item })
 }
 
 pub fn query_info(deps: Deps) -> StdResult<Binary> {
     let info = cw2::get_contract_version(deps.storage)?;
-    to_binary(&cwd_interface::voting::InfoResponse { info })
+    to_json_binary(&cwd_interface::voting::InfoResponse { info })
 }
 
 pub fn query_list_items(
@@ -552,7 +552,7 @@ pub fn query_list_items(
     start_after: Option<String>,
     limit: Option<u32>,
 ) -> StdResult<Binary> {
-    to_binary(&paginate_map(
+    to_json_binary(&paginate_map(
         deps,
         &ITEMS,
         start_after,
@@ -586,28 +586,28 @@ pub fn query_list_sub_daos(
         })
         .collect();
 
-    to_binary(&subdaos)
+    to_json_binary(&subdaos)
 }
 
 pub fn query_dao_uri(deps: Deps) -> StdResult<Binary> {
     let config = CONFIG.load(deps.storage)?;
-    to_binary(&config.dao_uri)
+    to_json_binary(&config.dao_uri)
 }
 
 pub fn query_main_dao(deps: Deps) -> StdResult<Binary> {
     let config = CONFIG.load(deps.storage)?;
-    to_binary(&config.main_dao)
+    to_json_binary(&config.main_dao)
 }
 
 pub fn query_verify_timelock(deps: Deps, timelock: String) -> StdResult<Binary> {
-    to_binary(&(execution_access_check(deps, deps.api.addr_validate(&timelock)?).is_ok()))
+    to_json_binary(&(execution_access_check(deps, deps.api.addr_validate(&timelock)?).is_ok()))
 }
 
 pub fn query_timelock_proposal_module_address(deps: Deps, timelock: String) -> StdResult<Binary> {
     let maybe_proposal = proposal_from_timelock(deps, deps.api.addr_validate(&timelock)?)?;
     let proposal =
         maybe_proposal.ok_or_else(|| StdError::generic_err("incorrect timelock addr provided"))?;
-    to_binary(&proposal.address)
+    to_json_binary(&proposal.address)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

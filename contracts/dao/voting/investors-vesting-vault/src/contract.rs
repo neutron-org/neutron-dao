@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult, Uint128,
+    to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult, Uint128,
 };
 use cw2::set_contract_version;
 use cwd_interface::voting::{
@@ -138,18 +138,18 @@ pub fn execute_update_config(
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::VotingPowerAtHeight { address, height } => {
-            to_binary(&query_voting_power_at_height(deps, env, address, height)?)
+            to_json_binary(&query_voting_power_at_height(deps, env, address, height)?)
         }
         QueryMsg::TotalPowerAtHeight { height } => {
-            to_binary(&query_total_power_at_height(deps, env, height)?)
+            to_json_binary(&query_total_power_at_height(deps, env, height)?)
         }
         QueryMsg::Info {} => query_info(deps),
         QueryMsg::Dao {} => query_dao(deps),
         QueryMsg::Name {} => query_name(deps),
         QueryMsg::Description {} => query_description(deps),
-        QueryMsg::Config {} => to_binary(&CONFIG.load(deps.storage)?),
+        QueryMsg::Config {} => to_json_binary(&CONFIG.load(deps.storage)?),
         QueryMsg::BondingStatus { height, address } => {
-            to_binary(&query_bonding_status(deps, env, height, address)?)
+            to_json_binary(&query_bonding_status(deps, env, height, address)?)
         }
         QueryMsg::ListBonders { start_after, limit } => {
             query_list_bonders(deps, env, start_after, limit)
@@ -228,22 +228,22 @@ pub fn query_total_power_at_height(
 
 pub fn query_info(deps: Deps) -> StdResult<Binary> {
     let info = cw2::get_contract_version(deps.storage)?;
-    to_binary(&cwd_interface::voting::InfoResponse { info })
+    to_json_binary(&cwd_interface::voting::InfoResponse { info })
 }
 
 pub fn query_dao(deps: Deps) -> StdResult<Binary> {
     let dao = DAO.load(deps.storage)?;
-    to_binary(&dao)
+    to_json_binary(&dao)
 }
 
 pub fn query_name(deps: Deps) -> StdResult<Binary> {
     let config: Config = CONFIG.load(deps.storage)?;
-    to_binary(&config.name)
+    to_json_binary(&config.name)
 }
 
 pub fn query_description(deps: Deps) -> StdResult<Binary> {
     let config: Config = CONFIG.load(deps.storage)?;
-    to_binary(&config.description)
+    to_json_binary(&config.description)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

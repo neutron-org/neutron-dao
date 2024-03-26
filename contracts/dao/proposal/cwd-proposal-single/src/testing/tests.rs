@@ -1,9 +1,9 @@
 use crate::contract::query_proposal_execution_error;
 use cosmwasm_std::{
-    coins, from_binary,
+    coins, from_json,
     testing::{mock_dependencies, mock_env},
-    to_binary, Addr, Attribute, BankMsg, ContractInfoResponse, CosmosMsg, Decimal, Empty, Reply,
-    StdError, StdResult, SubMsgResult, Uint128, WasmMsg, WasmQuery,
+    to_json_binary, Addr, Attribute, BankMsg, ContractInfoResponse, CosmosMsg, Decimal, Empty,
+    Reply, StdError, StdResult, SubMsgResult, Uint128, WasmMsg, WasmQuery,
 };
 use cosmwasm_std::{Api, Storage};
 use cw2::ContractVersion;
@@ -286,7 +286,7 @@ fn test_update_config() {
         CREATOR_ADDR,
         vec![WasmMsg::Execute {
             contract_addr: proposal_module.to_string(),
-            msg: to_binary(&ExecuteMsg::UpdateConfig {
+            msg: to_json_binary(&ExecuteMsg::UpdateConfig {
                 threshold: Threshold::AbsoluteCount {
                     threshold: Uint128::new(10_000),
                 },
@@ -973,7 +973,7 @@ fn test_reply_proposal_mock() {
 
     // reply writes the failed proposal error
     let query_res = query_proposal_execution_error(deps.as_ref(), 1).unwrap();
-    let error: Option<String> = from_binary(&query_res).unwrap();
+    let error: Option<String> = from_json(query_res).unwrap();
     assert_eq!(error, Some("error_msg".to_string()));
 }
 

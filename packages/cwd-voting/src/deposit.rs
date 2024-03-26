@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    to_binary, Addr, CosmosMsg, Deps, MessageInfo, StdError, StdResult, Uint128, WasmMsg,
+    to_json_binary, Addr, CosmosMsg, Deps, MessageInfo, StdError, StdResult, Uint128, WasmMsg,
 };
 use cw_utils::{must_pay, PaymentError};
 use schemars::JsonSchema;
@@ -179,7 +179,7 @@ impl CheckedDepositInfo {
                 vec![WasmMsg::Execute {
                     contract_addr: address.to_string(),
                     funds: vec![],
-                    msg: to_binary(&cw20::Cw20ExecuteMsg::TransferFrom {
+                    msg: to_json_binary(&cw20::Cw20ExecuteMsg::TransferFrom {
                         owner: depositor.to_string(),
                         recipient: contract.to_string(),
                         amount: *amount,
@@ -321,7 +321,7 @@ pub mod tests {
             messages,
             vec![CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: CW20.to_string(),
-                msg: to_binary(&cw20::Cw20ExecuteMsg::TransferFrom {
+                msg: to_json_binary(&cw20::Cw20ExecuteMsg::TransferFrom {
                     owner: "ekez".to_string(),
                     recipient: "contract".to_string(),
                     amount: Uint128::new(10)
@@ -380,7 +380,7 @@ pub mod tests {
             messages,
             vec![CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: CW20.to_string(),
-                msg: to_binary(&cw20::Cw20ExecuteMsg::Transfer {
+                msg: to_json_binary(&cw20::Cw20ExecuteMsg::Transfer {
                     recipient: "ekez".to_string(),
                     amount: Uint128::new(10)
                 })

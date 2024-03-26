@@ -1,6 +1,6 @@
 use cosmwasm_std::testing::{mock_dependencies, mock_env};
 use cosmwasm_std::{
-    coins, from_binary, to_binary, Addr, Api, Attribute, Coin, CosmosMsg, Decimal, Empty, Reply,
+    coins, from_json, to_json_binary, Addr, Api, Attribute, Coin, CosmosMsg, Decimal, Empty, Reply,
     Storage, SubMsgResult, Timestamp, Uint128, WasmMsg,
 };
 use cw20::Cw20Coin;
@@ -100,7 +100,7 @@ pub fn get_pre_propose_info(
     PreProposeInfo::ModuleMayPropose {
         info: ModuleInstantiateInfo {
             code_id: pre_propose_contract,
-            msg: to_binary(&cppm::InstantiateMsg {
+            msg: to_json_binary(&cppm::InstantiateMsg {
                 deposit_info,
                 open_proposal_submission,
             })
@@ -446,7 +446,7 @@ fn test_propose_with_messages() {
 
     let wasm_msg = WasmMsg::Execute {
         contract_addr: govmod.to_string(),
-        msg: to_binary(&config_msg).unwrap(),
+        msg: to_json_binary(&config_msg).unwrap(),
         funds: vec![],
     };
 
@@ -1963,7 +1963,7 @@ fn test_close_failed_proposal() {
     let msg = cw20::Cw20ExecuteMsg::Burn {
         amount: Uint128::new(2000),
     };
-    let binary_msg = to_binary(&msg).unwrap();
+    let binary_msg = to_json_binary(&msg).unwrap();
 
     let options = vec![
         MultipleChoiceOption {
@@ -2011,7 +2011,7 @@ fn test_close_failed_proposal() {
 
     // Update block
     let timestamp = Timestamp::from_seconds(300_000_000);
-    app.update_block(|block| block.time = timestamp);
+    app.update_block(|b| b.time = timestamp);
 
     // Execute proposal
     app.execute_contract(
@@ -2042,7 +2042,7 @@ fn test_close_failed_proposal() {
                             description: "Disable closing failed proposals".to_string(),
                             msgs: Some(vec![WasmMsg::Execute {
                                 contract_addr: govmod.to_string(),
-                                msg: to_binary(&ExecuteMsg::UpdateConfig {
+                                msg: to_json_binary(&ExecuteMsg::UpdateConfig {
                                     voting_strategy: VotingStrategy::SingleChoice { quorum },
                                     max_voting_period: original.max_voting_period,
                                     min_voting_period: original.min_voting_period,
@@ -2185,6 +2185,6 @@ fn test_reply_proposal_mock() {
 
     // reply writes the failed proposal error
     let query_res = query_proposal_execution_error(deps.as_ref(), 1).unwrap();
-    let error: Option<String> = from_binary(&query_res).unwrap();
+    let error: Option<String> = from_json(query_res).unwrap();
     assert_eq!(error, Some("error".to_string()));
 }

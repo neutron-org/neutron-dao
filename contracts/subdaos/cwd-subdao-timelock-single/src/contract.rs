@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    from_binary, to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply,
+    from_json, to_json_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply,
     Response, StdError, StdResult, SubMsg, WasmMsg,
 };
 use cw2::set_contract_version;
@@ -123,7 +123,7 @@ pub fn execute_timelock_proposal(
 
     let create_overrule_proposal = WasmMsg::Execute {
         contract_addr: config.overrule_pre_propose.to_string(),
-        msg: to_binary(&OverruleExecuteMsg::Propose {
+        msg: to_json_binary(&OverruleExecuteMsg::Propose {
             msg: OverruleProposeMessage::ProposeOverrule {
                 timelock_contract: env.contract.address.to_string(),
                 proposal_id,
@@ -216,7 +216,7 @@ fn verify_msg(msgs: Vec<CosmosMsg<NeutronMsg>>) -> Result<CosmosMsg<NeutronMsg>,
             msg: ref core_execute_msg,
             contract_addr: _,
             funds: _,
-        }) => match from_binary::<CoreExecuteMsg>(core_execute_msg) {
+        }) => match from_json::<CoreExecuteMsg>(core_execute_msg) {
             Ok(CoreExecuteMsg::ExecuteTimelockedMsgs { msgs: _ }) => {}
             _ => return Err(ContractError::CanOnlyExecuteExecuteTimelockedMsgs {}),
         },
@@ -293,7 +293,7 @@ pub fn execute_update_config(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::Config {} => to_binary(&CONFIG.load(deps.storage)?),
+        QueryMsg::Config {} => to_json_binary(&CONFIG.load(deps.storage)?),
         QueryMsg::Proposal { proposal_id } => query_proposal(deps, proposal_id),
         QueryMsg::ListProposals { start_after, limit } => {
             query_list_proposals(deps, start_after, limit)
@@ -306,7 +306,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 
 pub fn query_proposal(deps: Deps, id: u64) -> StdResult<Binary> {
     let proposal = PROPOSALS.load(deps.storage, id)?;
-    to_binary(&proposal)
+    to_json_binary(&proposal)
 }
 
 pub fn query_list_proposals(
@@ -324,12 +324,12 @@ pub fn query_list_proposals(
         .map(|(_, proposal)| proposal)
         .collect();
 
-    to_binary(&ProposalListResponse { proposals: props })
+    to_json_binary(&ProposalListResponse { proposals: props })
 }
 
 pub fn query_proposal_execution_error(deps: Deps, proposal_id: u64) -> StdResult<Binary> {
     let error = PROPOSAL_EXECUTION_ERRORS.may_load(deps.storage, proposal_id)?;
-    to_binary(&error)
+    to_json_binary(&error)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

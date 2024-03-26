@@ -1,8 +1,8 @@
 use cosmwasm_std::StdResult;
 use cosmwasm_std::{
-    from_binary, from_slice,
+    from_json,
     testing::{MockApi, MockQuerier, MockStorage},
-    to_binary, Binary, ContractResult, Empty, OwnedDeps, Querier, QuerierResult, QueryRequest,
+    to_json_binary, Binary, ContractResult, Empty, OwnedDeps, Querier, QuerierResult, QueryRequest,
     SystemError, SystemResult, Uint128, WasmQuery,
 };
 use cwd_interface::voting::{TotalPowerAtHeightResponse, VotingPowerAtHeightResponse};
@@ -44,7 +44,7 @@ pub struct WasmMockQuerier {
 
 impl Querier for WasmMockQuerier {
     fn raw_query(&self, bin_request: &[u8]) -> QuerierResult {
-        let request: QueryRequest<Empty> = match from_slice(bin_request) {
+        let request: QueryRequest<Empty> = match from_json(bin_request) {
             Ok(v) => v,
             Err(e) => {
                 return QuerierResult::Err(SystemError::InvalidRequest {
@@ -63,90 +63,96 @@ impl WasmMockQuerier {
             QueryRequest::Wasm(WasmQuery::Smart { contract_addr, msg }) => {
                 match contract_addr.as_str() {
                     MOCK_VAULT_1 => {
-                        let q: VaultQueryMsg = from_binary(msg).unwrap();
+                        let q: VaultQueryMsg = from_json(msg).unwrap();
                         let resp: StdResult<Binary> = match q {
                             VaultQueryMsg::VotingPowerAtHeight { address, height } => {
                                 if address.as_str() == MOCK_VAULT_MEMBER {
-                                    to_binary(&VotingPowerAtHeightResponse {
+                                    to_json_binary(&VotingPowerAtHeightResponse {
                                         power: Uint128::from(MOCK_VAULT_1_VP),
                                         height: height.unwrap_or_default(),
                                     })
                                 } else {
-                                    to_binary(&VotingPowerAtHeightResponse {
+                                    to_json_binary(&VotingPowerAtHeightResponse {
                                         power: Uint128::zero(),
                                         height: height.unwrap_or_default(),
                                     })
                                 }
                             }
                             VaultQueryMsg::TotalPowerAtHeight { height } => {
-                                to_binary(&TotalPowerAtHeightResponse {
+                                to_json_binary(&TotalPowerAtHeightResponse {
                                     power: Uint128::from(MOCK_VAULT_1_VP),
                                     height: height.unwrap_or_default(),
                                 })
                             }
-                            VaultQueryMsg::Name {} => to_binary(&String::from(MOCK_VAULT_1_NAME)),
+                            VaultQueryMsg::Name {} => {
+                                to_json_binary(&String::from(MOCK_VAULT_1_NAME))
+                            }
                             VaultQueryMsg::Description {} => {
-                                to_binary(&String::from(MOCK_VAULT_1_DESC))
+                                to_json_binary(&String::from(MOCK_VAULT_1_DESC))
                             }
                             _ => todo!(),
                         };
                         SystemResult::Ok(ContractResult::from(resp))
                     }
                     MOCK_VAULT_2 => {
-                        let q: VaultQueryMsg = from_binary(msg).unwrap();
+                        let q: VaultQueryMsg = from_json(msg).unwrap();
                         let resp: StdResult<Binary> = match q {
                             VaultQueryMsg::VotingPowerAtHeight { address, height } => {
                                 if address.as_str() == MOCK_VAULT_MEMBER {
-                                    to_binary(&VotingPowerAtHeightResponse {
+                                    to_json_binary(&VotingPowerAtHeightResponse {
                                         power: Uint128::from(MOCK_VAULT_2_VP),
                                         height: height.unwrap_or_default(),
                                     })
                                 } else {
-                                    to_binary(&VotingPowerAtHeightResponse {
+                                    to_json_binary(&VotingPowerAtHeightResponse {
                                         power: Uint128::zero(),
                                         height: height.unwrap_or_default(),
                                     })
                                 }
                             }
                             VaultQueryMsg::TotalPowerAtHeight { height } => {
-                                to_binary(&TotalPowerAtHeightResponse {
+                                to_json_binary(&TotalPowerAtHeightResponse {
                                     power: Uint128::from(MOCK_VAULT_2_VP),
                                     height: height.unwrap_or_default(),
                                 })
                             }
-                            VaultQueryMsg::Name {} => to_binary(&String::from(MOCK_VAULT_2_NAME)),
+                            VaultQueryMsg::Name {} => {
+                                to_json_binary(&String::from(MOCK_VAULT_2_NAME))
+                            }
                             VaultQueryMsg::Description {} => {
-                                to_binary(&String::from(MOCK_VAULT_2_DESC))
+                                to_json_binary(&String::from(MOCK_VAULT_2_DESC))
                             }
                             _ => todo!(),
                         };
                         SystemResult::Ok(ContractResult::from(resp))
                     }
                     MOCK_VAULT_3 => {
-                        let q: VaultQueryMsg = from_binary(msg).unwrap();
+                        let q: VaultQueryMsg = from_json(msg).unwrap();
                         let resp: StdResult<Binary> = match q {
                             VaultQueryMsg::VotingPowerAtHeight { address, height } => {
                                 if address.as_str() == MOCK_VAULT_MEMBER {
-                                    to_binary(&VotingPowerAtHeightResponse {
+                                    to_json_binary(&VotingPowerAtHeightResponse {
                                         power: Uint128::from(MOCK_VAULT_3_VP),
                                         height: height.unwrap_or_default(),
                                     })
                                 } else {
-                                    to_binary(&VotingPowerAtHeightResponse {
+                                    to_json_binary(&VotingPowerAtHeightResponse {
                                         power: Uint128::zero(),
                                         height: height.unwrap_or_default(),
                                     })
                                 }
                             }
                             VaultQueryMsg::TotalPowerAtHeight { height } => {
-                                to_binary(&TotalPowerAtHeightResponse {
+                                to_json_binary(&TotalPowerAtHeightResponse {
                                     power: Uint128::from(MOCK_VAULT_3_VP),
                                     height: height.unwrap_or_default(),
                                 })
                             }
-                            VaultQueryMsg::Name {} => to_binary(&String::from(MOCK_VAULT_3_NAME)),
+                            VaultQueryMsg::Name {} => {
+                                to_json_binary(&String::from(MOCK_VAULT_3_NAME))
+                            }
                             VaultQueryMsg::Description {} => {
-                                to_binary(&String::from(MOCK_VAULT_3_DESC))
+                                to_json_binary(&String::from(MOCK_VAULT_3_DESC))
                             }
                             _ => todo!(),
                         };

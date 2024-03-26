@@ -3,25 +3,22 @@ use std::u128;
 use cosmwasm_std::{
     coins,
     testing::{mock_dependencies, mock_env},
-    to_binary, Addr, Coin, CosmosMsg, Decimal, Empty, Order, Timestamp, Uint128, WasmMsg,
+    to_json_binary, Addr, Coin, CosmosMsg, Decimal, Empty, Order, Timestamp, Uint128, WasmMsg,
 };
 use cw20::Cw20Coin;
 use cwd_voting_cw20_staked::msg::ActiveThreshold;
 
-use cwd_core::state::ProposalModule;
-use cwd_interface::{Admin, ModuleInstantiateInfo};
 use cw_multi_test::{next_block, App, BankSudo, Contract, ContractWrapper, Executor, SudoMsg};
 use cw_pre_propose_base_proposal_single as cppbps;
 use cw_storage_plus::{Item, Map};
 use cw_utils::Duration;
 use cw_utils::Expiration;
+use cwd_core::state::ProposalModule;
+use cwd_interface::{Admin, ModuleInstantiateInfo};
 
 use cwd_hooks::HooksResponse;
 
 use cw_denom::{CheckedDenom, UncheckedDenom};
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
-use testing::{ShouldExecute, TestSingleChoiceVote};
 use cwd_voting::{
     deposit::{CheckedDepositInfo, DepositRefundPolicy, DepositToken, UncheckedDepositInfo},
     pre_propose::{PreProposeInfo, ProposalCreationPolicy},
@@ -29,6 +26,9 @@ use cwd_voting::{
     threshold::{PercentageThreshold, Threshold},
     voting::{Vote, Votes},
 };
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
+use testing::{ShouldExecute, TestSingleChoiceVote};
 
 use crate::{
     contract::{migrate, CONTRACT_NAME, CONTRACT_VERSION},
@@ -208,7 +208,7 @@ fn test_close_failed_proposal() {
     let msg = cw20::Cw20ExecuteMsg::Send {
         contract: staking_contract.to_string(),
         amount: Uint128::new(2000),
-        msg: to_binary(&cw20_stake::msg::ReceiveMsg::Stake {}).unwrap(),
+        msg: to_json_binary(&cw20_stake::msg::ReceiveMsg::Stake {}).unwrap(),
     };
     app.execute_contract(
         Addr::unchecked(CREATOR_ADDR),
@@ -222,7 +222,7 @@ fn test_close_failed_proposal() {
     let msg = cw20::Cw20ExecuteMsg::Burn {
         amount: Uint128::new(2000),
     };
-    let binary_msg = to_binary(&msg).unwrap();
+    let binary_msg = to_json_binary(&msg).unwrap();
 
     // Overburn tokens
     app.execute_contract(
@@ -292,7 +292,7 @@ fn test_close_failed_proposal() {
                 description: "We want to re-execute failed proposals".to_string(),
                 msgs: vec![WasmMsg::Execute {
                     contract_addr: govmod_single.to_string(),
-                    msg: to_binary(&ExecuteMsg::UpdateConfig {
+                    msg: to_json_binary(&ExecuteMsg::UpdateConfig {
                         threshold: original.threshold,
                         max_voting_period: original.max_voting_period,
                         min_voting_period: original.min_voting_period,
@@ -466,7 +466,7 @@ fn test_no_double_refund_on_execute_fail_and_close() {
     let msg = cw20::Cw20ExecuteMsg::Send {
         contract: staking_contract.to_string(),
         amount: Uint128::new(1),
-        msg: to_binary(&cw20_stake::msg::ReceiveMsg::Stake {}).unwrap(),
+        msg: to_json_binary(&cw20_stake::msg::ReceiveMsg::Stake {}).unwrap(),
     };
     app.execute_contract(
         Addr::unchecked(CREATOR_ADDR),
@@ -494,7 +494,7 @@ fn test_no_double_refund_on_execute_fail_and_close() {
     let msg = cw20::Cw20ExecuteMsg::Burn {
         amount: Uint128::new(2000),
     };
-    let binary_msg = to_binary(&msg).unwrap();
+    let binary_msg = to_json_binary(&msg).unwrap();
 
     // Increase allowance to pay the proposal deposit.
     app.execute_contract(

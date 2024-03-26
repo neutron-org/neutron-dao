@@ -3,7 +3,7 @@ use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::state::Config;
 use crate::ContractError;
 use cosmwasm_std::testing::{mock_dependencies, mock_env};
-use cosmwasm_std::{to_binary, Addr, Binary, Deps, Empty, Env, Response, StdResult, Uint128};
+use cosmwasm_std::{to_json_binary, Addr, Binary, Deps, Empty, Env, Response, StdResult, Uint128};
 use cw_multi_test::{custom_app, App, AppResponse, Contract, ContractWrapper, Executor};
 use cwd_interface::voting::{
     InfoResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
@@ -36,13 +36,13 @@ fn vesting_query(_deps: Deps, _env: Env, msg: vesting_base::msg::QueryMsg) -> St
                 },
         } => {
             let response = Uint128::from(10000u64);
-            to_binary(&response)
+            to_json_binary(&response)
         }
         vesting_base::msg::QueryMsg::HistoricalExtension {
             msg: vesting_base::msg::QueryMsgHistorical::UnclaimedTotalAmountAtHeight { height: _ },
         } => {
             let response = Uint128::from(10000u64);
-            to_binary(&response)
+            to_json_binary(&response)
         }
         _ => unimplemented!(),
     }

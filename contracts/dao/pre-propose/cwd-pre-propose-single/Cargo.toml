@@ -1,6 +1,6 @@
 [package]
 name = "cwd-pre-propose-single"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["ekez <zekemedley@gmail.com>"]
 edition = "2021"
 repository = "https://github.com/DA0-DA0/dao-contracts"
@@ -20,7 +20,7 @@ cosmwasm-std = { version = "1.3.0" }
 cw2 = "1.1.0"
 serde = { version = "1.0.175", default-features = false, features = ["derive"] }
 cwd-pre-propose-base = { version = "*", path = "../../../../packages/cwd-pre-propose-base" }
-neutron-sdk = { package = "neutron-sdk", version = "0.7.0" }
+neutron-sdk = "0.10.0"
 schemars = "0.8.8"
 
 [dev-dependencies]
