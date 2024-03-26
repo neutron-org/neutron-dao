@@ -211,7 +211,7 @@ pub fn query_voting_power_at_height(
         height,
     )?;
 
-    let power = atom_power + usdc_power;
+    let power = atom_power.checked_add(usdc_power)?;
 
     Ok(VotingPowerAtHeightResponse {
         power: power.numerator().try_into().map_err(StdError::from)?,
