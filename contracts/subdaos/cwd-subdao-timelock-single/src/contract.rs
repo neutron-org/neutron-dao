@@ -159,7 +159,7 @@ pub fn execute_execute_proposal(
         });
     }
 
-    if !is_overrule_proposal_rejected(&deps, &env, &config.overrule_pre_propose, proposal.id)? {
+    if !is_overrule_proposal_declined(&deps, &env, &config.overrule_pre_propose, proposal.id)? {
         return Err(ContractError::TimeLocked {});
     }
 
@@ -333,13 +333,56 @@ pub fn query_proposal_execution_error(deps: Deps, proposal_id: u64) -> StdResult
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(deps: DepsMut, env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     // Set contract to version to latest
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-    Ok(Response::default())
+
+    let config = CONFIG.load(deps.storage)?;
+    let props: Vec<SingleChoiceProposal> = PROPOSALS
+        .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
+        .collect::<Result<Vec<(u64, SingleChoiceProposal)>, _>>()?
+        .into_iter()
+        .map(|(_, proposal)| proposal)
+        .collect();
+    let mut migrated_ids: Vec<String> = vec![];
+    for mut item in props {
+        let overrule_proposal_id: u64 = deps.querier.query_wasm_smart(
+            &config.overrule_pre_propose,
+            &OverruleQueryMsg::QueryExtension {
+                msg: OverruleQueryExt::OverruleProposalId {
+                    timelock_address: env.contract.address.to_string(),
+                    subdao_proposal_id: item.id,
+                },
+            },
+        )?;
+        let propose: Addr = deps.querier.query_wasm_smart(
+            &config.overrule_pre_propose,
+            &OverruleQueryMsg::ProposalModule {},
+        )?;
+        let overrule_proposal: MainDaoProposalResponse = deps.querier.query_wasm_smart(
+            propose,
+            &MainDaoProposalModuleQueryMsg::Proposal {
+                proposal_id: overrule_proposal_id,
+            },
+        )?;
+
+        // As we had stuck proposals with Overrules in Status::Closed
+        // and didn't have an ability to execute them, new proposals with same messages were recreated.
+        // Because of that now we want to make old closed proposals non-executable anymore.
+        // Setting their status to `Overruled` is a good way to make sure we cannot execute these proposals.
+        if overrule_proposal.proposal.status == Status::Closed {
+            item.status = ProposalStatus::Overruled;
+            migrated_ids.push(item.id.to_string());
+            PROPOSALS.save(deps.storage, item.id, &item)?;
+        }
+    }
+
+    Ok(Response::default().add_attribute("migrated_proposal_ids", migrated_ids.join(",")))
 }
 
-fn is_overrule_proposal_rejected(
+// Returns true if overrule proposal for this subdao proposal
+// was declined. (voting is over, and overrule is not accepted).
+fn is_overrule_proposal_declined(
     deps: &DepsMut,
     env: &Env,
     overrule_pre_propose: &Addr,
@@ -363,7 +406,10 @@ fn is_overrule_proposal_rejected(
             proposal_id: overrule_proposal_id,
         },
     )?;
-    Ok(overrule_proposal.proposal.status == Status::Rejected)
+    // we check for both Rejected and Closed status
+    // since anybody can close rejected overrule proposals
+    Ok(overrule_proposal.proposal.status == Status::Rejected
+        || overrule_proposal.proposal.status == Status::Closed)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

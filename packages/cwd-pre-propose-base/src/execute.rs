@@ -303,7 +303,7 @@ where
 
         // Save the deposit.
         //
-        // It is possibe that a malicious proposal hook could run
+        // It is possible that a malicious proposal hook could run
         // before us and update our config! We don't have to worry
         // about this though as the only way to be able to update our
         // config is to have root on the code module and if someone
