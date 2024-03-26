@@ -1209,7 +1209,7 @@ dependencies = [
 
 [[package]]
 name = "cwd-subdao-timelock-single"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "anyhow",
  "cosmwasm-schema",
