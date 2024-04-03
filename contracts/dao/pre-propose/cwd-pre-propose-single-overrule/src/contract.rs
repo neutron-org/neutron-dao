@@ -18,7 +18,7 @@ use neutron_dao_pre_propose_overrule::msg::{
 };
 
 use crate::state::PROPOSALS;
-use cwd_core::{msg::QueryMsg as MainDaoQueryMsg, query::SubDao};
+use cwd_core::msg::QueryMsg as MainDaoQueryMsg;
 use cwd_proposal_single::{
     msg::ExecuteMsg as ProposeMessageInternal, msg::QueryMsg as ProposalSingleQueryMsg,
 };
@@ -190,7 +190,7 @@ fn verify_is_timelock_from_subdao(
 fn is_subdao_legit(deps: &DepsMut, subdao_core: &Addr) -> Result<bool, PreProposeOverruleError> {
     let main_dao = get_main_dao_address(deps)?;
 
-    let subdao: StdResult<SubDao> = deps.querier.query_wasm_smart(
+    let subdao: StdResult<SubdaoTypes::SubDao> = deps.querier.query_wasm_smart(
         main_dao,
         &MainDaoQueryMsg::GetSubDao {
             address: subdao_core.to_string(),

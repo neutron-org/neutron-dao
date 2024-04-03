@@ -7,10 +7,10 @@ use cwd_interface::voting::{
 use cwd_interface::ModuleInstantiateInfo;
 use cwd_macros::{info_query, voting_query};
 use neutron_sdk::bindings::msg::NeutronMsg;
+use neutron_subdao_core::types::SubDao;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::query::SubDao;
 use crate::state::Config;
 
 /// Information about an item to be stored in the items list.

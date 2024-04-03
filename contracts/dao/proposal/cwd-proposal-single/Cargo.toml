@@ -28,6 +28,7 @@ neutron-sdk = "0.10.0"
 schemars = "0.8.8"
 serde = { version = "1.0.175", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0" }
+neutron-subdao-core = { version = "*", path = "../../../../packages/neutron-subdao-core" }
 
 cwd-core = { path = "../../cwd-core", features = ["library"] }
 cwd-hooks = { path = "../../../../packages/cwd-hooks" }

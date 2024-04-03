@@ -11,7 +11,6 @@ use cw20::Cw20Coin;
 use cw_multi_test::{custom_app, BasicApp, Executor, Router};
 use cw_utils::Duration;
 use cwd_core::msg::{ExecuteMsg as DaoExecuteMsg, QueryMsg as DaoQueryMsg};
-use cwd_core::query::SubDao;
 use cwd_hooks::{HookError, HooksResponse};
 use cwd_interface::voting::InfoResponse;
 use cwd_voting::{
@@ -26,6 +25,7 @@ use cwd_voting::{
     voting::{Vote, Votes},
 };
 use neutron_sdk::bindings::msg::NeutronMsg;
+use neutron_subdao_core::types::SubDao;
 
 use crate::testing::execute::{execute_proposal, execute_proposal_should_fail};
 use crate::{
