@@ -270,6 +270,40 @@ fn test_execute_proposal() {
     let updated_prop = PROPOSALS.load(deps.as_mut().storage, 10).unwrap();
     assert_eq!(ProposalStatus::Executed, updated_prop.status);
 
+    // check execution with close_proposal_on_execution_failure = true and overrule proposal Status == Closed
+    deps.querier.set_close_proposal_on_execution_failure(true);
+    let proposal = SingleChoiceProposal {
+        id: 11,
+        msgs: vec![correct_proposal_msg()],
+        status: ProposalStatus::Timelocked,
+    };
+    PROPOSALS
+        .save(deps.as_mut().storage, proposal.id, &proposal)
+        .unwrap();
+    // if overrule has Status::Closed that means it was rejected
+    {
+        let mut data_mut_ref = overrule_proposal_status.borrow_mut();
+        *data_mut_ref = Status::Closed;
+    }
+    let msg2 = ExecuteMsg::ExecuteProposal { proposal_id: 11 };
+    let res = execute(deps.as_mut(), env.clone(), info.clone(), msg2.clone()).unwrap();
+    let expected_attributes = vec![
+        Attribute::new("action", "execute_proposal"),
+        Attribute::new("sender", "neutron1unknownsender"),
+        Attribute::new("proposal_id", "11"),
+    ];
+    assert_eq!(expected_attributes, res.attributes);
+    assert_eq!(
+        proposal
+            .msgs
+            .iter()
+            .map(|msg| SubMsg::reply_on_error(msg.clone(), proposal.id))
+            .collect::<Vec<SubMsg<NeutronMsg>>>(),
+        res.messages
+    );
+    let updated_prop = PROPOSALS.load(deps.as_mut().storage, 11).unwrap();
+    assert_eq!(ProposalStatus::Executed, updated_prop.status);
+
     // check that execution fails when there not exactly one message in proposal
     let proposal = SingleChoiceProposal {
         id: 10,
