@@ -875,6 +875,7 @@ dependencies = [
  "cwd-interface",
  "cwd-macros",
  "neutron-sdk",
+ "neutron-subdao-core",
  "schemars",
  "serde",
  "thiserror",
@@ -1089,6 +1090,7 @@ dependencies = [
  "cwd-vote-hooks",
  "cwd-voting",
  "neutron-sdk",
+ "neutron-subdao-core",
  "neutron-vault",
  "neutron-voting-registry",
  "schemars",
@@ -1780,7 +1782,7 @@ dependencies = [
 
 [[package]]
 name = "neutron-subdao-core"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -1788,7 +1790,6 @@ dependencies = [
  "cw2 1.1.2",
  "cwd-interface",
  "cwd-macros",
- "cwd-voting",
  "exec-control",
  "neutron-sdk",
  "schemars",
