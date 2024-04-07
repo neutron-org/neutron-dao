@@ -17,8 +17,8 @@ use cwd_voting::{
     deposit::{CheckedDepositInfo, DepositRefundPolicy, DepositToken, UncheckedDepositInfo},
     multiple_choice::{
         CheckedMultipleChoiceOption, MultipleChoiceOption, MultipleChoiceOptionType,
-        MultipleChoiceOptions, MultipleChoiceVote, MultipleChoiceVotes, VotingStrategy,
-        MAX_NUM_CHOICES,
+        MultipleChoiceOptions, MultipleChoiceVote, MultipleChoiceVotes,
+        OldCheckedMultipleChoiceOption, VotingStrategy, MAX_NUM_CHOICES,
     },
     pre_propose::PreProposeInfo,
     status::Status,
@@ -28,8 +28,8 @@ use neutron_sdk::bindings::msg::NeutronMsg;
 use std::panic;
 
 use crate::{
-    msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
-    proposal::MultipleChoiceProposal,
+    msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg},
+    proposal::{MultipleChoiceProposal, OldMultipleChoiceProposal},
     query::{ProposalListResponse, ProposalResponse},
     state::Config,
     testing::{
@@ -2221,4 +2221,116 @@ fn test_reply_proposal_mock() {
     let query_res = query_proposal_execution_error(deps.as_ref(), 1).unwrap();
     let error: Option<String> = from_json(query_res).unwrap();
     assert_eq!(error, Some("error".to_string()));
+}
+
+#[test]
+fn test_migrate_mock() {
+    use crate::contract::migrate;
+    use crate::state::{OLD_PROPOSALS, PROPOSALS};
+
+    let mut deps = mock_dependencies();
+    let env = mock_env();
+    let max_voting_period = cw_utils::Duration::Height(6);
+
+    OLD_PROPOSALS
+        .save(
+            deps.as_mut().storage,
+            0,
+            &OldMultipleChoiceProposal {
+                title: "A simple text proposal".to_string(),
+                description: "This is a simple text proposal".to_string(),
+                proposer: Addr::unchecked(CREATOR_ADDR),
+                start_height: env.block.height,
+                min_voting_period: None,
+                expiration: max_voting_period.after(&env.block),
+                choices: vec![
+                    OldCheckedMultipleChoiceOption {
+                        description: "multiple choice option 1".to_string(),
+                        msgs: None,
+                        option_type: MultipleChoiceOptionType::Standard,
+                        vote_count: Uint128::zero(),
+                        index: 0,
+                    },
+                    OldCheckedMultipleChoiceOption {
+                        description: "multiple choice option 2".to_string(),
+                        msgs: None,
+                        option_type: MultipleChoiceOptionType::Standard,
+                        vote_count: Uint128::zero(),
+                        index: 1,
+                    },
+                    OldCheckedMultipleChoiceOption {
+                        description: "None of the above".to_string(),
+                        msgs: None,
+                        option_type: MultipleChoiceOptionType::None,
+                        vote_count: Uint128::zero(),
+                        index: 2,
+                    },
+                ],
+                status: Status::Open,
+                voting_strategy: VotingStrategy::SingleChoice {
+                    quorum: cwd_voting::threshold::PercentageThreshold::Majority {},
+                },
+                total_power: Uint128::new(100),
+                votes: MultipleChoiceVotes {
+                    vote_weights: vec![Uint128::zero(); 3],
+                },
+                allow_revoting: false,
+            },
+        )
+        .unwrap();
+
+    let msg = MigrateMsg::FromV1 {
+        close_proposal_on_execution_failure: true,
+        pre_propose_info: PreProposeInfo::AnyoneMayPropose {},
+    };
+
+    migrate(deps.as_mut(), env.clone(), msg.clone()).unwrap();
+
+    let migrated_proposal = PROPOSALS.load(deps.as_mut().storage, 0).unwrap();
+
+    let expected = MultipleChoiceProposal {
+        title: "A simple text proposal".to_string(),
+        description: "This is a simple text proposal".to_string(),
+        proposer: Addr::unchecked(CREATOR_ADDR),
+        start_height: env.block.height,
+        min_voting_period: None,
+        expiration: max_voting_period.after(&env.block),
+        choices: vec![
+            CheckedMultipleChoiceOption {
+                title: "".to_string(),
+                description: "multiple choice option 1".to_string(),
+                msgs: None,
+                option_type: MultipleChoiceOptionType::Standard,
+                vote_count: Uint128::zero(),
+                index: 0,
+            },
+            CheckedMultipleChoiceOption {
+                title: "".to_string(),
+                description: "multiple choice option 2".to_string(),
+                msgs: None,
+                option_type: MultipleChoiceOptionType::Standard,
+                vote_count: Uint128::zero(),
+                index: 1,
+            },
+            CheckedMultipleChoiceOption {
+                title: "".to_string(),
+                description: "None of the above".to_string(),
+                msgs: None,
+                option_type: MultipleChoiceOptionType::None,
+                vote_count: Uint128::zero(),
+                index: 2,
+            },
+        ],
+        status: Status::Open,
+        voting_strategy: VotingStrategy::SingleChoice {
+            quorum: cwd_voting::threshold::PercentageThreshold::Majority {},
+        },
+        total_power: Uint128::new(100),
+        votes: MultipleChoiceVotes {
+            vote_weights: vec![Uint128::zero(); 3],
+        },
+        allow_revoting: false,
+    };
+
+    assert_eq!(migrated_proposal, expected);
 }

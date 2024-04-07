@@ -1,3 +1,4 @@
+use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{CosmosMsg, StdError, StdResult, Uint128};
 use neutron_sdk::bindings::msg::NeutronMsg;
 use schemars::JsonSchema;
@@ -120,6 +121,15 @@ pub struct CheckedMultipleChoiceOption {
     pub index: u32,
     pub option_type: MultipleChoiceOptionType,
     pub title: String,
+    pub description: String,
+    pub msgs: Option<Vec<CosmosMsg<NeutronMsg>>>,
+    pub vote_count: Uint128,
+}
+
+#[cw_serde]
+pub struct OldCheckedMultipleChoiceOption {
+    pub index: u32,
+    pub option_type: MultipleChoiceOptionType,
     pub description: String,
     pub msgs: Option<Vec<CosmosMsg<NeutronMsg>>>,
     pub vote_count: Uint128,

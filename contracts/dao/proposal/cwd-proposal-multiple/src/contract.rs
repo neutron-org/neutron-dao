@@ -15,7 +15,8 @@ use cwd_proposal_hooks::{new_proposal_hooks, proposal_status_changed_hooks};
 use cwd_vote_hooks::new_vote_hooks;
 use cwd_voting::{
     multiple_choice::{
-        MultipleChoiceOptions, MultipleChoiceVote, MultipleChoiceVotes, VotingStrategy,
+        CheckedMultipleChoiceOption, MultipleChoiceOptions, MultipleChoiceVote,
+        MultipleChoiceVotes, VotingStrategy,
     },
     pre_propose::{PreProposeInfo, ProposalCreationPolicy},
     proposal::{DEFAULT_LIMIT, MAX_PROPOSAL_SIZE},
@@ -30,10 +31,11 @@ use crate::state::PROPOSAL_EXECUTION_ERRORS;
 use crate::{msg::MigrateMsg, state::CREATION_POLICY};
 use crate::{
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
-    proposal::{MultipleChoiceProposal, VoteResult},
+    proposal::{MultipleChoiceProposal, OldMultipleChoiceProposal, VoteResult},
     query::{ProposalListResponse, ProposalResponse, VoteInfo, VoteListResponse, VoteResponse},
     state::{
-        Ballot, Config, BALLOTS, CONFIG, PROPOSALS, PROPOSAL_COUNT, PROPOSAL_HOOKS, VOTE_HOOKS,
+        Ballot, Config, BALLOTS, CONFIG, OLD_PROPOSALS, PROPOSALS, PROPOSAL_COUNT, PROPOSAL_HOOKS,
+        VOTE_HOOKS,
     },
     ContractError,
 };
@@ -918,5 +920,48 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-    Ok(Response::default())
+
+    let mut migrated_proposal_ids: Vec<String> = vec![];
+
+    OLD_PROPOSALS
+        .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
+        .collect::<StdResult<Vec<(u64, OldMultipleChoiceProposal)>>>()?
+        .into_iter()
+        .try_for_each(|(id, prop)| {
+            migrated_proposal_ids.push(id.to_string());
+
+            PROPOSALS.save(
+                deps.storage,
+                id,
+                &MultipleChoiceProposal {
+                    title: prop.title,
+                    description: prop.description,
+                    proposer: prop.proposer,
+                    start_height: prop.start_height,
+                    min_voting_period: prop.min_voting_period,
+                    expiration: prop.expiration,
+                    choices: prop
+                        .choices
+                        .into_iter()
+                        .map(|choice| CheckedMultipleChoiceOption {
+                            index: choice.index,
+                            option_type: choice.option_type,
+                            title: "".to_string(),
+                            description: choice.description,
+                            msgs: choice.msgs,
+                            vote_count: choice.vote_count,
+                        })
+                        .collect(),
+                    status: prop.status,
+                    voting_strategy: prop.voting_strategy,
+                    total_power: prop.total_power,
+                    votes: prop.votes,
+                    allow_revoting: prop.allow_revoting,
+                },
+            )
+        })?;
+
+    Ok(Response::default()
+        .add_attribute("action", "migrate")
+        .add_attribute("migrated_proposal_ids", migrated_proposal_ids.join(",")))
 }

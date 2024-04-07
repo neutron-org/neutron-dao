@@ -1,4 +1,4 @@
-use crate::proposal::MultipleChoiceProposal;
+use crate::proposal::{MultipleChoiceProposal, OldMultipleChoiceProposal};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Uint128};
 use cw_storage_plus::{Item, Map};
@@ -54,6 +54,8 @@ pub struct Ballot {
     /// The position.
     pub vote: MultipleChoiceVote,
 }
+
+pub const OLD_PROPOSALS: Map<u64, OldMultipleChoiceProposal> = Map::new("proposals");
 
 /// The current top level config for the module.
 pub const CONFIG: Item<Config> = Item::new("config");
