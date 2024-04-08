@@ -126,6 +126,8 @@ pub struct CheckedMultipleChoiceOption {
     pub vote_count: Uint128,
 }
 
+/// Deprecated.
+/// This is the old choice option version without "title" field.
 #[cw_serde]
 pub struct OldCheckedMultipleChoiceOption {
     pub index: u32,

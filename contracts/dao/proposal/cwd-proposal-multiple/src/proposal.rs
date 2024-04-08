@@ -47,6 +47,8 @@ pub struct MultipleChoiceProposal {
     pub allow_revoting: bool,
 }
 
+/// Deprecated.
+/// This is the old proposal version without "title" field inside "choices".
 #[cw_serde]
 pub struct OldMultipleChoiceProposal {
     pub title: String,

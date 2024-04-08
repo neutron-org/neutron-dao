@@ -6,7 +6,7 @@ use cosmwasm_std::{
 };
 
 use cw2::set_contract_version;
-use cw_storage_plus::Bound;
+use cw_storage_plus::{Bound, Map};
 use cw_utils::{parse_reply_instantiate_data, Duration};
 use cwd_hooks::Hooks;
 use cwd_interface::voting::IsActiveResponse;
@@ -34,8 +34,7 @@ use crate::{
     proposal::{MultipleChoiceProposal, OldMultipleChoiceProposal, VoteResult},
     query::{ProposalListResponse, ProposalResponse, VoteInfo, VoteListResponse, VoteResponse},
     state::{
-        Ballot, Config, BALLOTS, CONFIG, OLD_PROPOSALS, PROPOSALS, PROPOSAL_COUNT, PROPOSAL_HOOKS,
-        VOTE_HOOKS,
+        Ballot, Config, BALLOTS, CONFIG, PROPOSALS, PROPOSAL_COUNT, PROPOSAL_HOOKS, VOTE_HOOKS,
     },
     ContractError,
 };
@@ -923,6 +922,8 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
 
     let mut migrated_proposal_ids: Vec<String> = vec![];
 
+    // This constant is needed to access the old proposals without "title" field inside "choices".
+    const OLD_PROPOSALS: Map<u64, OldMultipleChoiceProposal> = Map::new("proposals");
     OLD_PROPOSALS
         .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
         .collect::<StdResult<Vec<(u64, OldMultipleChoiceProposal)>>>()?

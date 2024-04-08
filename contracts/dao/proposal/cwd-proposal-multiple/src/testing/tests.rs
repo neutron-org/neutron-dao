@@ -2226,13 +2226,15 @@ fn test_reply_proposal_mock() {
 #[test]
 fn test_migrate_mock() {
     use crate::contract::migrate;
-    use crate::state::{OLD_PROPOSALS, PROPOSALS};
+    use crate::state::PROPOSALS;
+    use cw_storage_plus::Map;
 
     let mut deps = mock_dependencies();
     let env = mock_env();
     let max_voting_period = cw_utils::Duration::Height(6);
 
-    OLD_PROPOSALS
+    let old_proposals: Map<u64, OldMultipleChoiceProposal> = Map::new("proposals");
+    old_proposals
         .save(
             deps.as_mut().storage,
             0,
