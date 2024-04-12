@@ -1330,7 +1330,8 @@
       "description": "Unchecked multiple choice option",
       "type": "object",
       "required": [
-        "description"
+        "description",
+        "title"
       ],
       "properties": {
         "description": {
@@ -1344,6 +1345,9 @@
           "items": {
             "$ref": "#/definitions/CosmosMsg_for_NeutronMsg"
           }
+        },
+        "title": {
+          "type": "string"
         }
       }
     },

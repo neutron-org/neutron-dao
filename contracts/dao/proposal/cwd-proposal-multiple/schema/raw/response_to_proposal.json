@@ -265,6 +265,7 @@
         "description",
         "index",
         "option_type",
+        "title",
         "vote_count"
       ],
       "properties": {
@@ -287,6 +288,9 @@
         },
         "option_type": {
           "$ref": "#/definitions/MultipleChoiceOptionType"
+        },
+        "title": {
+          "type": "string"
         },
         "vote_count": {
           "$ref": "#/definitions/Uint128"
