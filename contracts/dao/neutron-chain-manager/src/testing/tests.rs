@@ -334,6 +334,53 @@ pub fn test_execute_execute_message_update_params_cron_authorized() {
     execute_execute_messages(deps.as_mut(), info.clone(), vec![msg]).unwrap();
 }
 
+/// Checks that unsupported message types inside a ProposalExecuteMessage are not
+/// executed.
+#[test]
+pub fn test_execute_execute_message_unsupported_message_type_unauthorized() {
+    let msg = CosmosMsg::Custom(NeutronMsg::SubmitAdminProposal {
+        admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
+            message: r#"{"@type":"/neutron.cron.MsgUnsupported",
+            "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
+            "params": {"security_address": "addr1", "limit": 16}}"#
+                .to_string(),
+        }),
+    });
+
+    let mut deps = mock_dependencies();
+    let env = mock_env();
+    let info = mock_info("neutron_dao_address", &[]);
+
+    instantiate(
+        deps.as_mut(),
+        env.clone(),
+        info.clone(),
+        InstantiateMsg {
+            initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
+            initial_strategy: Strategy::AllowAll,
+        },
+    )
+    .unwrap();
+
+    let info = mock_info("neutron_dao_address", &[]);
+    execute_add_strategy(
+        deps.as_mut(),
+        info.clone(),
+        Addr::unchecked("addr1".to_string()),
+        Strategy::AllowOnly(vec![UpdateParamsPermission(
+            CronUpdateParamsPermissionEnumField(CronUpdateParamsPermission {
+                security_address: true,
+                limit: true,
+            }),
+        )]),
+    )
+    .unwrap();
+
+    let info = mock_info("addr1", &[]);
+    let err = execute_execute_messages(deps.as_mut(), info.clone(), vec![msg]).unwrap_err();
+    assert_eq!(err, Unauthorized {})
+}
+
 /// Checks that you can't check the limit if you don't have the permission to do so
 /// (new style parameter changes).
 #[test]
