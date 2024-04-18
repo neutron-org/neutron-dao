@@ -19,10 +19,10 @@ use crate::{
 #[cw_serde]
 pub enum Permission {
     AllowAll,
-    AddCronPermission,
-    RemoveCronPermission,
-    CronUpdateParamsPermission(CronUpdateParamsPermission),
-    ParamChangePermission(ParamChangePermission),
+    AddCron,
+    RemoveCron,
+    CronUpdateParams(CronUpdateParamsPermission),
+    ParamChange(ParamChangePermission),
 }
 
 fn remove_length_prefix(value: Vec<u8>) -> Vec<u8> {
@@ -30,8 +30,8 @@ fn remove_length_prefix(value: Vec<u8>) -> Vec<u8> {
     // ```
     //  serde_json_wasm::to_vec(self).unwrap().iter().map(|&v| Key::Val8([v])).collect()
     // ```
-    // The thing is, during deriving storage key, every element of the Vec<Kev::Val8> 
-    // except the last one becomes prefixed by a length of a key, for example "aaa" (bytes 65 65 65) 
+    // The thing is, during deriving storage key, every element of the Vec<Kev::Val8>
+    // except the last one becomes prefixed by a length of a key, for example "aaa" (bytes 65 65 65)
     // converts into 0 1 65 + 0 1 65 + 65, where 0 1 is 2bytes length
     // we converting back prefixed vec to non prefixed
     let len_prefix_length = 2;
@@ -41,10 +41,10 @@ fn remove_length_prefix(value: Vec<u8>) -> Vec<u8> {
         .step_by(len_prefix_length + 1)
         .collect::<Vec<&u8>>();
     v.push(&value[value.len() - 1]);
-    v.into_iter().map(|&v| v).collect::<Vec<u8>>()
+    v.into_iter().copied().collect::<Vec<u8>>()
 }
 
-impl<'a> KeyDeserialize for PermissionType {
+impl KeyDeserialize for PermissionType {
     type Output = PermissionType;
 
     fn from_vec(value: Vec<u8>) -> StdResult<Self::Output> {
@@ -62,24 +62,31 @@ impl<'a> PrimaryKey<'a> for PermissionType {
     fn key(&self) -> Vec<Key> {
         // TODO: find a way use Key::Ref insated of Key::Val8
         // to simplify KeyDeserialize and remove `remove_length_prefix`
-        serde_json_wasm::to_vec(self).unwrap().iter().map(|&v| Key::Val8([v])).collect()
+        serde_json_wasm::to_vec(self)
+            .unwrap()
+            .iter()
+            .map(|&v| Key::Val8([v]))
+            .collect()
     }
 }
 
 impl<'a> Prefixer<'a> for PermissionType {
     fn prefix(&self) -> Vec<Key> {
-        serde_json_wasm::to_vec(self).unwrap().iter().map(|&v| Key::Val8([v])).collect()
+        serde_json_wasm::to_vec(self)
+            .unwrap()
+            .iter()
+            .map(|&v| Key::Val8([v]))
+            .collect()
     }
 }
-
 
 #[cw_serde]
 pub enum PermissionType {
     AllowAll,
-    AddCronPermission,
-    RemoveCronPermission,
-    CronUpdateParamsPermission,
-    ParamChangePermission,
+    AddCron,
+    RemoveCron,
+    CronUpdateParams,
+    ParamChange,
 }
 
 pub enum Validator {
@@ -93,15 +100,14 @@ impl Validator {
         // match only possible variants
         match (self, permission) {
             (Validator::Empty, Permission::AllowAll) => Ok(()),
-            (Validator::Empty, Permission::AddCronPermission) => Ok(()),
-            (Validator::Empty, Permission::RemoveCronPermission) => Ok(()),
-            (
-                Validator::CronUpdateParams(msg),
-                Permission::CronUpdateParamsPermission(permissions),
-            ) => check_cron_update_msg_params(deps, permissions, msg),
+            (Validator::Empty, Permission::AddCron) => Ok(()),
+            (Validator::Empty, Permission::RemoveCron) => Ok(()),
+            (Validator::CronUpdateParams(msg), Permission::CronUpdateParams(permissions)) => {
+                check_cron_update_msg_params(deps, permissions, msg)
+            }
             (
                 Validator::ParamChange(params_change_proposal),
-                Permission::ParamChangePermission(permissions),
+                Permission::ParamChange(permissions),
             ) => check_param_change_permission(params_change_proposal, permissions),
             _ => unreachable!(),
         }
@@ -115,10 +121,10 @@ pub fn match_permission_type(
 ) -> Result<(PermissionType, Validator), ContractError> {
     match msg {
         CosmosMsg::Custom(NeutronMsg::AddSchedule { .. }) => {
-            Ok((PermissionType::AddCronPermission, Validator::Empty))
+            Ok((PermissionType::AddCron, Validator::Empty))
         }
         CosmosMsg::Custom(NeutronMsg::RemoveSchedule { .. }) => {
-            Ok((PermissionType::RemoveCronPermission, Validator::Empty))
+            Ok((PermissionType::RemoveCron, Validator::Empty))
         }
         CosmosMsg::Custom(NeutronMsg::SubmitAdminProposal { admin_proposal }) => {
             match admin_proposal {
@@ -130,7 +136,7 @@ pub fn match_permission_type(
                         let msg_update_params: MsgUpdateParamsCron =
                             serde_json_wasm::from_str(message.as_str())?;
                         return Ok((
-                            PermissionType::CronUpdateParamsPermission,
+                            PermissionType::CronUpdateParams,
                             Validator::CronUpdateParams(msg_update_params),
                         ));
                     };
@@ -139,7 +145,7 @@ pub fn match_permission_type(
                     ))
                 }
                 AdminProposal::ParamChangeProposal(param_change_proposal) => Ok((
-                    PermissionType::ParamChangePermission,
+                    PermissionType::ParamChange,
                     Validator::ParamChange(param_change_proposal.to_owned()),
                 )),
                 _ => Err(ContractError::PermissionTypeNotFound(
@@ -153,16 +159,14 @@ pub fn match_permission_type(
     }
 }
 
-impl Into<PermissionType> for Permission {
-    fn into(self) -> PermissionType {
-        match self {
-            Permission::AddCronPermission => PermissionType::AddCronPermission,
-            Permission::RemoveCronPermission => PermissionType::RemoveCronPermission,
-            Permission::CronUpdateParamsPermission { .. } => {
-                PermissionType::CronUpdateParamsPermission
-            }
+impl From<Permission> for PermissionType {
+    fn from(value: Permission) -> Self {
+        match value {
+            Permission::AddCron => PermissionType::AddCron,
+            Permission::RemoveCron => PermissionType::RemoveCron,
+            Permission::CronUpdateParams { .. } => PermissionType::CronUpdateParams,
             Permission::AllowAll => PermissionType::AllowAll,
-            Permission::ParamChangePermission(_) => PermissionType::ParamChangePermission,
+            Permission::ParamChange(_) => PermissionType::ParamChange,
         }
     }
 }

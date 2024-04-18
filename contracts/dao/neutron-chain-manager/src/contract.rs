@@ -124,7 +124,7 @@ pub fn execute_execute_messages(
     // сопоставляем космос сообщения с типами требуемых разрешений
     let permissions_types: Vec<(PermissionType, Validator)> = messages
         .iter()
-        .map(|msg| match_permission_type(msg))
+        .map(match_permission_type)
         .collect::<Result<Vec<(PermissionType, Validator)>, ContractError>>()?;
 
     for (p, v) in permissions_types {
@@ -175,7 +175,7 @@ pub fn query_strategies(deps: Deps) -> StdResult<Vec<(Addr, Permission)>> {
         .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
         .collect::<Result<Vec<((Addr, PermissionType), Permission)>, _>>()?
         .into_iter()
-        .map(|((a, _), p)| return (a, p))
+        .map(|((a, _), p)| (a, p))
         .collect();
     Ok(all_permissions)
 }

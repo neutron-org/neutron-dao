@@ -62,10 +62,7 @@ fn test_add_strategy() {
         deps.as_mut(),
         info.clone(),
         Addr::unchecked("addr2".to_string()),
-        vec![
-            Permission::AddCronPermission,
-            Permission::RemoveCronPermission,
-        ],
+        vec![Permission::AddCron, Permission::RemoveCron],
     )
     .unwrap();
 }
@@ -93,10 +90,7 @@ fn test_add_strategy_promotion() {
         deps.as_mut(),
         info.clone(),
         Addr::unchecked("addr2".to_string()),
-        vec![
-            Permission::AddCronPermission,
-            Permission::RemoveCronPermission,
-        ],
+        vec![Permission::AddCron, Permission::RemoveCron],
     )
     .unwrap();
 
@@ -218,12 +212,10 @@ pub fn test_execute_execute_message_update_params_cron_authorized() {
         deps.as_mut(),
         info.clone(),
         Addr::unchecked("addr1".to_string()),
-        vec![Permission::CronUpdateParamsPermission(
-            CronUpdateParamsPermission {
-                security_address: true,
-                limit: true,
-            },
-        )],
+        vec![Permission::CronUpdateParams(CronUpdateParamsPermission {
+            security_address: true,
+            limit: true,
+        })],
     )
     .unwrap();
 
@@ -263,12 +255,10 @@ pub fn test_execute_execute_message_update_params_cron_unauthorized_limit() {
         deps.as_mut(),
         info.clone(),
         Addr::unchecked("addr1".to_string()),
-        vec![Permission::CronUpdateParamsPermission(
-            CronUpdateParamsPermission {
-                security_address: true,
-                limit: false,
-            },
-        )],
+        vec![Permission::CronUpdateParams(CronUpdateParamsPermission {
+            security_address: true,
+            limit: false,
+        })],
     )
     .unwrap();
 
@@ -309,12 +299,10 @@ pub fn test_execute_execute_message_update_params_cron_unauthorized_security_add
         deps.as_mut(),
         info.clone(),
         Addr::unchecked("addr1".to_string()),
-        vec![Permission::CronUpdateParamsPermission(
-            CronUpdateParamsPermission {
-                security_address: false,
-                limit: true,
-            },
-        )],
+        vec![Permission::CronUpdateParams(CronUpdateParamsPermission {
+            security_address: false,
+            limit: true,
+        })],
     )
     .unwrap();
 
@@ -357,7 +345,7 @@ pub fn test_execute_execute_message_param_change_success() {
         deps.as_mut(),
         info.clone(),
         Addr::unchecked("addr1".to_string()),
-        vec![Permission::ParamChangePermission(ParamChangePermission {
+        vec![Permission::ParamChange(ParamChangePermission {
             params: vec![ParamPermission {
                 subspace: "globalfee".to_string(),
                 key: "MinimumGasPricesParam".to_string(),
@@ -405,7 +393,7 @@ pub fn test_execute_execute_message_param_change_unauthorized_key() {
         deps.as_mut(),
         info.clone(),
         Addr::unchecked("addr1".to_string()),
-        vec![Permission::ParamChangePermission(ParamChangePermission {
+        vec![Permission::ParamChange(ParamChangePermission {
             params: vec![ParamPermission {
                 subspace: "globalfee".to_string(),
                 key: "0xdeadbeef".to_string(),
@@ -454,7 +442,7 @@ pub fn test_execute_execute_message_param_change_unauthorized_subspace() {
         deps.as_mut(),
         info.clone(),
         Addr::unchecked("addr1".to_string()),
-        vec![Permission::ParamChangePermission(ParamChangePermission {
+        vec![Permission::ParamChange(ParamChangePermission {
             params: vec![ParamPermission {
                 subspace: "0xdeadbeef".to_string(),
                 key: "MinimumGasPricesParam".to_string(),
@@ -491,7 +479,7 @@ pub fn test_execute_execute_unknown_message() {
         deps.as_mut(),
         info.clone(),
         Addr::unchecked("addr1".to_string()),
-        vec![Permission::ParamChangePermission(ParamChangePermission {
+        vec![Permission::ParamChange(ParamChangePermission {
             params: vec![ParamPermission {
                 subspace: "0xdedbeef".to_string(),
                 key: "0xdedbeef".to_string(),
