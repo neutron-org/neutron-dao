@@ -1,25 +1,25 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, CosmosMsg};
-use neutron_sdk::bindings::msg::{NeutronMsg, ParamChange};
+use neutron_sdk::bindings::msg::NeutronMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use crate::permission::Permission;
+
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 pub struct InstantiateMsg {
-    /// Defines the address for the initial strategy.
-    pub initial_strategy_address: Addr,
-    /// Defines the initial strategy. Must be an ALLOW_ALL strategy.
-    pub initial_strategy: Strategy,
+    /// Defines the address for the initial setup.
+    pub initial_address: Addr,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    AddStrategy {
+    AddPermissions {
         address: Addr,
-        strategy: Strategy,
+        permissions: Vec<Permission>,
     },
-    RemoveStrategy {
+    RemovePermissions {
         address: Addr,
     },
     ExecuteMessages {
@@ -30,111 +30,19 @@ pub enum ExecuteMsg {
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum QueryMsg {
-    #[returns(Vec < Strategy >)]
-    Strategies {},
+    #[returns(Vec < Permission >)]
+    Permissions {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct MigrateMsg {}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-pub enum Strategy {
-    AllowAll,
-    AllowOnly(Vec<Permission>),
-}
-
-impl Strategy {
-    pub fn has_cron_add_schedule_permission(&self) -> bool {
-        match self {
-            Strategy::AllowAll => true,
-            Strategy::AllowOnly(permissions) => {
-                let mut has_permission = false;
-                for permission in permissions {
-                    if let Permission::CronPermission(cron_permission) = permission {
-                        has_permission = cron_permission.add_schedule
-                    }
-                }
-
-                has_permission
-            }
-        }
-    }
-    pub fn has_cron_remove_schedule_permission(&self) -> bool {
-        match self {
-            Strategy::AllowAll => true,
-            Strategy::AllowOnly(permissions) => {
-                let mut has_permission = false;
-                for permission in permissions {
-                    if let Permission::CronPermission(cron_permission) = permission {
-                        has_permission = cron_permission.remove_schedule
-                    }
-                }
-
-                has_permission
-            }
-        }
-    }
-    pub fn has_param_change_permission(&self, param_change: ParamChange) -> bool {
-        match self {
-            Strategy::AllowAll => true,
-            Strategy::AllowOnly(permissions) => {
-                for permission in permissions {
-                    if let Permission::ParamChangePermission(param_change_permissions) = permission
-                    {
-                        for param_change_permission in param_change_permissions.params.clone() {
-                            if param_change.subspace == param_change_permission.subspace
-                                && param_change.key == param_change_permission.key
-                            {
-                                return true;
-                            }
-                        }
-                    }
-                }
-
-                false
-            }
-        }
-    }
-
-    pub fn get_cron_update_param_permission(&self) -> Option<CronUpdateParamsPermission> {
-        match self {
-            Strategy::AllowAll => Some(CronUpdateParamsPermission {
-                security_address: true,
-                limit: true,
-            }),
-            Strategy::AllowOnly(permissions) => {
-                for permission in permissions {
-                    if let Permission::UpdateParamsPermission(update_params_permission) = permission
-                    {
-                        return match update_params_permission {
-                            UpdateParamsPermission::CronUpdateParamsPermission(
-                                cron_update_params,
-                            ) => Some(cron_update_params.clone()),
-                        };
-                    }
-                }
-
-                None
-            }
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-pub enum Permission {
-    // Deprecated, for legacy parameter updates using `params` module.
-    ParamChangePermission(ParamChangePermission),
-    // For new-style parameter updates.
-    UpdateParamsPermission(UpdateParamsPermission),
-    CronPermission(CronPermission),
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct ParamChangePermission {
     pub params: Vec<ParamPermission>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema, Hash)]
 pub struct ParamPermission {
     pub subspace: String,
     pub key: String,

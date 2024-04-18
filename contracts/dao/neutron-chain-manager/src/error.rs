@@ -6,11 +6,11 @@ pub enum ContractError {
     #[error("{0}")]
     Std(#[from] StdError),
 
-    #[error("Initial strategy of a wrong type was submitted")]
-    InvalidInitialStrategy {},
-
     #[error("Unauthorized")]
     Unauthorized {},
+
+    #[error("PermissionType not found: {0}")]
+    PermissionTypeNotFound(String),
 
     // This error is returned when you try to remove the only existing
     // ALLOW_ALL strategy.
