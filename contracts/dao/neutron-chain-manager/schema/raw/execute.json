@@ -5,23 +5,27 @@
     {
       "type": "object",
       "required": [
-        "add_strategy"
+        "add_permissions"
       ],
       "properties": {
-        "add_strategy": {
+        "add_permissions": {
           "type": "object",
           "required": [
             "address",
-            "strategy"
+            "permissions"
           ],
           "properties": {
             "address": {
               "$ref": "#/definitions/Addr"
             },
-            "strategy": {
-              "$ref": "#/definitions/Strategy"
+            "permissions": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Permission"
+              }
             }
-          }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
@@ -29,10 +33,10 @@
     {
       "type": "object",
       "required": [
-        "remove_strategy"
+        "remove_permissions"
       ],
       "properties": {
-        "remove_strategy": {
+        "remove_permissions": {
           "type": "object",
           "required": [
             "address"
@@ -41,7 +45,8 @@
             "address": {
               "$ref": "#/definitions/Addr"
             }
-          }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
@@ -64,7 +69,8 @@
                 "$ref": "#/definitions/CosmosMsg_for_NeutronMsg"
               }
             }
-          }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
@@ -490,21 +496,6 @@
         }
       ]
     },
-    "CronPermission": {
-      "type": "object",
-      "required": [
-        "add_schedule",
-        "remove_schedule"
-      ],
-      "properties": {
-        "add_schedule": {
-          "type": "boolean"
-        },
-        "remove_schedule": {
-          "type": "boolean"
-        }
-      }
-    },
     "CronUpdateParamsPermission": {
       "type": "object",
       "required": [
@@ -518,7 +509,8 @@
         "security_address": {
           "type": "boolean"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "DistributionMsg": {
       "description": "The message types of the distribution module.\n\nSee https://github.com/cosmos/cosmos-sdk/blob/v0.42.4/proto/cosmos/distribution/v1beta1/tx.proto",
@@ -1372,7 +1364,8 @@
             "$ref": "#/definitions/ParamPermission"
           }
         }
-      }
+      },
+      "additionalProperties": false
     },
     "ParamChangeProposal": {
       "description": "ParamChangeProposal defines the struct for single parameter change proposal.",
@@ -1413,42 +1406,39 @@
         "subspace": {
           "type": "string"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "Permission": {
       "oneOf": [
         {
+          "type": "string",
+          "enum": [
+            "allow_all",
+            "add_cron",
+            "remove_cron"
+          ]
+        },
+        {
           "type": "object",
           "required": [
-            "ParamChangePermission"
+            "cron_update_params"
           ],
           "properties": {
-            "ParamChangePermission": {
+            "cron_update_params": {
+              "$ref": "#/definitions/CronUpdateParamsPermission"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "param_change"
+          ],
+          "properties": {
+            "param_change": {
               "$ref": "#/definitions/ParamChangePermission"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "UpdateParamsPermission"
-          ],
-          "properties": {
-            "UpdateParamsPermission": {
-              "$ref": "#/definitions/UpdateParamsPermission"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "CronPermission"
-          ],
-          "properties": {
-            "CronPermission": {
-              "$ref": "#/definitions/CronPermission"
             }
           },
           "additionalProperties": false
@@ -1676,31 +1666,6 @@
         }
       ]
     },
-    "Strategy": {
-      "oneOf": [
-        {
-          "type": "string",
-          "enum": [
-            "AllowAll"
-          ]
-        },
-        {
-          "type": "object",
-          "required": [
-            "AllowOnly"
-          ],
-          "properties": {
-            "AllowOnly": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/Permission"
-              }
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
     "SudoContractProposal": {
       "description": "Deprecated. SudoContractProposal defines the struct for sudo execution proposal.",
       "deprecated": true,
@@ -1807,22 +1772,6 @@
           "type": "string"
         }
       }
-    },
-    "UpdateParamsPermission": {
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "CronUpdateParamsPermission"
-          ],
-          "properties": {
-            "CronUpdateParamsPermission": {
-              "$ref": "#/definitions/CronUpdateParamsPermission"
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
     },
     "UpgradeProposal": {
       "description": "UpgradeProposal defines the struct for IBC upgrade proposal.",
