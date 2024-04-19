@@ -7,7 +7,7 @@ use cosmwasm_std::{
     to_json_binary, Addr, Binary, ContractResult, Empty, OwnedDeps, Querier, QuerierResult,
     QueryRequest, SystemError, SystemResult, WasmQuery,
 };
-use cwd_core::{msg::QueryMsg as MainDaoQueryMsg, query::SubDao};
+use cwd_core::msg::QueryMsg as MainDaoQueryMsg;
 use cwd_proposal_single::msg::QueryMsg as ProposalSingleQueryMsg;
 
 use neutron_subdao_core::{msg::QueryMsg as SubdaoQueryMsg, types as SubdaoTypes};
@@ -95,10 +95,12 @@ impl ContractQuerier for MockDaoQueries {
         let q: MainDaoQueryMsg = from_json(msg).unwrap();
         match q {
             MainDaoQueryMsg::GetSubDao { address } => match self.sub_dao_set.contains(&address) {
-                true => SystemResult::Ok(ContractResult::from(to_json_binary(&SubDao {
-                    addr: address.clone(),
-                    charter: None,
-                }))),
+                true => {
+                    SystemResult::Ok(ContractResult::from(to_json_binary(&SubdaoTypes::SubDao {
+                        addr: address.clone(),
+                        charter: None,
+                    })))
+                }
                 false => SystemResult::Err(SystemError::Unknown {}),
             },
             _ => SystemResult::Err(SystemError::Unknown {}),

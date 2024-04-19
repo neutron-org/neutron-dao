@@ -10,10 +10,11 @@ use cw_utils::{parse_reply_instantiate_data, Duration};
 use cw_paginate::{paginate_map, paginate_map_values};
 use cwd_interface::{voting, ModuleInstantiateInfo};
 use neutron_sdk::bindings::msg::NeutronMsg;
+use neutron_subdao_core::types::SubDao;
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InitialItem, InstantiateMsg, MigrateMsg, QueryMsg};
-use crate::query::{DumpStateResponse, GetItemResponse, PauseInfoResponse, SubDao};
+use crate::query::{DumpStateResponse, GetItemResponse, PauseInfoResponse};
 use crate::state::{
     Config, ProposalModule, ProposalModuleStatus, ACTIVE_PROPOSAL_MODULE_COUNT, CONFIG, ITEMS,
     PAUSED, PROPOSAL_MODULES, SUBDAO_LIST, TOTAL_PROPOSAL_MODULE_COUNT, VOTING_REGISTRY_MODULE,
