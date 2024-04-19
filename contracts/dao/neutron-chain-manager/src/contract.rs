@@ -14,7 +14,8 @@ use neutron_sdk::stargate::aux::make_stargate_query;
 
 use crate::error::ContractError;
 use crate::msg::{
-    ExecuteMsg, InstantiateMsg, MigrateMsg, ProposalExecuteMessageJSON, QueryMsg, Strategy,
+    ExecuteMsg, InstantiateMsg, MigrateMsg, Permission, ProposalExecuteMessageJSON, QueryMsg,
+    Strategy, StrategyMsg,
 };
 use crate::state::STRATEGIES;
 
@@ -30,14 +31,10 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    if let Strategy::AllowOnly(_) = msg.initial_strategy {
-        return Err(ContractError::InvalidInitialStrategy {});
-    }
-
     STRATEGIES.save(
         deps.storage,
         msg.initial_strategy_address.clone(),
-        &msg.initial_strategy,
+        &Strategy::AllowAll,
     )?;
 
     Ok(Response::new()
@@ -65,14 +62,14 @@ pub fn execute_add_strategy(
     deps: DepsMut,
     info: MessageInfo,
     address: Addr,
-    strategy: Strategy,
+    strategy: StrategyMsg,
 ) -> Result<Response<NeutronMsg>, ContractError> {
     is_authorized(deps.as_ref(), info.sender.clone())?;
 
     // We add the new strategy, and then we check that it did not replace
     // the only existing ALLOW_ALL strategy.
-    STRATEGIES.save(deps.storage, address.clone(), &strategy)?;
-    if let Strategy::AllowOnly(_) = strategy {
+    STRATEGIES.save(deps.storage, address.clone(), &strategy.clone().into())?;
+    if let StrategyMsg::AllowOnly(_) = strategy {
         if no_admins_left(deps.as_ref())? {
             return Err(ContractError::InvalidDemotion {});
         }
@@ -281,10 +278,18 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 
 /// No pagination is added because it's unlikely that there is going
 /// to be more than 10 strategies.
-pub fn query_strategies(deps: Deps) -> StdResult<Vec<(Addr, Strategy)>> {
-    let all_strategies: Vec<(Addr, Strategy)> = STRATEGIES
+pub fn query_strategies(deps: Deps) -> StdResult<Vec<(Addr, StrategyMsg)>> {
+    let all_strategies: Vec<(Addr, StrategyMsg)> = STRATEGIES
         .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
-        .collect::<Result<Vec<(Addr, Strategy)>, _>>()?;
+        .map(|v| match v {
+            Ok((addr, Strategy::AllowAll)) => Ok((addr, StrategyMsg::AllowAll)),
+            Ok((addr, Strategy::AllowOnly(permissions))) => Ok((
+                addr,
+                StrategyMsg::AllowOnly(permissions.values().cloned().collect::<Vec<Permission>>()),
+            )),
+            Err(e) => Err(e),
+        })
+        .collect::<Result<Vec<(Addr, StrategyMsg)>, _>>()?;
     Ok(all_strategies)
 }
 

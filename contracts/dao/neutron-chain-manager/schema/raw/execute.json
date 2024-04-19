@@ -19,9 +19,10 @@
               "$ref": "#/definitions/Addr"
             },
             "strategy": {
-              "$ref": "#/definitions/Strategy"
+              "$ref": "#/definitions/StrategyMsg"
             }
-          }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
@@ -41,7 +42,8 @@
             "address": {
               "$ref": "#/definitions/Addr"
             }
-          }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
@@ -64,7 +66,8 @@
                 "$ref": "#/definitions/CosmosMsg_for_NeutronMsg"
               }
             }
-          }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
@@ -503,7 +506,8 @@
         "remove_schedule": {
           "type": "boolean"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "CronUpdateParamsPermission": {
       "type": "object",
@@ -518,7 +522,8 @@
         "security_address": {
           "type": "boolean"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "DistributionMsg": {
       "description": "The message types of the distribution module.\n\nSee https://github.com/cosmos/cosmos-sdk/blob/v0.42.4/proto/cosmos/distribution/v1beta1/tx.proto",
@@ -1372,7 +1377,8 @@
             "$ref": "#/definitions/ParamPermission"
           }
         }
-      }
+      },
+      "additionalProperties": false
     },
     "ParamChangeProposal": {
       "description": "ParamChangeProposal defines the struct for single parameter change proposal.",
@@ -1413,17 +1419,18 @@
         "subspace": {
           "type": "string"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "Permission": {
       "oneOf": [
         {
           "type": "object",
           "required": [
-            "ParamChangePermission"
+            "param_change_permission"
           ],
           "properties": {
-            "ParamChangePermission": {
+            "param_change_permission": {
               "$ref": "#/definitions/ParamChangePermission"
             }
           },
@@ -1432,10 +1439,10 @@
         {
           "type": "object",
           "required": [
-            "UpdateParamsPermission"
+            "update_params_permission"
           ],
           "properties": {
-            "UpdateParamsPermission": {
+            "update_params_permission": {
               "$ref": "#/definitions/UpdateParamsPermission"
             }
           },
@@ -1444,10 +1451,10 @@
         {
           "type": "object",
           "required": [
-            "CronPermission"
+            "cron_permission"
           ],
           "properties": {
-            "CronPermission": {
+            "cron_permission": {
               "$ref": "#/definitions/CronPermission"
             }
           },
@@ -1676,21 +1683,21 @@
         }
       ]
     },
-    "Strategy": {
+    "StrategyMsg": {
       "oneOf": [
         {
           "type": "string",
           "enum": [
-            "AllowAll"
+            "allow_all"
           ]
         },
         {
           "type": "object",
           "required": [
-            "AllowOnly"
+            "allow_only"
           ],
           "properties": {
-            "AllowOnly": {
+            "allow_only": {
               "type": "array",
               "items": {
                 "$ref": "#/definitions/Permission"
@@ -1813,10 +1820,10 @@
         {
           "type": "object",
           "required": [
-            "CronUpdateParamsPermission"
+            "cron_update_params_permission"
           ],
           "properties": {
-            "CronUpdateParamsPermission": {
+            "cron_update_params_permission": {
               "$ref": "#/definitions/CronUpdateParamsPermission"
             }
           },
