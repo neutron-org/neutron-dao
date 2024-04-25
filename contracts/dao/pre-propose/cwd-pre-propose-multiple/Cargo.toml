@@ -1,6 +1,6 @@
 [package]
 name = "cwd-pre-propose-multiple"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["ekez <zekemedley@gmail.com>", "Jake Hartnell <meow@no-reply.com>", "blue-note"]
 edition = "2021"
 repository = "https://github.com/DA0-DA0/dao-contracts"
@@ -21,7 +21,7 @@ cw2 = "1.1.0"
 serde = { version = "1.0.175", default-features = false, features = ["derive"] }
 cwd-pre-propose-base = { version = "*", path = "../../../../packages/cwd-pre-propose-base" }
 cwd-voting = { path = "../../../../packages/cwd-voting" }
-neutron-sdk = "0.8.0"
+neutron-sdk = "0.10.0"
 schemars = "0.8.8"
 cosmwasm-schema = "1.3.0"
 

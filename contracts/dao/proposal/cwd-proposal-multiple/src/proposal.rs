@@ -3,7 +3,8 @@ use cosmwasm_std::{Addr, BlockInfo, StdError, StdResult, Uint128};
 use cw_utils::Expiration;
 use cwd_voting::{
     multiple_choice::{
-        CheckedMultipleChoiceOption, MultipleChoiceOptionType, MultipleChoiceVotes, VotingStrategy,
+        CheckedMultipleChoiceOption, MultipleChoiceOptionType, MultipleChoiceVotes,
+        OldCheckedMultipleChoiceOption, VotingStrategy,
     },
     proposal::Proposal,
     status::Status,
@@ -43,6 +44,24 @@ pub struct MultipleChoiceProposal {
     /// When disabled, proposals can be executed as soon as they pass.
     /// When enabled, proposals can only be executed after the voting
     /// period has ended and the proposal passed.
+    pub allow_revoting: bool,
+}
+
+/// Deprecated.
+/// This is the old proposal version without "title" field inside "choices".
+#[cw_serde]
+pub struct OldMultipleChoiceProposal {
+    pub title: String,
+    pub description: String,
+    pub proposer: Addr,
+    pub start_height: u64,
+    pub min_voting_period: Option<Expiration>,
+    pub expiration: Expiration,
+    pub choices: Vec<OldCheckedMultipleChoiceOption>,
+    pub status: Status,
+    pub voting_strategy: VotingStrategy,
+    pub total_power: Uint128,
+    pub votes: MultipleChoiceVotes,
     pub allow_revoting: bool,
 }
 
@@ -284,10 +303,12 @@ mod tests {
         // The last option that gets added in into_checked is always the none of the above option
         let options = vec![
             MultipleChoiceOption {
+                title: "title".to_string(),
                 description: "multiple choice option 1".to_string(),
                 msgs: None,
             },
             MultipleChoiceOption {
+                title: "title".to_string(),
                 description: "multiple choice option 2".to_string(),
                 msgs: None,
             },
