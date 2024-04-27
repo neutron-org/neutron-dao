@@ -1,3 +1,4 @@
+use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{CosmosMsg, StdError, StdResult, Uint128};
 use neutron_sdk::bindings::msg::NeutronMsg;
 use schemars::JsonSchema;
@@ -100,6 +101,7 @@ pub struct MultipleChoiceOptions {
 /// Unchecked multiple choice option
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct MultipleChoiceOption {
+    pub title: String,
     pub description: String,
     pub msgs: Option<Vec<CosmosMsg<NeutronMsg>>>,
 }
@@ -116,6 +118,18 @@ pub struct CheckedMultipleChoiceOptions {
 pub struct CheckedMultipleChoiceOption {
     // This is the index of the option in both the vote_weights and proposal.choices vectors.
     // Workaround due to not being able to use HashMaps in Cosmwasm.
+    pub index: u32,
+    pub option_type: MultipleChoiceOptionType,
+    pub title: String,
+    pub description: String,
+    pub msgs: Option<Vec<CosmosMsg<NeutronMsg>>>,
+    pub vote_count: Uint128,
+}
+
+/// Deprecated.
+/// This is the old choice option version without "title" field.
+#[cw_serde]
+pub struct OldCheckedMultipleChoiceOption {
     pub index: u32,
     pub option_type: MultipleChoiceOptionType,
     pub description: String,
@@ -142,6 +156,7 @@ impl MultipleChoiceOptions {
                 let checked_option = CheckedMultipleChoiceOption {
                     index: idx as u32,
                     option_type: MultipleChoiceOptionType::Standard,
+                    title: choice.title,
                     description: choice.description,
                     msgs: choice.msgs,
                     vote_count: Uint128::zero(),
@@ -153,6 +168,7 @@ impl MultipleChoiceOptions {
         let none_option = CheckedMultipleChoiceOption {
             index: (checked_options.capacity() - 1) as u32,
             option_type: MultipleChoiceOptionType::None,
+            title: NONE_OPTION_DESCRIPTION.to_string(),
             description: NONE_OPTION_DESCRIPTION.to_string(),
             msgs: None,
             vote_count: Uint128::zero(),
@@ -205,10 +221,12 @@ mod test {
     fn test_into_checked() {
         let options = vec![
             super::MultipleChoiceOption {
+                title: "title".to_string(),
                 description: "multiple choice option 1".to_string(),
                 msgs: None,
             },
             super::MultipleChoiceOption {
+                title: "title".to_string(),
                 description: "multiple choice option 2".to_string(),
                 msgs: None,
             },
@@ -248,6 +266,7 @@ mod test {
     #[test]
     fn test_into_checked_wrong_num_choices() {
         let options = vec![super::MultipleChoiceOption {
+            title: "title".to_string(),
             description: "multiple choice option 1".to_string(),
             msgs: None,
         }];

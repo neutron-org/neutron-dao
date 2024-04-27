@@ -1388,6 +1388,7 @@ dependencies = [
 name = "cwd-voting"
 version = "0.2.0"
 dependencies = [
+ "cosmwasm-schema",
  "cosmwasm-std",
  "cw-denom",
  "cw-storage-plus 1.2.0",

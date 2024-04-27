@@ -17,8 +17,8 @@ use cwd_voting::{
     deposit::{CheckedDepositInfo, DepositRefundPolicy, DepositToken, UncheckedDepositInfo},
     multiple_choice::{
         CheckedMultipleChoiceOption, MultipleChoiceOption, MultipleChoiceOptionType,
-        MultipleChoiceOptions, MultipleChoiceVote, MultipleChoiceVotes, VotingStrategy,
-        MAX_NUM_CHOICES,
+        MultipleChoiceOptions, MultipleChoiceVote, MultipleChoiceVotes,
+        OldCheckedMultipleChoiceOption, VotingStrategy, MAX_NUM_CHOICES,
     },
     pre_propose::PreProposeInfo,
     status::Status,
@@ -28,8 +28,8 @@ use neutron_sdk::bindings::msg::NeutronMsg;
 use std::panic;
 
 use crate::{
-    msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
-    proposal::MultipleChoiceProposal,
+    msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg},
+    proposal::{MultipleChoiceProposal, OldMultipleChoiceProposal},
     query::{ProposalListResponse, ProposalResponse},
     state::Config,
     testing::{
@@ -149,11 +149,13 @@ fn test_propose() {
 
     let options = vec![
         MultipleChoiceOption {
+            title: "title".to_string(),
             description: "multiple choice option 1".to_string(),
             msgs: None,
         },
         MultipleChoiceOption {
-            description: "multiple choice option 1".to_string(),
+            title: "title".to_string(),
+            description: "multiple choice option 2".to_string(),
             msgs: None,
         },
     ];
@@ -243,6 +245,7 @@ fn test_propose_wrong_num_choices() {
 
     let options = vec![
         MultipleChoiceOption {
+            title: "title".to_string(),
             description: "multiple choice option 1".to_string(),
             msgs: None,
         };
@@ -343,10 +346,12 @@ fn test_no_early_pass_with_min_duration() {
 
     let options = vec![
         MultipleChoiceOption {
+            title: "title".to_string(),
             description: "multiple choice option 1".to_string(),
             msgs: None,
         },
         MultipleChoiceOption {
+            title: "title".to_string(),
             description: "multiple choice option 2".to_string(),
             msgs: None,
         },
@@ -452,10 +457,12 @@ fn test_propose_with_messages() {
 
     let options = vec![
         MultipleChoiceOption {
+            title: "title".to_string(),
             description: "multiple choice option 1".to_string(),
             msgs: Some(vec![CosmosMsg::Wasm(wasm_msg)]),
         },
         MultipleChoiceOption {
+            title: "title".to_string(),
             description: "multiple choice option 2".to_string(),
             msgs: None,
         },
@@ -613,10 +620,12 @@ fn test_min_duration_same_as_proposal_duration() {
 
     let options = vec![
         MultipleChoiceOption {
+            title: "title".to_string(),
             description: "multiple choice option 1".to_string(),
             msgs: None,
         },
         MultipleChoiceOption {
+            title: "title".to_string(),
             description: "multiple choice option 2".to_string(),
             msgs: None,
         },
@@ -786,10 +795,12 @@ fn test_native_proposal_deposit() {
         let mc_options = MultipleChoiceOptions {
             options: vec![
                 MultipleChoiceOption {
+                    title: "title".to_string(),
                     description: "multiple choice option 1".to_string(),
                     msgs: None,
                 },
                 MultipleChoiceOption {
+                    title: "title".to_string(),
                     description: "multiple choice option 2".to_string(),
                     msgs: None,
                 },
@@ -919,10 +930,12 @@ fn test_cant_propose_zero_power() {
 
     let options = vec![
         MultipleChoiceOption {
+            title: "title".to_string(),
             description: "multiple choice option 1".to_string(),
             msgs: None,
         },
         MultipleChoiceOption {
+            title: "title".to_string(),
             description: "multiple choice option 2".to_string(),
             msgs: None,
         },
@@ -1016,10 +1029,12 @@ fn test_open_proposal_submission() {
         MultipleChoiceOptions {
             options: vec![
                 MultipleChoiceOption {
+                    title: "title".to_string(),
                     description: "multiple choice option 1".to_string(),
                     msgs: None,
                 },
                 MultipleChoiceOption {
+                    title: "title".to_string(),
                     description: "multiple choice option 2".to_string(),
                     msgs: None,
                 },
@@ -1044,6 +1059,7 @@ fn test_open_proposal_submission() {
         },
         choices: vec![
             CheckedMultipleChoiceOption {
+                title: "title".to_string(),
                 description: "multiple choice option 1".to_string(),
                 msgs: None,
                 option_type: MultipleChoiceOptionType::Standard,
@@ -1051,6 +1067,7 @@ fn test_open_proposal_submission() {
                 index: 0,
             },
             CheckedMultipleChoiceOption {
+                title: "title".to_string(),
                 description: "multiple choice option 2".to_string(),
                 msgs: None,
                 option_type: MultipleChoiceOptionType::Standard,
@@ -1058,6 +1075,7 @@ fn test_open_proposal_submission() {
                 index: 1,
             },
             CheckedMultipleChoiceOption {
+                title: "None of the above".to_string(),
                 description: "None of the above".to_string(),
                 msgs: None,
                 option_type: MultipleChoiceOptionType::None,
@@ -1117,10 +1135,12 @@ fn test_execute_expired_proposal() {
 
     let options = vec![
         MultipleChoiceOption {
+            title: "title".to_string(),
             description: "multiple choice option 1".to_string(),
             msgs: None,
         },
         MultipleChoiceOption {
+            title: "title".to_string(),
             description: "multiple choice option 2".to_string(),
             msgs: None,
         },
@@ -1236,10 +1256,12 @@ fn test_query_list_proposals() {
 
     let options = vec![
         MultipleChoiceOption {
+            title: "title".to_string(),
             description: "multiple choice option 1".to_string(),
             msgs: None,
         },
         MultipleChoiceOption {
+            title: "title".to_string(),
             description: "multiple choice option 2".to_string(),
             msgs: None,
         },
@@ -1485,10 +1507,12 @@ fn test_revoting() {
 
     let options = vec![
         MultipleChoiceOption {
+            title: "title".to_string(),
             description: "multiple choice option 1".to_string(),
             msgs: None,
         },
         MultipleChoiceOption {
+            title: "title".to_string(),
             description: "multiple choice option 2".to_string(),
             msgs: None,
         },
@@ -1612,10 +1636,12 @@ fn test_allow_revoting_config_changes() {
 
     let options = vec![
         MultipleChoiceOption {
+            title: "title".to_string(),
             description: "multiple choice option 1".to_string(),
             msgs: None,
         },
         MultipleChoiceOption {
+            title: "title".to_string(),
             description: "multiple choice option 2".to_string(),
             msgs: None,
         },
@@ -1757,10 +1783,12 @@ fn test_revoting_same_vote_twice() {
 
     let options = vec![
         MultipleChoiceOption {
+            title: "title".to_string(),
             description: "multiple choice option 1".to_string(),
             msgs: None,
         },
         MultipleChoiceOption {
+            title: "title".to_string(),
             description: "multiple choice option 2".to_string(),
             msgs: None,
         },
@@ -1847,10 +1875,12 @@ fn test_invalid_revote_does_not_invalidate_initial_vote() {
 
     let options = vec![
         MultipleChoiceOption {
+            title: "title".to_string(),
             description: "multiple choice option 1".to_string(),
             msgs: None,
         },
         MultipleChoiceOption {
+            title: "title".to_string(),
             description: "multiple choice option 2".to_string(),
             msgs: None,
         },
@@ -1967,6 +1997,7 @@ fn test_close_failed_proposal() {
 
     let options = vec![
         MultipleChoiceOption {
+            title: "title".to_string(),
             description: "Burn or burn".to_string(),
             msgs: Some(vec![WasmMsg::Execute {
                 contract_addr: "token_contract".to_string(),
@@ -1976,6 +2007,7 @@ fn test_close_failed_proposal() {
             .into()]),
         },
         MultipleChoiceOption {
+            title: "title".to_string(),
             description: "Don't burn".to_string(),
             msgs: None,
         },
@@ -2039,6 +2071,7 @@ fn test_close_failed_proposal() {
                 choices: MultipleChoiceOptions {
                     options: vec![
                         MultipleChoiceOption {
+                            title: "title".to_string(),
                             description: "Disable closing failed proposals".to_string(),
                             msgs: Some(vec![WasmMsg::Execute {
                                 contract_addr: govmod.to_string(),
@@ -2057,6 +2090,7 @@ fn test_close_failed_proposal() {
                             .into()]),
                         },
                         MultipleChoiceOption {
+                            title: "title".to_string(),
                             description: "Don't disable".to_string(),
                             msgs: None,
                         },
@@ -2187,4 +2221,118 @@ fn test_reply_proposal_mock() {
     let query_res = query_proposal_execution_error(deps.as_ref(), 1).unwrap();
     let error: Option<String> = from_json(query_res).unwrap();
     assert_eq!(error, Some("error".to_string()));
+}
+
+#[test]
+fn test_migrate_mock() {
+    use crate::contract::migrate;
+    use crate::state::PROPOSALS;
+    use cw_storage_plus::Map;
+
+    let mut deps = mock_dependencies();
+    let env = mock_env();
+    let max_voting_period = cw_utils::Duration::Height(6);
+
+    let old_proposals: Map<u64, OldMultipleChoiceProposal> = Map::new("proposals");
+    old_proposals
+        .save(
+            deps.as_mut().storage,
+            0,
+            &OldMultipleChoiceProposal {
+                title: "A simple text proposal".to_string(),
+                description: "This is a simple text proposal".to_string(),
+                proposer: Addr::unchecked(CREATOR_ADDR),
+                start_height: env.block.height,
+                min_voting_period: None,
+                expiration: max_voting_period.after(&env.block),
+                choices: vec![
+                    OldCheckedMultipleChoiceOption {
+                        description: "multiple choice option 1".to_string(),
+                        msgs: None,
+                        option_type: MultipleChoiceOptionType::Standard,
+                        vote_count: Uint128::zero(),
+                        index: 0,
+                    },
+                    OldCheckedMultipleChoiceOption {
+                        description: "multiple choice option 2".to_string(),
+                        msgs: None,
+                        option_type: MultipleChoiceOptionType::Standard,
+                        vote_count: Uint128::zero(),
+                        index: 1,
+                    },
+                    OldCheckedMultipleChoiceOption {
+                        description: "None of the above".to_string(),
+                        msgs: None,
+                        option_type: MultipleChoiceOptionType::None,
+                        vote_count: Uint128::zero(),
+                        index: 2,
+                    },
+                ],
+                status: Status::Open,
+                voting_strategy: VotingStrategy::SingleChoice {
+                    quorum: cwd_voting::threshold::PercentageThreshold::Majority {},
+                },
+                total_power: Uint128::new(100),
+                votes: MultipleChoiceVotes {
+                    vote_weights: vec![Uint128::zero(); 3],
+                },
+                allow_revoting: false,
+            },
+        )
+        .unwrap();
+
+    let msg = MigrateMsg::FromV1 {
+        close_proposal_on_execution_failure: true,
+        pre_propose_info: PreProposeInfo::AnyoneMayPropose {},
+    };
+
+    migrate(deps.as_mut(), env.clone(), msg.clone()).unwrap();
+
+    let migrated_proposal = PROPOSALS.load(deps.as_mut().storage, 0).unwrap();
+
+    let expected = MultipleChoiceProposal {
+        title: "A simple text proposal".to_string(),
+        description: "This is a simple text proposal".to_string(),
+        proposer: Addr::unchecked(CREATOR_ADDR),
+        start_height: env.block.height,
+        min_voting_period: None,
+        expiration: max_voting_period.after(&env.block),
+        choices: vec![
+            CheckedMultipleChoiceOption {
+                title: "".to_string(),
+                description: "multiple choice option 1".to_string(),
+                msgs: None,
+                option_type: MultipleChoiceOptionType::Standard,
+                vote_count: Uint128::zero(),
+                index: 0,
+            },
+            CheckedMultipleChoiceOption {
+                title: "".to_string(),
+                description: "multiple choice option 2".to_string(),
+                msgs: None,
+                option_type: MultipleChoiceOptionType::Standard,
+                vote_count: Uint128::zero(),
+                index: 1,
+            },
+            CheckedMultipleChoiceOption {
+                title: "".to_string(),
+                description: "None of the above".to_string(),
+                msgs: None,
+                option_type: MultipleChoiceOptionType::None,
+                vote_count: Uint128::zero(),
+                index: 2,
+            },
+        ],
+        status: Status::Open,
+        voting_strategy: VotingStrategy::SingleChoice {
+            quorum: cwd_voting::threshold::PercentageThreshold::Majority {},
+        },
+        total_power: Uint128::new(100),
+        votes: MultipleChoiceVotes {
+            vote_weights: vec![Uint128::zero(); 3],
+        },
+        allow_revoting: false,
+    };
+
+    assert_eq!(migrated_proposal, expected);
 }
