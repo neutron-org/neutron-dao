@@ -1882,7 +1882,7 @@ dependencies = [
 
 [[package]]
 name = "neutron-reserve"
-version = "0.1.2"
+version = "0.2.0"
 dependencies = [
  "astroport 2.5.0",
  "cosmwasm-schema",
