@@ -1,23 +1,24 @@
+use std::collections::HashMap;
+
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, CosmosMsg};
 use neutron_sdk::bindings::msg::{NeutronMsg, ParamChange};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use serde_with::{json::JsonString, serde_as};
 
-#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
+#[cw_serde]
+#[serde(rename_all = "snake_case")]
 pub struct InstantiateMsg {
     /// Defines the address for the initial strategy.
     pub initial_strategy_address: Addr,
-    /// Defines the initial strategy. Must be an ALLOW_ALL strategy.
-    pub initial_strategy: Strategy,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum ExecuteMsg {
     AddStrategy {
         address: Addr,
-        strategy: Strategy,
+        strategy: StrategyMsg,
     },
     RemoveStrategy {
         address: Addr,
@@ -30,17 +31,44 @@ pub enum ExecuteMsg {
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum QueryMsg {
-    #[returns(Vec < Strategy >)]
+    #[returns(Vec < StrategyMsg >)]
     Strategies {},
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[cw_serde]
+#[serde(rename_all = "snake_case")]
 pub struct MigrateMsg {}
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-pub enum Strategy {
+// StrategyMsg is used only as UI struct to simplify intaraction with the contract
+// Internally we work with `Strategy`
+#[cw_serde]
+pub enum StrategyMsg {
     AllowAll,
     AllowOnly(Vec<Permission>),
+}
+
+#[derive(JsonSchema)]
+#[serde_as]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub enum Strategy {
+    AllowAll,
+    // the macro param required because serde allows only string as keys of hashmap during serialisation
+    AllowOnly(#[serde_as(as = "HashMap<JsonString, _>")] HashMap<PermissionType, Permission>),
+}
+
+impl From<StrategyMsg> for Strategy {
+    fn from(value: StrategyMsg) -> Self {
+        match value {
+            StrategyMsg::AllowAll => Strategy::AllowAll,
+            StrategyMsg::AllowOnly(list_permissions) => {
+                let mut perms: HashMap<PermissionType, Permission> = HashMap::new();
+                for p in list_permissions {
+                    perms.insert(p.clone().into(), p);
+                }
+                Strategy::AllowOnly(perms)
+            }
+        }
+    }
 }
 
 impl Strategy {
@@ -48,14 +76,10 @@ impl Strategy {
         match self {
             Strategy::AllowAll => true,
             Strategy::AllowOnly(permissions) => {
-                let mut has_permission = false;
-                for permission in permissions {
-                    if let Permission::CronPermission(cron_permission) = permission {
-                        has_permission = cron_permission.add_schedule
-                    }
+                match permissions.get(&PermissionType::CronPermission) {
+                    Some(Permission::CronPermission(permission)) => permission.add_schedule,
+                    _ => false,
                 }
-
-                has_permission
             }
         }
     }
@@ -63,14 +87,10 @@ impl Strategy {
         match self {
             Strategy::AllowAll => true,
             Strategy::AllowOnly(permissions) => {
-                let mut has_permission = false;
-                for permission in permissions {
-                    if let Permission::CronPermission(cron_permission) = permission {
-                        has_permission = cron_permission.remove_schedule
-                    }
+                match permissions.get(&PermissionType::CronPermission) {
+                    Some(Permission::CronPermission(permission)) => permission.remove_schedule,
+                    _ => false,
                 }
-
-                has_permission
             }
         }
     }
@@ -78,9 +98,8 @@ impl Strategy {
         match self {
             Strategy::AllowAll => true,
             Strategy::AllowOnly(permissions) => {
-                for permission in permissions {
-                    if let Permission::ParamChangePermission(param_change_permissions) = permission
-                    {
+                match permissions.get(&PermissionType::ParamChangePermission) {
+                    Some(Permission::ParamChangePermission(param_change_permissions)) => {
                         for param_change_permission in param_change_permissions.params.clone() {
                             if param_change.subspace == param_change_permission.subspace
                                 && param_change.key == param_change_permission.key
@@ -88,10 +107,10 @@ impl Strategy {
                                 return true;
                             }
                         }
+                        false
                     }
+                    _ => false,
                 }
-
-                false
             }
         }
     }
@@ -103,24 +122,23 @@ impl Strategy {
                 limit: true,
             }),
             Strategy::AllowOnly(permissions) => {
-                for permission in permissions {
-                    if let Permission::UpdateParamsPermission(update_params_permission) = permission
-                    {
-                        return match update_params_permission {
+                match permissions.get(&PermissionType::UpdateParamsPermission) {
+                    Some(Permission::UpdateParamsPermission(update_params_permission)) => {
+                        match update_params_permission {
                             UpdateParamsPermission::CronUpdateParamsPermission(
                                 cron_update_params,
                             ) => Some(cron_update_params.clone()),
-                        };
+                        }
                     }
+                    _ => None,
                 }
-
-                None
             }
         }
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[cw_serde]
+#[derive(Eq)]
 pub enum Permission {
     // Deprecated, for legacy parameter updates using `params` module.
     ParamChangePermission(ParamChangePermission),
@@ -129,29 +147,56 @@ pub enum Permission {
     CronPermission(CronPermission),
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+impl From<Permission> for PermissionType {
+    fn from(value: Permission) -> Self {
+        match value {
+            Permission::ParamChangePermission(_) => PermissionType::ParamChangePermission,
+            Permission::UpdateParamsPermission(_) => PermissionType::UpdateParamsPermission,
+            Permission::CronPermission(_) => PermissionType::CronPermission,
+        }
+    }
+}
+
+#[cw_serde]
+#[derive(Hash, Eq)]
+pub enum PermissionType {
+    ParamChangePermission,
+    UpdateParamsPermission,
+    CronPermission,
+}
+
+#[cw_serde]
+#[derive(Eq)]
+#[serde(rename_all = "snake_case")]
 pub struct ParamChangePermission {
     pub params: Vec<ParamPermission>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[cw_serde]
+#[derive(Eq)]
+#[serde(rename_all = "snake_case")]
 pub struct ParamPermission {
     pub subspace: String,
     pub key: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[cw_serde]
+#[derive(Eq)]
 pub enum UpdateParamsPermission {
     CronUpdateParamsPermission(CronUpdateParamsPermission),
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[cw_serde]
+#[derive(Eq)]
+#[serde(rename_all = "snake_case")]
 pub struct CronUpdateParamsPermission {
     pub security_address: bool,
     pub limit: bool,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[cw_serde]
+#[derive(Eq)]
+#[serde(rename_all = "snake_case")]
 pub struct CronPermission {
     pub add_schedule: bool,
     pub remove_schedule: bool,

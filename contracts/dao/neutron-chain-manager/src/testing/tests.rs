@@ -1,11 +1,11 @@
 use crate::contract::{
     execute_add_strategy, execute_execute_messages, execute_remove_strategy, instantiate,
 };
-use crate::error::ContractError::{InvalidDemotion, InvalidInitialStrategy, Unauthorized};
+use crate::error::ContractError::{InvalidDemotion, Unauthorized};
+use crate::msg::InstantiateMsg;
 use crate::msg::Permission::{CronPermission, ParamChangePermission, UpdateParamsPermission};
 use crate::msg::UpdateParamsPermission::CronUpdateParamsPermission as CronUpdateParamsPermissionEnumField;
-use crate::msg::{CronPermission as CronPermissionType, CronUpdateParamsPermission};
-use crate::msg::{InstantiateMsg, Strategy};
+use crate::msg::{CronPermission as CronPermissionType, CronUpdateParamsPermission, StrategyMsg};
 use crate::msg::{ParamChangePermission as ParamChangePermissionType, ParamPermission};
 use crate::testing::mock_querier::mock_dependencies;
 use cosmwasm_std::testing::{mock_env, mock_info};
@@ -21,28 +21,12 @@ fn test_instantiate() {
     let env = mock_env();
     let info = mock_info("addr1", &[]);
 
-    let err = instantiate(
-        deps.as_mut(),
-        env.clone(),
-        info.clone(),
-        InstantiateMsg {
-            initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
-            initial_strategy: Strategy::AllowOnly(vec![CronPermission(CronPermissionType {
-                add_schedule: true,
-                remove_schedule: true,
-            })]),
-        },
-    )
-    .unwrap_err();
-    assert_eq!(err, InvalidInitialStrategy {});
-
     instantiate(
         deps.as_mut(),
         env.clone(),
         info.clone(),
         InstantiateMsg {
             initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
-            initial_strategy: Strategy::AllowAll,
         },
     )
     .unwrap();
@@ -60,7 +44,6 @@ fn test_add_strategy() {
         info.clone(),
         InstantiateMsg {
             initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
-            initial_strategy: Strategy::AllowAll,
         },
     )
     .unwrap();
@@ -71,7 +54,7 @@ fn test_add_strategy() {
         deps.as_mut(),
         info.clone(),
         Addr::unchecked("addr1".to_string()),
-        Strategy::AllowAll,
+        StrategyMsg::AllowAll,
     )
     .unwrap();
 
@@ -81,7 +64,7 @@ fn test_add_strategy() {
         deps.as_mut(),
         info.clone(),
         Addr::unchecked("addr2".to_string()),
-        Strategy::AllowOnly(vec![CronPermission(CronPermissionType {
+        StrategyMsg::AllowOnly(vec![CronPermission(CronPermissionType {
             add_schedule: true,
             remove_schedule: true,
         })]),
@@ -103,7 +86,6 @@ fn test_add_strategy_promotion() {
         info.clone(),
         InstantiateMsg {
             initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
-            initial_strategy: Strategy::AllowAll,
         },
     )
     .unwrap();
@@ -113,7 +95,7 @@ fn test_add_strategy_promotion() {
         deps.as_mut(),
         info.clone(),
         Addr::unchecked("addr2".to_string()),
-        Strategy::AllowOnly(vec![CronPermission(CronPermissionType {
+        StrategyMsg::AllowOnly(vec![CronPermission(CronPermissionType {
             add_schedule: true,
             remove_schedule: true,
         })]),
@@ -124,7 +106,7 @@ fn test_add_strategy_promotion() {
         deps.as_mut(),
         info.clone(),
         Addr::unchecked("addr2".to_string()),
-        Strategy::AllowAll,
+        StrategyMsg::AllowAll,
     )
     .unwrap();
     let info = mock_info("addr2", &[]);
@@ -132,7 +114,7 @@ fn test_add_strategy_promotion() {
         deps.as_mut(),
         info.clone(),
         Addr::unchecked("addr3".to_string()),
-        Strategy::AllowAll,
+        StrategyMsg::AllowAll,
     )
     .unwrap();
 }
@@ -151,7 +133,6 @@ fn test_add_strategy_demotion() {
         info.clone(),
         InstantiateMsg {
             initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
-            initial_strategy: Strategy::AllowAll,
         },
     )
     .unwrap();
@@ -161,14 +142,14 @@ fn test_add_strategy_demotion() {
         deps.as_mut(),
         info.clone(),
         Addr::unchecked("addr1".to_string()),
-        Strategy::AllowAll,
+        StrategyMsg::AllowAll,
     )
     .unwrap();
     execute_add_strategy(
         deps.as_mut(),
         info.clone(),
         Addr::unchecked("addr1".to_string()),
-        Strategy::AllowOnly(vec![CronPermission(CronPermissionType {
+        StrategyMsg::AllowOnly(vec![CronPermission(CronPermissionType {
             add_schedule: true,
             remove_schedule: true,
         })]),
@@ -179,7 +160,7 @@ fn test_add_strategy_demotion() {
         deps.as_mut(),
         info,
         Addr::unchecked("addr2".to_string()),
-        Strategy::AllowAll,
+        StrategyMsg::AllowAll,
     )
     .unwrap_err();
     assert_eq!(err, Unauthorized {})
@@ -199,7 +180,6 @@ fn test_add_strategy_invalid_demotion() {
         info.clone(),
         InstantiateMsg {
             initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
-            initial_strategy: Strategy::AllowAll,
         },
     )
     .unwrap();
@@ -209,7 +189,7 @@ fn test_add_strategy_invalid_demotion() {
         deps.as_mut(),
         info.clone(),
         Addr::unchecked("neutron_dao_address".to_string()),
-        Strategy::AllowOnly(vec![CronPermission(CronPermissionType {
+        StrategyMsg::AllowOnly(vec![CronPermission(CronPermissionType {
             add_schedule: true,
             remove_schedule: true,
         })]),
@@ -230,7 +210,6 @@ fn test_remove_strategy() {
         info.clone(),
         InstantiateMsg {
             initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
-            initial_strategy: Strategy::AllowAll,
         },
     )
     .unwrap();
@@ -240,7 +219,7 @@ fn test_remove_strategy() {
         deps.as_mut(),
         info.clone(),
         Addr::unchecked("addr1".to_string()),
-        Strategy::AllowAll,
+        StrategyMsg::AllowAll,
     )
     .unwrap();
     execute_remove_strategy(
@@ -255,7 +234,7 @@ fn test_remove_strategy() {
         deps.as_mut(),
         info,
         Addr::unchecked("addr1".to_string()),
-        Strategy::AllowAll,
+        StrategyMsg::AllowAll,
     )
     .unwrap_err();
     assert_eq!(err, Unauthorized {})
@@ -273,7 +252,6 @@ fn test_remove_strategy_invalid_demotion() {
         info.clone(),
         InstantiateMsg {
             initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
-            initial_strategy: Strategy::AllowAll,
         },
     )
     .unwrap();
@@ -311,7 +289,6 @@ pub fn test_execute_execute_message_update_params_cron_authorized() {
         info.clone(),
         InstantiateMsg {
             initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
-            initial_strategy: Strategy::AllowAll,
         },
     )
     .unwrap();
@@ -321,7 +298,7 @@ pub fn test_execute_execute_message_update_params_cron_authorized() {
         deps.as_mut(),
         info.clone(),
         Addr::unchecked("addr1".to_string()),
-        Strategy::AllowOnly(vec![UpdateParamsPermission(
+        StrategyMsg::AllowOnly(vec![UpdateParamsPermission(
             CronUpdateParamsPermissionEnumField(CronUpdateParamsPermission {
                 security_address: true,
                 limit: true,
@@ -357,7 +334,6 @@ pub fn test_execute_execute_message_unsupported_message_type_unauthorized() {
         info.clone(),
         InstantiateMsg {
             initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
-            initial_strategy: Strategy::AllowAll,
         },
     )
     .unwrap();
@@ -367,7 +343,7 @@ pub fn test_execute_execute_message_unsupported_message_type_unauthorized() {
         deps.as_mut(),
         info.clone(),
         Addr::unchecked("addr1".to_string()),
-        Strategy::AllowOnly(vec![UpdateParamsPermission(
+        StrategyMsg::AllowOnly(vec![UpdateParamsPermission(
             CronUpdateParamsPermissionEnumField(CronUpdateParamsPermission {
                 security_address: true,
                 limit: true,
@@ -404,7 +380,6 @@ pub fn test_execute_execute_message_update_params_cron_unauthorized_limit() {
         info.clone(),
         InstantiateMsg {
             initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
-            initial_strategy: Strategy::AllowAll,
         },
     )
     .unwrap();
@@ -414,7 +389,7 @@ pub fn test_execute_execute_message_update_params_cron_unauthorized_limit() {
         deps.as_mut(),
         info.clone(),
         Addr::unchecked("addr1".to_string()),
-        Strategy::AllowOnly(vec![UpdateParamsPermission(
+        StrategyMsg::AllowOnly(vec![UpdateParamsPermission(
             CronUpdateParamsPermissionEnumField(CronUpdateParamsPermission {
                 security_address: true,
                 limit: false,
@@ -451,7 +426,6 @@ pub fn test_execute_execute_message_update_params_cron_unauthorized_security_add
         info.clone(),
         InstantiateMsg {
             initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
-            initial_strategy: Strategy::AllowAll,
         },
     )
     .unwrap();
@@ -461,7 +435,7 @@ pub fn test_execute_execute_message_update_params_cron_unauthorized_security_add
         deps.as_mut(),
         info.clone(),
         Addr::unchecked("addr1".to_string()),
-        Strategy::AllowOnly(vec![UpdateParamsPermission(
+        StrategyMsg::AllowOnly(vec![UpdateParamsPermission(
             CronUpdateParamsPermissionEnumField(CronUpdateParamsPermission {
                 security_address: false,
                 limit: true,
@@ -500,7 +474,6 @@ pub fn test_execute_execute_message_param_change_success() {
         info.clone(),
         InstantiateMsg {
             initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
-            initial_strategy: Strategy::AllowAll,
         },
     )
     .unwrap();
@@ -510,7 +483,7 @@ pub fn test_execute_execute_message_param_change_success() {
         deps.as_mut(),
         info.clone(),
         Addr::unchecked("addr1".to_string()),
-        Strategy::AllowOnly(vec![ParamChangePermission(ParamChangePermissionType {
+        StrategyMsg::AllowOnly(vec![ParamChangePermission(ParamChangePermissionType {
             params: vec![ParamPermission {
                 subspace: "globalfee".to_string(),
                 key: "MinimumGasPricesParam".to_string(),
@@ -549,7 +522,6 @@ pub fn test_execute_execute_message_param_change_unauthorized_key() {
         info.clone(),
         InstantiateMsg {
             initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
-            initial_strategy: Strategy::AllowAll,
         },
     )
     .unwrap();
@@ -559,7 +531,7 @@ pub fn test_execute_execute_message_param_change_unauthorized_key() {
         deps.as_mut(),
         info.clone(),
         Addr::unchecked("addr1".to_string()),
-        Strategy::AllowOnly(vec![ParamChangePermission(ParamChangePermissionType {
+        StrategyMsg::AllowOnly(vec![ParamChangePermission(ParamChangePermissionType {
             params: vec![ParamPermission {
                 subspace: "globalfee".to_string(),
                 key: "0xdeadbeef".to_string(),
@@ -599,7 +571,6 @@ pub fn test_execute_execute_message_param_change_unauthorized_subspace() {
         info.clone(),
         InstantiateMsg {
             initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
-            initial_strategy: Strategy::AllowAll,
         },
     )
     .unwrap();
@@ -609,7 +580,7 @@ pub fn test_execute_execute_message_param_change_unauthorized_subspace() {
         deps.as_mut(),
         info.clone(),
         Addr::unchecked("addr1".to_string()),
-        Strategy::AllowOnly(vec![ParamChangePermission(ParamChangePermissionType {
+        StrategyMsg::AllowOnly(vec![ParamChangePermission(ParamChangePermissionType {
             params: vec![ParamPermission {
                 subspace: "0xdeadbeef".to_string(),
                 key: "MinimumGasPricesParam".to_string(),
@@ -637,7 +608,6 @@ pub fn test_execute_execute_unknown_message() {
         info.clone(),
         InstantiateMsg {
             initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
-            initial_strategy: Strategy::AllowAll,
         },
     )
     .unwrap();
@@ -647,7 +617,7 @@ pub fn test_execute_execute_unknown_message() {
         deps.as_mut(),
         info.clone(),
         Addr::unchecked("addr1".to_string()),
-        Strategy::AllowOnly(vec![ParamChangePermission(ParamChangePermissionType {
+        StrategyMsg::AllowOnly(vec![ParamChangePermission(ParamChangePermissionType {
             params: vec![ParamPermission {
                 subspace: "0xdeadbeef".to_string(),
                 key: "0xdeadbeef".to_string(),
