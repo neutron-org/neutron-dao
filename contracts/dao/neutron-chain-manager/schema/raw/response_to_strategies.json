@@ -1,0 +1,154 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Array_of_StrategyMsg",
+  "type": "array",
+  "items": {
+    "$ref": "#/definitions/StrategyMsg"
+  },
+  "definitions": {
+    "CronPermission": {
+      "type": "object",
+      "required": [
+        "add_schedule",
+        "remove_schedule"
+      ],
+      "properties": {
+        "add_schedule": {
+          "type": "boolean"
+        },
+        "remove_schedule": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "CronUpdateParamsPermission": {
+      "type": "object",
+      "required": [
+        "limit",
+        "security_address"
+      ],
+      "properties": {
+        "limit": {
+          "type": "boolean"
+        },
+        "security_address": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ParamChangePermission": {
+      "type": "object",
+      "required": [
+        "params"
+      ],
+      "properties": {
+        "params": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ParamPermission"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "ParamPermission": {
+      "type": "object",
+      "required": [
+        "key",
+        "subspace"
+      ],
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "subspace": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Permission": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "param_change_permission"
+          ],
+          "properties": {
+            "param_change_permission": {
+              "$ref": "#/definitions/ParamChangePermission"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "update_params_permission"
+          ],
+          "properties": {
+            "update_params_permission": {
+              "$ref": "#/definitions/UpdateParamsPermission"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "cron_permission"
+          ],
+          "properties": {
+            "cron_permission": {
+              "$ref": "#/definitions/CronPermission"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "StrategyMsg": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "allow_all"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "allow_only"
+          ],
+          "properties": {
+            "allow_only": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Permission"
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "UpdateParamsPermission": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "cron_update_params_permission"
+          ],
+          "properties": {
+            "cron_update_params_permission": {
+              "$ref": "#/definitions/CronUpdateParamsPermission"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}
