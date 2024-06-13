@@ -554,6 +554,54 @@
         },
         "additionalProperties": false
       },
+      "DexPermission": {
+        "type": "object",
+        "required": [
+          "fee_tiers",
+          "good_til_purge_allowance",
+          "max_jits_per_block",
+          "paused"
+        ],
+        "properties": {
+          "fee_tiers": {
+            "type": "boolean"
+          },
+          "good_til_purge_allowance": {
+            "type": "boolean"
+          },
+          "max_jits_per_block": {
+            "type": "boolean"
+          },
+          "paused": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DexUpdateParamsPermission": {
+        "type": "object",
+        "required": [
+          "fee_tiers",
+          "good_til_purge_allowance",
+          "max_jits_per_block",
+          "paused"
+        ],
+        "properties": {
+          "fee_tiers": {
+            "type": "boolean"
+          },
+          "good_til_purge_allowance": {
+            "type": "boolean"
+          },
+          "max_jits_per_block": {
+            "type": "boolean"
+          },
+          "paused": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
       "DistributionMsg": {
         "description": "The message types of the distribution module.\n\nSee https://github.com/cosmos/cosmos-sdk/blob/v0.42.4/proto/cosmos/distribution/v1beta1/tx.proto",
         "oneOf": [
@@ -1488,6 +1536,18 @@
               }
             },
             "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "dex_permission"
+            ],
+            "properties": {
+              "dex_permission": {
+                "$ref": "#/definitions/DexPermission"
+              }
+            },
+            "additionalProperties": false
           }
         ]
       },
@@ -1857,6 +1917,18 @@
               }
             },
             "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "dex_update_params_permission"
+            ],
+            "properties": {
+              "dex_update_params_permission": {
+                "$ref": "#/definitions/DexUpdateParamsPermission"
+              }
+            },
+            "additionalProperties": false
           }
         ]
       },
@@ -2149,6 +2221,54 @@
           },
           "additionalProperties": false
         },
+        "DexPermission": {
+          "type": "object",
+          "required": [
+            "fee_tiers",
+            "good_til_purge_allowance",
+            "max_jits_per_block",
+            "paused"
+          ],
+          "properties": {
+            "fee_tiers": {
+              "type": "boolean"
+            },
+            "good_til_purge_allowance": {
+              "type": "boolean"
+            },
+            "max_jits_per_block": {
+              "type": "boolean"
+            },
+            "paused": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "DexUpdateParamsPermission": {
+          "type": "object",
+          "required": [
+            "fee_tiers",
+            "good_til_purge_allowance",
+            "max_jits_per_block",
+            "paused"
+          ],
+          "properties": {
+            "fee_tiers": {
+              "type": "boolean"
+            },
+            "good_til_purge_allowance": {
+              "type": "boolean"
+            },
+            "max_jits_per_block": {
+              "type": "boolean"
+            },
+            "paused": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
         "ParamChangePermission": {
           "type": "object",
           "required": [
@@ -2217,6 +2337,18 @@
                 }
               },
               "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": [
+                "dex_permission"
+              ],
+              "properties": {
+                "dex_permission": {
+                  "$ref": "#/definitions/DexPermission"
+                }
+              },
+              "additionalProperties": false
             }
           ]
         },
@@ -2255,6 +2387,18 @@
               "properties": {
                 "cron_update_params_permission": {
                   "$ref": "#/definitions/CronUpdateParamsPermission"
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": [
+                "dex_update_params_permission"
+              ],
+              "properties": {
+                "dex_update_params_permission": {
+                  "$ref": "#/definitions/DexUpdateParamsPermission"
                 }
               },
               "additionalProperties": false
