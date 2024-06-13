@@ -5,8 +5,11 @@ use crate::error::ContractError::{InvalidDemotion, Unauthorized};
 use crate::msg::Permission::{CronPermission, ParamChangePermission, UpdateParamsPermission};
 use crate::msg::UpdateParamsPermission::CronUpdateParamsPermission as CronUpdateParamsPermissionEnumField;
 use crate::msg::UpdateParamsPermission::DexUpdateParamsPermission as DexUpdateParamsPermissionEnumField;
-use crate::msg::{CronPermission as CronPermissionType, CronUpdateParamsPermission, StrategyMsg, DexUpdateParamsPermission,
-                 InstantiateMsg, ParamChangePermission as ParamChangePermissionType, ParamPermission};
+use crate::msg::{
+    CronPermission as CronPermissionType, CronUpdateParamsPermission, DexUpdateParamsPermission,
+    InstantiateMsg, ParamChangePermission as ParamChangePermissionType, ParamPermission,
+    StrategyMsg,
+};
 use crate::testing::mock_querier::mock_dependencies;
 use cosmwasm_std::testing::{mock_env, mock_info};
 use cosmwasm_std::{Addr, BankMsg, Coin, CosmosMsg, Uint128};
