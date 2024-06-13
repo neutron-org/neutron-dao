@@ -128,6 +128,31 @@ impl Strategy {
                             UpdateParamsPermission::CronUpdateParamsPermission(
                                 cron_update_params,
                             ) => Some(cron_update_params.clone()),
+                            _ => None,
+                        }
+                    }
+                    _ => None,
+                }
+            }
+        }
+    }
+
+    pub fn get_dex_update_param_permission(&self) -> Option<DexUpdateParamsPermission> {
+        match self {
+            Strategy::AllowAll => Some(DexUpdateParamsPermission {
+                fee_tiers: true,
+                paused: true,
+                max_jits_per_block: true,
+                good_til_purge_allowance: true,
+            }),
+            Strategy::AllowOnly(permissions) => {
+                match permissions.get(&PermissionType::UpdateParamsPermission) {
+                    Some(Permission::UpdateParamsPermission(update_params_permission)) => {
+                        match update_params_permission {
+                            UpdateParamsPermission::DexUpdateParamsPermission(
+                                dex_update_params,
+                            ) => Some(dex_update_params.clone()),
+                            _ => None,
                         }
                     }
                     _ => None,
@@ -145,6 +170,7 @@ pub enum Permission {
     // For new-style parameter updates.
     UpdateParamsPermission(UpdateParamsPermission),
     CronPermission(CronPermission),
+    DexPermission(DexPermission),
 }
 
 impl From<Permission> for PermissionType {
@@ -153,6 +179,7 @@ impl From<Permission> for PermissionType {
             Permission::ParamChangePermission(_) => PermissionType::ParamChangePermission,
             Permission::UpdateParamsPermission(_) => PermissionType::UpdateParamsPermission,
             Permission::CronPermission(_) => PermissionType::CronPermission,
+            Permission::DexPermission(_) => PermissionType::DexPermission,
         }
     }
 }
@@ -163,6 +190,7 @@ pub enum PermissionType {
     ParamChangePermission,
     UpdateParamsPermission,
     CronPermission,
+    DexPermission,
 }
 
 #[cw_serde]
@@ -184,6 +212,7 @@ pub struct ParamPermission {
 #[derive(Eq)]
 pub enum UpdateParamsPermission {
     CronUpdateParamsPermission(CronUpdateParamsPermission),
+    DexUpdateParamsPermission(DexUpdateParamsPermission),
 }
 
 #[cw_serde]
@@ -200,6 +229,26 @@ pub struct CronUpdateParamsPermission {
 pub struct CronPermission {
     pub add_schedule: bool,
     pub remove_schedule: bool,
+}
+
+#[cw_serde]
+#[derive(Eq)]
+#[serde(rename_all = "snake_case")]
+pub struct DexUpdateParamsPermission {
+    pub fee_tiers: bool,
+    pub paused: bool,
+    pub max_jits_per_block: bool,
+    pub good_til_purge_allowance: bool,
+}
+
+#[cw_serde]
+#[derive(Eq)]
+#[serde(rename_all = "snake_case")]
+pub struct DexPermission {
+    pub fee_tiers: bool,
+    pub paused: bool,
+    pub max_jits_per_block: bool,
+    pub good_til_purge_allowance: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
