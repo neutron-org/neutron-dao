@@ -11,21 +11,18 @@ description = "A DAO DAO proposal module for multiple choice (a or b or c or ...
 crate-type = ["cdylib", "rlib"]
 
 [features]
-# for more explicit tests, cargo test --features=backtraces
-backtraces = ["cosmwasm-std/backtraces"]
 # use library feature to disable all instantiate/execute/query exports
 library = []
 
 [dependencies]
 neutron-sdk = "0.10.0"
-cosmwasm-std = { version = "1.3.0", features = ["ibc3"] }
-cosmwasm-storage = { version = "1.3.0" }
-cw-storage-plus = "1.1.0"
-cw-utils = { version = "1.0.1" }
-cw2 = "1.1.0"
-cw20 = "1.1.0"
-cw3 = "1.1.0"
-schemars = "0.8.8"
+cosmwasm-std = { version = "2.0.4" }
+cw-storage-plus = "2.0.0"
+cw-utils = { version = "2.0.0" }
+cw2 = "2.0.0"
+cw20 = "2.0.0"
+cw3 = "2.0.0"
+schemars = "0.8.15"
 serde = { version = "1.0.175", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0" }
 
@@ -42,15 +39,15 @@ cwd-vote-hooks = { path = "../../../../packages/cwd-vote-hooks" }
 
 voting-v1 = { package = "voting", version = "0.1.0", git = "https://github.com/DA0-DA0/dao-contracts.git", tag = "v1.0.0" }
 
-cosmwasm-schema = { version = "1.3.0" }
+cosmwasm-schema = { version = "2.0.4" }
 
 [dev-dependencies]
-cw-multi-test = "0.16.5"
+cw-multi-test = "2.0.1"
 cw-denom = { path = "../../../../packages/cw-denom" }
-cw20-base = "1.1.0"
+cw20-base = "2.0.0"
 cw721-base = "0.18.0"
-cw4 = "1.1.0"
-cw4-group = "1.1.0"
+cw4 = "2.0.0"
+cw4-group = "2.0.0"
 cwd-testing = { path = "../../../../packages/cwd-testing" }
 neutron-voting-registry = { path = "../../voting/neutron-voting-registry" }
 neutron-vault = { path = "../../voting/neutron-vault" }

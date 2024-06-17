@@ -5,7 +5,7 @@ use cosmwasm_std::{
     StdError, StdResult, SubMsg,
 };
 use cw2::{get_contract_version, set_contract_version};
-use cw_utils::{parse_reply_instantiate_data, Duration};
+use cw_utils::{parse_instantiate_response_data, Duration, ParseReplyError};
 
 use cw_paginate::{paginate_map, paginate_map_values};
 use cwd_interface::{voting, ModuleInstantiateInfo};
@@ -543,7 +543,13 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
 pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response<NeutronMsg>, ContractError> {
     match msg.id {
         PROPOSAL_MODULE_REPLY_ID => {
-            let res = parse_reply_instantiate_data(msg)?;
+            let res = parse_instantiate_response_data(
+                &msg.result
+                    .into_result()
+                    .map_err(ParseReplyError::SubMsgFailure)?
+                    .msg_responses[0]
+                    .value,
+            )?;
             let prop_module_addr = deps.api.addr_validate(&res.contract_address)?;
             let total_module_count = TOTAL_PROPOSAL_MODULE_COUNT.load(deps.storage)?;
 
@@ -565,7 +571,13 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response<NeutronMsg
         }
 
         VOTE_MODULE_INSTANTIATE_REPLY_ID => {
-            let res = parse_reply_instantiate_data(msg)?;
+            let res = parse_instantiate_response_data(
+                &msg.result
+                    .into_result()
+                    .map_err(ParseReplyError::SubMsgFailure)?
+                    .msg_responses[0]
+                    .value,
+            )?;
             let voting_registry_addr = deps.api.addr_validate(&res.contract_address)?;
             let current = VOTING_REGISTRY_MODULE.may_load(deps.storage)?;
 
@@ -580,7 +592,13 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response<NeutronMsg
             Ok(Response::default().add_attribute("voting_regsitry_module", voting_registry_addr))
         }
         VOTE_MODULE_UPDATE_REPLY_ID => {
-            let res = parse_reply_instantiate_data(msg)?;
+            let res = parse_instantiate_response_data(
+                &msg.result
+                    .into_result()
+                    .map_err(ParseReplyError::SubMsgFailure)?
+                    .msg_responses[0]
+                    .value,
+            )?;
             let voting_registry_addr = deps.api.addr_validate(&res.contract_address)?;
 
             VOTING_REGISTRY_MODULE.save(deps.storage, &voting_registry_addr)?;

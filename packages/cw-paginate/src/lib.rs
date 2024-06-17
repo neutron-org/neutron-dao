@@ -48,7 +48,7 @@ use cw_storage_plus::{Bound, Bounder, KeyDeserialize, Map, SnapshotMap, Strategy
 /// CosmWasm Map.
 pub fn paginate_map<'a, 'b, K, V, R: 'static>(
     deps: Deps,
-    map: &Map<'a, K, V>,
+    map: &Map<K, V>,
     start_after: Option<K>,
     limit: Option<u32>,
     order: Order,
@@ -74,7 +74,7 @@ where
 /// Same as `paginate_map` but only returns the keys.
 pub fn paginate_map_keys<'a, 'b, K, V, R: 'static>(
     deps: Deps,
-    map: &Map<'a, K, V>,
+    map: &Map<K, V>,
     start_after: Option<K>,
     limit: Option<u32>,
     order: Order,
@@ -100,7 +100,7 @@ where
 /// Same as `paginate_map` but for use with `SnapshotMap`.
 pub fn paginate_snapshot_map<'a, 'b, K, V, R: 'static>(
     deps: Deps,
-    map: &SnapshotMap<'a, K, V>,
+    map: &SnapshotMap<K, V>,
     start_after: Option<K>,
     limit: Option<u32>,
     order: Order,
@@ -126,7 +126,7 @@ where
 /// Same as `paginate_map` but only returns the values.
 pub fn paginate_map_values<'a, K, V>(
     deps: Deps,
-    map: &Map<'a, K, V>,
+    map: &Map<K, V>,
     start_after: Option<K>,
     limit: Option<u32>,
     order: Order,
@@ -156,7 +156,7 @@ where
 /// `SnaphotMap`.
 pub fn paginate_snapshot_map_keys<'a, 'b, K, V, R: 'static>(
     deps: Deps,
-    map: &SnapshotMap<'a, K, V>,
+    map: &SnapshotMap<K, V>,
     start_after: Option<K>,
     limit: Option<u32>,
     order: Order,

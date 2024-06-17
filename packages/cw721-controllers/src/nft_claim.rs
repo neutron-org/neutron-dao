@@ -24,7 +24,7 @@ impl NftClaim {
     }
 }
 
-pub struct NftClaims<'a>(Map<'a, &'a Addr, Vec<NftClaim>>);
+pub struct NftClaims<'a>(Map<&'a Addr, Vec<NftClaim>>);
 
 impl<'a> NftClaims<'a> {
     pub const fn new(storage_key: &'a str) -> Self {

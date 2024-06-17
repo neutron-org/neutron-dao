@@ -7,11 +7,11 @@ repository = "https://github.com/DA0-DA0/dao-contracts"
 version = "0.2.0"
 
 [dependencies]
-cosmwasm-schema = {version = "1.3.0"}
-cosmwasm-std = {version = "1.3.0"}
-cw2 = "1.1.0"
+cosmwasm-schema = {version = "2.0.4"}
+cosmwasm-std = {version = "2.0.4"}
+cw2 = "2.0.0"
 cwd-macros = {path = "../cwd-macros"}
-schemars = "0.8.8"
+schemars = "0.8.15"
 serde = {version = "1.0.175", default-features = false, features = ["derive"]}
 
 [dev-dependencies]

@@ -10,19 +10,16 @@ description = "A timelock module for neutron subdao single-choice proposals"
 crate-type = ["cdylib", "rlib"]
 
 [features]
-# for more explicit tests, cargo test --features=backtraces
-backtraces = ["cosmwasm-std/backtraces"]
 # use library feature to disable all instantiate/execute/query exports
 library = []
 
 [dependencies]
 neutron-sdk = "0.10.0"
-cosmwasm-std = { version = "1.3.0" }
-cosmwasm-storage = { version = "1.3.0" }
-cw-storage-plus = "1.1.0"
-cw2 = "1.1.0"
-cw-controllers = "1.1.0"
-schemars = "0.8.8"
+cosmwasm-std = { version = "2.0.4" }
+cw-storage-plus = "2.0.0"
+cw2 = "2.0.0"
+cw-controllers = "2.0.0"
+schemars = "0.8.15"
 serde = { version = "1.0.175", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0" }
 cwd-interface = { path = "../../../packages/cwd-interface" }
@@ -37,7 +34,7 @@ cwd-voting = { path = "../../../packages/cwd-voting" }
 neutron-subdao-proposal-single = { path = "../../../packages/neutron-subdao-proposal-single" }
 
 [dev-dependencies]
-cosmwasm-schema = { version = "1.3.0" }
-cw-multi-test = "0.16.5"
+cosmwasm-schema = { version = "2.0.4" }
+cw-multi-test = "2.0.1"
 anyhow = "1.0.57"
-cw-utils = { version = "1.0.1" }
+cw-utils = { version = "2.0.0" }

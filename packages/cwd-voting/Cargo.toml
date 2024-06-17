@@ -8,15 +8,15 @@ description = "Types and methods for CosmWasm DAO voting."
 
 [dependencies]
 neutron-sdk = "0.10.0"
-cosmwasm-schema = { version = "1.3.0" }
-cosmwasm-std = { version = "1.3.0" }
-schemars = "0.8.8"
+cosmwasm-schema = { version = "2.0.4" }
+cosmwasm-std = { version = "2.0.4" }
+schemars = "0.8.15"
 serde = { version = "1.0.175", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0" }
-cw20 = "1.1.0"
+cw20 = "2.0.0"
 cwd-interface = { path = "../cwd-interface" }
 cwd-macros = { path = "../cwd-macros" }
 cwd-core = { path = "../../contracts/dao/cwd-core" }
 cw-denom = { path = "../cw-denom" }
-cw-utils = { version = "1.0.1" }
-cw-storage-plus = "1.1.0"
+cw-utils = { version = "2.0.0" }
+cw-storage-plus = "2.0.0"

@@ -8,11 +8,11 @@ version = "0.1.0"
 
 [dependencies]
 astroport-periphery = {package = "astroport-periphery", git = "https://github.com/neutron-org/neutron-tge-contracts.git", branch = "main"}
-cosmwasm-schema = {version = "1.3.0"}
-cosmwasm-std = {version = "1.3.0"}
+cosmwasm-schema = {version = "2.0.4"}
+cosmwasm-std = {version = "2.0.4"}
 cwd-interface = {path = "../cwd-interface"}
 cwd-macros = {path = "../cwd-macros"}
 neutron-oracle = {path = "../neutron-oracle"}
-schemars = "0.8.8"
+schemars = "0.8.15"
 serde = {version = "1.0.175", default-features = false, features = ["derive"]}
 thiserror = {version = "1.0"}
