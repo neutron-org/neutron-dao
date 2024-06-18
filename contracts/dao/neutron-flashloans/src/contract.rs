@@ -381,7 +381,7 @@ fn must_get_active_loan(deps: &DepsMut) -> Result<ActiveLoan, ContractError> {
         return Err(ContractError::UnexpectedState {});
     }
 
-    Ok(active_loan.unwrap().clone())
+    Ok(active_loan.unwrap())
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
