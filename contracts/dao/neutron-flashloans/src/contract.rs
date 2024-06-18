@@ -246,7 +246,7 @@ fn calculate_expected_balances(
     pre_loan_balances: Vec<Coin>,
     fee: Vec<Coin>,
 ) -> Result<Vec<Coin>, ContractError> {
-    let mut expected_balances: Vec<Coin> = vec![];
+    let mut expected_balances: Vec<Coin> = Vec::with_capacity(pre_loan_balances.len());
     for (index, coin) in pre_loan_balances.iter().enumerate() {
         expected_balances.push(Coin::new(
             coin.amount.checked_add(fee[index].amount)?.u128(),
