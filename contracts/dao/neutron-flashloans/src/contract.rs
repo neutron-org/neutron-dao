@@ -230,7 +230,7 @@ fn calculate_fee(
     requested_amount: Vec<Coin>,
     fee_rate: Decimal,
 ) -> Result<Vec<Coin>, ContractError> {
-    let mut fee: Vec<Coin> = vec![];
+    let mut fee: Vec<Coin> = Vec::with_capacity(requested_amount.len());
     for coin in requested_amount {
         let coin_fee = Coin::new((fee_rate * coin.amount).u128(), coin.denom);
         fee.push(coin_fee)
