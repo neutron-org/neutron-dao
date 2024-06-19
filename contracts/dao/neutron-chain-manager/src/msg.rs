@@ -123,14 +123,9 @@ impl Strategy {
             }),
             Strategy::AllowOnly(permissions) => {
                 match permissions.get(&PermissionType::UpdateParamsPermission) {
-                    Some(Permission::UpdateParamsPermission(update_params_permission)) => {
-                        match update_params_permission {
-                            UpdateParamsPermission::CronUpdateParamsPermission(
-                                cron_update_params,
-                            ) => Some(cron_update_params.clone()),
-                            _ => None,
-                        }
-                    }
+                    Some(Permission::UpdateParamsPermission(
+                        UpdateParamsPermission::CronUpdateParamsPermission(cron_update_params),
+                    )) => Some(cron_update_params.clone()),
                     _ => None,
                 }
             }
@@ -147,14 +142,9 @@ impl Strategy {
             }),
             Strategy::AllowOnly(permissions) => {
                 match permissions.get(&PermissionType::UpdateParamsPermission) {
-                    Some(Permission::UpdateParamsPermission(update_params_permission)) => {
-                        match update_params_permission {
-                            UpdateParamsPermission::DexUpdateParamsPermission(
-                                dex_update_params,
-                            ) => Some(dex_update_params.clone()),
-                            _ => None,
-                        }
-                    }
+                    Some(Permission::UpdateParamsPermission(
+                        UpdateParamsPermission::DexUpdateParamsPermission(dex_update_params),
+                    )) => Some(dex_update_params.clone()),
                     _ => None,
                 }
             }
