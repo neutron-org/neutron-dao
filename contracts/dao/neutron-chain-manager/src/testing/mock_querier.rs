@@ -1,4 +1,5 @@
 use crate::cron_module_param_types::{ParamsCron, ParamsResponseCron};
+use crate::dex_module_param_types::{ParamsDex, ParamsResponseDex};
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage};
 use cosmwasm_std::{
     from_json, to_json_binary, ContractResult, Empty, OwnedDeps, Querier, QuerierResult,
@@ -46,6 +47,17 @@ impl WasmMockQuerier {
                         params: ParamsCron {
                             security_address: "neutron_dao_address".to_string(),
                             limit: 10,
+                        },
+                    });
+                    SystemResult::Ok(ContractResult::from(resp))
+                }
+                "/neutron.dex.Query/Params" => {
+                    let resp = to_json_binary(&ParamsResponseDex {
+                        params: ParamsDex {
+                            fee_tiers: [1, 2, 99].to_vec(),
+                            paused: false,
+                            max_jits_per_block: 20,
+                            good_til_purge_allowance: 25000,
                         },
                     });
                     SystemResult::Ok(ContractResult::from(resp))

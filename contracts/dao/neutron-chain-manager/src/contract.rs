@@ -2,6 +2,10 @@ use crate::cron_module_param_types::{
     MsgUpdateParamsCron, ParamsRequestCron, ParamsResponseCron, MSG_TYPE_UPDATE_PARAMS_CRON,
     PARAMS_QUERY_PATH_CRON,
 };
+use crate::dex_module_param_types::{
+    MsgUpdateParamsDex, ParamsRequestDex, ParamsResponseDex, MSG_TYPE_UPDATE_PARAMS_DEX,
+    PARAMS_QUERY_PATH_DEX,
+};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -9,7 +13,8 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 use neutron_sdk::bindings::msg::{AdminProposal, NeutronMsg, ProposalExecuteMessage};
-use neutron_sdk::proto_types::neutron::cron::QueryParamsRequest;
+use neutron_sdk::proto_types::neutron::cron::QueryParamsRequest as QueryParamsRequestCron;
+use neutron_sdk::proto_types::neutron::dex::QueryParamsRequest as QueryParamsRequestDex;
 use neutron_sdk::stargate::aux::make_stargate_query;
 
 use crate::error::ContractError;
@@ -229,6 +234,9 @@ fn check_proposal_execute_message(
     if typed_proposal.type_field.as_str() == MSG_TYPE_UPDATE_PARAMS_CRON {
         check_cron_update_msg_params(deps, strategy, proposal)?;
         Ok(())
+    } else if typed_proposal.type_field.as_str() == MSG_TYPE_UPDATE_PARAMS_DEX {
+        check_dex_update_msg_params(deps, strategy, proposal)?;
+        Ok(())
     } else {
         Err(ContractError::Unauthorized {})
     }
@@ -266,7 +274,62 @@ fn check_cron_update_msg_params(
 
 /// Queries the parameters of the cron module.
 pub fn get_cron_params(deps: Deps, req: ParamsRequestCron) -> StdResult<ParamsResponseCron> {
-    make_stargate_query(deps, PARAMS_QUERY_PATH_CRON, QueryParamsRequest::from(req))
+    make_stargate_query(
+        deps,
+        PARAMS_QUERY_PATH_CRON,
+        QueryParamsRequestCron::from(req),
+    )
+}
+
+/// Checks that the strategy owner is authorised to change the parameters of the
+/// dex module. We query the current values for each parameter & compare them to
+/// the values in the proposal; all modifications must be allowed by the strategy.
+fn check_dex_update_msg_params(
+    deps: Deps,
+    strategy: Strategy,
+    proposal: ProposalExecuteMessage,
+) -> Result<(), ContractError> {
+    let msg_update_params: MsgUpdateParamsDex =
+        serde_json_wasm::from_str(proposal.message.as_str())?;
+
+    let dex_update_param_permission = strategy
+        .get_dex_update_param_permission()
+        .ok_or(ContractError::Unauthorized {})?;
+
+    let dex_params = get_dex_params(deps, ParamsRequestDex {})?;
+    // TODO: do this through iteration instead of ifs for future proofing new params
+    if dex_params.params.fee_tiers != msg_update_params.params.fee_tiers
+        && !dex_update_param_permission.fee_tiers
+    {
+        return Err(ContractError::Unauthorized {});
+    }
+    if dex_params.params.paused != msg_update_params.params.paused
+        && !dex_update_param_permission.paused
+    {
+        return Err(ContractError::Unauthorized {});
+    }
+    if dex_params.params.max_jits_per_block != msg_update_params.params.max_jits_per_block
+        && !dex_update_param_permission.max_jits_per_block
+    {
+        return Err(ContractError::Unauthorized {});
+    }
+    if dex_params.params.good_til_purge_allowance
+        != msg_update_params.params.good_til_purge_allowance
+        && !dex_update_param_permission.good_til_purge_allowance
+    {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    Ok(())
+}
+
+/// Queries the parameters of the dex module.
+pub fn get_dex_params(deps: Deps, req: ParamsRequestDex) -> StdResult<ParamsResponseDex> {
+    make_stargate_query(
+        deps,
+        PARAMS_QUERY_PATH_DEX,
+        QueryParamsRequestDex::from(req),
+    )
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
