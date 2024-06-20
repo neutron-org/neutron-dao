@@ -8,15 +8,14 @@ use crate::msg::UpdateParamsPermission::CronUpdateParamsPermission as CronUpdate
 use crate::msg::UpdateParamsPermission::TokenfactoryUpdateParamsPermission as TokenfactoryUpdateParamsPermissionEnumField;
 use crate::msg::{
     CronPermission as CronPermissionType, CronUpdateParamsPermission, StrategyMsg,
-    TokenfactoryPermission as TokenfactoryPermissionType, TokenfactoryUpdateParamsPermission,
+    TokenfactoryUpdateParamsPermission,
 };
 use crate::msg::{ParamChangePermission as ParamChangePermissionType, ParamPermission};
 use crate::testing::mock_querier::mock_dependencies;
 use cosmwasm_std::testing::{mock_env, mock_info};
 use cosmwasm_std::{Addr, BankMsg, Coin, CosmosMsg, Uint128};
 use neutron_sdk::bindings::msg::{
-    AdminProposal, ClientUpdateProposal, NeutronMsg, ParamChange, ParamChangeProposal,
-    ProposalExecuteMessage,
+    AdminProposal, NeutronMsg, ParamChange, ParamChangeProposal, ProposalExecuteMessage,
 };
 
 #[test]
@@ -883,19 +882,6 @@ pub fn test_execute_execute_unknown_message() {
         denom: "0xdeadbeef".to_string(),
         amount: Uint128::new(42),
         burn_from_address: "".to_string(),
-    });
-
-    let info = mock_info("addr1", &[]);
-    let err = execute_execute_messages(deps.as_mut(), info.clone(), vec![msg]).unwrap_err();
-    assert_eq!(err, Unauthorized {});
-
-    let msg = CosmosMsg::Custom(NeutronMsg::SubmitAdminProposal {
-        admin_proposal: AdminProposal::ClientUpdateProposal(ClientUpdateProposal {
-            title: "0xdeadbeef".to_string(),
-            description: "0xdeadbeef".to_string(),
-            subject_client_id: "0xdeadbeef".to_string(),
-            substitute_client_id: "0xdeadbeef".to_string(),
-        }),
     });
 
     let info = mock_info("addr1", &[]);
