@@ -4,9 +4,9 @@ use neutron_sdk::proto_types::osmosis::tokenfactory::v1beta1::QueryParamsRequest
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-pub const PARAMS_QUERY_PATH_TOKENFACTORY: &str = "/neutron.tokenfactory.Query/Params";
+pub const PARAMS_QUERY_PATH_TOKENFACTORY: &str = "/osmosis.tokenfactory.v1beta1.Query/Params";
 pub const MSG_TYPE_UPDATE_PARAMS_TOKENFACTORY: &str =
-    "/osmosis.tokenfactory.v1beta1.MsgUpdateParamsResponse";
+    "/osmosis.tokenfactory.v1beta1.MsgUpdateParams";
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
