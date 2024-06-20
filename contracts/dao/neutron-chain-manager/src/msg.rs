@@ -232,16 +232,6 @@ pub struct TokenfactoryUpdateParamsPermission {
     pub whitelisted_hooks: bool,
 }
 
-#[cw_serde]
-#[derive(Eq)]
-#[serde(rename_all = "snake_case")]
-pub struct TokenfactoryPermission {
-    pub denom_creation_fee: bool,
-    pub denom_creation_gas_consume: bool,
-    pub fee_collector_address: bool,
-    pub whitelisted_hooks: bool,
-}
-
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct ProposalExecuteMessageJSON {
