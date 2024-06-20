@@ -123,19 +123,37 @@ impl Strategy {
             }),
             Strategy::AllowOnly(permissions) => {
                 match permissions.get(&PermissionType::UpdateParamsPermission) {
-                    Some(Permission::UpdateParamsPermission(update_params_permission)) => {
-                        match update_params_permission {
-                            UpdateParamsPermission::CronUpdateParamsPermission(
-                                cron_update_params,
-                            ) => Some(cron_update_params.clone()),
-                        }
-                    }
+                    Some(Permission::UpdateParamsPermission(
+                        UpdateParamsPermission::CronUpdateParamsPermission(cron_update_params),
+                    )) => Some(cron_update_params.clone()),
                     _ => None,
                 }
             }
         }
     }
+
+    pub fn get_tokenfactory_update_param_permission(&self) -> Option<TokenfactoryUpdateParamsPermission> {
+        match self {
+            Strategy::AllowAll => Some(TokenfactoryUpdateParamsPermission {
+                denom_creation_fee: true,
+                denom_creation_gas_consume: true,
+                fee_collector_address: true,
+                whitelisted_hooks: true,
+            }),
+            Strategy::AllowOnly(permissions) => {
+                match permissions.get(&PermissionType::UpdateParamsPermission) {
+                    Some(Permission::UpdateParamsPermission(
+                        UpdateParamsPermission::TokenfactoryUpdateParamsPermission(tokenfactory_update_params),
+                    )) => Some(tokenfactory_update_params.clone()),
+                    _ => None,
+                }
+            }
+        }
+    }
+
 }
+
+
 
 #[cw_serde]
 #[derive(Eq)]
@@ -145,6 +163,7 @@ pub enum Permission {
     // For new-style parameter updates.
     UpdateParamsPermission(UpdateParamsPermission),
     CronPermission(CronPermission),
+    TokenfactoryPermission(TokenfactoryPermission),
 }
 
 impl From<Permission> for PermissionType {
@@ -153,6 +172,7 @@ impl From<Permission> for PermissionType {
             Permission::ParamChangePermission(_) => PermissionType::ParamChangePermission,
             Permission::UpdateParamsPermission(_) => PermissionType::UpdateParamsPermission,
             Permission::CronPermission(_) => PermissionType::CronPermission,
+            Permission::TokenfactoryPermission(_) => PermissionType::TokenfactoryPermission,
         }
     }
 }
@@ -163,6 +183,7 @@ pub enum PermissionType {
     ParamChangePermission,
     UpdateParamsPermission,
     CronPermission,
+    TokenfactoryPermission,
 }
 
 #[cw_serde]
@@ -184,6 +205,7 @@ pub struct ParamPermission {
 #[derive(Eq)]
 pub enum UpdateParamsPermission {
     CronUpdateParamsPermission(CronUpdateParamsPermission),
+    TokenfactoryUpdateParamsPermission(TokenfactoryUpdateParamsPermission),
 }
 
 #[cw_serde]
@@ -200,6 +222,26 @@ pub struct CronUpdateParamsPermission {
 pub struct CronPermission {
     pub add_schedule: bool,
     pub remove_schedule: bool,
+}
+
+#[cw_serde]
+#[derive(Eq)]
+#[serde(rename_all = "snake_case")]
+pub struct TokenfactoryUpdateParamsPermission {
+    pub denom_creation_fee: bool,
+    pub denom_creation_gas_consume: bool,
+    pub fee_collector_address: bool,
+    pub whitelisted_hooks: bool,
+}
+
+#[cw_serde]
+#[derive(Eq)]
+#[serde(rename_all = "snake_case")]
+pub struct TokenfactoryPermission {
+    pub denom_creation_fee: bool,
+    pub denom_creation_gas_consume: bool,
+    pub fee_collector_address: bool,
+    pub whitelisted_hooks: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]

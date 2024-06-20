@@ -2148,9 +2148,9 @@ dependencies = [
 
 [[package]]
 name = "neutron-sdk"
-version = "0.8.0"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "46f60e477bd71007d9ff78ae020ec1c6b3b47798578af6151429434d86472efc"
+checksum = "26fb513aae0c82b3185228e96664d8312e79c3aa763f6ebdc70cf4b8d513d533"
 dependencies = [
  "bech32",
  "cosmos-sdk-proto",
@@ -2162,6 +2162,7 @@ dependencies = [
  "schemars",
  "serde",
  "serde-json-wasm 1.0.1",
+ "serde_json",
  "speedate",
  "tendermint-proto",
  "thiserror",
@@ -2170,8 +2171,7 @@ dependencies = [
 [[package]]
 name = "neutron-sdk"
 version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "26fb513aae0c82b3185228e96664d8312e79c3aa763f6ebdc70cf4b8d513d533"
+source = "git+https://github.com/neutron-org/neutron-sdk.git?branch=feat/whitelist-tf-hooks#813f9e0c2a8b2377640bc2f1d3934092e9522cdf"
 dependencies = [
  "bech32",
  "cosmos-sdk-proto",
