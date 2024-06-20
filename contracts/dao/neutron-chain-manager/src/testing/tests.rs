@@ -3,9 +3,10 @@ use crate::contract::{
 };
 use crate::error::ContractError::{InvalidDemotion, Unauthorized};
 use crate::msg::InstantiateMsg;
-use crate::msg::Permission::{CronPermission, ParamChangePermission, UpdateParamsPermission};
-use crate::msg::UpdateParamsPermission::CronUpdateParamsPermission as CronUpdateParamsPermissionEnumField;
-use crate::msg::UpdateParamsPermission::TokenfactoryUpdateParamsPermission as TokenfactoryUpdateParamsPermissionEnumField;
+use crate::msg::Permission::{
+    CronPermission, ParamChangePermission, UpdateCronParamsPermission,
+    UpdateTokenfactoryParamsPermission,
+};
 use crate::msg::{
     CronPermission as CronPermissionType, CronUpdateParamsPermission, StrategyMsg,
     TokenfactoryUpdateParamsPermission,
@@ -301,11 +302,11 @@ pub fn test_execute_execute_message_update_params_cron_authorized() {
         deps.as_mut(),
         info.clone(),
         Addr::unchecked("addr1".to_string()),
-        StrategyMsg::AllowOnly(vec![UpdateParamsPermission(
-            CronUpdateParamsPermissionEnumField(CronUpdateParamsPermission {
+        StrategyMsg::AllowOnly(vec![UpdateCronParamsPermission(
+            CronUpdateParamsPermission {
                 security_address: true,
                 limit: true,
-            }),
+            },
         )]),
     )
     .unwrap();
@@ -346,11 +347,11 @@ pub fn test_execute_execute_message_unsupported_message_type_unauthorized() {
         deps.as_mut(),
         info.clone(),
         Addr::unchecked("addr1".to_string()),
-        StrategyMsg::AllowOnly(vec![UpdateParamsPermission(
-            CronUpdateParamsPermissionEnumField(CronUpdateParamsPermission {
+        StrategyMsg::AllowOnly(vec![UpdateCronParamsPermission(
+            CronUpdateParamsPermission {
                 security_address: true,
                 limit: true,
-            }),
+            },
         )]),
     )
     .unwrap();
@@ -392,11 +393,11 @@ pub fn test_execute_execute_message_update_params_cron_unauthorized_limit() {
         deps.as_mut(),
         info.clone(),
         Addr::unchecked("addr1".to_string()),
-        StrategyMsg::AllowOnly(vec![UpdateParamsPermission(
-            CronUpdateParamsPermissionEnumField(CronUpdateParamsPermission {
+        StrategyMsg::AllowOnly(vec![UpdateCronParamsPermission(
+            CronUpdateParamsPermission {
                 security_address: true,
                 limit: false,
-            }),
+            },
         )]),
     )
     .unwrap();
@@ -438,11 +439,11 @@ pub fn test_execute_execute_message_update_params_cron_unauthorized_security_add
         deps.as_mut(),
         info.clone(),
         Addr::unchecked("addr1".to_string()),
-        StrategyMsg::AllowOnly(vec![UpdateParamsPermission(
-            CronUpdateParamsPermissionEnumField(CronUpdateParamsPermission {
+        StrategyMsg::AllowOnly(vec![UpdateCronParamsPermission(
+            CronUpdateParamsPermission {
                 security_address: false,
                 limit: true,
-            }),
+            },
         )]),
     )
     .unwrap();
@@ -485,13 +486,13 @@ pub fn test_execute_execute_message_update_params_tokenfactory_authorized() {
         deps.as_mut(),
         info.clone(),
         Addr::unchecked("addr1".to_string()),
-        StrategyMsg::AllowOnly(vec![UpdateParamsPermission(
-            TokenfactoryUpdateParamsPermissionEnumField(TokenfactoryUpdateParamsPermission {
+        StrategyMsg::AllowOnly(vec![UpdateTokenfactoryParamsPermission(
+            TokenfactoryUpdateParamsPermission {
                 denom_creation_fee: true,
                 denom_creation_gas_consume: true,
                 fee_collector_address: true,
                 whitelisted_hooks: true,
-            }),
+            },
         )]),
     )
     .unwrap();
@@ -531,13 +532,13 @@ pub fn test_execute_execute_message_update_params_tokenfactory_unauthorized_deno
         deps.as_mut(),
         info.clone(),
         Addr::unchecked("addr1".to_string()),
-        StrategyMsg::AllowOnly(vec![UpdateParamsPermission(
-            TokenfactoryUpdateParamsPermissionEnumField(TokenfactoryUpdateParamsPermission {
+        StrategyMsg::AllowOnly(vec![UpdateTokenfactoryParamsPermission(
+            TokenfactoryUpdateParamsPermission {
                 denom_creation_fee: false,
                 denom_creation_gas_consume: true,
                 fee_collector_address: true,
                 whitelisted_hooks: true,
-            }),
+            },
         )]),
     )
     .unwrap();
@@ -580,13 +581,13 @@ pub fn test_execute_execute_message_update_params_tokenfactory_unauthorized_deno
         deps.as_mut(),
         info.clone(),
         Addr::unchecked("addr1".to_string()),
-        StrategyMsg::AllowOnly(vec![UpdateParamsPermission(
-            TokenfactoryUpdateParamsPermissionEnumField(TokenfactoryUpdateParamsPermission {
+        StrategyMsg::AllowOnly(vec![UpdateTokenfactoryParamsPermission(
+            TokenfactoryUpdateParamsPermission {
                 denom_creation_fee: true,
                 denom_creation_gas_consume: false,
                 fee_collector_address: true,
                 whitelisted_hooks: true,
-            }),
+            },
         )]),
     )
     .unwrap();
@@ -629,13 +630,13 @@ pub fn test_execute_execute_message_update_params_tokenfactory_unauthorized_fee_
         deps.as_mut(),
         info.clone(),
         Addr::unchecked("addr1".to_string()),
-        StrategyMsg::AllowOnly(vec![UpdateParamsPermission(
-            TokenfactoryUpdateParamsPermissionEnumField(TokenfactoryUpdateParamsPermission {
+        StrategyMsg::AllowOnly(vec![UpdateTokenfactoryParamsPermission(
+            TokenfactoryUpdateParamsPermission {
                 denom_creation_fee: true,
                 denom_creation_gas_consume: true,
                 fee_collector_address: false,
                 whitelisted_hooks: true,
-            }),
+            },
         )]),
     )
     .unwrap();
@@ -677,13 +678,13 @@ pub fn test_execute_execute_message_update_params_tokenfactory_unauthorized_whit
         deps.as_mut(),
         info.clone(),
         Addr::unchecked("addr1".to_string()),
-        StrategyMsg::AllowOnly(vec![UpdateParamsPermission(
-            TokenfactoryUpdateParamsPermissionEnumField(TokenfactoryUpdateParamsPermission {
+        StrategyMsg::AllowOnly(vec![UpdateTokenfactoryParamsPermission(
+            TokenfactoryUpdateParamsPermission {
                 denom_creation_fee: true,
                 denom_creation_gas_consume: true,
                 fee_collector_address: true,
                 whitelisted_hooks: false,
-            }),
+            },
         )]),
     )
     .unwrap();
