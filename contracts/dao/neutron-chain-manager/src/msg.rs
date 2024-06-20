@@ -164,7 +164,6 @@ pub enum Permission {
     // For new-style parameter updates.
     UpdateParamsPermission(UpdateParamsPermission),
     CronPermission(CronPermission),
-    TokenfactoryPermission(TokenfactoryPermission),
 }
 
 impl From<Permission> for PermissionType {
@@ -173,7 +172,6 @@ impl From<Permission> for PermissionType {
             Permission::ParamChangePermission(_) => PermissionType::ParamChangePermission,
             Permission::UpdateParamsPermission(_) => PermissionType::UpdateParamsPermission,
             Permission::CronPermission(_) => PermissionType::CronPermission,
-            Permission::TokenfactoryPermission(_) => PermissionType::TokenfactoryPermission,
         }
     }
 }
@@ -184,7 +182,6 @@ pub enum PermissionType {
     ParamChangePermission,
     UpdateParamsPermission,
     CronPermission,
-    TokenfactoryPermission,
 }
 
 #[cw_serde]
