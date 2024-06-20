@@ -1,9 +1,8 @@
 use crate::utils::deserialize_u64;
+use cosmwasm_std::Coin;
 use neutron_sdk::proto_types::osmosis::tokenfactory::v1beta1::QueryParamsRequest;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use cosmwasm_std::Coin;
-
 
 pub const PARAMS_QUERY_PATH_TOKENFACTORY: &str = "/neutron.tokenfactory.Query/Params";
 pub const MSG_TYPE_UPDATE_PARAMS_TOKENFACTORY: &str = "/neutron.tokenfactory.MsgUpdateParams";
@@ -22,8 +21,6 @@ pub struct WhitelistedHook {
     pub denom_creator: String,
 }
 
-
-
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct ParamsTokenfactory {
@@ -33,7 +30,6 @@ pub struct ParamsTokenfactory {
     pub fee_collector_address: String,
     pub whitelisted_hooks: Vec<WhitelistedHook>,
 }
-
 
 /// The types below are used for querying tokenfactory module parameters via stargate.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, ::prost::Message)]

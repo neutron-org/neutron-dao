@@ -2,7 +2,10 @@ use crate::cron_module_param_types::{
     MsgUpdateParamsCron, ParamsRequestCron, ParamsResponseCron, MSG_TYPE_UPDATE_PARAMS_CRON,
     PARAMS_QUERY_PATH_CRON,
 };
-use crate::tokenfactory_module_param_types::{MSG_TYPE_UPDATE_PARAMS_TOKENFACTORY, MsgUpdateParamsTokenfactory, PARAMS_QUERY_PATH_TOKENFACTORY, ParamsRequestTokenfactory, ParamsResponseTokenfactory};
+use crate::tokenfactory_module_param_types::{
+    MsgUpdateParamsTokenfactory, ParamsRequestTokenfactory, ParamsResponseTokenfactory,
+    MSG_TYPE_UPDATE_PARAMS_TOKENFACTORY, PARAMS_QUERY_PATH_TOKENFACTORY,
+};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -271,7 +274,11 @@ fn check_cron_update_msg_params(
 
 /// Queries the parameters of the cron module.
 pub fn get_cron_params(deps: Deps, req: ParamsRequestCron) -> StdResult<ParamsResponseCron> {
-    make_stargate_query(deps, PARAMS_QUERY_PATH_CRON, QueryParamsRequestCron::from(req))
+    make_stargate_query(
+        deps,
+        PARAMS_QUERY_PATH_CRON,
+        QueryParamsRequestCron::from(req),
+    )
 }
 
 /// Checks that the strategy owner is authorised to change the parameters of the
@@ -296,13 +303,15 @@ fn check_tokenfactory_update_msg_params(
         return Err(ContractError::Unauthorized {});
     }
 
-    if tokenfactory_params.params.denom_creation_gas_consume != msg_update_params.params.denom_creation_gas_consume
+    if tokenfactory_params.params.denom_creation_gas_consume
+        != msg_update_params.params.denom_creation_gas_consume
         && !tokenfactory_update_param_permission.denom_creation_gas_consume
     {
         return Err(ContractError::Unauthorized {});
     }
 
-    if tokenfactory_params.params.fee_collector_address != msg_update_params.params.fee_collector_address
+    if tokenfactory_params.params.fee_collector_address
+        != msg_update_params.params.fee_collector_address
         && !tokenfactory_update_param_permission.fee_collector_address
     {
         return Err(ContractError::Unauthorized {});
@@ -318,8 +327,15 @@ fn check_tokenfactory_update_msg_params(
 }
 
 /// Queries the parameters of the cron module.
-pub fn get_tokenfactory_params(deps: Deps, req: ParamsRequestTokenfactory) -> StdResult<ParamsResponseTokenfactory> {
-    make_stargate_query(deps, PARAMS_QUERY_PATH_TOKENFACTORY, QueryParamsRequestTokenfactory::from(req))
+pub fn get_tokenfactory_params(
+    deps: Deps,
+    req: ParamsRequestTokenfactory,
+) -> StdResult<ParamsResponseTokenfactory> {
+    make_stargate_query(
+        deps,
+        PARAMS_QUERY_PATH_TOKENFACTORY,
+        QueryParamsRequestTokenfactory::from(req),
+    )
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

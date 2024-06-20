@@ -6,7 +6,10 @@ use crate::msg::InstantiateMsg;
 use crate::msg::Permission::{CronPermission, ParamChangePermission, UpdateParamsPermission};
 use crate::msg::UpdateParamsPermission::CronUpdateParamsPermission as CronUpdateParamsPermissionEnumField;
 use crate::msg::UpdateParamsPermission::TokenfactoryUpdateParamsPermission as TokenfactoryUpdateParamsPermissionEnumField;
-use crate::msg::{CronPermission as CronPermissionType, CronUpdateParamsPermission, TokenfactoryUpdateParamsPermission, TokenfactoryPermission as TokenfactoryPermissionType, StrategyMsg};
+use crate::msg::{
+    CronPermission as CronPermissionType, CronUpdateParamsPermission, StrategyMsg,
+    TokenfactoryPermission as TokenfactoryPermissionType, TokenfactoryUpdateParamsPermission,
+};
 use crate::msg::{ParamChangePermission as ParamChangePermissionType, ParamPermission};
 use crate::testing::mock_querier::mock_dependencies;
 use cosmwasm_std::testing::{mock_env, mock_info};
@@ -534,7 +537,8 @@ pub fn test_execute_execute_message_update_params_tokenfactory_unauthorized_deno
                 denom_creation_fee: false,
                 denom_creation_gas_consume: true,
                 fee_collector_address: true,
-                whitelisted_hooks: true,            }),
+                whitelisted_hooks: true,
+            }),
         )]),
     )
     .unwrap();
@@ -547,7 +551,8 @@ pub fn test_execute_execute_message_update_params_tokenfactory_unauthorized_deno
 /// Checks that you can't change the denom_creation_gas_consume if you don't have the permission to do so
 /// (new style parameter changes).
 #[test]
-pub fn test_execute_execute_message_update_params_tokenfactory_unauthorized_denom_creation_gas_consume() {
+pub fn test_execute_execute_message_update_params_tokenfactory_unauthorized_denom_creation_gas_consume(
+) {
     let msg = CosmosMsg::Custom(NeutronMsg::SubmitAdminProposal {
         admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
             message: r#"{"@type":"/neutron.tokenfactory.MsgUpdateParams",
@@ -595,7 +600,8 @@ pub fn test_execute_execute_message_update_params_tokenfactory_unauthorized_deno
 /// Checks that you can't change the fee_collector_address if you don't have the permission to do so
 /// (new style parameter changes).
 #[test]
-pub fn test_execute_execute_message_update_params_tokenfactory_unauthorized_fee_collector_address() {
+pub fn test_execute_execute_message_update_params_tokenfactory_unauthorized_fee_collector_address()
+{
     let msg = CosmosMsg::Custom(NeutronMsg::SubmitAdminProposal {
         admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
             message: r#"{"@type":"/neutron.tokenfactory.MsgUpdateParams",

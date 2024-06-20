@@ -132,7 +132,9 @@ impl Strategy {
         }
     }
 
-    pub fn get_tokenfactory_update_param_permission(&self) -> Option<TokenfactoryUpdateParamsPermission> {
+    pub fn get_tokenfactory_update_param_permission(
+        &self,
+    ) -> Option<TokenfactoryUpdateParamsPermission> {
         match self {
             Strategy::AllowAll => Some(TokenfactoryUpdateParamsPermission {
                 denom_creation_fee: true,
@@ -143,17 +145,16 @@ impl Strategy {
             Strategy::AllowOnly(permissions) => {
                 match permissions.get(&PermissionType::UpdateParamsPermission) {
                     Some(Permission::UpdateParamsPermission(
-                        UpdateParamsPermission::TokenfactoryUpdateParamsPermission(tokenfactory_update_params),
+                        UpdateParamsPermission::TokenfactoryUpdateParamsPermission(
+                            tokenfactory_update_params,
+                        ),
                     )) => Some(tokenfactory_update_params.clone()),
                     _ => None,
                 }
             }
         }
     }
-
 }
-
-
 
 #[cw_serde]
 #[derive(Eq)]
