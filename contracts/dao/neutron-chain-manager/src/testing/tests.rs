@@ -460,7 +460,7 @@ pub fn test_execute_execute_message_update_params_cron_unauthorized_security_add
 pub fn test_execute_execute_message_update_params_tokenfactory_authorized() {
     let msg = CosmosMsg::Custom(NeutronMsg::SubmitAdminProposal {
         admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
-            message: r#"{"@type":"/neutron.tokenfactory.MsgUpdateParams",
+            message: r#"{"@type":"/osmosis.tokenfactory.v1beta1.MsgUpdateParams",
             "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
             "params": {"denom_creation_fee": [{"denom": "untrn", "amount": "100"}], "denom_creation_gas_consume": "100", "fee_collector_address": "neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z", "whitelisted_hooks": [{"code_id": "1", "denom_creator": "neutron1yw4xvtc43me9scqfr2jr2gzvcxd3a9y4eq7gaukreugw2yd2f8ts8g30fq"}]}}"#
                 .to_string(),
@@ -506,7 +506,7 @@ pub fn test_execute_execute_message_update_params_tokenfactory_authorized() {
 pub fn test_execute_execute_message_update_params_tokenfactory_unauthorized_denom_creation_fee() {
     let msg = CosmosMsg::Custom(NeutronMsg::SubmitAdminProposal {
         admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
-            message: r#"{"@type":"/neutron.tokenfactory.MsgUpdateParams",
+            message: r#"{"@type":"/osmosis.tokenfactory.v1beta1.MsgUpdateParams",
              "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
              "params": {"denom_creation_fee": [{"denom": "untrn", "amount": "100"}], "denom_creation_gas_consume": "100", "fee_collector_address": "neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z", "whitelisted_hooks": [{"code_id": "1", "denom_creator": "neutron1yw4xvtc43me9scqfr2jr2gzvcxd3a9y4eq7gaukreugw2yd2f8ts8g30fq"}]}}"#
                 .to_string(),
@@ -555,7 +555,7 @@ pub fn test_execute_execute_message_update_params_tokenfactory_unauthorized_deno
 ) {
     let msg = CosmosMsg::Custom(NeutronMsg::SubmitAdminProposal {
         admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
-            message: r#"{"@type":"/neutron.tokenfactory.MsgUpdateParams",
+            message: r#"{"@type":"/osmosis.tokenfactory.v1beta1.MsgUpdateParams",
              "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
              "params": {"denom_creation_fee": [{"denom": "untrn", "amount": "100"}], "denom_creation_gas_consume": "100", "fee_collector_address": "neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z", "whitelisted_hooks": [{"code_id": "1", "denom_creator": "neutron1yw4xvtc43me9scqfr2jr2gzvcxd3a9y4eq7gaukreugw2yd2f8ts8g30fq"}]}}"#
                 .to_string(),
@@ -604,7 +604,7 @@ pub fn test_execute_execute_message_update_params_tokenfactory_unauthorized_fee_
 {
     let msg = CosmosMsg::Custom(NeutronMsg::SubmitAdminProposal {
         admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
-            message: r#"{"@type":"/neutron.tokenfactory.MsgUpdateParams",
+            message: r#"{"@type":"/osmosis.tokenfactory.v1beta1.MsgUpdateParams",
              "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
              "params": {"denom_creation_fee": [{"denom": "untrn", "amount": "100"}], "denom_creation_gas_consume": "100", "fee_collector_address": "neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z", "whitelisted_hooks": [{"code_id": "1", "denom_creator": "neutron1yw4xvtc43me9scqfr2jr2gzvcxd3a9y4eq7gaukreugw2yd2f8ts8g30fq"}]}}"#
                 .to_string(),
@@ -652,7 +652,7 @@ pub fn test_execute_execute_message_update_params_tokenfactory_unauthorized_fee_
 pub fn test_execute_execute_message_update_params_tokenfactory_unauthorized_whitelisted_hooks() {
     let msg = CosmosMsg::Custom(NeutronMsg::SubmitAdminProposal {
         admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
-            message: r#"{"@type":"/neutron.tokenfactory.MsgUpdateParams",
+            message: r#"{"@type":"/osmosis.tokenfactory.v1beta1.MsgUpdateParams",
              "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
              "params": {"denom_creation_fee": [{"denom": "untrn", "amount": "100"}], "denom_creation_gas_consume": "100", "fee_collector_address": "neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z", "whitelisted_hooks": [{"code_id": "1", "denom_creator": "neutron1yw4xvtc43me9scqfr2jr2gzvcxd3a9y4eq7gaukreugw2yd2f8ts8g30fq"}]}}"#
                 .to_string(),

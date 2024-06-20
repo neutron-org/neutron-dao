@@ -51,7 +51,7 @@ impl WasmMockQuerier {
                     });
                     SystemResult::Ok(ContractResult::from(resp))
                 }
-                "/neutron.tokenfactory.Query/Params" => {
+                "/osmosis.tokenfactory.v1beta1.Query/Params" => {
                     let resp = to_json_binary(&ParamsResponseTokenfactory {
                         params: ParamsTokenfactory {
                             denom_creation_fee: vec![coin(1, "untrn")],
