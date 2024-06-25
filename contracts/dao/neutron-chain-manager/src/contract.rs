@@ -326,7 +326,7 @@ fn check_tokenfactory_update_msg_params(
     Ok(())
 }
 
-/// Queries the parameters of the cron module.
+/// Queries the parameters of the tokenfactory module.
 pub fn get_tokenfactory_params(
     deps: Deps,
     req: ParamsRequestTokenfactory,
