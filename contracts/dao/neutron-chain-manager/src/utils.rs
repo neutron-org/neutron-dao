@@ -1,5 +1,5 @@
-use serde::de::{self, SeqAccess, Visitor};
-use serde::{Deserialize, Deserializer};
+use serde::de::{self, Visitor};
+use serde::Deserializer;
 use std::fmt;
 
 /// Unfortunately, stargate returns a string instead of a number for
