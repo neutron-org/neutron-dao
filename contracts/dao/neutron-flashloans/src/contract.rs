@@ -211,15 +211,15 @@ fn get_pre_loan_balances(
             .iter()
             .find(|x| x.denom == requested_coin.denom && requested_coin.amount.le(&x.amount));
 
-        // If the source doesn't have (enough of) the requested coin, return an error
-        if maybe_source_coin.is_none() {
-            return Err(ContractError::InsufficientFunds {
-                denom: requested_coin.denom,
-            });
+        match maybe_source_coin {
+            Some(coin) => pre_loan_balances.push(coin.clone()),
+            // If the source doesn't have (enough of) the requested coin, return an error
+            None => {
+                return Err(ContractError::InsufficientFunds {
+                    denom: requested_coin.denom,
+                })
+            }
         }
-
-        let source_coin = maybe_source_coin.unwrap();
-        pre_loan_balances.push(source_coin.clone())
     }
 
     Ok(pre_loan_balances)
