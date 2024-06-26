@@ -309,7 +309,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
             let msg = CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: active_loan.borrower.to_string(),
                 msg: to_json_binary(&BorrowerInterface::ProcessLoan {
-                    // We sent the return address to the source address
+                    // We set the return address to the source address
                     return_address: config.source,
                     loan_amount: active_loan.amount,
                     fee: active_loan.fee,
