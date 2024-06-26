@@ -164,7 +164,7 @@ pub fn execute_request_loan(
     let msg_send = get_stargate_authz_bank_send_msg(env, config, info.sender, amount);
     Ok(Response::new()
         .add_submessage(SubMsg::reply_on_success(msg_send, AUTHZ_BANK_SEND_REPLY_ID))
-        .add_attribute("action", "execute_get_loan"))
+        .add_attribute("action", "execute_request_loan"))
 }
 
 // Check that the amount does not have duplicate or zero coins
