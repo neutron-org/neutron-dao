@@ -376,11 +376,11 @@ fn check_expected_balances(
 // is missing.
 fn must_get_active_loan(deps: &DepsMut) -> Result<ActiveLoan, ContractError> {
     let active_loan = ACTIVE_LOAN.load(deps.storage)?;
-    if active_loan.is_none() {
-        return Err(ContractError::UnexpectedState {});
+    return if let Some(active_loan) = active_loan {
+        Ok(active_loan)
+    } else {
+        Err(ContractError::UnexpectedState {})
     }
-
-    Ok(active_loan.unwrap())
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
