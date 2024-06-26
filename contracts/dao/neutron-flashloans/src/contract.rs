@@ -271,7 +271,7 @@ fn get_stargate_authz_bank_send_msg(
         amount: amount
             .iter()
             .map(|x| ProtoCoin {
-                denom: x.clone().denom,
+                denom: x.denom.clone(),
                 amount: x.amount.to_string(),
             })
             .collect(),
