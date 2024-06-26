@@ -313,8 +313,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
                     return_address: config.source,
                     loan_amount: active_loan.amount,
                     fee: active_loan.fee,
-                })
-                .unwrap(),
+                })?,
                 funds: vec![],
             });
             // We use the reply_on_success strategy (we want the transaction to be simply reverted
