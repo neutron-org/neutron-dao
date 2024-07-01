@@ -2,15 +2,16 @@
 
 ## Overview
 
-A flash loan is a type of uncollateralized loan in the cryptocurrency and decentralized finance (DeFi) space. It allows
-borrowers to borrow funds without providing any collateral, on the condition that the loan is repaid within the same
-transaction. If the borrower fails to repay the loan by the end of the transaction, the entire transaction is
-reversed, effectively canceling the loan. Flash loans are typically used for arbitrage, collateral swapping, and
-refinancing, taking advantage of price discrepancies or temporary liquidity needs without requiring long-term capital.
+This contract provides flashloans, facilitating [authz](https://docs.cosmos.network/main/build/modules/authz) permissions to sending funds on behalf of the `source` — actual funds owner. In order to let the flashloans contract use the source's funds, the source must [grant](https://docs.cosmos.network/main/build/modules/authz#msggrant) `/cosmos.bank.v1beta1.MsgSend` permissions to the flashloans contract.
 
-The `neutron-flashloans` contract facilitates providing flash loans to smart contracts operating on the Neutron network.
+## Interaction
 
-## Usage
+Here's a brief description of what happens when a borrower requests a loan:
+1. The borrower sends a `RequestLoan` message to the flashloan contract;
+2. The flashloan contract validates the request and sends the requested amount of funds to the borrower from the source;
+3. The flashloan contract completes the send message with the `reply` callback by sending a `ProcessLoan` message to the borrower;
+4. Inside `ProcessLoan`, the borrower processes its custom logic with the loan and refunds the loan amount plus fee to the source;
+5. The flashloan contract completes the `ProcessLoan` message with the `reply` callback by confirming the loan amount plus fee refund to the source.
 
 See the `neutron-flashloans` contract's [interface](https://github.com/neutron-org/neutron-dao/blob/main/contracts/dao/neutron-flashloans/src/msg.rs) in order to get familiar with all requirements, limitations and usage guidelines.
 
