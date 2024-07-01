@@ -14,6 +14,8 @@ The `neutron-flashloans` contract facilitates providing flash loans to smart con
 
 See the `neutron-flashloans` contract's [interface](https://github.com/neutron-org/neutron-dao/blob/main/contracts/dao/neutron-flashloans/src/msg.rs) in order to get familiar with all requirements, limitations and usage guidelines.
 
+See the [neutron-flashloans-user](https://github.com/neutron-org/neutron-dev-contracts/blob/main/contracts/neutron-flashloans-user) contract as an example of the borrower contract implementation.
+
 ### Security advice
 
 When writing a borrower contract, ensure that the `ProcessLoan` handler has proper permissions. It should only be
