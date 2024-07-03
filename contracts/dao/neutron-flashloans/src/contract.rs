@@ -45,12 +45,15 @@ pub fn instantiate(
     // Signifies that we start with no active loan
     ACTIVE_LOAN.save(deps.storage, &None)?;
 
+    let owner_address = deps.api.addr_validate(msg.owner.as_str())?;
+    let source_address = deps.api.addr_validate(msg.source.as_str())?;
+
     CONFIG.save(
         deps.storage,
         &Config {
-            owner: msg.owner.clone(),
+            owner: owner_address,
             fee_rate: msg.fee_rate,
-            source: msg.source.clone(),
+            source: source_address,
         },
     )?;
 
@@ -82,8 +85,8 @@ pub fn execute(
 pub fn execute_update_config(
     deps: DepsMut,
     info: MessageInfo,
-    owner: Option<Addr>,
-    source: Option<Addr>,
+    owner: Option<String>,
+    source: Option<String>,
     fee_rate: Option<Decimal>,
 ) -> Result<Response<NeutronMsg>, ContractError> {
     let mut config: Config = CONFIG.load(deps.storage)?;
@@ -92,10 +95,12 @@ pub fn execute_update_config(
         return Err(ContractError::Unauthorized {});
     }
     if let Some(new_owner) = owner {
-        config.owner = new_owner;
+        let owner_address = deps.api.addr_validate(new_owner.as_str())?;
+        config.owner = owner_address;
     }
     if let Some(new_source) = source {
-        config.source = new_source;
+        let source_address = deps.api.addr_validate(new_source.as_str())?;
+        config.source = source_address;
     }
     // No fee rate validation is required here because we can properly process
     // any valid Decimal number
@@ -161,7 +166,7 @@ pub fn execute_request_loan(
     // Send a (stargate -> authz -> bank) /cosmos.bank.v1beta1.MsgSend submessage with
     // reply_on_success strategy (we want the transaction to be simply reverted in case of an
     // error).
-    let msg_send = get_stargate_authz_bank_send_msg(env, config, info.sender, amount);
+    let msg_send = get_stargate_authz_bank_send_msg(env, config.source, info.sender, amount);
     Ok(Response::new()
         .add_submessage(SubMsg::reply_on_success(msg_send, AUTHZ_BANK_SEND_REPLY_ID))
         .add_attribute("action", "execute_request_loan"))
@@ -254,13 +259,13 @@ fn calculate_expected_balances(
 /// A simple function to build the (stargate -> authz -> bank) /cosmos.bank.v1beta1.MsgSend message.
 fn get_stargate_authz_bank_send_msg(
     env: Env,
-    config: Config,
+    source: Addr,
     borrower: Addr,
     amount: Vec<Coin>,
 ) -> CosmosMsg<NeutronMsg> {
     // First we create the bank MsgSend
     let bank_send_msg = MsgSend {
-        from_address: config.source.to_string(),
+        from_address: source.to_string(),
         to_address: borrower.to_string(),
         amount: amount
             .iter()
@@ -304,7 +309,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
                 contract_addr: active_loan.borrower.to_string(),
                 msg: to_json_binary(&BorrowerInterface::ProcessLoan {
                     // We set the return address to the source address
-                    return_address: config.source,
+                    return_address: config.source.to_string(),
                     loan_amount: active_loan.amount,
                     fee: active_loan.fee,
                 })?,

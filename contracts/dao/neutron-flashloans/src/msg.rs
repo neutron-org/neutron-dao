@@ -1,17 +1,17 @@
 use crate::state::Config;
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Coin, Decimal};
+use cosmwasm_std::{Coin, Decimal};
 
 #[cw_serde]
 #[serde(rename_all = "snake_case")]
 pub struct InstantiateMsg {
     /// Defines the owner of the contract. The owner can add and remove
     /// sources from the contract.
-    pub owner: Addr,
+    pub owner: String,
     /// Defines the address that is going to sponsor the loans. This address
     /// needs to grant a (Generic)Authorization to this contract to execute
     /// /cosmos.bank.v1beta1.MsgSend on its behalf.
-    pub source: Addr,
+    pub source: String,
     /// Defines the fee rate for the loans, e.g., fee_rate = 0.01
     /// means that if you borrow 100untrn, you'll need to return 101untrn.
     pub fee_rate: Decimal,
@@ -25,9 +25,9 @@ pub enum ExecuteMsg {
         amount: Vec<Coin>,
     },
     UpdateConfig {
-        owner: Option<Addr>,
+        owner: Option<String>,
         fee_rate: Option<Decimal>,
-        source: Option<Addr>,
+        source: Option<String>,
     },
 }
 
@@ -40,7 +40,7 @@ pub enum ExecuteMsg {
 pub enum BorrowerInterface {
     ProcessLoan {
         /// Specifies the address to which the borrower must return the loan amount AND pay the fees.
-        return_address: Addr,
+        return_address: String,
         /// Specifies the loan amount which the borrower must return to the return_address.
         loan_amount: Vec<Coin>,
         /// Specifies the fee which the borrower must pay to the return_address.

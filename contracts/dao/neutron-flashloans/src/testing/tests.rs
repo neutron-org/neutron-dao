@@ -3,7 +3,7 @@ use crate::error::ContractError;
 use crate::msg::InstantiateMsg;
 use crate::testing::mock_querier::mock_dependencies;
 use cosmwasm_std::testing::{mock_env, mock_info};
-use cosmwasm_std::{Addr, Coin, Decimal};
+use cosmwasm_std::{Coin, Decimal};
 
 #[test]
 fn test_instantiate() {
@@ -16,8 +16,8 @@ fn test_instantiate() {
         env.clone(),
         info.clone(),
         InstantiateMsg {
-            owner: Addr::unchecked("neutron_dao_address".to_string()),
-            source: Addr::unchecked("neutron_dao_address".to_string()),
+            owner: "neutron_dao_address".to_string(),
+            source: "neutron_dao_address".to_string(),
             fee_rate: Decimal::from_ratio(1u128, 100u128),
         },
     )
@@ -35,8 +35,8 @@ fn test_request_loan_invalid_amount() {
         env.clone(),
         info.clone(),
         InstantiateMsg {
-            owner: Addr::unchecked("neutron_dao_address".to_string()),
-            source: Addr::unchecked("neutron_dao_address".to_string()),
+            owner: "neutron_dao_address".to_string(),
+            source: "neutron_dao_address".to_string(),
             fee_rate: Decimal::from_ratio(1u128, 100u128),
         },
     )
