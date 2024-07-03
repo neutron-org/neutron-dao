@@ -5,7 +5,7 @@ use cosmos_sdk_proto::traits::Message;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, Addr, AllBalanceResponse, BankQuery, Binary, Coin, CosmosMsg, Decimal, Deps,
+    to_json_binary, Addr, BalanceResponse, BankQuery, Binary, Coin, CosmosMsg, Decimal, Deps,
     DepsMut, Env, MessageInfo, Reply, Response, StdResult, SubMsg, Uint128, WasmMsg,
 };
 use cw2::set_contract_version;
@@ -193,32 +193,26 @@ fn get_pre_loan_balances(
     source: Addr,
     requested_amount: Vec<Coin>,
 ) -> Result<Vec<Coin>, ContractError> {
-    // Prepare the query
-    let all_balances_query = BankQuery::AllBalances {
-        address: source.to_string(),
-    };
-    // Get the response (all balances)
-    let all_balances_response: AllBalanceResponse =
-        deps.querier.query(&all_balances_query.into())?;
-
     // Filter all balances leaving only the balances of the requested coins
     let mut pre_loan_balances: Vec<Coin> = vec![];
     for requested_coin in requested_amount {
-        // Look for the requested coin in the source balances, AND check that the source
-        // has enough of the requested coin.
-        let maybe_source_coin = all_balances_response
-            .amount
-            .iter()
-            .find(|x| x.denom == requested_coin.denom && requested_coin.amount.le(&x.amount));
+        // Prepare the query
+        let requested_coin_balance_query = BankQuery::Balance {
+            address: source.to_string(),
+            denom: requested_coin.denom.clone(),
+        };
+        // Get the response (all balances)
+        let balance_response: BalanceResponse =
+            deps.querier.query(&requested_coin_balance_query.into())?;
 
-        match maybe_source_coin {
-            Some(coin) => pre_loan_balances.push(coin.clone()),
+        // If the source has enough of the requested coin, return an error
+        if requested_coin.amount.le(&balance_response.amount.amount) {
+            pre_loan_balances.push(balance_response.amount.clone())
+        } else {
             // If the source doesn't have (enough of) the requested coin, return an error
-            None => {
-                return Err(ContractError::InsufficientFunds {
-                    denom: requested_coin.denom,
-                })
-            }
+            return Err(ContractError::InsufficientFunds {
+                denom: requested_coin.denom,
+            });
         }
     }
 
@@ -347,24 +341,21 @@ fn check_expected_balances(
     source: Addr,
     expected_balances: Vec<Coin>,
 ) -> Result<(), ContractError> {
-    // Prepare the query
-    let all_balances_query = BankQuery::AllBalances {
-        address: source.to_string(),
-    };
-    // Get the response (all balances)
-    let all_balances_response: AllBalanceResponse =
-        deps.querier.query(&all_balances_query.into())?;
-
     // For each of the expected coin balances, check that the current balance of the source
     // matches the expectations. We require **exactly** the expected amount (loan amount + fee)
     // to be transferred back to the source, not more, not less.
     for expected_coin in expected_balances {
-        let maybe_actual_balance = all_balances_response
-            .amount
-            .iter()
-            .find(|x| x.denom == expected_coin.denom && expected_coin.amount.eq(&x.amount));
+        // Prepare the query
+        let expected_coin_balance_query = BankQuery::Balance {
+            address: source.to_string(),
+            denom: expected_coin.denom.clone(),
+        };
+        // Get the response (all balances)
+        let balance_response: BalanceResponse =
+            deps.querier.query(&expected_coin_balance_query.into())?;
 
-        if maybe_actual_balance.is_none() {
+        // The amount needs to be exactly what we expect it to be.
+        if !expected_coin.amount.eq(&balance_response.amount.amount) {
             return Err(ContractError::IncorrectPayback {});
         }
     }
