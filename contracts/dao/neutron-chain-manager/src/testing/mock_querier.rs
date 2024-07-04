@@ -41,6 +41,7 @@ impl Querier for WasmMockQuerier {
 impl WasmMockQuerier {
     pub fn handle_query(&self, request: &QueryRequest<Empty>) -> QuerierResult {
         match &request {
+            #[allow(deprecated)]
             QueryRequest::Stargate { path, data: _ } => match path.as_str() {
                 "/neutron.cron.Query/Params" => {
                     let resp = to_json_binary(&ParamsResponseCron {

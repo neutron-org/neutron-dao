@@ -13,7 +13,7 @@ use crate::msg::{
 };
 use crate::msg::{ParamChangePermission as ParamChangePermissionType, ParamPermission};
 use crate::testing::mock_querier::mock_dependencies;
-use cosmwasm_std::testing::{mock_env, mock_info};
+use cosmwasm_std::testing::{message_info, mock_env};
 use cosmwasm_std::{Addr, BankMsg, Coin, CosmosMsg, Uint128};
 use neutron_sdk::bindings::msg::{
     AdminProposal, NeutronMsg, ParamChange, ParamChangeProposal, ProposalExecuteMessage,
@@ -23,7 +23,7 @@ use neutron_sdk::bindings::msg::{
 fn test_instantiate() {
     let mut deps = mock_dependencies();
     let env = mock_env();
-    let info = mock_info("addr1", &[]);
+    let info = message_info(&Addr::unchecked("addr1"), &[]);
 
     instantiate(
         deps.as_mut(),
@@ -40,7 +40,7 @@ fn test_instantiate() {
 fn test_add_strategy() {
     let mut deps = mock_dependencies();
     let env = mock_env();
-    let info = mock_info("addr1", &[]);
+    let info = message_info(&Addr::unchecked("addr1"), &[]);
 
     instantiate(
         deps.as_mut(),
@@ -53,7 +53,7 @@ fn test_add_strategy() {
     .unwrap();
 
     // Scenario 1: An ALLOW_ALL strategy is added for a new address (passes).
-    let info = mock_info("neutron_dao_address", &[]);
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
     execute_add_strategy(
         deps.as_mut(),
         info.clone(),
@@ -63,7 +63,7 @@ fn test_add_strategy() {
     .unwrap();
 
     // Scenario 2: An ALLOW_ONLY strategy is added for a new address (passes).
-    let info = mock_info("neutron_dao_address", &[]);
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
     execute_add_strategy(
         deps.as_mut(),
         info.clone(),
@@ -82,7 +82,7 @@ fn test_add_strategy() {
 fn test_add_strategy_promotion() {
     let mut deps = mock_dependencies();
     let env = mock_env();
-    let info = mock_info("addr1", &[]);
+    let info = message_info(&Addr::unchecked("addr1"), &[]);
 
     instantiate(
         deps.as_mut(),
@@ -94,7 +94,7 @@ fn test_add_strategy_promotion() {
     )
     .unwrap();
 
-    let info = mock_info("neutron_dao_address", &[]);
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
     execute_add_strategy(
         deps.as_mut(),
         info.clone(),
@@ -113,7 +113,7 @@ fn test_add_strategy_promotion() {
         StrategyMsg::AllowAll,
     )
     .unwrap();
-    let info = mock_info("addr2", &[]);
+    let info = message_info(&Addr::unchecked("addr2"), &[]);
     execute_add_strategy(
         deps.as_mut(),
         info.clone(),
@@ -129,7 +129,7 @@ fn test_add_strategy_promotion() {
 fn test_add_strategy_demotion() {
     let mut deps = mock_dependencies();
     let env = mock_env();
-    let info = mock_info("addr1", &[]);
+    let info = message_info(&Addr::unchecked("addr1"), &[]);
 
     instantiate(
         deps.as_mut(),
@@ -141,7 +141,7 @@ fn test_add_strategy_demotion() {
     )
     .unwrap();
 
-    let info = mock_info("neutron_dao_address", &[]);
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
     execute_add_strategy(
         deps.as_mut(),
         info.clone(),
@@ -159,7 +159,7 @@ fn test_add_strategy_demotion() {
         })]),
     )
     .unwrap();
-    let info = mock_info("addr1", &[]);
+    let info = message_info(&Addr::unchecked("addr1"), &[]);
     let err = execute_add_strategy(
         deps.as_mut(),
         info,
@@ -176,7 +176,7 @@ fn test_add_strategy_demotion() {
 fn test_add_strategy_invalid_demotion() {
     let mut deps = mock_dependencies();
     let env = mock_env();
-    let info = mock_info("addr1", &[]);
+    let info = message_info(&Addr::unchecked("addr1"), &[]);
 
     instantiate(
         deps.as_mut(),
@@ -188,7 +188,7 @@ fn test_add_strategy_invalid_demotion() {
     )
     .unwrap();
 
-    let info = mock_info("neutron_dao_address", &[]);
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
     let err = execute_add_strategy(
         deps.as_mut(),
         info.clone(),
@@ -206,7 +206,7 @@ fn test_add_strategy_invalid_demotion() {
 fn test_remove_strategy() {
     let mut deps = mock_dependencies();
     let env = mock_env();
-    let info = mock_info("addr1", &[]);
+    let info = message_info(&Addr::unchecked("addr1"), &[]);
 
     instantiate(
         deps.as_mut(),
@@ -218,7 +218,7 @@ fn test_remove_strategy() {
     )
     .unwrap();
 
-    let info = mock_info("neutron_dao_address", &[]);
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
     execute_add_strategy(
         deps.as_mut(),
         info.clone(),
@@ -233,7 +233,7 @@ fn test_remove_strategy() {
     )
     .unwrap();
 
-    let info = mock_info("addr1", &[]);
+    let info = message_info(&Addr::unchecked("addr1"), &[]);
     let err = execute_add_strategy(
         deps.as_mut(),
         info,
@@ -248,7 +248,7 @@ fn test_remove_strategy() {
 fn test_remove_strategy_invalid_demotion() {
     let mut deps = mock_dependencies();
     let env = mock_env();
-    let info = mock_info("neutron_dao_address", &[]);
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
 
     instantiate(
         deps.as_mut(),
@@ -285,7 +285,7 @@ pub fn test_execute_execute_message_update_params_cron_authorized() {
 
     let mut deps = mock_dependencies();
     let env = mock_env();
-    let info = mock_info("neutron_dao_address", &[]);
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
 
     instantiate(
         deps.as_mut(),
@@ -297,7 +297,7 @@ pub fn test_execute_execute_message_update_params_cron_authorized() {
     )
     .unwrap();
 
-    let info = mock_info("neutron_dao_address", &[]);
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
     execute_add_strategy(
         deps.as_mut(),
         info.clone(),
@@ -311,7 +311,7 @@ pub fn test_execute_execute_message_update_params_cron_authorized() {
     )
     .unwrap();
 
-    let info = mock_info("addr1", &[]);
+    let info = message_info(&Addr::unchecked("addr1"), &[]);
     execute_execute_messages(deps.as_mut(), info.clone(), vec![msg]).unwrap();
 }
 
@@ -330,7 +330,7 @@ pub fn test_execute_execute_message_unsupported_message_type_unauthorized() {
 
     let mut deps = mock_dependencies();
     let env = mock_env();
-    let info = mock_info("neutron_dao_address", &[]);
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
 
     instantiate(
         deps.as_mut(),
@@ -342,7 +342,7 @@ pub fn test_execute_execute_message_unsupported_message_type_unauthorized() {
     )
     .unwrap();
 
-    let info = mock_info("neutron_dao_address", &[]);
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
     execute_add_strategy(
         deps.as_mut(),
         info.clone(),
@@ -356,7 +356,7 @@ pub fn test_execute_execute_message_unsupported_message_type_unauthorized() {
     )
     .unwrap();
 
-    let info = mock_info("addr1", &[]);
+    let info = message_info(&Addr::unchecked("addr1"), &[]);
     let err = execute_execute_messages(deps.as_mut(), info.clone(), vec![msg]).unwrap_err();
     assert_eq!(err, Unauthorized {})
 }
@@ -376,7 +376,7 @@ pub fn test_execute_execute_message_update_params_cron_unauthorized_limit() {
 
     let mut deps = mock_dependencies();
     let env = mock_env();
-    let info = mock_info("neutron_dao_address", &[]);
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
 
     instantiate(
         deps.as_mut(),
@@ -388,7 +388,7 @@ pub fn test_execute_execute_message_update_params_cron_unauthorized_limit() {
     )
     .unwrap();
 
-    let info = mock_info("neutron_dao_address", &[]);
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
     execute_add_strategy(
         deps.as_mut(),
         info.clone(),
@@ -402,7 +402,7 @@ pub fn test_execute_execute_message_update_params_cron_unauthorized_limit() {
     )
     .unwrap();
 
-    let info = mock_info("addr1", &[]);
+    let info = message_info(&Addr::unchecked("addr1"), &[]);
     let err = execute_execute_messages(deps.as_mut(), info.clone(), vec![msg]).unwrap_err();
     assert_eq!(err, Unauthorized {})
 }
@@ -422,7 +422,7 @@ pub fn test_execute_execute_message_update_params_cron_unauthorized_security_add
 
     let mut deps = mock_dependencies();
     let env = mock_env();
-    let info = mock_info("neutron_dao_address", &[]);
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
 
     instantiate(
         deps.as_mut(),
@@ -434,7 +434,7 @@ pub fn test_execute_execute_message_update_params_cron_unauthorized_security_add
     )
     .unwrap();
 
-    let info = mock_info("neutron_dao_address", &[]);
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
     execute_add_strategy(
         deps.as_mut(),
         info.clone(),
@@ -448,7 +448,7 @@ pub fn test_execute_execute_message_update_params_cron_unauthorized_security_add
     )
     .unwrap();
 
-    let info = mock_info("addr1", &[]);
+    let info = message_info(&Addr::unchecked("addr1"), &[]);
     let err = execute_execute_messages(deps.as_mut(), info.clone(), vec![msg]).unwrap_err();
     assert_eq!(err, Unauthorized {});
 }
@@ -469,7 +469,7 @@ pub fn test_execute_execute_message_update_params_tokenfactory_authorized() {
 
     let mut deps = mock_dependencies();
     let env = mock_env();
-    let info = mock_info("neutron_dao_address", &[]);
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
 
     instantiate(
         deps.as_mut(),
@@ -481,7 +481,7 @@ pub fn test_execute_execute_message_update_params_tokenfactory_authorized() {
     )
     .unwrap();
 
-    let info = mock_info("neutron_dao_address", &[]);
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
     execute_add_strategy(
         deps.as_mut(),
         info.clone(),
@@ -497,7 +497,7 @@ pub fn test_execute_execute_message_update_params_tokenfactory_authorized() {
     )
     .unwrap();
 
-    let info = mock_info("addr1", &[]);
+    let info = message_info(&Addr::unchecked("addr1"), &[]);
     execute_execute_messages(deps.as_mut(), info.clone(), vec![msg]).unwrap();
 }
 /// Checks that you can't change the denom_creation_fee if you don't have the permission to do so
@@ -515,7 +515,7 @@ pub fn test_execute_execute_message_update_params_tokenfactory_unauthorized_deno
 
     let mut deps = mock_dependencies();
     let env = mock_env();
-    let info = mock_info("neutron_dao_address", &[]);
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
 
     instantiate(
         deps.as_mut(),
@@ -527,7 +527,7 @@ pub fn test_execute_execute_message_update_params_tokenfactory_unauthorized_deno
     )
     .unwrap();
 
-    let info = mock_info("neutron_dao_address", &[]);
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
     execute_add_strategy(
         deps.as_mut(),
         info.clone(),
@@ -543,7 +543,7 @@ pub fn test_execute_execute_message_update_params_tokenfactory_unauthorized_deno
     )
     .unwrap();
 
-    let info = mock_info("addr1", &[]);
+    let info = message_info(&Addr::unchecked("addr1"), &[]);
     let err = execute_execute_messages(deps.as_mut(), info.clone(), vec![msg]).unwrap_err();
     assert_eq!(err, Unauthorized {})
 }
@@ -564,7 +564,7 @@ pub fn test_execute_execute_message_update_params_tokenfactory_unauthorized_deno
 
     let mut deps = mock_dependencies();
     let env = mock_env();
-    let info = mock_info("neutron_dao_address", &[]);
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
 
     instantiate(
         deps.as_mut(),
@@ -576,7 +576,7 @@ pub fn test_execute_execute_message_update_params_tokenfactory_unauthorized_deno
     )
     .unwrap();
 
-    let info = mock_info("neutron_dao_address", &[]);
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
     execute_add_strategy(
         deps.as_mut(),
         info.clone(),
@@ -592,7 +592,7 @@ pub fn test_execute_execute_message_update_params_tokenfactory_unauthorized_deno
     )
     .unwrap();
 
-    let info = mock_info("addr1", &[]);
+    let info = message_info(&Addr::unchecked("addr1"), &[]);
     let err = execute_execute_messages(deps.as_mut(), info.clone(), vec![msg]).unwrap_err();
     assert_eq!(err, Unauthorized {});
 }
@@ -613,7 +613,7 @@ pub fn test_execute_execute_message_update_params_tokenfactory_unauthorized_fee_
 
     let mut deps = mock_dependencies();
     let env = mock_env();
-    let info = mock_info("neutron_dao_address", &[]);
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
 
     instantiate(
         deps.as_mut(),
@@ -625,7 +625,7 @@ pub fn test_execute_execute_message_update_params_tokenfactory_unauthorized_fee_
     )
     .unwrap();
 
-    let info = mock_info("neutron_dao_address", &[]);
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
     execute_add_strategy(
         deps.as_mut(),
         info.clone(),
@@ -641,7 +641,7 @@ pub fn test_execute_execute_message_update_params_tokenfactory_unauthorized_fee_
     )
     .unwrap();
 
-    let info = mock_info("addr1", &[]);
+    let info = message_info(&Addr::unchecked("addr1"), &[]);
     let err = execute_execute_messages(deps.as_mut(), info.clone(), vec![msg]).unwrap_err();
     assert_eq!(err, Unauthorized {});
 }
@@ -661,7 +661,7 @@ pub fn test_execute_execute_message_update_params_tokenfactory_unauthorized_whit
 
     let mut deps = mock_dependencies();
     let env = mock_env();
-    let info = mock_info("neutron_dao_address", &[]);
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
 
     instantiate(
         deps.as_mut(),
@@ -673,7 +673,7 @@ pub fn test_execute_execute_message_update_params_tokenfactory_unauthorized_whit
     )
     .unwrap();
 
-    let info = mock_info("neutron_dao_address", &[]);
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
     execute_add_strategy(
         deps.as_mut(),
         info.clone(),
@@ -689,7 +689,7 @@ pub fn test_execute_execute_message_update_params_tokenfactory_unauthorized_whit
     )
     .unwrap();
 
-    let info = mock_info("addr1", &[]);
+    let info = message_info(&Addr::unchecked("addr1"), &[]);
     let err = execute_execute_messages(deps.as_mut(), info.clone(), vec![msg]).unwrap_err();
     assert_eq!(err, Unauthorized {});
 }
@@ -711,7 +711,7 @@ pub fn test_execute_execute_message_param_change_success() {
 
     let mut deps = mock_dependencies();
     let env = mock_env();
-    let info = mock_info("neutron_dao_address", &[]);
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
 
     instantiate(
         deps.as_mut(),
@@ -723,7 +723,7 @@ pub fn test_execute_execute_message_param_change_success() {
     )
     .unwrap();
 
-    let info = mock_info("neutron_dao_address", &[]);
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
     execute_add_strategy(
         deps.as_mut(),
         info.clone(),
@@ -737,7 +737,7 @@ pub fn test_execute_execute_message_param_change_success() {
     )
     .unwrap();
 
-    let info = mock_info("addr1", &[]);
+    let info = message_info(&Addr::unchecked("addr1"), &[]);
     execute_execute_messages(deps.as_mut(), info.clone(), vec![msg]).unwrap();
 }
 
@@ -759,7 +759,7 @@ pub fn test_execute_execute_message_param_change_unauthorized_key() {
 
     let mut deps = mock_dependencies();
     let env = mock_env();
-    let info = mock_info("neutron_dao_address", &[]);
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
 
     instantiate(
         deps.as_mut(),
@@ -771,7 +771,7 @@ pub fn test_execute_execute_message_param_change_unauthorized_key() {
     )
     .unwrap();
 
-    let info = mock_info("neutron_dao_address", &[]);
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
     execute_add_strategy(
         deps.as_mut(),
         info.clone(),
@@ -785,7 +785,7 @@ pub fn test_execute_execute_message_param_change_unauthorized_key() {
     )
     .unwrap();
 
-    let info = mock_info("addr1", &[]);
+    let info = message_info(&Addr::unchecked("addr1"), &[]);
     let err = execute_execute_messages(deps.as_mut(), info.clone(), vec![msg]).unwrap_err();
     assert_eq!(err, Unauthorized {});
 }
@@ -808,7 +808,7 @@ pub fn test_execute_execute_message_param_change_unauthorized_subspace() {
 
     let mut deps = mock_dependencies();
     let env = mock_env();
-    let info = mock_info("neutron_dao_address", &[]);
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
 
     instantiate(
         deps.as_mut(),
@@ -820,7 +820,7 @@ pub fn test_execute_execute_message_param_change_unauthorized_subspace() {
     )
     .unwrap();
 
-    let info = mock_info("neutron_dao_address", &[]);
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
     execute_add_strategy(
         deps.as_mut(),
         info.clone(),
@@ -834,7 +834,7 @@ pub fn test_execute_execute_message_param_change_unauthorized_subspace() {
     )
     .unwrap();
 
-    let info = mock_info("addr1", &[]);
+    let info = message_info(&Addr::unchecked("addr1"), &[]);
     let err = execute_execute_messages(deps.as_mut(), info.clone(), vec![msg]).unwrap_err();
     assert_eq!(err, Unauthorized {});
 }
@@ -845,7 +845,7 @@ pub fn test_execute_execute_message_param_change_unauthorized_subspace() {
 pub fn test_execute_execute_unknown_message() {
     let mut deps = mock_dependencies();
     let env = mock_env();
-    let info = mock_info("neutron_dao_address", &[]);
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
 
     instantiate(
         deps.as_mut(),
@@ -857,7 +857,7 @@ pub fn test_execute_execute_unknown_message() {
     )
     .unwrap();
 
-    let info = mock_info("neutron_dao_address", &[]);
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
     execute_add_strategy(
         deps.as_mut(),
         info.clone(),
@@ -872,10 +872,10 @@ pub fn test_execute_execute_unknown_message() {
     .unwrap();
 
     let msg = CosmosMsg::Bank(BankMsg::Burn {
-        amount: vec![Coin::new(42, "0xdeadbeef".to_string())],
+        amount: vec![Coin::new(Uint128::new(42u128), "0xdeadbeef".to_string())],
     });
 
-    let info = mock_info("addr1", &[]);
+    let info = message_info(&Addr::unchecked("addr1"), &[]);
     let err = execute_execute_messages(deps.as_mut(), info.clone(), vec![msg]).unwrap_err();
     assert_eq!(err, Unauthorized {});
 
@@ -885,7 +885,7 @@ pub fn test_execute_execute_unknown_message() {
         burn_from_address: "".to_string(),
     });
 
-    let info = mock_info("addr1", &[]);
+    let info = message_info(&Addr::unchecked("addr1"), &[]);
     let err = execute_execute_messages(deps.as_mut(), info.clone(), vec![msg]).unwrap_err();
     assert_eq!(err, Unauthorized {});
 }
