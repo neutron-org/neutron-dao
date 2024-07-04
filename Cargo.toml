@@ -1,5 +1,18 @@
 [workspace]
-members = ["contracts/dao/neutron-chain-manager"]
+members = [
+    "contracts/dao/cwd-core",
+    "contracts/dao/neutron-chain-manager",
+    "contracts/dao/proposal/*",
+    "contracts/dao/pre-propose/*",
+    "contracts/dao/voting/*",
+    "contracts/subdaos/cwd-subdao-core",
+    "contracts/subdaos/proposal/*",
+    "contracts/subdaos/pre-propose/*",
+    "contracts/subdaos/cwd-subdao-timelock-single",
+    "contracts/tokenomics/reserve",
+    "contracts/tokenomics/distribution",
+    "packages/*",
+]
 
 [profile.release]
 codegen-units = 1
