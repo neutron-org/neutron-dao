@@ -122,29 +122,31 @@ impl Strategy {
                 limit: true,
             }),
             Strategy::AllowOnly(permissions) => {
-                match permissions.get(&PermissionType::UpdateParamsPermission) {
-                    Some(Permission::UpdateParamsPermission(
-                        UpdateParamsPermission::CronUpdateParamsPermission(cron_update_params),
-                    )) => Some(cron_update_params.clone()),
+                match permissions.get(&PermissionType::UpdateCronParamsPermission) {
+                    Some(Permission::UpdateCronParamsPermission(cron_update_params)) => {
+                        Some(cron_update_params.clone())
+                    }
                     _ => None,
                 }
             }
         }
     }
 
-    pub fn get_dex_update_param_permission(&self) -> Option<DexUpdateParamsPermission> {
+    pub fn get_tokenfactory_update_param_permission(
+        &self,
+    ) -> Option<TokenfactoryUpdateParamsPermission> {
         match self {
-            Strategy::AllowAll => Some(DexUpdateParamsPermission {
-                fee_tiers: true,
-                paused: true,
-                max_jits_per_block: true,
-                good_til_purge_allowance: true,
+            Strategy::AllowAll => Some(TokenfactoryUpdateParamsPermission {
+                denom_creation_fee: true,
+                denom_creation_gas_consume: true,
+                fee_collector_address: true,
+                whitelisted_hooks: true,
             }),
             Strategy::AllowOnly(permissions) => {
-                match permissions.get(&PermissionType::UpdateParamsPermission) {
-                    Some(Permission::UpdateParamsPermission(
-                        UpdateParamsPermission::DexUpdateParamsPermission(dex_update_params),
-                    )) => Some(dex_update_params.clone()),
+                match permissions.get(&PermissionType::UpdateTokenfactoryParamsPermission) {
+                    Some(Permission::UpdateTokenfactoryParamsPermission(
+                        tokenfactory_update_params,
+                    )) => Some(tokenfactory_update_params.clone()),
                     _ => None,
                 }
             }
@@ -158,7 +160,8 @@ pub enum Permission {
     // Deprecated, for legacy parameter updates using `params` module.
     ParamChangePermission(ParamChangePermission),
     // For new-style parameter updates.
-    UpdateParamsPermission(UpdateParamsPermission),
+    UpdateCronParamsPermission(CronUpdateParamsPermission),
+    UpdateTokenfactoryParamsPermission(TokenfactoryUpdateParamsPermission),
     CronPermission(CronPermission),
     DexPermission(DexPermission),
 }
@@ -167,7 +170,10 @@ impl From<Permission> for PermissionType {
     fn from(value: Permission) -> Self {
         match value {
             Permission::ParamChangePermission(_) => PermissionType::ParamChangePermission,
-            Permission::UpdateParamsPermission(_) => PermissionType::UpdateParamsPermission,
+            Permission::UpdateCronParamsPermission(_) => PermissionType::UpdateCronParamsPermission,
+            Permission::UpdateTokenfactoryParamsPermission(_) => {
+                PermissionType::UpdateTokenfactoryParamsPermission
+            }
             Permission::CronPermission(_) => PermissionType::CronPermission,
             Permission::DexPermission(_) => PermissionType::DexPermission,
         }
@@ -178,7 +184,8 @@ impl From<Permission> for PermissionType {
 #[derive(Hash, Eq)]
 pub enum PermissionType {
     ParamChangePermission,
-    UpdateParamsPermission,
+    UpdateCronParamsPermission,
+    UpdateTokenfactoryParamsPermission,
     CronPermission,
     DexPermission,
 }
@@ -200,13 +207,6 @@ pub struct ParamPermission {
 
 #[cw_serde]
 #[derive(Eq)]
-pub enum UpdateParamsPermission {
-    CronUpdateParamsPermission(CronUpdateParamsPermission),
-    DexUpdateParamsPermission(DexUpdateParamsPermission),
-}
-
-#[cw_serde]
-#[derive(Eq)]
 #[serde(rename_all = "snake_case")]
 pub struct CronUpdateParamsPermission {
     pub security_address: bool,
@@ -224,17 +224,18 @@ pub struct CronPermission {
 #[cw_serde]
 #[derive(Eq)]
 #[serde(rename_all = "snake_case")]
-pub struct DexUpdateParamsPermission {
-    pub fee_tiers: bool,
-    pub paused: bool,
-    pub max_jits_per_block: bool,
-    pub good_til_purge_allowance: bool,
+pub struct TokenfactoryUpdateParamsPermission {
+    pub denom_creation_fee: bool,
+    pub denom_creation_gas_consume: bool,
+    pub fee_collector_address: bool,
+    pub whitelisted_hooks: bool,
 }
+
 
 #[cw_serde]
 #[derive(Eq)]
 #[serde(rename_all = "snake_case")]
-pub struct DexPermission {
+pub struct DexUpdateParamsPermission {
     pub fee_tiers: bool,
     pub paused: bool,
     pub max_jits_per_block: bool,

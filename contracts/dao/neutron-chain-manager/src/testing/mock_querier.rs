@@ -1,8 +1,9 @@
 use crate::cron_module_param_types::{ParamsCron, ParamsResponseCron};
 use crate::dex_module_param_types::{ParamsDex, ParamsResponseDex};
+use crate::tokenfactory_module_param_types::{ParamsResponseTokenfactory, ParamsTokenfactory};
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage};
 use cosmwasm_std::{
-    from_json, to_json_binary, ContractResult, Empty, OwnedDeps, Querier, QuerierResult,
+    coin, from_json, to_json_binary, ContractResult, Empty, OwnedDeps, Querier, QuerierResult,
     QueryRequest, SystemError, SystemResult,
 };
 use std::marker::PhantomData;
@@ -41,12 +42,24 @@ impl Querier for WasmMockQuerier {
 impl WasmMockQuerier {
     pub fn handle_query(&self, request: &QueryRequest<Empty>) -> QuerierResult {
         match &request {
+            #[allow(deprecated)]
             QueryRequest::Stargate { path, data: _ } => match path.as_str() {
                 "/neutron.cron.Query/Params" => {
                     let resp = to_json_binary(&ParamsResponseCron {
                         params: ParamsCron {
                             security_address: "neutron_dao_address".to_string(),
                             limit: 10,
+                        },
+                    });
+                    SystemResult::Ok(ContractResult::from(resp))
+                }
+                "/osmosis.tokenfactory.v1beta1.Query/Params" => {
+                    let resp = to_json_binary(&ParamsResponseTokenfactory {
+                        params: ParamsTokenfactory {
+                            denom_creation_fee: vec![coin(1, "untrn")],
+                            denom_creation_gas_consume: 0,
+                            fee_collector_address: "test_addr".to_string(),
+                            whitelisted_hooks: vec![],
                         },
                     });
                     SystemResult::Ok(ContractResult::from(resp))

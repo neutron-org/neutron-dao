@@ -38,54 +38,6 @@
       },
       "additionalProperties": false
     },
-    "DexPermission": {
-      "type": "object",
-      "required": [
-        "fee_tiers",
-        "good_til_purge_allowance",
-        "max_jits_per_block",
-        "paused"
-      ],
-      "properties": {
-        "fee_tiers": {
-          "type": "boolean"
-        },
-        "good_til_purge_allowance": {
-          "type": "boolean"
-        },
-        "max_jits_per_block": {
-          "type": "boolean"
-        },
-        "paused": {
-          "type": "boolean"
-        }
-      },
-      "additionalProperties": false
-    },
-    "DexUpdateParamsPermission": {
-      "type": "object",
-      "required": [
-        "fee_tiers",
-        "good_til_purge_allowance",
-        "max_jits_per_block",
-        "paused"
-      ],
-      "properties": {
-        "fee_tiers": {
-          "type": "boolean"
-        },
-        "good_til_purge_allowance": {
-          "type": "boolean"
-        },
-        "max_jits_per_block": {
-          "type": "boolean"
-        },
-        "paused": {
-          "type": "boolean"
-        }
-      },
-      "additionalProperties": false
-    },
     "ParamChangePermission": {
       "type": "object",
       "required": [
@@ -158,11 +110,11 @@
         {
           "type": "object",
           "required": [
-            "dex_permission"
+            "tokenfactory_permission"
           ],
           "properties": {
-            "dex_permission": {
-              "$ref": "#/definitions/DexPermission"
+            "tokenfactory_permission": {
+              "$ref": "#/definitions/TokenfactoryPermission"
             }
           },
           "additionalProperties": false
@@ -194,6 +146,54 @@
         }
       ]
     },
+    "TokenfactoryPermission": {
+      "type": "object",
+      "required": [
+        "denom_creation_fee",
+        "denom_creation_gas_consume",
+        "fee_collector_address",
+        "whitelisted_hooks"
+      ],
+      "properties": {
+        "denom_creation_fee": {
+          "type": "boolean"
+        },
+        "denom_creation_gas_consume": {
+          "type": "boolean"
+        },
+        "fee_collector_address": {
+          "type": "boolean"
+        },
+        "whitelisted_hooks": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "TokenfactoryUpdateParamsPermission": {
+      "type": "object",
+      "required": [
+        "denom_creation_fee",
+        "denom_creation_gas_consume",
+        "fee_collector_address",
+        "whitelisted_hooks"
+      ],
+      "properties": {
+        "denom_creation_fee": {
+          "type": "boolean"
+        },
+        "denom_creation_gas_consume": {
+          "type": "boolean"
+        },
+        "fee_collector_address": {
+          "type": "boolean"
+        },
+        "whitelisted_hooks": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
     "UpdateParamsPermission": {
       "oneOf": [
         {
@@ -211,11 +211,11 @@
         {
           "type": "object",
           "required": [
-            "dex_update_params_permission"
+            "tokenfactory_update_params_permission"
           ],
           "properties": {
-            "dex_update_params_permission": {
-              "$ref": "#/definitions/DexUpdateParamsPermission"
+            "tokenfactory_update_params_permission": {
+              "$ref": "#/definitions/TokenfactoryUpdateParamsPermission"
             }
           },
           "additionalProperties": false

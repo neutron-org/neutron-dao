@@ -2,6 +2,9 @@ use serde::de::{self, SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer};
 use std::fmt;
 
+/// Unfortunately, stargate returns a string instead of a number for
+/// u64 parameters, so we need to have a custom deserializer for these
+/// field.
 pub fn deserialize_u64<'de, D>(deserializer: D) -> Result<u64, D::Error>
 where
     D: Deserializer<'de>,
