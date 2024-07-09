@@ -4,7 +4,7 @@ use crate::cron_module_param_types::{
 };
 use crate::dex_module_param_types::{
     MsgUpdateParamsDex, ParamsRequestDex, ParamsResponseDex, MSG_TYPE_UPDATE_PARAMS_DEX,
-    PARAMS_QUERY_PATH_DEX
+    PARAMS_QUERY_PATH_DEX,
 };
 use crate::tokenfactory_module_param_types::{
     MsgUpdateParamsTokenfactory, ParamsRequestTokenfactory, ParamsResponseTokenfactory,
@@ -346,7 +346,7 @@ pub fn get_tokenfactory_params(
     )
 }
 
-    /// Checks that the strategy owner is authorised to change the parameters of the
+/// Checks that the strategy owner is authorised to change the parameters of the
 /// dex module. We query the current values for each parameter & compare them to
 /// the values in the proposal; all modifications must be allowed by the strategy.
 fn check_dex_update_msg_params(

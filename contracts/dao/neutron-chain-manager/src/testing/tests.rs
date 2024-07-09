@@ -3,14 +3,13 @@ use crate::contract::{
 };
 use crate::error::ContractError::{InvalidDemotion, Unauthorized};
 use crate::msg::Permission::{
-    CronPermission, ParamChangePermission, UpdateCronParamsPermission,
+    CronPermission, ParamChangePermission, UpdateCronParamsPermission, UpdateDexParamsPermission,
     UpdateTokenfactoryParamsPermission,
-    UpdateDexParamsPermission
 };
 use crate::msg::{
-    InstantiateMsg, CronPermission as CronPermissionType, CronUpdateParamsPermission, StrategyMsg,
-    TokenfactoryUpdateParamsPermission, DexUpdateParamsPermission,
-    ParamChangePermission as ParamChangePermissionType, ParamPermission
+    CronPermission as CronPermissionType, CronUpdateParamsPermission, DexUpdateParamsPermission,
+    InstantiateMsg, ParamChangePermission as ParamChangePermissionType, ParamPermission,
+    StrategyMsg, TokenfactoryUpdateParamsPermission,
 };
 use crate::testing::mock_querier::mock_dependencies;
 use cosmwasm_std::testing::{message_info, mock_env};
@@ -727,14 +726,12 @@ pub fn test_execute_execute_message_update_params_dex_authorized() {
         deps.as_mut(),
         info.clone(),
         Addr::unchecked("addr1".to_string()),
-        StrategyMsg::AllowOnly(vec![
-            UpdateDexParamsPermission(DexUpdateParamsPermission {
-                fee_tiers: true,
-                paused: true,
-                max_jits_per_block: true,
-                good_til_purge_allowance: true,
-            }),
-        ]),
+        StrategyMsg::AllowOnly(vec![UpdateDexParamsPermission(DexUpdateParamsPermission {
+            fee_tiers: true,
+            paused: true,
+            max_jits_per_block: true,
+            good_til_purge_allowance: true,
+        })]),
     )
     .unwrap();
 
@@ -775,12 +772,11 @@ pub fn test_execute_execute_message_update_params_dex_unauthorized_fee_tiers() {
         info.clone(),
         Addr::unchecked("addr1".to_string()),
         StrategyMsg::AllowOnly(vec![UpdateDexParamsPermission(DexUpdateParamsPermission {
-                fee_tiers: false,
-                paused: true,
-                max_jits_per_block: true,
-                good_til_purge_allowance: true,
-            }),
-        ]),
+            fee_tiers: false,
+            paused: true,
+            max_jits_per_block: true,
+            good_til_purge_allowance: true,
+        })]),
     )
     .unwrap();
 
@@ -823,12 +819,11 @@ pub fn test_execute_execute_message_update_params_dex_unauthorized_paused() {
         info.clone(),
         Addr::unchecked("addr1".to_string()),
         StrategyMsg::AllowOnly(vec![UpdateDexParamsPermission(DexUpdateParamsPermission {
-                fee_tiers: true,
-                paused: false,
-                max_jits_per_block: true,
-                good_til_purge_allowance: true,
-            }),
-        ]),
+            fee_tiers: true,
+            paused: false,
+            max_jits_per_block: true,
+            good_til_purge_allowance: true,
+        })]),
     )
     .unwrap();
 
@@ -869,14 +864,12 @@ pub fn test_execute_execute_message_update_params_dex_unauthorized_max_jits_per_
         deps.as_mut(),
         info.clone(),
         Addr::unchecked("addr1".to_string()),
-        StrategyMsg::AllowOnly(vec![
-            UpdateDexParamsPermission(DexUpdateParamsPermission {
-                fee_tiers: true,
-                paused: true,
-                max_jits_per_block: false,
-                good_til_purge_allowance: true,
-            }),
-        ]),
+        StrategyMsg::AllowOnly(vec![UpdateDexParamsPermission(DexUpdateParamsPermission {
+            fee_tiers: true,
+            paused: true,
+            max_jits_per_block: false,
+            good_til_purge_allowance: true,
+        })]),
     )
     .unwrap();
 
@@ -916,14 +909,12 @@ pub fn test_execute_execute_message_update_params_dex_unauthorized_good_til_purg
         deps.as_mut(),
         info.clone(),
         Addr::unchecked("addr1".to_string()),
-        StrategyMsg::AllowOnly(vec![
-            UpdateDexParamsPermission(DexUpdateParamsPermission {
-                fee_tiers: true,
-                paused: true,
-                max_jits_per_block: true,
-                good_til_purge_allowance: false,
-            }),
-        ]),
+        StrategyMsg::AllowOnly(vec![UpdateDexParamsPermission(DexUpdateParamsPermission {
+            fee_tiers: true,
+            paused: true,
+            max_jits_per_block: true,
+            good_til_purge_allowance: false,
+        })]),
     )
     .unwrap();
 

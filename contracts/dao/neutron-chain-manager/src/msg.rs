@@ -153,9 +153,7 @@ impl Strategy {
         }
     }
 
-    pub fn get_dex_update_param_permission(
-        &self,
-    ) -> Option<DexUpdateParamsPermission> {
+    pub fn get_dex_update_param_permission(&self) -> Option<DexUpdateParamsPermission> {
         match self {
             Strategy::AllowAll => Some(DexUpdateParamsPermission {
                 fee_tiers: true,
@@ -165,9 +163,9 @@ impl Strategy {
             }),
             Strategy::AllowOnly(permissions) => {
                 match permissions.get(&PermissionType::UpdateDexParamsPermission) {
-                    Some(Permission::UpdateDexParamsPermission(
-                        dex_update_params,
-                    )) => Some(dex_update_params.clone()),
+                    Some(Permission::UpdateDexParamsPermission(dex_update_params)) => {
+                        Some(dex_update_params.clone())
+                    }
                     _ => None,
                 }
             }
@@ -195,9 +193,7 @@ impl From<Permission> for PermissionType {
             Permission::UpdateTokenfactoryParamsPermission(_) => {
                 PermissionType::UpdateTokenfactoryParamsPermission
             }
-            Permission::UpdateDexParamsPermission(_) => {
-                PermissionType::UpdateDexParamsPermission
-            }
+            Permission::UpdateDexParamsPermission(_) => PermissionType::UpdateDexParamsPermission,
             Permission::CronPermission(_) => PermissionType::CronPermission,
         }
     }
@@ -211,7 +207,6 @@ pub enum PermissionType {
     UpdateTokenfactoryParamsPermission,
     UpdateDexParamsPermission,
     CronPermission,
-
 }
 
 #[cw_serde]
@@ -254,7 +249,6 @@ pub struct TokenfactoryUpdateParamsPermission {
     pub fee_collector_address: bool,
     pub whitelisted_hooks: bool,
 }
-
 
 #[cw_serde]
 #[derive(Eq)]
