@@ -152,6 +152,27 @@ impl Strategy {
             }
         }
     }
+
+    pub fn get_dex_update_param_permission(
+        &self,
+    ) -> Option<DexUpdateParamsPermission> {
+        match self {
+            Strategy::AllowAll => Some(DexUpdateParamsPermission {
+                fee_tiers: true,
+                paused: true,
+                max_jits_per_block: true,
+                good_til_purge_allowance: true,
+            }),
+            Strategy::AllowOnly(permissions) => {
+                match permissions.get(&PermissionType::UpdateDexParamsPermission) {
+                    Some(Permission::UpdateDexParamsPermission(
+                        dex_update_params,
+                    )) => Some(dex_update_params.clone()),
+                    _ => None,
+                }
+            }
+        }
+    }
 }
 
 #[cw_serde]
@@ -162,8 +183,8 @@ pub enum Permission {
     // For new-style parameter updates.
     UpdateCronParamsPermission(CronUpdateParamsPermission),
     UpdateTokenfactoryParamsPermission(TokenfactoryUpdateParamsPermission),
+    UpdateDexParamsPermission(DexUpdateParamsPermission),
     CronPermission(CronPermission),
-    DexPermission(DexPermission),
 }
 
 impl From<Permission> for PermissionType {
@@ -174,8 +195,10 @@ impl From<Permission> for PermissionType {
             Permission::UpdateTokenfactoryParamsPermission(_) => {
                 PermissionType::UpdateTokenfactoryParamsPermission
             }
+            Permission::UpdateDexParamsPermission(_) => {
+                PermissionType::UpdateDexParamsPermission
+            }
             Permission::CronPermission(_) => PermissionType::CronPermission,
-            Permission::DexPermission(_) => PermissionType::DexPermission,
         }
     }
 }
@@ -186,8 +209,9 @@ pub enum PermissionType {
     ParamChangePermission,
     UpdateCronParamsPermission,
     UpdateTokenfactoryParamsPermission,
+    UpdateDexParamsPermission,
     CronPermission,
-    DexPermission,
+
 }
 
 #[cw_serde]

@@ -243,7 +243,8 @@ fn check_proposal_execute_message(
         check_tokenfactory_update_msg_params(deps, strategy, proposal)?;
         Ok(())
     } else if typed_proposal.type_field.as_str() == MSG_TYPE_UPDATE_PARAMS_DEX {
-    check_dex_update_msg_params(deps, strategy, proposal)?;
+        check_dex_update_msg_params(deps, strategy, proposal)?;
+        Ok(())
     } else {
         Err(ContractError::Unauthorized {})
     }
