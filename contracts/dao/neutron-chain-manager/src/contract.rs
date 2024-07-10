@@ -2,6 +2,10 @@ use crate::cron_module_param_types::{
     MsgUpdateParamsCron, ParamsRequestCron, ParamsResponseCron, MSG_TYPE_UPDATE_PARAMS_CRON,
     PARAMS_QUERY_PATH_CRON,
 };
+use crate::tokenfactory_module_param_types::{
+    MsgUpdateParamsTokenfactory, ParamsRequestTokenfactory, ParamsResponseTokenfactory,
+    MSG_TYPE_UPDATE_PARAMS_TOKENFACTORY, PARAMS_QUERY_PATH_TOKENFACTORY,
+};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -9,7 +13,8 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 use neutron_sdk::bindings::msg::{AdminProposal, NeutronMsg, ProposalExecuteMessage};
-use neutron_sdk::proto_types::neutron::cron::QueryParamsRequest;
+use neutron_sdk::proto_types::neutron::cron::QueryParamsRequest as QueryParamsRequestCron;
+use neutron_sdk::proto_types::osmosis::tokenfactory::v1beta1::QueryParamsRequest as QueryParamsRequestTokenfactory;
 use neutron_sdk::stargate::aux::make_stargate_query;
 
 use crate::error::ContractError;
@@ -229,6 +234,9 @@ fn check_proposal_execute_message(
     if typed_proposal.type_field.as_str() == MSG_TYPE_UPDATE_PARAMS_CRON {
         check_cron_update_msg_params(deps, strategy, proposal)?;
         Ok(())
+    } else if typed_proposal.type_field.as_str() == MSG_TYPE_UPDATE_PARAMS_TOKENFACTORY {
+        check_tokenfactory_update_msg_params(deps, strategy, proposal)?;
+        Ok(())
     } else {
         Err(ContractError::Unauthorized {})
     }
@@ -266,7 +274,68 @@ fn check_cron_update_msg_params(
 
 /// Queries the parameters of the cron module.
 pub fn get_cron_params(deps: Deps, req: ParamsRequestCron) -> StdResult<ParamsResponseCron> {
-    make_stargate_query(deps, PARAMS_QUERY_PATH_CRON, QueryParamsRequest::from(req))
+    make_stargate_query(
+        deps,
+        PARAMS_QUERY_PATH_CRON,
+        QueryParamsRequestCron::from(req),
+    )
+}
+
+/// Checks that the strategy owner is authorised to change the parameters of the
+/// tokenfactory module. We query the current values for each parameter & compare them to
+/// the values in the proposal; all modifications must be allowed by the strategy.
+fn check_tokenfactory_update_msg_params(
+    deps: Deps,
+    strategy: Strategy,
+    proposal: ProposalExecuteMessage,
+) -> Result<(), ContractError> {
+    let msg_update_params: MsgUpdateParamsTokenfactory =
+        serde_json_wasm::from_str(proposal.message.as_str())?;
+
+    let tokenfactory_update_param_permission = strategy
+        .get_tokenfactory_update_param_permission()
+        .ok_or(ContractError::Unauthorized {})?;
+
+    let tokenfactory_params = get_tokenfactory_params(deps, ParamsRequestTokenfactory {})?;
+    if tokenfactory_params.params.denom_creation_fee != msg_update_params.params.denom_creation_fee
+        && !tokenfactory_update_param_permission.denom_creation_fee
+    {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    if tokenfactory_params.params.denom_creation_gas_consume
+        != msg_update_params.params.denom_creation_gas_consume
+        && !tokenfactory_update_param_permission.denom_creation_gas_consume
+    {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    if tokenfactory_params.params.fee_collector_address
+        != msg_update_params.params.fee_collector_address
+        && !tokenfactory_update_param_permission.fee_collector_address
+    {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    if tokenfactory_params.params.whitelisted_hooks != msg_update_params.params.whitelisted_hooks
+        && !tokenfactory_update_param_permission.whitelisted_hooks
+    {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    Ok(())
+}
+
+/// Queries the parameters of the tokenfactory module.
+pub fn get_tokenfactory_params(
+    deps: Deps,
+    req: ParamsRequestTokenfactory,
+) -> StdResult<ParamsResponseTokenfactory> {
+    make_stargate_query(
+        deps,
+        PARAMS_QUERY_PATH_TOKENFACTORY,
+        QueryParamsRequestTokenfactory::from(req),
+    )
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
