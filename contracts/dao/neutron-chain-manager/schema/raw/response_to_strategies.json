@@ -86,11 +86,23 @@
         {
           "type": "object",
           "required": [
-            "update_params_permission"
+            "update_cron_params_permission"
           ],
           "properties": {
-            "update_params_permission": {
-              "$ref": "#/definitions/UpdateParamsPermission"
+            "update_cron_params_permission": {
+              "$ref": "#/definitions/CronUpdateParamsPermission"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "update_tokenfactory_params_permission"
+          ],
+          "properties": {
+            "update_tokenfactory_params_permission": {
+              "$ref": "#/definitions/TokenfactoryUpdateParamsPermission"
             }
           },
           "additionalProperties": false
@@ -103,18 +115,6 @@
           "properties": {
             "cron_permission": {
               "$ref": "#/definitions/CronPermission"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "tokenfactory_permission"
-          ],
-          "properties": {
-            "tokenfactory_permission": {
-              "$ref": "#/definitions/TokenfactoryPermission"
             }
           },
           "additionalProperties": false
@@ -146,30 +146,6 @@
         }
       ]
     },
-    "TokenfactoryPermission": {
-      "type": "object",
-      "required": [
-        "denom_creation_fee",
-        "denom_creation_gas_consume",
-        "fee_collector_address",
-        "whitelisted_hooks"
-      ],
-      "properties": {
-        "denom_creation_fee": {
-          "type": "boolean"
-        },
-        "denom_creation_gas_consume": {
-          "type": "boolean"
-        },
-        "fee_collector_address": {
-          "type": "boolean"
-        },
-        "whitelisted_hooks": {
-          "type": "boolean"
-        }
-      },
-      "additionalProperties": false
-    },
     "TokenfactoryUpdateParamsPermission": {
       "type": "object",
       "required": [
@@ -193,34 +169,6 @@
         }
       },
       "additionalProperties": false
-    },
-    "UpdateParamsPermission": {
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "cron_update_params_permission"
-          ],
-          "properties": {
-            "cron_update_params_permission": {
-              "$ref": "#/definitions/CronUpdateParamsPermission"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "tokenfactory_update_params_permission"
-          ],
-          "properties": {
-            "tokenfactory_update_params_permission": {
-              "$ref": "#/definitions/TokenfactoryUpdateParamsPermission"
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
     }
   }
 }

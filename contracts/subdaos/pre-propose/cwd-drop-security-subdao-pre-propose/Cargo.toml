@@ -1,0 +1,40 @@
+[package]
+name = "cwd-drop-security-subdao-pre-propose"
+version = "0.2.2"
+authors = ["Pavel Kalinin <pavel.kalinin@p2p.org>"]
+edition = "2021"
+repository = "https://github.com/DA0-DA0/dao-contracts"
+description = "A DAO DAO pre-propose module for cwd-proposal-single for native and cw20 deposits."
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+# for more explicit tests, cargo test --features=backtraces
+backtraces = ["cosmwasm-std/backtraces"]
+# use library feature to disable all instantiate/execute/query exports
+library = []
+
+[dependencies]
+cosmwasm-std = { version = "1.3.0" }
+cw2 = "1.1.0"
+cw-storage-plus = "1.1.0"
+cw-utils = { version = "1.0.1" }
+serde = { version = "1.0.175", default-features = false, features = ["derive"] }
+cwd-pre-propose-base = { version = "*", path = "../../../../packages/cwd-pre-propose-base" }
+cwd-voting = { path = "../../../../packages/cwd-voting" }
+neutron-sdk = "0.10.0"
+neutron-subdao-core = { path = "../../../../packages/neutron-subdao-core" }
+neutron-subdao-timelock-single = { path = "../../../../packages/neutron-subdao-timelock-single" }
+neutron-subdao-proposal-single = { path = "../../../../packages/neutron-subdao-proposal-single" }
+neutron-drop-security-subdao-pre-propose = { path = "../../../../packages/neutron-drop-security-subdao-pre-propose" }
+schemars = "0.8.8"
+cwd-interface = { path = "../../../../packages/cwd-interface" }
+
+[dev-dependencies]
+cosmwasm-schema = "1.3.0"
+cw-utils = { version = "1.0.1" }
+cw20 = "1.1.0"
+cwd-voting = { path = "../../../../packages/cwd-voting" }
+cw-denom = { path = "../../../../packages/cw-denom" }
+cwd-interface = { path = "../../../../packages/cwd-interface" }
