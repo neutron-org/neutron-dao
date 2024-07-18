@@ -22,7 +22,7 @@ pub type InstantiateMsg = InstantiateBase;
 pub type ExecuteMsg = ExecuteBase<ProposeMessage>;
 pub type QueryMsg = QueryBase<Empty>;
 
-pub(crate) const CONTRACT_NAME: &str = "crates.io:cwd-security-subdao-pre-propose";
+pub(crate) const CONTRACT_NAME: &str = "crates.io:cwd-drop-security-subdao-pre-propose";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Internal version of the propose message that includes the

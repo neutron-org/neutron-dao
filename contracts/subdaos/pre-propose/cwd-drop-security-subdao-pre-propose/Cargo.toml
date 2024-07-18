@@ -1,10 +1,10 @@
 [package]
 name = "cwd-drop-security-subdao-pre-propose"
 version = "0.2.2"
-authors = ["Pavel Kalinin <pavel.kalinin@p2p.org>"]
+authors = ["Sergey Ratiashvili <serg.s.r@gmail.com>"]
 edition = "2021"
 repository = "https://github.com/DA0-DA0/dao-contracts"
-description = "A DAO DAO pre-propose module for cwd-proposal-single for native and cw20 deposits."
+description = "A DAO DAO pre-propose module for subdao for DROP protocol non-timelocked pause/unpause."
 
 [lib]
 crate-type = ["cdylib", "rlib"]
