@@ -1196,6 +1196,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "cwd-drop-security-subdao-pre-propose"
+version = "0.2.2"
+dependencies = [
+ "cosmwasm-schema 1.5.5",
+ "cosmwasm-std 1.5.2",
+ "cw-denom",
+ "cw-storage-plus 1.2.0",
+ "cw-utils 1.0.3",
+ "cw2 1.1.2",
+ "cw20 1.1.2",
+ "cwd-interface",
+ "cwd-pre-propose-base",
+ "cwd-voting",
+ "neutron-drop-security-subdao-pre-propose",
+ "neutron-sdk 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "neutron-subdao-core",
+ "neutron-subdao-proposal-single",
+ "neutron-subdao-timelock-single",
+ "schemars",
+ "serde",
+]
+
+[[package]]
 name = "cwd-hooks"
 version = "0.2.0"
 dependencies = [
@@ -2200,6 +2223,20 @@ dependencies = [
  "schemars",
  "serde",
  "thiserror",
+]
+
+[[package]]
+name = "neutron-drop-security-subdao-pre-propose"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-std 1.5.2",
+ "cw-utils 1.0.3",
+ "cwd-interface",
+ "cwd-pre-propose-base",
+ "cwd-voting",
+ "neutron-sdk 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "schemars",
+ "serde",
 ]
 
 [[package]]
