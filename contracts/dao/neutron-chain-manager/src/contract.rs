@@ -362,7 +362,7 @@ fn check_dex_update_msg_params(
         .ok_or(ContractError::Unauthorized {})?;
 
     let dex_params = get_dex_params(deps, ParamsRequestDex {})?;
-    // TODO: do this through iteration instead of ifs for future proofing new params
+
     if dex_params.params.fee_tiers != msg_update_params.params.fee_tiers
         && !dex_update_param_permission.fee_tiers
     {
