@@ -16,6 +16,9 @@ pub struct MsgUpdateParamsCron {
 #[serde(rename_all = "snake_case")]
 pub struct ParamsCron {
     pub security_address: String,
+    /// Unfortunately, stargate returns a string instead of a number for the
+    /// limit parameter, so we need to have a custom deserializer for this
+    /// field.
     #[serde(deserialize_with = "deserialize_u64")]
     pub limit: u64,
 }

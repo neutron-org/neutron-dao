@@ -1,4 +1,5 @@
 use crate::cron_module_param_types::{ParamsCron, ParamsResponseCron};
+use crate::dex_module_param_types::{ParamsDex, ParamsResponseDex};
 use crate::tokenfactory_module_param_types::{ParamsResponseTokenfactory, ParamsTokenfactory};
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage};
 use cosmwasm_std::{
@@ -59,6 +60,17 @@ impl WasmMockQuerier {
                             denom_creation_gas_consume: 0,
                             fee_collector_address: "test_addr".to_string(),
                             whitelisted_hooks: vec![],
+                        },
+                    });
+                    SystemResult::Ok(ContractResult::from(resp))
+                }
+                "/neutron.dex.Query/Params" => {
+                    let resp = to_json_binary(&ParamsResponseDex {
+                        params: ParamsDex {
+                            fee_tiers: [1, 2, 99].to_vec(),
+                            paused: false,
+                            max_jits_per_block: 20,
+                            good_til_purge_allowance: 25000,
                         },
                     });
                     SystemResult::Ok(ContractResult::from(resp))
