@@ -1188,7 +1188,7 @@ dependencies = [
  "cw721 0.18.0",
  "cwd-interface",
  "cwd-macros",
- "neutron-sdk 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "neutron-sdk 0.10.0",
  "neutron-subdao-core",
  "schemars",
  "serde",
@@ -1270,7 +1270,7 @@ dependencies = [
  "cwd-proposal-hooks",
  "cwd-proposal-single",
  "cwd-voting",
- "neutron-sdk 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "neutron-sdk 0.10.0",
  "schemars",
  "serde",
 ]
@@ -1292,7 +1292,7 @@ dependencies = [
  "cwd-proposal-single",
  "cwd-voting",
  "neutron-dao-pre-propose-overrule",
- "neutron-sdk 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "neutron-sdk 0.10.0",
  "neutron-subdao-core",
  "neutron-subdao-timelock-single",
  "schemars",
@@ -1319,7 +1319,7 @@ dependencies = [
  "cwd-proposal-hooks",
  "cwd-proposal-single",
  "cwd-voting",
- "neutron-sdk 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "neutron-sdk 0.10.0",
  "schemars",
  "serde",
 ]
@@ -1364,7 +1364,7 @@ dependencies = [
  "cwd-testing",
  "cwd-vote-hooks",
  "cwd-voting",
- "neutron-sdk 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "neutron-sdk 0.10.0",
  "neutron-vault",
  "neutron-voting-registry",
  "rand",
@@ -1403,7 +1403,7 @@ dependencies = [
  "cwd-testing",
  "cwd-vote-hooks",
  "cwd-voting",
- "neutron-sdk 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "neutron-sdk 0.10.0",
  "neutron-subdao-core",
  "neutron-vault",
  "neutron-voting-registry",
@@ -1427,7 +1427,7 @@ dependencies = [
  "cwd-interface",
  "cwd-pre-propose-base",
  "cwd-voting",
- "neutron-sdk 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "neutron-sdk 0.10.0",
  "neutron-security-subdao-pre-propose",
  "neutron-subdao-core",
  "neutron-subdao-proposal-single",
@@ -1454,7 +1454,7 @@ dependencies = [
  "cwd-macros",
  "cwd-voting",
  "exec-control",
- "neutron-sdk 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "neutron-sdk 0.10.0",
  "neutron-subdao-core",
  "neutron-subdao-pre-propose-single",
  "neutron-subdao-proposal-single",
@@ -1477,7 +1477,7 @@ dependencies = [
  "cwd-interface",
  "cwd-pre-propose-base",
  "cwd-voting",
- "neutron-sdk 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "neutron-sdk 0.10.0",
  "neutron-subdao-core",
  "neutron-subdao-pre-propose-single",
  "neutron-subdao-proposal-single",
@@ -1513,7 +1513,7 @@ dependencies = [
  "cwd-subdao-pre-propose-single",
  "cwd-vote-hooks",
  "cwd-voting",
- "neutron-sdk 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "neutron-sdk 0.10.0",
  "neutron-subdao-core",
  "neutron-subdao-pre-propose-single",
  "neutron-subdao-proposal-single",
@@ -1542,7 +1542,7 @@ dependencies = [
  "cwd-proposal-single",
  "cwd-voting",
  "neutron-dao-pre-propose-overrule",
- "neutron-sdk 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "neutron-sdk 0.10.0",
  "neutron-subdao-core",
  "neutron-subdao-pre-propose-single",
  "neutron-subdao-proposal-single",
@@ -1604,7 +1604,7 @@ dependencies = [
  "cwd-core",
  "cwd-interface",
  "cwd-macros",
- "neutron-sdk 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "neutron-sdk 0.10.0",
  "schemars",
  "serde",
  "thiserror",
@@ -2169,7 +2169,7 @@ dependencies = [
  "cw2 2.0.0",
  "cwd-interface",
  "cwd-macros",
- "neutron-sdk 0.10.0 (git+https://github.com/neutron-org/neutron-sdk.git?branch=main)",
+ "neutron-sdk 0.11.0",
  "prost 0.9.0",
  "schemars",
  "serde",
@@ -2253,7 +2253,7 @@ dependencies = [
  "cw20 0.13.4",
  "cwd-macros",
  "exec-control",
- "neutron-sdk 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "neutron-sdk 0.10.0",
  "schemars",
  "serde",
  "thiserror",
@@ -2283,8 +2283,9 @@ dependencies = [
 
 [[package]]
 name = "neutron-sdk"
-version = "0.10.0"
-source = "git+https://github.com/neutron-org/neutron-sdk.git?branch=main#6043a8bd412e2213f0b6a31f90b852685c8792cc"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8fcd104aa99d8078ee0ece835c3ee919f9972dc5295c741c08f4dd77093f9df8"
 dependencies = [
  "bech32",
  "cosmos-sdk-proto",
@@ -2311,7 +2312,7 @@ dependencies = [
  "cwd-interface",
  "cwd-pre-propose-base",
  "cwd-voting",
- "neutron-sdk 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "neutron-sdk 0.10.0",
  "schemars",
  "serde",
 ]
@@ -2327,7 +2328,7 @@ dependencies = [
  "cwd-interface",
  "cwd-macros",
  "exec-control",
- "neutron-sdk 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "neutron-sdk 0.10.0",
  "schemars",
  "serde",
  "thiserror",
@@ -2341,7 +2342,7 @@ dependencies = [
  "cwd-interface",
  "cwd-pre-propose-base",
  "cwd-voting",
- "neutron-sdk 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "neutron-sdk 0.10.0",
  "schemars",
  "serde",
 ]
@@ -2357,7 +2358,7 @@ dependencies = [
  "cwd-interface",
  "cwd-macros",
  "cwd-voting",
- "neutron-sdk 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "neutron-sdk 0.10.0",
  "schemars",
  "serde",
 ]
@@ -2368,7 +2369,7 @@ version = "0.1.0"
 dependencies = [
  "cosmwasm-schema 1.5.5",
  "cosmwasm-std 1.5.2",
- "neutron-sdk 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "neutron-sdk 0.10.0",
  "schemars",
  "serde",
 ]
