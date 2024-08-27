@@ -1,6 +1,6 @@
-use crate::cron_module_param_types::{
-    MsgUpdateParamsCron, ParamsRequestCron, ParamsResponseCron, MSG_TYPE_UPDATE_PARAMS_CRON,
-    PARAMS_QUERY_PATH_CRON,
+use crate::cron_module_types::{
+    MsgUpdateParamsCron, ParamsRequestCron, ParamsResponseCron, MSG_TYPE_ADD_SCHEDULE,
+    MSG_TYPE_REMOVE_SCHEDULE, MSG_TYPE_UPDATE_PARAMS_CRON, PARAMS_QUERY_PATH_CRON,
 };
 use crate::dex_module_param_types::{
     MsgUpdateParamsDex, ParamsRequestDex, ParamsResponseDex, MSG_TYPE_UPDATE_PARAMS_DEX,
@@ -180,16 +180,6 @@ fn check_neutron_msg(
     neutron_msg: NeutronMsg,
 ) -> Result<(), ContractError> {
     match neutron_msg {
-        NeutronMsg::AddSchedule { .. } => {
-            if !strategy.has_cron_add_schedule_permission() {
-                return Err(ContractError::Unauthorized {});
-            }
-        }
-        NeutronMsg::RemoveSchedule { name: _ } => {
-            if !strategy.has_cron_remove_schedule_permission() {
-                return Err(ContractError::Unauthorized {});
-            }
-        }
         NeutronMsg::SubmitAdminProposal { admin_proposal } => {
             check_submit_admin_proposal_message(deps, strategy, admin_proposal)?;
         }
@@ -245,10 +235,23 @@ fn check_proposal_execute_message(
     } else if typed_proposal.type_field.as_str() == MSG_TYPE_UPDATE_PARAMS_DEX {
         check_dex_update_msg_params(deps, strategy, proposal)?;
         Ok(())
+    } else if typed_proposal.type_field.as_str() == MSG_TYPE_ADD_SCHEDULE {
+        if strategy.has_cron_add_schedule_permission() {
+            Ok(())
+        } else {
+            Err(ContractError::Unauthorized {})
+        }
+    } else if typed_proposal.type_field.as_str() == MSG_TYPE_REMOVE_SCHEDULE {
+        if strategy.has_cron_remove_schedule_permission() {
+            Ok(())
+        } else {
+            Err(ContractError::Unauthorized {})
+        }
     } else {
         Err(ContractError::Unauthorized {})
     }
 }
+
 /// Checks that the strategy owner is authorised to change the parameters of the
 /// cron module. We query the current values for each parameter & compare them to
 /// the values in the proposal; all modifications must be allowed by the strategy.

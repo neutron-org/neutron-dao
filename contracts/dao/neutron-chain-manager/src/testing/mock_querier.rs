@@ -1,4 +1,4 @@
-use crate::cron_module_param_types::{ParamsCron, ParamsResponseCron};
+use crate::cron_module_types::{ParamsCron, ParamsResponseCron};
 use crate::dex_module_param_types::{ParamsDex, ParamsResponseDex};
 use crate::tokenfactory_module_param_types::{ParamsResponseTokenfactory, ParamsTokenfactory};
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage};
