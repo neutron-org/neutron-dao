@@ -180,6 +180,16 @@ fn check_neutron_msg(
     neutron_msg: NeutronMsg,
 ) -> Result<(), ContractError> {
     match neutron_msg {
+        NeutronMsg::AddSchedule { .. } => {
+            if !strategy.has_cron_add_schedule_permission() {
+                return Err(ContractError::Unauthorized {});
+            }
+        }
+        NeutronMsg::RemoveSchedule { name: _ } => {
+            if !strategy.has_cron_remove_schedule_permission() {
+                return Err(ContractError::Unauthorized {});
+            }
+        }
         NeutronMsg::SubmitAdminProposal { admin_proposal } => {
             check_submit_admin_proposal_message(deps, strategy, admin_proposal)?;
         }
