@@ -1,12 +1,12 @@
-use crate::cron_module_param_types::{
+use crate::cron_module_types::{
     MsgUpdateParamsCron, ParamsRequestCron, ParamsResponseCron, MSG_TYPE_UPDATE_PARAMS_CRON,
     PARAMS_QUERY_PATH_CRON,
 };
-use crate::dex_module_param_types::{
+use crate::dex_module_types::{
     MsgUpdateParamsDex, ParamsRequestDex, ParamsResponseDex, MSG_TYPE_UPDATE_PARAMS_DEX,
     PARAMS_QUERY_PATH_DEX,
 };
-use crate::tokenfactory_module_param_types::{
+use crate::tokenfactory_module_types::{
     MsgUpdateParamsTokenfactory, ParamsRequestTokenfactory, ParamsResponseTokenfactory,
     MSG_TYPE_UPDATE_PARAMS_TOKENFACTORY, PARAMS_QUERY_PATH_TOKENFACTORY,
 };
