@@ -1,3 +1,6 @@
+use crate::adminmodule_module_types::{
+    MSG_TYPE_CANCEL_SOFTWARE_UPGRADE, MSG_TYPE_SOFTWARE_UPGRADE,
+};
 use crate::cron_module_types::{
     MsgUpdateParamsCron, ParamsRequestCron, ParamsResponseCron, MSG_TYPE_UPDATE_PARAMS_CRON,
     PARAMS_QUERY_PATH_CRON,
@@ -236,17 +239,30 @@ fn check_proposal_execute_message(
     let typed_proposal: ProposalExecuteMessageJSON =
         serde_json_wasm::from_str(proposal.message.as_str())?;
 
-    if typed_proposal.type_field.as_str() == MSG_TYPE_UPDATE_PARAMS_CRON {
-        check_cron_update_msg_params(deps, strategy, proposal)?;
-        Ok(())
-    } else if typed_proposal.type_field.as_str() == MSG_TYPE_UPDATE_PARAMS_TOKENFACTORY {
-        check_tokenfactory_update_msg_params(deps, strategy, proposal)?;
-        Ok(())
-    } else if typed_proposal.type_field.as_str() == MSG_TYPE_UPDATE_PARAMS_DEX {
-        check_dex_update_msg_params(deps, strategy, proposal)?;
-        Ok(())
-    } else {
-        Err(ContractError::Unauthorized {})
+    match typed_proposal.type_field.as_str() {
+        MSG_TYPE_UPDATE_PARAMS_CRON => {
+            check_cron_update_msg_params(deps, strategy, proposal)?;
+            Ok(())
+        }
+        MSG_TYPE_UPDATE_PARAMS_TOKENFACTORY => {
+            check_tokenfactory_update_msg_params(deps, strategy, proposal)?;
+            Ok(())
+        }
+        MSG_TYPE_UPDATE_PARAMS_DEX => {
+            check_dex_update_msg_params(deps, strategy, proposal)?;
+            Ok(())
+        }
+        MSG_TYPE_SOFTWARE_UPGRADE => match strategy.has_software_upgrade_permission() {
+            true => Ok(()),
+            false => Err(ContractError::Unauthorized {}),
+        },
+        MSG_TYPE_CANCEL_SOFTWARE_UPGRADE => {
+            match strategy.has_cancel_software_upgrade_permission() {
+                true => Ok(()),
+                false => Err(ContractError::Unauthorized {}),
+            }
+        }
+        _ => Err(ContractError::Unauthorized {}),
     }
 }
 /// Checks that the strategy owner is authorised to change the parameters of the
