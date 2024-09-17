@@ -1,6 +1,6 @@
 [package]
 name = "cwd-subdao-core"
-version = "0.2.2"
+version = "0.2.3"
 authors = ["ekez <ekez@withoutdoing.com>"]
 edition = "2021"
 repository = "https://github.com/neutron-org/neutron-dao"

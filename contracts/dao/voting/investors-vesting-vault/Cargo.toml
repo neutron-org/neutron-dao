@@ -1,7 +1,10 @@
 [package]
 name = "investors-vesting-vault"
-version = "0.2.1"
-authors = ["Callum Anderson <callumanderson745@gmail.com>", "Mikhail Mozhaev <misha.m@p2p.org>"]
+version = "0.2.2"
+authors = [
+    "Callum Anderson <callumanderson745@gmail.com>",
+    "Mikhail Mozhaev <misha.m@p2p.org>",
+]
 edition = "2021"
 repository = "https://github.com/neutron-org/neutron-dao"
 description = "A DAO vault contract."

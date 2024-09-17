@@ -4,7 +4,7 @@ description = "A DAO DAO voting module based on staked cw721 tokens."
 edition = "2021"
 name = "neutron-vault"
 repository = "https://github.com/DA0-DA0/dao-contracts"
-version = "0.2.1"
+version = "0.2.2"
 
 [lib]
 crate-type = ["cdylib", "rlib"]

@@ -504,7 +504,7 @@ dependencies = [
 
 [[package]]
 name = "credits-vault"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "anyhow",
  "cosmwasm-schema 1.5.5",
@@ -512,7 +512,7 @@ dependencies = [
  "cosmwasm-storage",
  "cw-controllers",
  "cw-multi-test",
- "cw-paginate 0.2.0",
+ "cw-paginate 0.2.1",
  "cw-storage-plus 1.2.0",
  "cw-utils 1.0.3",
  "cw2 1.1.2",
@@ -729,7 +729,7 @@ dependencies = [
 
 [[package]]
 name = "cw-paginate"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "cosmwasm-std 1.5.2",
  "cosmwasm-storage",
@@ -1174,13 +1174,13 @@ dependencies = [
 
 [[package]]
 name = "cwd-core"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "cosmwasm-schema 1.5.5",
  "cosmwasm-std 1.5.2",
  "cosmwasm-storage",
  "cw-core",
- "cw-paginate 0.2.0",
+ "cw-paginate 0.2.1",
  "cw-storage-plus 1.2.0",
  "cw-utils 1.0.3",
  "cw2 1.1.2",
@@ -1337,7 +1337,7 @@ dependencies = [
 
 [[package]]
 name = "cwd-proposal-multiple"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "cosmwasm-schema 1.5.5",
  "cosmwasm-std 1.5.2",
@@ -1376,7 +1376,7 @@ dependencies = [
 
 [[package]]
 name = "cwd-proposal-single"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "cosmwasm-schema 1.5.5",
  "cosmwasm-std 1.5.2",
@@ -1438,13 +1438,13 @@ dependencies = [
 
 [[package]]
 name = "cwd-subdao-core"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "cosmwasm-schema 1.5.5",
  "cosmwasm-std 1.5.2",
  "cosmwasm-storage",
  "cw-core",
- "cw-paginate 0.2.0",
+ "cw-paginate 0.2.1",
  "cw-storage-plus 1.2.0",
  "cw-utils 1.0.3",
  "cw2 1.1.2",
@@ -1488,7 +1488,7 @@ dependencies = [
 
 [[package]]
 name = "cwd-subdao-proposal-single"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "cosmwasm-schema 1.5.5",
  "cosmwasm-std 1.5.2",
@@ -1554,7 +1554,7 @@ dependencies = [
 
 [[package]]
 name = "cwd-testing"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "cosmwasm-schema 1.5.5",
  "cosmwasm-std 1.5.2",
@@ -2007,7 +2007,7 @@ dependencies = [
 
 [[package]]
 name = "investors-vesting-vault"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "anyhow",
  "cosmwasm-schema 1.5.5",
@@ -2015,7 +2015,7 @@ dependencies = [
  "cosmwasm-storage",
  "cw-controllers",
  "cw-multi-test",
- "cw-paginate 0.2.0",
+ "cw-paginate 0.2.1",
  "cw-storage-plus 1.2.0",
  "cw-utils 1.0.3",
  "cw2 1.1.2",
@@ -2163,7 +2163,7 @@ dependencies = [
  "cosmwasm-storage",
  "cw-controllers",
  "cw-multi-test",
- "cw-paginate 0.2.0",
+ "cw-paginate 0.2.1",
  "cw-storage-plus 2.0.0",
  "cw-utils 2.0.0",
  "cw2 2.0.0",
@@ -2189,7 +2189,7 @@ dependencies = [
 
 [[package]]
 name = "neutron-distribution"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "cosmwasm-schema 1.5.5",
  "cosmwasm-std 1.5.2",
@@ -2243,7 +2243,7 @@ dependencies = [
 
 [[package]]
 name = "neutron-reserve"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "astroport 2.5.0",
  "cosmwasm-schema 1.5.5",
@@ -2375,7 +2375,7 @@ dependencies = [
 
 [[package]]
 name = "neutron-vault"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "anyhow",
  "cosmwasm-schema 1.5.5",
@@ -2383,7 +2383,7 @@ dependencies = [
  "cosmwasm-storage",
  "cw-controllers",
  "cw-multi-test",
- "cw-paginate 0.2.0",
+ "cw-paginate 0.2.1",
  "cw-storage-plus 1.2.0",
  "cw-utils 1.0.3",
  "cw2 1.1.2",
@@ -2431,7 +2431,7 @@ dependencies = [
 
 [[package]]
 name = "neutron-voting-registry"
-version = "0.3.1"
+version = "0.3.2"
 dependencies = [
  "anyhow",
  "cosmwasm-schema 1.5.5",
@@ -2439,7 +2439,7 @@ dependencies = [
  "cosmwasm-storage",
  "cw-controllers",
  "cw-multi-test",
- "cw-paginate 0.2.0",
+ "cw-paginate 0.2.1",
  "cw-storage-plus 1.2.0",
  "cw-utils 1.0.3",
  "cw2 1.1.2",
