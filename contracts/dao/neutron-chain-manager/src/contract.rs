@@ -1,12 +1,15 @@
+use crate::adminmodule_module_types::{
+    MSG_TYPE_CANCEL_SOFTWARE_UPGRADE, MSG_TYPE_SOFTWARE_UPGRADE,
+};
 use crate::cron_module_types::{
     MsgUpdateParamsCron, ParamsRequestCron, ParamsResponseCron, MSG_TYPE_ADD_SCHEDULE,
     MSG_TYPE_REMOVE_SCHEDULE, MSG_TYPE_UPDATE_PARAMS_CRON, PARAMS_QUERY_PATH_CRON,
 };
-use crate::dex_module_param_types::{
+use crate::dex_module_types::{
     MsgUpdateParamsDex, ParamsRequestDex, ParamsResponseDex, MSG_TYPE_UPDATE_PARAMS_DEX,
     PARAMS_QUERY_PATH_DEX,
 };
-use crate::tokenfactory_module_param_types::{
+use crate::tokenfactory_module_types::{
     MsgUpdateParamsTokenfactory, ParamsRequestTokenfactory, ParamsResponseTokenfactory,
     MSG_TYPE_UPDATE_PARAMS_TOKENFACTORY, PARAMS_QUERY_PATH_TOKENFACTORY,
 };
@@ -236,29 +239,38 @@ fn check_proposal_execute_message(
     let typed_proposal: ProposalExecuteMessageJSON =
         serde_json_wasm::from_str(proposal.message.as_str())?;
 
-    if typed_proposal.type_field.as_str() == MSG_TYPE_UPDATE_PARAMS_CRON {
-        check_cron_update_msg_params(deps, strategy, proposal)?;
-        Ok(())
-    } else if typed_proposal.type_field.as_str() == MSG_TYPE_UPDATE_PARAMS_TOKENFACTORY {
-        check_tokenfactory_update_msg_params(deps, strategy, proposal)?;
-        Ok(())
-    } else if typed_proposal.type_field.as_str() == MSG_TYPE_UPDATE_PARAMS_DEX {
-        check_dex_update_msg_params(deps, strategy, proposal)?;
-        Ok(())
-    } else if typed_proposal.type_field.as_str() == MSG_TYPE_ADD_SCHEDULE {
-        if strategy.has_cron_add_schedule_permission() {
+    match typed_proposal.type_field.as_str() {
+        MSG_TYPE_UPDATE_PARAMS_CRON => {
+            check_cron_update_msg_params(deps, strategy, proposal)?;
             Ok(())
-        } else {
-            Err(ContractError::Unauthorized {})
         }
-    } else if typed_proposal.type_field.as_str() == MSG_TYPE_REMOVE_SCHEDULE {
-        if strategy.has_cron_remove_schedule_permission() {
+        MSG_TYPE_UPDATE_PARAMS_TOKENFACTORY => {
+            check_tokenfactory_update_msg_params(deps, strategy, proposal)?;
             Ok(())
-        } else {
-            Err(ContractError::Unauthorized {})
         }
-    } else {
-        Err(ContractError::Unauthorized {})
+        MSG_TYPE_UPDATE_PARAMS_DEX => {
+            check_dex_update_msg_params(deps, strategy, proposal)?;
+            Ok(())
+        }
+        MSG_TYPE_ADD_SCHEDULE => match strategy.has_cron_add_schedule_permission() {
+            true => Ok(()),
+            false => Err(ContractError::Unauthorized {}),
+        },
+        MSG_TYPE_REMOVE_SCHEDULE => match strategy.has_cron_remove_schedule_permission() {
+            true => Ok(()),
+            false => Err(ContractError::Unauthorized {}),
+        },
+        MSG_TYPE_SOFTWARE_UPGRADE => match strategy.has_software_upgrade_permission() {
+            true => Ok(()),
+            false => Err(ContractError::Unauthorized {}),
+        },
+        MSG_TYPE_CANCEL_SOFTWARE_UPGRADE => {
+            match strategy.has_cancel_software_upgrade_permission() {
+                true => Ok(()),
+                false => Err(ContractError::Unauthorized {}),
+            }
+        }
+        _ => Err(ContractError::Unauthorized {}),
     }
 }
 

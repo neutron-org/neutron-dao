@@ -1,6 +1,6 @@
 use crate::cron_module_types::{ParamsCron, ParamsResponseCron};
-use crate::dex_module_param_types::{ParamsDex, ParamsResponseDex};
-use crate::tokenfactory_module_param_types::{ParamsResponseTokenfactory, ParamsTokenfactory};
+use crate::dex_module_types::{ParamsDex, ParamsResponseDex};
+use crate::tokenfactory_module_types::{ParamsResponseTokenfactory, ParamsTokenfactory};
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage};
 use cosmwasm_std::{
     coin, from_json, to_json_binary, ContractResult, Empty, OwnedDeps, Querier, QuerierResult,

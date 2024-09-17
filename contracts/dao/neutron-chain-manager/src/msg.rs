@@ -171,6 +171,34 @@ impl Strategy {
             }
         }
     }
+
+    pub fn has_software_upgrade_permission(&self) -> bool {
+        match self {
+            Strategy::AllowAll => true,
+            Strategy::AllowOnly(permissions) => {
+                match permissions.get(&PermissionType::SoftwareUpgradePermission) {
+                    Some(Permission::SoftwareUpgradePermission(software_upgrade_params)) => {
+                        software_upgrade_params.upgrade
+                    }
+                    _ => false,
+                }
+            }
+        }
+    }
+
+    pub fn has_cancel_software_upgrade_permission(&self) -> bool {
+        match self {
+            Strategy::AllowAll => true,
+            Strategy::AllowOnly(permissions) => {
+                match permissions.get(&PermissionType::SoftwareUpgradePermission) {
+                    Some(Permission::SoftwareUpgradePermission(software_upgrade_params)) => {
+                        software_upgrade_params.cancel_upgrade
+                    }
+                    _ => false,
+                }
+            }
+        }
+    }
 }
 
 #[cw_serde]
@@ -183,6 +211,7 @@ pub enum Permission {
     UpdateTokenfactoryParamsPermission(TokenfactoryUpdateParamsPermission),
     UpdateDexParamsPermission(DexUpdateParamsPermission),
     CronPermission(CronPermission),
+    SoftwareUpgradePermission(SoftwareUpgradePermission),
 }
 
 impl From<Permission> for PermissionType {
@@ -195,6 +224,7 @@ impl From<Permission> for PermissionType {
             }
             Permission::UpdateDexParamsPermission(_) => PermissionType::UpdateDexParamsPermission,
             Permission::CronPermission(_) => PermissionType::CronPermission,
+            Permission::SoftwareUpgradePermission(_) => PermissionType::SoftwareUpgradePermission,
         }
     }
 }
@@ -207,6 +237,7 @@ pub enum PermissionType {
     UpdateTokenfactoryParamsPermission,
     UpdateDexParamsPermission,
     CronPermission,
+    SoftwareUpgradePermission,
 }
 
 #[cw_serde]
@@ -258,6 +289,13 @@ pub struct DexUpdateParamsPermission {
     pub paused: bool,
     pub max_jits_per_block: bool,
     pub good_til_purge_allowance: bool,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub struct SoftwareUpgradePermission {
+    pub upgrade: bool,
+    pub cancel_upgrade: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
