@@ -2,8 +2,8 @@ use crate::adminmodule_module_types::{
     MSG_TYPE_CANCEL_SOFTWARE_UPGRADE, MSG_TYPE_SOFTWARE_UPGRADE,
 };
 use crate::cron_module_types::{
-    MsgUpdateParamsCron, ParamsRequestCron, ParamsResponseCron, MSG_TYPE_UPDATE_PARAMS_CRON,
-    PARAMS_QUERY_PATH_CRON,
+    MsgUpdateParamsCron, ParamsRequestCron, ParamsResponseCron, MSG_TYPE_ADD_SCHEDULE,
+    MSG_TYPE_REMOVE_SCHEDULE, MSG_TYPE_UPDATE_PARAMS_CRON, PARAMS_QUERY_PATH_CRON,
 };
 use crate::dex_module_types::{
     MsgUpdateParamsDex, ParamsRequestDex, ParamsResponseDex, MSG_TYPE_UPDATE_PARAMS_DEX,
@@ -252,6 +252,14 @@ fn check_proposal_execute_message(
             check_dex_update_msg_params(deps, strategy, proposal)?;
             Ok(())
         }
+        MSG_TYPE_ADD_SCHEDULE => match strategy.has_cron_add_schedule_permission() {
+            true => Ok(()),
+            false => Err(ContractError::Unauthorized {}),
+        },
+        MSG_TYPE_REMOVE_SCHEDULE => match strategy.has_cron_remove_schedule_permission() {
+            true => Ok(()),
+            false => Err(ContractError::Unauthorized {}),
+        },
         MSG_TYPE_SOFTWARE_UPGRADE => match strategy.has_software_upgrade_permission() {
             true => Ok(()),
             false => Err(ContractError::Unauthorized {}),
@@ -265,6 +273,7 @@ fn check_proposal_execute_message(
         _ => Err(ContractError::Unauthorized {}),
     }
 }
+
 /// Checks that the strategy owner is authorised to change the parameters of the
 /// cron module. We query the current values for each parameter & compare them to
 /// the values in the proposal; all modifications must be allowed by the strategy.
