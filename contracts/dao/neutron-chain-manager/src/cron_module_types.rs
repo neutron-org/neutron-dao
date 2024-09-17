@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 
 pub const PARAMS_QUERY_PATH_CRON: &str = "/neutron.cron.Query/Params";
 pub const MSG_TYPE_UPDATE_PARAMS_CRON: &str = "/neutron.cron.MsgUpdateParams";
+pub const MSG_TYPE_ADD_SCHEDULE: &str = "/neutron.cron.MsgAddSchedule";
+pub const MSG_TYPE_REMOVE_SCHEDULE: &str = "/neutron.cron.MsgRemoveSchedule";
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
