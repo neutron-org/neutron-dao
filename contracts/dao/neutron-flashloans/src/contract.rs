@@ -206,7 +206,7 @@ fn get_pre_loan_balances(
             address: source.to_string(),
             denom: requested_coin.denom.clone(),
         };
-        // Get the response (all balances)
+        // Get the response for the requested coin
         let balance_response: BalanceResponse =
             deps.querier.query(&requested_coin_balance_query.into())?;
 

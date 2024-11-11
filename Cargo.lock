@@ -2208,8 +2208,8 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "cosmos-sdk-proto",
- "cosmwasm-schema",
- "cosmwasm-std",
+ "cosmwasm-schema 1.5.5",
+ "cosmwasm-std 1.5.2",
  "cosmwasm-storage",
  "cw-controllers",
  "cw-multi-test",
@@ -2220,7 +2220,7 @@ dependencies = [
  "cwd-interface",
  "cwd-macros",
  "neutron-sdk 0.8.0",
- "prost 0.12.4",
+ "prost 0.12.6",
  "prost-types",
  "schemars",
  "serde",
@@ -2283,6 +2283,27 @@ dependencies = [
  "neutron-sdk 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "schemars",
  "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "neutron-sdk"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "46f60e477bd71007d9ff78ae020ec1c6b3b47798578af6151429434d86472efc"
+dependencies = [
+ "bech32",
+ "cosmos-sdk-proto",
+ "cosmwasm-schema 1.5.5",
+ "cosmwasm-std 1.5.2",
+ "prost 0.12.6",
+ "prost-types",
+ "protobuf 3.3.0",
+ "schemars",
+ "serde",
+ "serde-json-wasm 1.0.1",
+ "speedate",
+ "tendermint-proto",
  "thiserror",
 ]
 
