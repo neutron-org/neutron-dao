@@ -37,7 +37,7 @@ checksum = "b3d1d046238990b9cf5bcde22a3fb3584ee5cf65fb2765f454ed428c7a0063da"
 [[package]]
 name = "astroport"
 version = "2.0.0"
-source = "git+https://github.com/neutron-org/neutron-tge-contracts.git?branch=main#cd7c02e8894b1953cc73c299c51010fe758a05f3"
+source = "git+https://github.com/neutron-org/neutron-tge-contracts.git?branch=main#3685cd8f9a70a70eee83c8e688c306096a68c782"
 dependencies = [
  "cosmwasm-schema 1.5.5",
  "cosmwasm-std 1.5.2",
@@ -63,7 +63,7 @@ dependencies = [
 [[package]]
 name = "astroport"
 version = "2.0.0"
-source = "git+https://github.com/neutron-org/neutron-tge-contracts.git#cd7c02e8894b1953cc73c299c51010fe758a05f3"
+source = "git+https://github.com/neutron-org/neutron-tge-contracts.git#3685cd8f9a70a70eee83c8e688c306096a68c782"
 dependencies = [
  "cosmwasm-schema 1.5.5",
  "cosmwasm-std 1.5.2",
@@ -164,7 +164,7 @@ dependencies = [
 [[package]]
 name = "astroport-periphery"
 version = "1.1.0"
-source = "git+https://github.com/neutron-org/neutron-tge-contracts.git?branch=main#cd7c02e8894b1953cc73c299c51010fe758a05f3"
+source = "git+https://github.com/neutron-org/neutron-tge-contracts.git?branch=main#3685cd8f9a70a70eee83c8e688c306096a68c782"
 dependencies = [
  "astroport 3.11.0",
  "cosmwasm-schema 1.5.5",
@@ -2155,7 +2155,7 @@ checksum = "a7a70ba024b9dc04c27ea2f0c0548feb474ec5c54bba33a7f72f873a39d07b24"
 
 [[package]]
 name = "neutron-chain-manager"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "cosmwasm-schema 2.0.4",
@@ -3176,7 +3176,7 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 [[package]]
 name = "vesting-base"
 version = "1.1.0"
-source = "git+https://github.com/neutron-org/neutron-tge-contracts.git?branch=main#cd7c02e8894b1953cc73c299c51010fe758a05f3"
+source = "git+https://github.com/neutron-org/neutron-tge-contracts.git?branch=main#3685cd8f9a70a70eee83c8e688c306096a68c782"
 dependencies = [
  "astroport 2.0.0 (git+https://github.com/neutron-org/neutron-tge-contracts.git?branch=main)",
  "cosmwasm-schema 1.5.5",
@@ -3206,7 +3206,7 @@ dependencies = [
 [[package]]
 name = "vesting-base"
 version = "1.1.0"
-source = "git+https://github.com/neutron-org/neutron-tge-contracts.git#cd7c02e8894b1953cc73c299c51010fe758a05f3"
+source = "git+https://github.com/neutron-org/neutron-tge-contracts.git#3685cd8f9a70a70eee83c8e688c306096a68c782"
 dependencies = [
  "astroport 2.0.0 (git+https://github.com/neutron-org/neutron-tge-contracts.git)",
  "cosmwasm-schema 1.5.5",
@@ -3233,7 +3233,7 @@ dependencies = [
 [[package]]
 name = "vesting-lp"
 version = "1.2.0"
-source = "git+https://github.com/neutron-org/neutron-tge-contracts.git?branch=main#cd7c02e8894b1953cc73c299c51010fe758a05f3"
+source = "git+https://github.com/neutron-org/neutron-tge-contracts.git?branch=main#3685cd8f9a70a70eee83c8e688c306096a68c782"
 dependencies = [
  "astroport 2.0.0 (git+https://github.com/neutron-org/neutron-tge-contracts.git?branch=main)",
  "cosmwasm-schema 1.5.5",
@@ -3248,7 +3248,7 @@ dependencies = [
 [[package]]
 name = "vesting-lp-pcl"
 version = "1.1.0"
-source = "git+https://github.com/neutron-org/neutron-tge-contracts.git?branch=main#cd7c02e8894b1953cc73c299c51010fe758a05f3"
+source = "git+https://github.com/neutron-org/neutron-tge-contracts.git?branch=main#3685cd8f9a70a70eee83c8e688c306096a68c782"
 dependencies = [
  "astroport 2.0.0 (git+https://github.com/neutron-org/neutron-tge-contracts.git?branch=main)",
  "cosmwasm-schema 1.5.5",

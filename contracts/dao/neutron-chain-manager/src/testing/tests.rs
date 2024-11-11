@@ -2,16 +2,15 @@ use crate::contract::{
     execute_add_strategy, execute_execute_messages, execute_remove_strategy, instantiate,
 };
 use crate::error::ContractError::{InvalidDemotion, Unauthorized};
-use crate::msg::InstantiateMsg;
 use crate::msg::Permission::{
-    CronPermission, ParamChangePermission, UpdateCronParamsPermission,
+    CronPermission, ParamChangePermission, UpdateCronParamsPermission, UpdateDexParamsPermission,
     UpdateTokenfactoryParamsPermission,
 };
 use crate::msg::{
-    CronPermission as CronPermissionType, CronUpdateParamsPermission, StrategyMsg,
-    TokenfactoryUpdateParamsPermission,
+    CronPermission as CronPermissionType, CronUpdateParamsPermission, DexUpdateParamsPermission,
+    InstantiateMsg, ParamChangePermission as ParamChangePermissionType, ParamPermission,
+    StrategyMsg, TokenfactoryUpdateParamsPermission,
 };
-use crate::msg::{ParamChangePermission as ParamChangePermissionType, ParamPermission};
 use crate::testing::mock_querier::mock_dependencies;
 use cosmwasm_std::testing::{message_info, mock_env};
 use cosmwasm_std::{Addr, BankMsg, Coin, CosmosMsg, Uint128};
@@ -686,6 +685,236 @@ pub fn test_execute_execute_message_update_params_tokenfactory_unauthorized_whit
                 whitelisted_hooks: false,
             },
         )]),
+    )
+    .unwrap();
+
+    let info = message_info(&Addr::unchecked("addr1"), &[]);
+    let err = execute_execute_messages(deps.as_mut(), info.clone(), vec![msg]).unwrap_err();
+    assert_eq!(err, Unauthorized {});
+}
+
+/// Checks that if you have permissions, you can change all parameters of the dex
+/// module (new style parameter changes). NOTE: this does not check that the
+/// parameters have actually been changed.
+#[test]
+pub fn test_execute_execute_message_update_params_dex_authorized() {
+    let msg = CosmosMsg::Custom(NeutronMsg::SubmitAdminProposal {
+        admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
+            message: r#"{"@type":"/neutron.dex.MsgUpdateParams",
+            "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
+            "params": {"fee_tiers":["1","2"],"paused":true,"max_jits_per_block":"25","good_til_purge_allowance":"540000"}}"#
+                .to_string(),
+        }),
+    });
+
+    let mut deps = mock_dependencies();
+    let env = mock_env();
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+
+    instantiate(
+        deps.as_mut(),
+        env.clone(),
+        info.clone(),
+        InstantiateMsg {
+            initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
+        },
+    )
+    .unwrap();
+
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    execute_add_strategy(
+        deps.as_mut(),
+        info.clone(),
+        Addr::unchecked("addr1".to_string()),
+        StrategyMsg::AllowOnly(vec![UpdateDexParamsPermission(DexUpdateParamsPermission {
+            fee_tiers: true,
+            paused: true,
+            max_jits_per_block: true,
+            good_til_purge_allowance: true,
+        })]),
+    )
+    .unwrap();
+
+    let info = message_info(&Addr::unchecked("addr1"), &[]);
+    execute_execute_messages(deps.as_mut(), info.clone(), vec![msg]).unwrap();
+}
+
+/// Checks that you can't change the `fee_tiers` if you don't have the permission to do so
+/// (new style parameter changes).
+#[test]
+pub fn test_execute_execute_message_update_params_dex_unauthorized_fee_tiers() {
+    let msg = CosmosMsg::Custom(NeutronMsg::SubmitAdminProposal {
+        admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
+            message: r#"{"@type":"/neutron.dex.MsgUpdateParams",
+             "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
+             "params": {"fee_tiers":["1","2"],"paused":true,"max_jits_per_block":"25","good_til_purge_allowance":"540000"}}"#
+                .to_string(),
+        }),
+    });
+
+    let mut deps = mock_dependencies();
+    let env = mock_env();
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+
+    instantiate(
+        deps.as_mut(),
+        env.clone(),
+        info.clone(),
+        InstantiateMsg {
+            initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
+        },
+    )
+    .unwrap();
+
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    execute_add_strategy(
+        deps.as_mut(),
+        info.clone(),
+        Addr::unchecked("addr1".to_string()),
+        StrategyMsg::AllowOnly(vec![UpdateDexParamsPermission(DexUpdateParamsPermission {
+            fee_tiers: false,
+            paused: true,
+            max_jits_per_block: true,
+            good_til_purge_allowance: true,
+        })]),
+    )
+    .unwrap();
+
+    let info = message_info(&Addr::unchecked("addr1"), &[]);
+    let err = execute_execute_messages(deps.as_mut(), info.clone(), vec![msg]).unwrap_err();
+    assert_eq!(err, Unauthorized {})
+}
+
+/// Checks that you can't change `paused` if you don't have the permission to do so
+/// (new style parameter changes).
+
+#[test]
+pub fn test_execute_execute_message_update_params_dex_unauthorized_paused() {
+    let msg = CosmosMsg::Custom(NeutronMsg::SubmitAdminProposal {
+        admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
+            message: r#"{"@type":"/neutron.dex.MsgUpdateParams",
+             "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
+             "params": {"fee_tiers":["1","2"],"paused":true,"max_jits_per_block":"25","good_til_purge_allowance":"540000"}}"#
+                .to_string(),
+        }),
+    });
+
+    let mut deps = mock_dependencies();
+    let env = mock_env();
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+
+    instantiate(
+        deps.as_mut(),
+        env.clone(),
+        info.clone(),
+        InstantiateMsg {
+            initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
+        },
+    )
+    .unwrap();
+
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    execute_add_strategy(
+        deps.as_mut(),
+        info.clone(),
+        Addr::unchecked("addr1".to_string()),
+        StrategyMsg::AllowOnly(vec![UpdateDexParamsPermission(DexUpdateParamsPermission {
+            fee_tiers: true,
+            paused: false,
+            max_jits_per_block: true,
+            good_til_purge_allowance: true,
+        })]),
+    )
+    .unwrap();
+
+    let info = message_info(&Addr::unchecked("addr1"), &[]);
+    let err = execute_execute_messages(deps.as_mut(), info.clone(), vec![msg]).unwrap_err();
+    assert_eq!(err, Unauthorized {});
+}
+
+/// Checks that you can't change `max_jits_per_block` if you don't have the permission to do so
+/// (new style parameter changes).
+#[test]
+pub fn test_execute_execute_message_update_params_dex_unauthorized_max_jits_per_block() {
+    let msg = CosmosMsg::Custom(NeutronMsg::SubmitAdminProposal {
+        admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
+            message: r#"{"@type":"/neutron.dex.MsgUpdateParams",
+             "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
+             "params": {"fee_tiers":["1","2"],"paused":true,"max_jits_per_block":"25","good_til_purge_allowance":"540000"}}"#
+                .to_string(),
+        }),
+    });
+
+    let mut deps = mock_dependencies();
+    let env = mock_env();
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+
+    instantiate(
+        deps.as_mut(),
+        env.clone(),
+        info.clone(),
+        InstantiateMsg {
+            initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
+        },
+    )
+    .unwrap();
+
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    execute_add_strategy(
+        deps.as_mut(),
+        info.clone(),
+        Addr::unchecked("addr1".to_string()),
+        StrategyMsg::AllowOnly(vec![UpdateDexParamsPermission(DexUpdateParamsPermission {
+            fee_tiers: true,
+            paused: true,
+            max_jits_per_block: false,
+            good_til_purge_allowance: true,
+        })]),
+    )
+    .unwrap();
+
+    let info = message_info(&Addr::unchecked("addr1"), &[]);
+    let err = execute_execute_messages(deps.as_mut(), info.clone(), vec![msg]).unwrap_err();
+    assert_eq!(err, Unauthorized {});
+}
+/// Checks that you can't change `good_til_purge_allowance` if you don't have the permission to do so
+/// (new style parameter changes).
+#[test]
+pub fn test_execute_execute_message_update_params_dex_unauthorized_good_til_purge_allowance() {
+    let msg = CosmosMsg::Custom(NeutronMsg::SubmitAdminProposal {
+        admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
+            message: r#"{"@type":"/neutron.dex.MsgUpdateParams",
+             "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
+             "params": {"fee_tiers":["1","2"],"paused":true,"max_jits_per_block":"25","good_til_purge_allowance":"540000"}}"#
+                .to_string(),
+        }),
+    });
+
+    let mut deps = mock_dependencies();
+    let env = mock_env();
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+
+    instantiate(
+        deps.as_mut(),
+        env.clone(),
+        info.clone(),
+        InstantiateMsg {
+            initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
+        },
+    )
+    .unwrap();
+
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    execute_add_strategy(
+        deps.as_mut(),
+        info.clone(),
+        Addr::unchecked("addr1".to_string()),
+        StrategyMsg::AllowOnly(vec![UpdateDexParamsPermission(DexUpdateParamsPermission {
+            fee_tiers: true,
+            paused: true,
+            max_jits_per_block: true,
+            good_til_purge_allowance: false,
+        })]),
     )
     .unwrap();
 

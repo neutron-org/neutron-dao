@@ -152,6 +152,53 @@ impl Strategy {
             }
         }
     }
+
+    pub fn get_dex_update_param_permission(&self) -> Option<DexUpdateParamsPermission> {
+        match self {
+            Strategy::AllowAll => Some(DexUpdateParamsPermission {
+                fee_tiers: true,
+                paused: true,
+                max_jits_per_block: true,
+                good_til_purge_allowance: true,
+            }),
+            Strategy::AllowOnly(permissions) => {
+                match permissions.get(&PermissionType::UpdateDexParamsPermission) {
+                    Some(Permission::UpdateDexParamsPermission(dex_update_params)) => {
+                        Some(dex_update_params.clone())
+                    }
+                    _ => None,
+                }
+            }
+        }
+    }
+
+    pub fn has_software_upgrade_permission(&self) -> bool {
+        match self {
+            Strategy::AllowAll => true,
+            Strategy::AllowOnly(permissions) => {
+                match permissions.get(&PermissionType::SoftwareUpgradePermission) {
+                    Some(Permission::SoftwareUpgradePermission(software_upgrade_params)) => {
+                        software_upgrade_params.upgrade
+                    }
+                    _ => false,
+                }
+            }
+        }
+    }
+
+    pub fn has_cancel_software_upgrade_permission(&self) -> bool {
+        match self {
+            Strategy::AllowAll => true,
+            Strategy::AllowOnly(permissions) => {
+                match permissions.get(&PermissionType::SoftwareUpgradePermission) {
+                    Some(Permission::SoftwareUpgradePermission(software_upgrade_params)) => {
+                        software_upgrade_params.cancel_upgrade
+                    }
+                    _ => false,
+                }
+            }
+        }
+    }
 }
 
 #[cw_serde]
@@ -162,7 +209,9 @@ pub enum Permission {
     // For new-style parameter updates.
     UpdateCronParamsPermission(CronUpdateParamsPermission),
     UpdateTokenfactoryParamsPermission(TokenfactoryUpdateParamsPermission),
+    UpdateDexParamsPermission(DexUpdateParamsPermission),
     CronPermission(CronPermission),
+    SoftwareUpgradePermission(SoftwareUpgradePermission),
 }
 
 impl From<Permission> for PermissionType {
@@ -173,7 +222,9 @@ impl From<Permission> for PermissionType {
             Permission::UpdateTokenfactoryParamsPermission(_) => {
                 PermissionType::UpdateTokenfactoryParamsPermission
             }
+            Permission::UpdateDexParamsPermission(_) => PermissionType::UpdateDexParamsPermission,
             Permission::CronPermission(_) => PermissionType::CronPermission,
+            Permission::SoftwareUpgradePermission(_) => PermissionType::SoftwareUpgradePermission,
         }
     }
 }
@@ -184,7 +235,9 @@ pub enum PermissionType {
     ParamChangePermission,
     UpdateCronParamsPermission,
     UpdateTokenfactoryParamsPermission,
+    UpdateDexParamsPermission,
     CronPermission,
+    SoftwareUpgradePermission,
 }
 
 #[cw_serde]
@@ -226,6 +279,23 @@ pub struct TokenfactoryUpdateParamsPermission {
     pub denom_creation_gas_consume: bool,
     pub fee_collector_address: bool,
     pub whitelisted_hooks: bool,
+}
+
+#[cw_serde]
+#[derive(Eq)]
+#[serde(rename_all = "snake_case")]
+pub struct DexUpdateParamsPermission {
+    pub fee_tiers: bool,
+    pub paused: bool,
+    pub max_jits_per_block: bool,
+    pub good_til_purge_allowance: bool,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub struct SoftwareUpgradePermission {
+    pub upgrade: bool,
+    pub cancel_upgrade: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]

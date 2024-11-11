@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 
 pub const PARAMS_QUERY_PATH_CRON: &str = "/neutron.cron.Query/Params";
 pub const MSG_TYPE_UPDATE_PARAMS_CRON: &str = "/neutron.cron.MsgUpdateParams";
+pub const MSG_TYPE_ADD_SCHEDULE: &str = "/neutron.cron.MsgAddSchedule";
+pub const MSG_TYPE_REMOVE_SCHEDULE: &str = "/neutron.cron.MsgRemoveSchedule";
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -16,6 +18,9 @@ pub struct MsgUpdateParamsCron {
 #[serde(rename_all = "snake_case")]
 pub struct ParamsCron {
     pub security_address: String,
+    /// Unfortunately, stargate returns a string instead of a number for the
+    /// limit parameter, so we need to have a custom deserializer for this
+    /// field.
     #[serde(deserialize_with = "deserialize_u64")]
     pub limit: u64,
 }
