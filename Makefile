@@ -14,7 +14,7 @@ fmt:
 
 check_contracts:
 	@cargo install cosmwasm-check --version 2.0.4 --locked
-	@cosmwasm-check --available-capabilities iterator,staking,stargate,neutron artifacts/*.wasm
+	@cosmwasm-check --available-capabilities iterator,staking,stargate,neutron,cosmwasm_1_1,cosmwasm_1_2,cosmwasm_1_3,cosmwasm_1_4,cosmwasm_2_0 artifacts/*.wasm
 
 compile:
 	@docker run --rm -v "$(CURDIR)":/code \
