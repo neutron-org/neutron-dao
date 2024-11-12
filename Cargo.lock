@@ -2602,8 +2602,8 @@ dependencies = [
 
 [[package]]
 name = "neutron-std"
-version = "4.2.2-rc"
-source = "git+https://github.com/neutron-org/neutron-std.git?branch=feat/add-interchain-security-protobuf#431b87f7f89797450f0ca2dd413b27e713335235"
+version = "5.0.0"
+source = "git+https://github.com/neutron-org/neutron-std.git?branch=feat/add-interchain-security-protobuf#6881da40f6119f8c12a4ef5141bd462f7ec9033e"
 dependencies = [
  "bech32 0.9.1",
  "chrono",
@@ -2627,7 +2627,7 @@ dependencies = [
 [[package]]
 name = "neutron-std-derive"
 version = "0.20.1"
-source = "git+https://github.com/neutron-org/neutron-std.git?branch=feat/add-interchain-security-protobuf#431b87f7f89797450f0ca2dd413b27e713335235"
+source = "git+https://github.com/neutron-org/neutron-std.git?branch=feat/add-interchain-security-protobuf#6881da40f6119f8c12a4ef5141bd462f7ec9033e"
 dependencies = [
  "itertools 0.10.5",
  "proc-macro2",
