@@ -1,6 +1,6 @@
 {
   "contract_name": "neutron-chain-manager",
-  "contract_version": "0.3.0",
+  "contract_version": "0.4.0",
   "idl_version": "1.0.0",
   "instantiate": {
     "$schema": "http://json-schema.org/draft-07/schema#",
@@ -1985,6 +1985,18 @@
               }
             },
             "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "software_upgrade_permission"
+            ],
+            "properties": {
+              "software_upgrade_permission": {
+                "$ref": "#/definitions/SoftwareUpgradePermission"
+              }
+            },
+            "additionalProperties": false
           }
         ]
       },
@@ -2105,6 +2117,21 @@
             ],
             "format": "uint64",
             "minimum": 0.0
+          }
+        }
+      },
+      "SoftwareUpgradePermission": {
+        "type": "object",
+        "required": [
+          "cancel_upgrade",
+          "upgrade"
+        ],
+        "properties": {
+          "cancel_upgrade": {
+            "type": "boolean"
+          },
+          "upgrade": {
+            "type": "boolean"
           }
         }
       },
@@ -2698,8 +2725,35 @@
                 }
               },
               "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": [
+                "software_upgrade_permission"
+              ],
+              "properties": {
+                "software_upgrade_permission": {
+                  "$ref": "#/definitions/SoftwareUpgradePermission"
+                }
+              },
+              "additionalProperties": false
             }
           ]
+        },
+        "SoftwareUpgradePermission": {
+          "type": "object",
+          "required": [
+            "cancel_upgrade",
+            "upgrade"
+          ],
+          "properties": {
+            "cancel_upgrade": {
+              "type": "boolean"
+            },
+            "upgrade": {
+              "type": "boolean"
+            }
+          }
         },
         "StrategyMsg": {
           "oneOf": [

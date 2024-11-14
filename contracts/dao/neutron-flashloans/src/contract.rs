@@ -210,7 +210,7 @@ fn get_pre_loan_balances(
         let balance_response: BalanceResponse =
             deps.querier.query(&requested_coin_balance_query.into())?;
 
-        // If the source has enough of the requested coin, return an error
+        // If the source has enough of the requested coin, remember the balance
         if requested_coin.amount.le(&balance_response.amount.amount) {
             pre_loan_balances.push(balance_response.amount.clone())
         } else {
