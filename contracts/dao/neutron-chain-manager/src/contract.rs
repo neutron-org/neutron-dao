@@ -1,18 +1,3 @@
-use crate::adminmodule_module_types::{
-    MSG_TYPE_CANCEL_SOFTWARE_UPGRADE, MSG_TYPE_SOFTWARE_UPGRADE,
-};
-use crate::cron_module_types::{
-    MsgUpdateParamsCron, ParamsRequestCron, ParamsResponseCron, MSG_TYPE_ADD_SCHEDULE,
-    MSG_TYPE_REMOVE_SCHEDULE, MSG_TYPE_UPDATE_PARAMS_CRON, PARAMS_QUERY_PATH_CRON,
-};
-use crate::dex_module_types::{
-    MsgUpdateParamsDex, ParamsRequestDex, ParamsResponseDex, MSG_TYPE_UPDATE_PARAMS_DEX,
-    PARAMS_QUERY_PATH_DEX,
-};
-use crate::tokenfactory_module_types::{
-    MsgUpdateParamsTokenfactory, ParamsRequestTokenfactory, ParamsResponseTokenfactory,
-    MSG_TYPE_UPDATE_PARAMS_TOKENFACTORY, PARAMS_QUERY_PATH_TOKENFACTORY,
-};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -20,10 +5,13 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 use neutron_sdk::bindings::msg::{AdminProposal, NeutronMsg, ProposalExecuteMessage};
-use neutron_sdk::proto_types::neutron::cron::QueryParamsRequest as QueryParamsRequestCron;
-use neutron_sdk::proto_types::neutron::dex::QueryParamsRequest as QueryParamsRequestDex;
-use neutron_sdk::proto_types::osmosis::tokenfactory::v1beta1::QueryParamsRequest as QueryParamsRequestTokenfactory;
-use neutron_sdk::stargate::aux::make_stargate_query;
+use neutron_std::types::cosmos::upgrade::v1beta1::{MsgCancelUpgrade, MsgSoftwareUpgrade};
+use neutron_std::types::gaia::globalfee;
+use neutron_std::types::interchain_security::ccv::consumer;
+use neutron_std::types::neutron::cron;
+use neutron_std::types::neutron::dex;
+use neutron_std::types::neutron::dynamicfees;
+use neutron_std::types::osmosis::tokenfactory;
 
 use crate::error::ContractError;
 use crate::msg::{
@@ -238,38 +226,47 @@ fn check_proposal_execute_message(
 ) -> Result<(), ContractError> {
     let typed_proposal: ProposalExecuteMessageJSON =
         serde_json_wasm::from_str(proposal.message.as_str())?;
-
     match typed_proposal.type_field.as_str() {
-        MSG_TYPE_UPDATE_PARAMS_CRON => {
+        cron::MsgUpdateParams::TYPE_URL => {
             check_cron_update_msg_params(deps, strategy, proposal)?;
             Ok(())
         }
-        MSG_TYPE_UPDATE_PARAMS_TOKENFACTORY => {
+        tokenfactory::v1beta1::MsgUpdateParams::TYPE_URL => {
             check_tokenfactory_update_msg_params(deps, strategy, proposal)?;
             Ok(())
         }
-        MSG_TYPE_UPDATE_PARAMS_DEX => {
+        dex::MsgUpdateParams::TYPE_URL => {
             check_dex_update_msg_params(deps, strategy, proposal)?;
             Ok(())
         }
-        MSG_TYPE_ADD_SCHEDULE => match strategy.has_cron_add_schedule_permission() {
-            true => Ok(()),
-            false => Err(ContractError::Unauthorized {}),
-        },
-        MSG_TYPE_REMOVE_SCHEDULE => match strategy.has_cron_remove_schedule_permission() {
-            true => Ok(()),
-            false => Err(ContractError::Unauthorized {}),
-        },
-        MSG_TYPE_SOFTWARE_UPGRADE => match strategy.has_software_upgrade_permission() {
-            true => Ok(()),
-            false => Err(ContractError::Unauthorized {}),
-        },
-        MSG_TYPE_CANCEL_SOFTWARE_UPGRADE => {
-            match strategy.has_cancel_software_upgrade_permission() {
-                true => Ok(()),
-                false => Err(ContractError::Unauthorized {}),
-            }
+        dynamicfees::v1::MsgUpdateParams::TYPE_URL => {
+            check_dynamicfees_update_msg_params(deps, strategy, proposal)?;
+            Ok(())
         }
+        globalfee::v1beta1::MsgUpdateParams::TYPE_URL => {
+            check_globalfee_update_msg_params(deps, strategy, proposal)?;
+            Ok(())
+        }
+        consumer::v1::MsgUpdateParams::TYPE_URL => {
+            check_ccv_update_msg_params(deps, strategy, proposal)?;
+            Ok(())
+        }
+        cron::MsgAddSchedule::TYPE_URL => match strategy.has_cron_add_schedule_permission() {
+            true => Ok(()),
+            false => Err(ContractError::Unauthorized {}),
+        },
+        cron::MsgRemoveSchedule::TYPE_URL => match strategy.has_cron_remove_schedule_permission() {
+            true => Ok(()),
+            false => Err(ContractError::Unauthorized {}),
+        },
+        MsgSoftwareUpgrade::TYPE_URL => match strategy.has_software_upgrade_permission() {
+            true => Ok(()),
+            false => Err(ContractError::Unauthorized {}),
+        },
+        MsgCancelUpgrade::TYPE_URL => match strategy.has_cancel_software_upgrade_permission() {
+            true => Ok(()),
+            false => Err(ContractError::Unauthorized {}),
+        },
         _ => Err(ContractError::Unauthorized {}),
     }
 }
@@ -282,21 +279,20 @@ fn check_cron_update_msg_params(
     strategy: Strategy,
     proposal: ProposalExecuteMessage,
 ) -> Result<(), ContractError> {
-    let msg_update_params: MsgUpdateParamsCron =
-        serde_json_wasm::from_str(proposal.message.as_str())?;
-
+    let msg_update_params =
+        serde_json_wasm::from_str::<cron::MsgUpdateParams>(proposal.message.as_str())?
+            .params
+            .ok_or(ContractError::Unauthorized {})?;
     let cron_update_param_permission = strategy
         .get_cron_update_param_permission()
         .ok_or(ContractError::Unauthorized {})?;
 
-    let cron_params = get_cron_params(deps, ParamsRequestCron {})?;
-    if cron_params.params.limit != msg_update_params.params.limit
-        && !cron_update_param_permission.limit
-    {
+    let cron_params = get_cron_params(deps)?.params.unwrap_or_default();
+    if cron_params.limit != msg_update_params.limit && !cron_update_param_permission.limit {
         return Err(ContractError::Unauthorized {});
     }
 
-    if cron_params.params.security_address != msg_update_params.params.security_address
+    if cron_params.security_address != msg_update_params.security_address
         && !cron_update_param_permission.security_address
     {
         return Err(ContractError::Unauthorized {});
@@ -306,12 +302,9 @@ fn check_cron_update_msg_params(
 }
 
 /// Queries the parameters of the cron module.
-pub fn get_cron_params(deps: Deps, req: ParamsRequestCron) -> StdResult<ParamsResponseCron> {
-    make_stargate_query(
-        deps,
-        PARAMS_QUERY_PATH_CRON,
-        QueryParamsRequestCron::from(req),
-    )
+pub fn get_cron_params(deps: Deps) -> StdResult<cron::QueryParamsResponse> {
+    let cron_querier = cron::CronQuerier::new(&deps.querier);
+    cron_querier.params()
 }
 
 /// Checks that the strategy owner is authorised to change the parameters of the
@@ -322,35 +315,36 @@ fn check_tokenfactory_update_msg_params(
     strategy: Strategy,
     proposal: ProposalExecuteMessage,
 ) -> Result<(), ContractError> {
-    let msg_update_params: MsgUpdateParamsTokenfactory =
-        serde_json_wasm::from_str(proposal.message.as_str())?;
-
+    let msg_update_params = serde_json_wasm::from_str::<tokenfactory::v1beta1::MsgUpdateParams>(
+        proposal.message.as_str(),
+    )?
+    .params
+    .ok_or(ContractError::Unauthorized {})?;
     let tokenfactory_update_param_permission = strategy
         .get_tokenfactory_update_param_permission()
         .ok_or(ContractError::Unauthorized {})?;
 
-    let tokenfactory_params = get_tokenfactory_params(deps, ParamsRequestTokenfactory {})?;
-    if tokenfactory_params.params.denom_creation_fee != msg_update_params.params.denom_creation_fee
+    let tokenfactory_params = get_tokenfactory_params(deps)?.params.unwrap_or_default();
+    if tokenfactory_params.denom_creation_fee != msg_update_params.denom_creation_fee
         && !tokenfactory_update_param_permission.denom_creation_fee
     {
         return Err(ContractError::Unauthorized {});
     }
 
-    if tokenfactory_params.params.denom_creation_gas_consume
-        != msg_update_params.params.denom_creation_gas_consume
+    if tokenfactory_params.denom_creation_gas_consume
+        != msg_update_params.denom_creation_gas_consume
         && !tokenfactory_update_param_permission.denom_creation_gas_consume
     {
         return Err(ContractError::Unauthorized {});
     }
 
-    if tokenfactory_params.params.fee_collector_address
-        != msg_update_params.params.fee_collector_address
+    if tokenfactory_params.fee_collector_address != msg_update_params.fee_collector_address
         && !tokenfactory_update_param_permission.fee_collector_address
     {
         return Err(ContractError::Unauthorized {});
     }
 
-    if tokenfactory_params.params.whitelisted_hooks != msg_update_params.params.whitelisted_hooks
+    if tokenfactory_params.whitelisted_hooks != msg_update_params.whitelisted_hooks
         && !tokenfactory_update_param_permission.whitelisted_hooks
     {
         return Err(ContractError::Unauthorized {});
@@ -362,13 +356,9 @@ fn check_tokenfactory_update_msg_params(
 /// Queries the parameters of the tokenfactory module.
 pub fn get_tokenfactory_params(
     deps: Deps,
-    req: ParamsRequestTokenfactory,
-) -> StdResult<ParamsResponseTokenfactory> {
-    make_stargate_query(
-        deps,
-        PARAMS_QUERY_PATH_TOKENFACTORY,
-        QueryParamsRequestTokenfactory::from(req),
-    )
+) -> StdResult<tokenfactory::v1beta1::QueryParamsResponse> {
+    let factory_querier = tokenfactory::v1beta1::TokenfactoryQuerier::new(&deps.querier);
+    factory_querier.params()
 }
 
 /// Checks that the strategy owner is authorised to change the parameters of the
@@ -379,32 +369,30 @@ fn check_dex_update_msg_params(
     strategy: Strategy,
     proposal: ProposalExecuteMessage,
 ) -> Result<(), ContractError> {
-    let msg_update_params: MsgUpdateParamsDex =
-        serde_json_wasm::from_str(proposal.message.as_str())?;
+    let msg_update_params =
+        serde_json_wasm::from_str::<dex::MsgUpdateParams>(proposal.message.as_str())?
+            .params
+            .ok_or(ContractError::Unauthorized {})?;
 
     let dex_update_param_permission = strategy
         .get_dex_update_param_permission()
         .ok_or(ContractError::Unauthorized {})?;
 
-    let dex_params = get_dex_params(deps, ParamsRequestDex {})?;
+    let dex_params = get_dex_params(deps)?.params.unwrap_or_default();
 
-    if dex_params.params.fee_tiers != msg_update_params.params.fee_tiers
-        && !dex_update_param_permission.fee_tiers
+    if dex_params.fee_tiers != msg_update_params.fee_tiers && !dex_update_param_permission.fee_tiers
     {
         return Err(ContractError::Unauthorized {});
     }
-    if dex_params.params.paused != msg_update_params.params.paused
-        && !dex_update_param_permission.paused
-    {
+    if dex_params.paused != msg_update_params.paused && !dex_update_param_permission.paused {
         return Err(ContractError::Unauthorized {});
     }
-    if dex_params.params.max_jits_per_block != msg_update_params.params.max_jits_per_block
+    if dex_params.max_jits_per_block != msg_update_params.max_jits_per_block
         && !dex_update_param_permission.max_jits_per_block
     {
         return Err(ContractError::Unauthorized {});
     }
-    if dex_params.params.good_til_purge_allowance
-        != msg_update_params.params.good_til_purge_allowance
+    if dex_params.good_til_purge_allowance != msg_update_params.good_til_purge_allowance
         && !dex_update_param_permission.good_til_purge_allowance
     {
         return Err(ContractError::Unauthorized {});
@@ -414,12 +402,190 @@ fn check_dex_update_msg_params(
 }
 
 /// Queries the parameters of the dex module.
-pub fn get_dex_params(deps: Deps, req: ParamsRequestDex) -> StdResult<ParamsResponseDex> {
-    make_stargate_query(
-        deps,
-        PARAMS_QUERY_PATH_DEX,
-        QueryParamsRequestDex::from(req),
-    )
+pub fn get_dex_params(deps: Deps) -> StdResult<dex::QueryParamsResponse> {
+    let dex_querier = dex::DexQuerier::new(&deps.querier);
+    dex_querier.params()
+}
+
+/// Checks that the strategy owner is authorised to change the parameters of the
+/// dynamicfees module. We query the current values for each parameter & compare them to
+/// the values in the proposal; all modifications must be allowed by the strategy.
+fn check_dynamicfees_update_msg_params(
+    deps: Deps,
+    strategy: Strategy,
+    proposal: ProposalExecuteMessage,
+) -> Result<(), ContractError> {
+    let msg_update_params =
+        serde_json_wasm::from_str::<dynamicfees::v1::MsgUpdateParams>(proposal.message.as_str())?
+            .params
+            .ok_or(ContractError::Unauthorized {})?;
+
+    let dynamicfees_update_param_permission = strategy
+        .get_dynamicfees_update_param_permission()
+        .ok_or(ContractError::Unauthorized {})?;
+
+    let dynamicfees_params = get_dynamicfees_params(deps)?.params.unwrap_or_default();
+
+    if dynamicfees_params.ntrn_prices != msg_update_params.ntrn_prices
+        && !dynamicfees_update_param_permission.ntrn_prices
+    {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    Ok(())
+}
+
+/// Queries the parameters of the dynamicfees module.
+pub fn get_dynamicfees_params(deps: Deps) -> StdResult<dynamicfees::v1::QueryParamsResponse> {
+    let dynamicfees_querier = dynamicfees::v1::DynamicfeesQuerier::new(&deps.querier);
+    dynamicfees_querier.params()
+}
+
+/// Checks that the strategy owner is authorised to change the parameters of the
+/// globalfee module. We query the current values for each parameter & compare them to
+/// the values in the proposal; all modifications must be allowed by the strategy.
+fn check_globalfee_update_msg_params(
+    deps: Deps,
+    strategy: Strategy,
+    proposal: ProposalExecuteMessage,
+) -> Result<(), ContractError> {
+    let msg_update_params = serde_json_wasm::from_str::<globalfee::v1beta1::MsgUpdateParams>(
+        proposal.message.as_str(),
+    )?
+    .params
+    .ok_or(ContractError::Unauthorized {})?;
+
+    let globalfee_update_param_permission = strategy
+        .get_globalfee_update_param_permission()
+        .ok_or(ContractError::Unauthorized {})?;
+
+    let globalfee_params = get_globalfee_params(deps)?.params.unwrap_or_default();
+
+    if globalfee_params.bypass_min_fee_msg_types != msg_update_params.bypass_min_fee_msg_types
+        && !globalfee_update_param_permission.bypass_min_fee_msg_types
+    {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    if globalfee_params.max_total_bypass_min_fee_msg_gas_usage
+        != msg_update_params.max_total_bypass_min_fee_msg_gas_usage
+        && !globalfee_update_param_permission.max_total_bypass_min_fee_msg_gas_usage
+    {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    if globalfee_params.minimum_gas_prices != msg_update_params.minimum_gas_prices
+        && !globalfee_update_param_permission.minimum_gas_prices
+    {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    Ok(())
+}
+
+/// Queries the parameters of the globalfee module.
+pub fn get_globalfee_params(deps: Deps) -> StdResult<globalfee::v1beta1::QueryParamsResponse> {
+    let globalfee_querier = globalfee::v1beta1::GlobalfeeQuerier::new(&deps.querier);
+    globalfee_querier.params()
+}
+
+/// Checks that the strategy owner is authorised to change the parameters of the
+/// ccv module. We query the current values for each parameter & compare them to
+/// the values in the proposal; all modifications must be allowed by the strategy.
+#[allow(deprecated)]
+fn check_ccv_update_msg_params(
+    deps: Deps,
+    strategy: Strategy,
+    proposal: ProposalExecuteMessage,
+) -> Result<(), ContractError> {
+    let msg_update_params =
+        serde_json_wasm::from_str::<consumer::v1::MsgUpdateParams>(proposal.message.as_str())?
+            .params
+            .ok_or(ContractError::Unauthorized {})?;
+
+    let ccv_update_param_permission = strategy
+        .get_ccv_update_param_permission()
+        .ok_or(ContractError::Unauthorized {})?;
+
+    let ccv_params = get_ccv_params(deps)?.params.unwrap_or_default();
+
+    // never allow to change 'enabled'
+    if ccv_params.enabled != msg_update_params.enabled {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    if ccv_params.blocks_per_distribution_transmission
+        != msg_update_params.blocks_per_distribution_transmission
+        && !ccv_update_param_permission.blocks_per_distribution_transmission
+    {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    if ccv_params.ccv_timeout_period != msg_update_params.ccv_timeout_period
+        && !ccv_update_param_permission.ccv_timeout_period
+    {
+        return Err(ContractError::Unauthorized {});
+    }
+    if ccv_params.consumer_redistribution_fraction
+        != msg_update_params.consumer_redistribution_fraction
+        && !ccv_update_param_permission.consumer_redistribution_fraction
+    {
+        return Err(ContractError::Unauthorized {});
+    }
+    if ccv_params.distribution_transmission_channel
+        != msg_update_params.distribution_transmission_channel
+        && !ccv_update_param_permission.distribution_transmission_channel
+    {
+        return Err(ContractError::Unauthorized {});
+    }
+    if ccv_params.historical_entries != msg_update_params.historical_entries
+        && !ccv_update_param_permission.historical_entries
+    {
+        return Err(ContractError::Unauthorized {});
+    }
+    if ccv_params.provider_fee_pool_addr_str != msg_update_params.provider_fee_pool_addr_str
+        && !ccv_update_param_permission.provider_fee_pool_addr_str
+    {
+        return Err(ContractError::Unauthorized {});
+    }
+    if ccv_params.provider_reward_denoms != msg_update_params.provider_reward_denoms
+        && !ccv_update_param_permission.provider_reward_denoms
+    {
+        return Err(ContractError::Unauthorized {});
+    }
+    if ccv_params.retry_delay_period != msg_update_params.retry_delay_period
+        && !ccv_update_param_permission.retry_delay_period
+    {
+        return Err(ContractError::Unauthorized {});
+    }
+    if ccv_params.reward_denoms != msg_update_params.reward_denoms
+        && !ccv_update_param_permission.reward_denoms
+    {
+        return Err(ContractError::Unauthorized {});
+    }
+    if ccv_params.soft_opt_out_threshold != msg_update_params.soft_opt_out_threshold
+        && !ccv_update_param_permission.soft_opt_out_threshold
+    {
+        return Err(ContractError::Unauthorized {});
+    }
+    if ccv_params.transfer_timeout_period != msg_update_params.transfer_timeout_period
+        && !ccv_update_param_permission.transfer_timeout_period
+    {
+        return Err(ContractError::Unauthorized {});
+    }
+    if ccv_params.unbonding_period != msg_update_params.unbonding_period
+        && !ccv_update_param_permission.unbonding_period
+    {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    Ok(())
+}
+
+/// Queries the parameters of the ccv module.
+pub fn get_ccv_params(deps: Deps) -> StdResult<consumer::v1::QueryParamsResponse> {
+    let ccv_querier = consumer::v1::ConsumerQuerier::new(&deps.querier);
+    ccv_querier.query_params()
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

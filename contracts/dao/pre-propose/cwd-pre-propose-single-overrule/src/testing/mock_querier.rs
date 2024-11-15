@@ -231,7 +231,7 @@ pub fn get_dao_with_impostor_timelock() -> HashMap<String, Box<dyn ContractQueri
 pub fn get_dao_with_impostor_subdao() -> HashMap<String, Box<dyn ContractQuerier>> {
     let mut contracts: HashMap<String, Box<dyn ContractQuerier>> = get_properly_initialized_dao();
     // subdao becomes impostor if it is not in the dao's list, so let's just make it empty
-    contracts.remove(&MOCK_DAO_CORE.to_string());
+    contracts.remove(MOCK_DAO_CORE);
     contracts.insert(
         MOCK_DAO_CORE.to_string(),
         Box::new(MockDaoQueries {
