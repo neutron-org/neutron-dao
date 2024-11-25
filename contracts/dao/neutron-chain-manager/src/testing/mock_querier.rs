@@ -3,21 +3,13 @@ use cosmwasm_std::{
     from_json, Binary, ContractResult, Empty, GrpcQuery, OwnedDeps, Querier, QuerierResult,
     QueryRequest, SystemError, SystemResult,
 };
-use neutron_sdk::proto_types::cosmos::base::v1beta1::Coin;
-use neutron_sdk::proto_types::neutron::cron::{
-    Params as CronParams, QueryParamsResponse as ParamsResponseCron,
-};
-use neutron_sdk::proto_types::neutron::dex::{
-    Params as DexParams, QueryParamsResponse as QueryParamsDexResponse,
-};
-use neutron_sdk::proto_types::osmosis::tokenfactory::{
-    v1beta1::QueryParamsResponse as QueryParamsTokenFactoryResponse, Params as TokenFactoryParams,
-};
 use neutron_std::shim::Duration;
+use neutron_std::types::cosmos::base::v1beta1::Coin;
 use neutron_std::types::cosmos::base::v1beta1::DecCoin;
 use neutron_std::types::gaia::globalfee;
 use neutron_std::types::interchain_security::ccv::{self, consumer};
-use neutron_std::types::neutron::dynamicfees;
+use neutron_std::types::neutron::{cron, dex, dynamicfees};
+use neutron_std::types::osmosis::tokenfactory;
 use std::marker::PhantomData;
 
 pub fn mock_dependencies() -> OwnedDeps<MockStorage, MockApi, WasmMockQuerier> {
@@ -56,9 +48,9 @@ impl WasmMockQuerier {
         match &request {
             #[allow(deprecated)]
             QueryRequest::Grpc(GrpcQuery { data: _, path }) => match path.as_str() {
-                "/neutron.cron.Query/Params" => {
-                    let resp = ParamsResponseCron {
-                        params: Some(CronParams {
+                cron::QueryParamsRequest::PATH => {
+                    let resp = cron::QueryParamsResponse {
+                        params: Some(cron::Params {
                             security_address: "neutron_dao_address".to_string(),
                             limit: 10,
                         }),
@@ -66,14 +58,14 @@ impl WasmMockQuerier {
                     .to_proto_bytes();
                     SystemResult::Ok(ContractResult::Ok(Binary::new(resp.to_vec())))
                 }
-                "/osmosis.tokenfactory.v1beta1.Query/Params" => {
-                    let resp = &QueryParamsTokenFactoryResponse {
-                        params: Some(TokenFactoryParams {
+                tokenfactory::v1beta1::QueryParamsRequest::PATH => {
+                    let resp = &tokenfactory::v1beta1::QueryParamsResponse {
+                        params: Some(tokenfactory::Params {
                             denom_creation_fee: vec![Coin {
                                 denom: "untrn".to_string(),
                                 amount: "1".to_string(),
                             }],
-                            denom_creation_gas_consume: 0,
+                            denom_creation_gas_consume: None,
                             fee_collector_address: "test_addr".to_string(),
                             whitelisted_hooks: vec![],
                         }),
@@ -81,9 +73,9 @@ impl WasmMockQuerier {
                     .to_proto_bytes();
                     SystemResult::Ok(ContractResult::Ok(Binary::new(resp.to_vec())))
                 }
-                "/neutron.dex.Query/Params" => {
-                    let resp = &QueryParamsDexResponse {
-                        params: Some(DexParams {
+                dex::QueryParamsRequest::PATH => {
+                    let resp = &dex::QueryParamsResponse {
+                        params: Some(dex::Params {
                             fee_tiers: [1, 2, 99].to_vec(),
                             paused: false,
                             max_jits_per_block: 20,
@@ -93,7 +85,7 @@ impl WasmMockQuerier {
                     .to_proto_bytes();
                     SystemResult::Ok(ContractResult::Ok(Binary::new(resp.to_vec())))
                 }
-                "/neutron.dynamicfees.v1.Query/Params" => {
+                dynamicfees::v1::QueryParamsRequest::PATH => {
                     let resp = &dynamicfees::v1::QueryParamsResponse {
                         params: Some(dynamicfees::v1::Params {
                             ntrn_prices: vec![DecCoin {
@@ -105,14 +97,14 @@ impl WasmMockQuerier {
                     .to_proto_bytes();
                     SystemResult::Ok(ContractResult::Ok(Binary::new(resp.to_vec())))
                 }
-                "/gaia.globalfee.v1beta1.Query/Params" => {
+                globalfee::v1beta1::QueryParamsRequest::PATH => {
                     let resp = &globalfee::v1beta1::QueryParamsResponse {
                         params: Some(default_globalfee_params()),
                     }
                     .to_proto_bytes();
                     SystemResult::Ok(ContractResult::Ok(Binary::new(resp.to_vec())))
                 }
-                "/interchain_security.ccv.consumer.v1.Query/QueryParams" => {
+                consumer::v1::QueryParamsRequest::PATH => {
                     let resp = &consumer::v1::QueryParamsResponse {
                         params: Some(default_consumer_params()),
                     }
