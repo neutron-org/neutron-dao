@@ -394,7 +394,7 @@ pub struct CCVUpdateParamsPermission {
     pub consumer_redistribution_fraction: bool,
     pub historical_entries: bool,
     pub unbonding_period: bool,
-    // !!! DEPRECATED !!! soft_opt_out_threshold is deprecated. 
+    // !!! DEPRECATED !!! soft_opt_out_threshold is deprecated.
     // see https://github.com/cosmos/interchain-security/blob/main/docs/docs/adrs/adr-015-partial-set-security.md
     pub soft_opt_out_threshold: bool,
     pub reward_denoms: bool,
