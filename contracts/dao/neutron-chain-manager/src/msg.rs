@@ -209,7 +209,6 @@ impl Strategy {
     pub fn get_ccv_update_param_permission(&self) -> Option<CCVUpdateParamsPermission> {
         match self {
             Strategy::AllowAll => Some(CCVUpdateParamsPermission {
-                // enabled: true,
                 blocks_per_distribution_transmission: true,
                 distribution_transmission_channel: true,
                 provider_fee_pool_addr_str: true,
@@ -387,8 +386,6 @@ pub struct GlobalfeeUpdateParamsPermission {
 #[derive(Eq)]
 #[serde(rename_all = "snake_case")]
 pub struct CCVUpdateParamsPermission {
-    // TODO: do we need to manage the param
-    // pub enabled: bool,
     pub blocks_per_distribution_transmission: bool,
     pub distribution_transmission_channel: bool,
     pub provider_fee_pool_addr_str: bool,
@@ -397,7 +394,8 @@ pub struct CCVUpdateParamsPermission {
     pub consumer_redistribution_fraction: bool,
     pub historical_entries: bool,
     pub unbonding_period: bool,
-    // !!! DEPRECATED !!! soft_opt_out_threshold is deprecated. see docs/docs/adrs/adr-015-partial-set-security.md
+    // !!! DEPRECATED !!! soft_opt_out_threshold is deprecated. 
+    // see https://github.com/cosmos/interchain-security/blob/main/docs/docs/adrs/adr-015-partial-set-security.md
     pub soft_opt_out_threshold: bool,
     pub reward_denoms: bool,
     pub provider_reward_denoms: bool,
