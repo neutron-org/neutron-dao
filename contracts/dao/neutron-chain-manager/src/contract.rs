@@ -410,8 +410,7 @@ fn check_dex_update_msg_params(
         return Err(ContractError::Unauthorized {});
     }
 
-    if dex_params.params.whitelisted_lps
-        != msg_update_params.params.whitelisted_lps
+    if dex_params.params.whitelisted_lps != msg_update_params.params.whitelisted_lps
         && !dex_update_param_permission.whitelisted_lps
     {
         return Err(ContractError::Unauthorized {});

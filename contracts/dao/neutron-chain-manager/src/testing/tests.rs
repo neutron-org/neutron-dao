@@ -777,7 +777,7 @@ pub fn test_execute_execute_message_update_params_dex_unauthorized_fee_tiers() {
             paused: true,
             max_jits_per_block: true,
             good_til_purge_allowance: true,
-            whitelisted_lps: true
+            whitelisted_lps: true,
         })]),
     )
     .unwrap();
