@@ -160,6 +160,7 @@ impl Strategy {
                 paused: true,
                 max_jits_per_block: true,
                 good_til_purge_allowance: true,
+                whitelisted_lps: true,
             }),
             Strategy::AllowOnly(permissions) => {
                 match permissions.get(&PermissionType::UpdateDexParamsPermission) {
@@ -289,6 +290,7 @@ pub struct DexUpdateParamsPermission {
     pub paused: bool,
     pub max_jits_per_block: bool,
     pub good_til_purge_allowance: bool,
+    pub whitelisted_lps: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]

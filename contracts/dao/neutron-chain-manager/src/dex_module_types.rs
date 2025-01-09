@@ -24,6 +24,7 @@ pub struct ParamsDex {
     pub max_jits_per_block: u64,
     #[serde(deserialize_with = "deserialize_u64")]
     pub good_til_purge_allowance: u64,
+    pub whitelisted_lps: Vec<String>,
 }
 
 /// The types below are used for querying dex module parameters via stargate.
