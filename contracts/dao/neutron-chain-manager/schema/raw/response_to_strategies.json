@@ -44,7 +44,8 @@
         "fee_tiers",
         "good_til_purge_allowance",
         "max_jits_per_block",
-        "paused"
+        "paused",
+        "whitelisted_lps"
       ],
       "properties": {
         "fee_tiers": {
@@ -57,6 +58,9 @@
           "type": "boolean"
         },
         "paused": {
+          "type": "boolean"
+        },
+        "whitelisted_lps": {
           "type": "boolean"
         }
       },
@@ -154,8 +158,35 @@
             }
           },
           "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "software_upgrade_permission"
+          ],
+          "properties": {
+            "software_upgrade_permission": {
+              "$ref": "#/definitions/SoftwareUpgradePermission"
+            }
+          },
+          "additionalProperties": false
         }
       ]
+    },
+    "SoftwareUpgradePermission": {
+      "type": "object",
+      "required": [
+        "cancel_upgrade",
+        "upgrade"
+      ],
+      "properties": {
+        "cancel_upgrade": {
+          "type": "boolean"
+        },
+        "upgrade": {
+          "type": "boolean"
+        }
+      }
     },
     "StrategyMsg": {
       "oneOf": [
