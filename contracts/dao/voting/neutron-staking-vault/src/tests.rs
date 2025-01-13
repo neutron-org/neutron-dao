@@ -1,734 +1,286 @@
-use crate::contract::{migrate, CONTRACT_NAME, CONTRACT_VERSION};
-use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
-use crate::state::Config;
-use cosmwasm_std::testing::{mock_dependencies, mock_env};
-use cosmwasm_std::{coins, Addr, Coin, Empty, Uint128};
-use cw_multi_test::{
-    custom_app, next_block, App, AppResponse, Contract, ContractWrapper, Executor,
-};
-use cwd_interface::voting::{
-    BondingStatusResponse, InfoResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
-};
-use cwd_voting::vault::{BonderBalanceResponse, ListBondersResponse};
+use cosmwasm_std::{Addr, DepsMut, StdResult, Uint128, Order, testing::{mock_dependencies}};
+use cw_storage_plus::{SnapshotMap, Strategy};
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
+use crate::state::{Validator, VALIDATORS};
 
-const DAO_ADDR: &str = "dao";
-const NAME: &str = "name";
-const NEW_NAME: &str = "new_name";
-const DESCRIPTION: &str = "description";
-const NEW_DESCRIPTION: &str = "new description";
-const ADDR1: &str = "addr1";
-const ADDR2: &str = "addr2";
-const DENOM: &str = "ujuno";
-const INVALID_DENOM: &str = "uinvalid";
-const INIT_BALANCE: Uint128 = Uint128::new(10000);
+// fn store_validator_at_height(deps: DepsMut, addr: Addr, bonded: bool, total_tokens: Uint128, total_shares: Uint128, height: u64) -> StdResult<()> {
+//     let validator = Validator {
+//         address: addr.clone(),
+//         bonded,
+//         total_tokens,
+//         total_shares,
+//     };
+//     VALIDATORS.save(deps.storage, &addr, &validator, height)?;
+//     VALIDATORS.update()
+//     Ok(())
+// }
 
-fn vault_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        crate::contract::execute,
-        crate::contract::instantiate,
-        crate::contract::query,
-    );
-    Box::new(contract)
+fn delete_validator_at_height(deps: DepsMut, addr: Addr, height: u64) -> StdResult<()> {
+    VALIDATORS.remove(deps.storage, &addr, height)?;
+    Ok(())
 }
 
-fn mock_app() -> App {
-    custom_app(|r, _a, s| {
-        r.bank
-            .init_balance(
-                s,
-                &Addr::unchecked(DAO_ADDR),
-                vec![
-                    Coin {
-                        denom: DENOM.to_string(),
-                        amount: INIT_BALANCE,
-                    },
-                    Coin {
-                        denom: INVALID_DENOM.to_string(),
-                        amount: INIT_BALANCE,
-                    },
-                ],
-            )
-            .unwrap();
-        r.bank
-            .init_balance(
-                s,
-                &Addr::unchecked(ADDR1),
-                vec![
-                    Coin {
-                        denom: DENOM.to_string(),
-                        amount: INIT_BALANCE,
-                    },
-                    Coin {
-                        denom: INVALID_DENOM.to_string(),
-                        amount: INIT_BALANCE,
-                    },
-                ],
-            )
-            .unwrap();
-        r.bank
-            .init_balance(
-                s,
-                &Addr::unchecked(ADDR2),
-                vec![
-                    Coin {
-                        denom: DENOM.to_string(),
-                        amount: INIT_BALANCE,
-                    },
-                    Coin {
-                        denom: INVALID_DENOM.to_string(),
-                        amount: INIT_BALANCE,
-                    },
-                ],
-            )
-            .unwrap();
-    })
-}
-
-fn instantiate_vault(app: &mut App, id: u64, msg: InstantiateMsg) -> Addr {
-    app.instantiate_contract(id, Addr::unchecked(DAO_ADDR), &msg, &[], "vault", None)
-        .unwrap()
-}
-
-fn bond_tokens(
-    app: &mut App,
-    contract_addr: Addr,
-    sender: &str,
-    amount: u128,
-    denom: &str,
-) -> anyhow::Result<AppResponse> {
-    app.execute_contract(
-        Addr::unchecked(sender),
-        contract_addr,
-        &ExecuteMsg::Bond {},
-        &coins(amount, denom),
-    )
-}
-
-fn unbond_tokens(
-    app: &mut App,
-    contract_addr: Addr,
-    sender: &str,
-    amount: u128,
-) -> anyhow::Result<AppResponse> {
-    app.execute_contract(
-        Addr::unchecked(sender),
-        contract_addr,
-        &ExecuteMsg::Unbond {
-            amount: Uint128::new(amount),
-        },
-        &[],
-    )
-}
-
-fn update_config(
-    app: &mut App,
-    contract_addr: Addr,
-    sender: &str,
-    owner: String,
-    name: String,
-    description: String,
-) -> anyhow::Result<AppResponse> {
-    app.execute_contract(
-        Addr::unchecked(sender),
-        contract_addr,
-        &ExecuteMsg::UpdateConfig {
-            owner,
-            name,
-            description,
-        },
-        &[],
-    )
-}
-
-fn get_voting_power_at_height(
-    app: &mut App,
-    contract_addr: Addr,
-    address: String,
-    height: Option<u64>,
-) -> VotingPowerAtHeightResponse {
-    app.wrap()
-        .query_wasm_smart(
-            contract_addr,
-            &QueryMsg::VotingPowerAtHeight { address, height },
-        )
-        .unwrap()
-}
-
-fn get_total_power_at_height(
-    app: &mut App,
-    contract_addr: Addr,
-    height: Option<u64>,
-) -> TotalPowerAtHeightResponse {
-    app.wrap()
-        .query_wasm_smart(contract_addr, &QueryMsg::TotalPowerAtHeight { height })
-        .unwrap()
-}
-
-fn get_config(app: &mut App, contract_addr: Addr) -> Config {
-    app.wrap()
-        .query_wasm_smart(contract_addr, &QueryMsg::Config {})
-        .unwrap()
-}
-
-fn get_dao(app: &App, contract_addr: &Addr) -> String {
-    app.wrap()
-        .query_wasm_smart(contract_addr, &QueryMsg::Dao {})
-        .unwrap()
-}
-
-fn get_balance(app: &mut App, address: &str, denom: &str) -> Uint128 {
-    app.wrap().query_balance(address, denom).unwrap().amount
-}
-
-fn get_bonding_status(app: &App, contract_addr: &Addr, address: &str) -> BondingStatusResponse {
-    app.wrap()
-        .query_wasm_smart(
-            contract_addr,
-            &QueryMsg::BondingStatus {
-                address: address.to_string(),
-                height: None,
-            },
-        )
-        .unwrap()
-}
-
-#[test]
-fn test_instantiate() {
-    let mut app = mock_app();
-    let vault_id = app.store_code(vault_contract());
-    let addr = instantiate_vault(
-        &mut app,
-        vault_id,
-        InstantiateMsg {
-            name: NAME.to_string(),
-            description: DESCRIPTION.to_string(),
-            owner: DAO_ADDR.to_string(),
-            denom: DENOM.to_string(),
-        },
-    );
-    assert_eq!(get_dao(&app, &addr), String::from(DAO_ADDR));
-}
-
-#[test]
-#[should_panic(expected = "Must send reserve token 'ujuno'")]
-fn test_bond_invalid_denom() {
-    let mut app = mock_app();
-    let vault_id = app.store_code(vault_contract());
-    let addr = instantiate_vault(
-        &mut app,
-        vault_id,
-        InstantiateMsg {
-            name: NAME.to_string(),
-            description: DESCRIPTION.to_string(),
-            owner: DAO_ADDR.to_string(),
-            denom: DENOM.to_string(),
-        },
-    );
-
-    // Try and bond an invalid denom
-    bond_tokens(&mut app, addr, ADDR1, 100, INVALID_DENOM).unwrap();
-}
-
-#[test]
-fn test_bond_valid_denom() {
-    let mut app = mock_app();
-    let vault_id = app.store_code(vault_contract());
-    let addr = instantiate_vault(
-        &mut app,
-        vault_id,
-        InstantiateMsg {
-            name: NAME.to_string(),
-            description: DESCRIPTION.to_string(),
-            owner: DAO_ADDR.to_string(),
-            denom: DENOM.to_string(),
-        },
-    );
-
-    let mut bonding_status: BondingStatusResponse = get_bonding_status(&app, &addr, ADDR1);
-    assert!(bonding_status.bonding_enabled);
-    assert_eq!(bonding_status.unbondable_abount, Uint128::zero());
-
-    // Try and bond an valid denom
-    bond_tokens(&mut app, addr.clone(), ADDR1, 100, DENOM).unwrap();
-    app.update_block(next_block);
-
-    bonding_status = get_bonding_status(&app, &addr, ADDR1);
-    assert!(bonding_status.bonding_enabled);
-    assert_eq!(bonding_status.unbondable_abount, Uint128::from(100u32));
-}
-
-#[test]
-#[should_panic(expected = "Can only unbond less than or equal to the amount you have bonded")]
-fn test_unbond_none_bonded() {
-    let mut app = mock_app();
-    let vault_id = app.store_code(vault_contract());
-    let addr = instantiate_vault(
-        &mut app,
-        vault_id,
-        InstantiateMsg {
-            name: NAME.to_string(),
-            description: DESCRIPTION.to_string(),
-            owner: DAO_ADDR.to_string(),
-            denom: DENOM.to_string(),
-        },
-    );
-
-    unbond_tokens(&mut app, addr, ADDR1, 100).unwrap();
-}
-
-#[test]
-#[should_panic(expected = "Can only unbond less than or equal to the amount you have bonded")]
-fn test_unbond_invalid_balance() {
-    let mut app = mock_app();
-    let vault_id = app.store_code(vault_contract());
-    let addr = instantiate_vault(
-        &mut app,
-        vault_id,
-        InstantiateMsg {
-            name: NAME.to_string(),
-            description: DESCRIPTION.to_string(),
-            owner: DAO_ADDR.to_string(),
-            denom: DENOM.to_string(),
-        },
-    );
-
-    // bond some tokens
-    bond_tokens(&mut app, addr.clone(), ADDR1, 100, DENOM).unwrap();
-    app.update_block(next_block);
-
-    // Try and unbond too many
-    unbond_tokens(&mut app, addr, ADDR1, 200).unwrap();
-}
-
-#[test]
-fn test_unbond() {
-    let mut app = mock_app();
-    let vault_id = app.store_code(vault_contract());
-    let addr = instantiate_vault(
-        &mut app,
-        vault_id,
-        InstantiateMsg {
-            name: NAME.to_string(),
-            description: DESCRIPTION.to_string(),
-            owner: DAO_ADDR.to_string(),
-            denom: DENOM.to_string(),
-        },
-    );
-
-    assert_eq!(get_balance(&mut app, ADDR1, DENOM), INIT_BALANCE);
-    // bond some tokens
-    bond_tokens(&mut app, addr.clone(), ADDR1, 100, DENOM).unwrap();
-    app.update_block(next_block);
-    assert_eq!(get_balance(&mut app, ADDR1, DENOM), Uint128::new(9900));
-
-    let mut bonding_status: BondingStatusResponse = get_bonding_status(&app, &addr, ADDR1);
-    assert!(bonding_status.bonding_enabled);
-    assert_eq!(bonding_status.unbondable_abount, Uint128::from(100u32));
-
-    // Unbond some
-    unbond_tokens(&mut app, addr.clone(), ADDR1, 75).unwrap();
-    assert_eq!(get_balance(&mut app, ADDR1, DENOM), Uint128::new(9975));
-    app.update_block(next_block);
-
-    bonding_status = get_bonding_status(&app, &addr, ADDR1);
-    assert!(bonding_status.bonding_enabled);
-    assert_eq!(bonding_status.unbondable_abount, Uint128::from(25u32));
-
-    // Unbond the rest
-    unbond_tokens(&mut app, addr.clone(), ADDR1, 25).unwrap();
-    assert_eq!(get_balance(&mut app, ADDR1, DENOM), INIT_BALANCE);
-    app.update_block(next_block);
-
-    bonding_status = get_bonding_status(&app, &addr, ADDR1);
-    assert!(bonding_status.bonding_enabled);
-    assert_eq!(bonding_status.unbondable_abount, Uint128::zero());
-}
-
-#[test]
-#[should_panic(expected = "Unauthorized")]
-fn test_update_config_unauthorized() {
-    let mut app = mock_app();
-    let vault_id = app.store_code(vault_contract());
-    let addr = instantiate_vault(
-        &mut app,
-        vault_id,
-        InstantiateMsg {
-            name: NAME.to_string(),
-            description: DESCRIPTION.to_string(),
-            owner: DAO_ADDR.to_string(),
-            denom: DENOM.to_string(),
-        },
-    );
-
-    // From ADDR2, so not owner
-    update_config(
-        &mut app,
-        addr,
-        ADDR2,
-        ADDR1.to_string(),
-        NEW_NAME.to_string(),
-        NEW_DESCRIPTION.to_string(),
-    )
-    .unwrap();
-}
-
-#[test]
-fn test_update_config_as_owner() {
-    let mut app = mock_app();
-    let vault_id = app.store_code(vault_contract());
-    let addr = instantiate_vault(
-        &mut app,
-        vault_id,
-        InstantiateMsg {
-            name: NAME.to_string(),
-            description: DESCRIPTION.to_string(),
-            owner: DAO_ADDR.to_string(),
-            denom: DENOM.to_string(),
-        },
-    );
-
-    // Change owner, description and name
-    update_config(
-        &mut app,
-        addr.clone(),
-        DAO_ADDR,
-        ADDR1.to_string(),
-        NEW_NAME.to_string(),
-        NEW_DESCRIPTION.to_string(),
-    )
-    .unwrap();
-
-    let config = get_config(&mut app, addr);
-    assert_eq!(
-        Config {
-            name: NEW_NAME.to_string(),
-            description: NEW_DESCRIPTION.to_string(),
-            owner: Addr::unchecked(ADDR1),
-            denom: DENOM.to_string(),
-        },
-        config
-    );
-}
-
-#[test]
-#[should_panic(expected = "config description cannot be empty.")]
-fn test_update_config_invalid_description() {
-    let mut app = mock_app();
-    let vault_id = app.store_code(vault_contract());
-    let addr = instantiate_vault(
-        &mut app,
-        vault_id,
-        InstantiateMsg {
-            name: NAME.to_string(),
-            description: DESCRIPTION.to_string(),
-            owner: DAO_ADDR.to_string(),
-            denom: DENOM.to_string(),
-        },
-    );
-
-    // Change name
-    update_config(
-        &mut app,
-        addr,
-        DAO_ADDR,
-        DAO_ADDR.to_string(),
-        NEW_NAME.to_string(),
-        String::from(""),
-    )
-    .unwrap();
-}
-
-#[test]
-#[should_panic(expected = "config name cannot be empty.")]
-fn test_update_config_invalid_name() {
-    let mut app = mock_app();
-    let vault_id = app.store_code(vault_contract());
-    let addr = instantiate_vault(
-        &mut app,
-        vault_id,
-        InstantiateMsg {
-            name: NAME.to_string(),
-            description: DESCRIPTION.to_string(),
-            owner: DAO_ADDR.to_string(),
-            denom: DENOM.to_string(),
-        },
-    );
-
-    // Change description
-    update_config(
-        &mut app,
-        addr,
-        DAO_ADDR,
-        DAO_ADDR.to_string(),
-        String::from(""),
-        NEW_DESCRIPTION.to_string(),
-    )
-    .unwrap();
-}
-
-#[test]
-fn test_query_dao() {
-    let mut app = mock_app();
-    let vault_id = app.store_code(vault_contract());
-    let addr = instantiate_vault(
-        &mut app,
-        vault_id,
-        InstantiateMsg {
-            name: NAME.to_string(),
-            description: DESCRIPTION.to_string(),
-            owner: DAO_ADDR.to_string(),
-            denom: DENOM.to_string(),
-        },
-    );
-
-    let msg = QueryMsg::Dao {};
-    let dao: Addr = app.wrap().query_wasm_smart(addr, &msg).unwrap();
-    assert_eq!(dao, Addr::unchecked(DAO_ADDR));
-}
-
-#[test]
-fn test_query_info() {
-    let mut app = mock_app();
-    let vault_id = app.store_code(vault_contract());
-    let addr = instantiate_vault(
-        &mut app,
-        vault_id,
-        InstantiateMsg {
-            name: NAME.to_string(),
-            description: DESCRIPTION.to_string(),
-            owner: DAO_ADDR.to_string(),
-            denom: DENOM.to_string(),
-        },
-    );
-
-    let msg = QueryMsg::Info {};
-    let resp: InfoResponse = app.wrap().query_wasm_smart(addr, &msg).unwrap();
-    assert_eq!(resp.info.contract, "crates.io:neutron-voting-vault");
-}
-
-#[test]
-fn test_query_get_config() {
-    let mut app = mock_app();
-    let vault_id = app.store_code(vault_contract());
-    let addr = instantiate_vault(
-        &mut app,
-        vault_id,
-        InstantiateMsg {
-            name: NAME.to_string(),
-            description: DESCRIPTION.to_string(),
-            owner: DAO_ADDR.to_string(),
-            denom: DENOM.to_string(),
-        },
-    );
-
-    let config = get_config(&mut app, addr);
-    assert_eq!(
-        config,
-        Config {
-            name: NAME.to_string(),
-            description: DESCRIPTION.to_string(),
-            owner: Addr::unchecked(DAO_ADDR),
-            denom: DENOM.to_string(),
+fn retrieve_validators_at_height(deps: DepsMut, height: u64) -> StdResult<Vec<(Addr, Validator)>> {
+    let mut result = Vec::new();
+    for key_result in VALIDATORS.keys(deps.storage, None, None, Order::Ascending) {
+        let key = key_result?;
+        match VALIDATORS.may_load_at_height(deps.storage, &key, height)? {
+            Some(snapshot_value) => {
+                result.push((key.clone(), snapshot_value));
+            }
+            None => {
+                continue;
+            }
         }
-    )
+    }
+    Ok(result)
 }
 
-#[test]
-fn test_voting_power_queries() {
-    let mut app = mock_app();
-    let vault_id = app.store_code(vault_contract());
-    let addr = instantiate_vault(
-        &mut app,
-        vault_id,
-        InstantiateMsg {
-            name: NAME.to_string(),
-            description: DESCRIPTION.to_string(),
-            owner: DAO_ADDR.to_string(),
-            denom: DENOM.to_string(),
-        },
-    );
+fn retrieve_removed_keys_at_height(deps: DepsMut, old_height: u64, new_height: u64) -> StdResult<Vec<Addr>> {
+    let mut result = Vec::new();
 
-    // Total power is 0
-    let resp = get_total_power_at_height(&mut app, addr.clone(), None);
-    assert!(resp.power.is_zero());
+    for key_result in VALIDATORS.keys(deps.storage, None, None, Order::Ascending) {
+        let key = key_result?;
 
-    // ADDR1 has no power, none bonded
-    let resp = get_voting_power_at_height(&mut app, addr.clone(), ADDR1.to_string(), None);
-    assert!(resp.power.is_zero());
+        let existed_at_old = VALIDATORS.may_load_at_height(deps.storage, &key, old_height)?.is_some();
+        let existed_at_new = VALIDATORS.may_load_at_height(deps.storage, &key, new_height)?.is_some();
 
-    // ADDR1 bonds
-    bond_tokens(&mut app, addr.clone(), ADDR1, 100, DENOM).unwrap();
-    app.update_block(next_block);
+        if existed_at_old && !existed_at_new {
+            result.push(key.clone());
+        }
+    }
 
-    // Total power is 100
-    let resp = get_total_power_at_height(&mut app, addr.clone(), None);
-    assert_eq!(resp.power, Uint128::new(100));
-
-    // ADDR1 has 100 power
-    let resp = get_voting_power_at_height(&mut app, addr.clone(), ADDR1.to_string(), None);
-    assert_eq!(resp.power, Uint128::new(100));
-
-    // ADDR2 still has 0 power
-    let resp = get_voting_power_at_height(&mut app, addr.clone(), ADDR2.to_string(), None);
-    assert!(resp.power.is_zero());
-
-    // ADDR2 bonds
-    bond_tokens(&mut app, addr.clone(), ADDR2, 50, DENOM).unwrap();
-    app.update_block(next_block);
-    let prev_height = app.block_info().height - 1;
-
-    // Query the previous height, total 100, ADDR1 100, ADDR2 0
-    // Total power is 100
-    let resp = get_total_power_at_height(&mut app, addr.clone(), Some(prev_height));
-    assert_eq!(resp.power, Uint128::new(100));
-
-    // ADDR1 has 100 power
-    let resp =
-        get_voting_power_at_height(&mut app, addr.clone(), ADDR1.to_string(), Some(prev_height));
-    assert_eq!(resp.power, Uint128::new(100));
-
-    // ADDR2 still has 0 power
-    let resp =
-        get_voting_power_at_height(&mut app, addr.clone(), ADDR2.to_string(), Some(prev_height));
-    assert!(resp.power.is_zero());
-
-    // For current height, total 150, ADDR1 100, ADDR2 50
-    // Total power is 150
-    let resp = get_total_power_at_height(&mut app, addr.clone(), None);
-    assert_eq!(resp.power, Uint128::new(150));
-
-    // ADDR1 has 100 power
-    let resp = get_voting_power_at_height(&mut app, addr.clone(), ADDR1.to_string(), None);
-    assert_eq!(resp.power, Uint128::new(100));
-
-    // ADDR2 now has 50 power
-    let resp = get_voting_power_at_height(&mut app, addr.clone(), ADDR2.to_string(), None);
-    assert_eq!(resp.power, Uint128::new(50));
-
-    // ADDR1 unbonds half
-    unbond_tokens(&mut app, addr.clone(), ADDR1, 50).unwrap();
-    app.update_block(next_block);
-    let prev_height = app.block_info().height - 1;
-
-    // Query the previous height, total 150, ADDR1 100, ADDR2 50
-    // Total power is 100
-    let resp = get_total_power_at_height(&mut app, addr.clone(), Some(prev_height));
-    assert_eq!(resp.power, Uint128::new(150));
-
-    // ADDR1 has 100 power
-    let resp =
-        get_voting_power_at_height(&mut app, addr.clone(), ADDR1.to_string(), Some(prev_height));
-    assert_eq!(resp.power, Uint128::new(100));
-
-    // ADDR2 still has 0 power
-    let resp =
-        get_voting_power_at_height(&mut app, addr.clone(), ADDR2.to_string(), Some(prev_height));
-    assert_eq!(resp.power, Uint128::new(50));
-
-    // For current height, total 100, ADDR1 50, ADDR2 50
-    // Total power is 100
-    let resp = get_total_power_at_height(&mut app, addr.clone(), None);
-    assert_eq!(resp.power, Uint128::new(100));
-
-    // ADDR1 has 50 power
-    let resp = get_voting_power_at_height(&mut app, addr.clone(), ADDR1.to_string(), None);
-    assert_eq!(resp.power, Uint128::new(50));
-
-    // ADDR2 now has 50 power
-    let resp = get_voting_power_at_height(&mut app, addr, ADDR2.to_string(), None);
-    assert_eq!(resp.power, Uint128::new(50));
+    Ok(result)
 }
 
-#[test]
-fn test_query_list_bonders() {
-    let mut app = mock_app();
-    let vault_id = app.store_code(vault_contract());
-    let addr = instantiate_vault(
-        &mut app,
-        vault_id,
-        InstantiateMsg {
-            name: NAME.to_string(),
-            description: DESCRIPTION.to_string(),
-            owner: DAO_ADDR.to_string(),
-            denom: DENOM.to_string(),
-        },
-    );
+#[cfg(test)]
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use cosmwasm_std::{testing::mock_dependencies, Decimal256, Uint128, Addr};
+    use cosmwasm_std::testing::mock_env;
+    use crate::contract::{after_validator_created, after_validator_removed};
+    use crate::state::{Delegation, DELEGATIONS};
 
-    // ADDR1 bonds
-    bond_tokens(&mut app, addr.clone(), ADDR1, 100, DENOM).unwrap();
+    #[test]
+    fn test_after_validator_created() {
+        let mut deps = mock_dependencies();
+        let validator_address = "cosmosvaloper1validator".to_string();
 
-    // ADDR2 bonds
-    bond_tokens(&mut app, addr.clone(), ADDR2, 50, DENOM).unwrap();
+        let response = after_validator_created(deps.as_mut(), mock_env(), validator_address.clone()).unwrap();
 
-    // check entire result set
-    let bonders: ListBondersResponse = app
-        .wrap()
-        .query_wasm_smart(
-            addr.clone(),
-            &QueryMsg::ListBonders {
-                start_after: None,
-                limit: None,
-            },
+        let validator = VALIDATORS.load(deps.as_mut().storage, &Addr::unchecked(&validator_address)).unwrap();
+        assert!(validator.active);
+        assert_eq!(validator.total_tokens, Uint128::zero());
+        assert_eq!(validator.total_shares, Uint128::zero());
+
+        assert_eq!(response.attributes[0].value, "validator_created");
+        assert_eq!(response.attributes[1].value, validator_address);
+    }
+
+    #[test]
+    fn test_after_validator_removed() {
+        let mut deps = mock_dependencies();
+        let validator_address = "cosmosvaloper1validator".to_string();
+        let valcons_address = "cosmosvalcons1validator".to_string();
+
+        store_validator_at_height(
+            deps.as_mut(),
+            Addr::unchecked(&validator_address),
+            true,
+            Uint128::new(1000),
+            Uint128::new(500),
+            1,
         )
-        .unwrap();
+            .unwrap();
 
-    let test_res = ListBondersResponse {
-        bonders: vec![
-            BonderBalanceResponse {
-                address: ADDR1.to_string(),
-                balance: Uint128::new(100),
-            },
-            BonderBalanceResponse {
-                address: ADDR2.to_string(),
-                balance: Uint128::new(50),
-            },
-        ],
-    };
-
-    assert_eq!(bonders, test_res);
-
-    // skipped 1, check result
-    let bonders: ListBondersResponse = app
-        .wrap()
-        .query_wasm_smart(
-            addr.clone(),
-            &QueryMsg::ListBonders {
-                start_after: Some(ADDR1.to_string()),
-                limit: None,
-            },
+        let response = after_validator_removed(
+            deps.as_mut(),
+            mock_env(),
+            valcons_address.clone(),
+            validator_address.clone(),
         )
-        .unwrap();
+            .unwrap();
 
-    let test_res = ListBondersResponse {
-        bonders: vec![BonderBalanceResponse {
-            address: ADDR2.to_string(),
-            balance: Uint128::new(50),
-        }],
-    };
+        let validator = VALIDATORS.load(deps.as_mut().storage, &Addr::unchecked(&validator_address)).unwrap();
+        assert!(!validator.active);
+        assert_eq!(validator.total_tokens, Uint128::zero());
+        assert_eq!(validator.total_shares, Uint128::zero());
 
-    assert_eq!(bonders, test_res);
+        assert_eq!(response.attributes[0].value, "validator_disabled");
+    }
 
-    // skipped 2, check result. should be nothing
-    let bonders: ListBondersResponse = app
-        .wrap()
-        .query_wasm_smart(
-            addr,
-            &QueryMsg::ListBonders {
-                start_after: Some(ADDR2.to_string()),
-                limit: None,
-            },
+    #[test]
+    fn test_after_validator_bonded() {
+        let mut deps = mock_dependencies();
+        let validator_address = "cosmosvaloper1validator".to_string();
+
+        store_validator_at_height(
+            deps.as_mut(),
+            Addr::unchecked(&validator_address),
+            false,
+            Uint128::zero(),
+            Uint128::zero(),
+            0,
         )
-        .unwrap();
+            .unwrap();
 
-    assert_eq!(bonders, ListBondersResponse { bonders: vec![] });
+        let response = after_validator_bonded(deps.as_mut(), mock_env(), validator_address.clone()).unwrap();
+
+        let validator = VALIDATORS.load(deps.as_mut().storage, &Addr::unchecked(&validator_address)).unwrap();
+        assert!(validator.active);
+
+        assert_eq!(response.attributes[0].value, "validator_bonded");
+    }
+
+    #[test]
+    fn test_after_validator_begin_unbonding() {
+        let mut deps = mock_dependencies();
+        let validator_address = "cosmosvaloper1validator".to_string();
+
+        store_validator_at_height(
+            deps.as_mut(),
+            Addr::unchecked(&validator_address),
+            true,
+            Uint128::new(1000),
+            Uint128::new(500),
+            0,
+        )
+            .unwrap();
+
+        let response = after_validator_begin_unbonding(deps.as_mut(), mock_env(), validator_address.clone()).unwrap();
+
+        let validator = VALIDATORS.load(deps.as_mut().storage, &Addr::unchecked(&validator_address)).unwrap();
+        assert!(!validator.active);
+        assert_eq!(validator.total_tokens, Uint128::zero());
+        assert_eq!(validator.total_shares, Uint128::zero());
+
+        assert_eq!(response.attributes[0].value, "validator_unbonded");
+    }
+
+    #[test]
+    fn test_after_delegation_modified() {
+        let mut deps = mock_dependencies();
+        let validator_address = "cosmosvaloper1validator".to_string();
+        let delegator_address = "cosmos1delegator".to_string();
+
+        store_validator_at_height(
+            deps.as_mut(),
+            Addr::unchecked(&validator_address),
+            true,
+            Uint128::new(1000),
+            Uint128::new(500),
+            0,
+        )
+            .unwrap();
+
+        DELEGATIONS
+            .save(
+                deps.as_mut().storage,
+                (&Addr::unchecked(&delegator_address), &Addr::unchecked(&validator_address)),
+                &Delegation {
+                    delegator_address: Addr::unchecked(&delegator_address),
+                    validator_address: Addr::unchecked(&validator_address),
+                    shares: Uint128::new(300),
+                },
+                0,
+            )
+            .unwrap();
+
+        let response = after_delegation_modified(
+            deps.as_mut(),
+            mock_env(),
+            delegator_address.clone(),
+            validator_address.clone(),
+        )
+            .unwrap();
+
+        assert_eq!(response.attributes[0].value, "after_delegation_modified");
+    }
+
+    #[test]
+    fn test_before_delegation_removed() {
+        let mut deps = mock_dependencies();
+        let validator_address = "cosmosvaloper1validator".to_string();
+        let delegator_address = "cosmos1delegator".to_string();
+
+        store_validator_at_height(
+            deps.as_mut(),
+            Addr::unchecked(&validator_address),
+            true,
+            Uint128::new(1000),
+            Uint128::new(500),
+            0,
+        )
+            .unwrap();
+
+        DELEGATIONS
+            .save(
+                deps.as_mut().storage,
+                (&Addr::unchecked(&delegator_address), &Addr::unchecked(&validator_address)),
+                &Delegation {
+                    delegator_address: Addr::unchecked(&delegator_address),
+                    validator_address: Addr::unchecked(&validator_address),
+                    shares: Uint128::new(300),
+                },
+                0,
+            )
+            .unwrap();
+
+        let response = before_delegation_removed(
+            deps.as_mut(),
+            mock_env(),
+            delegator_address.clone(),
+            validator_address.clone(),
+        )
+            .unwrap();
+
+        assert_eq!(response.attributes[0].value, "before_delegation_removed");
+    }
+
+    fn before_delegation_removed(p0: DepsMut, p1: _, p2: String, p3: String) -> _ {
+        todo!()
+    }
+
+    #[test]
+    fn test_before_validator_slashed() {
+        let mut deps = mock_dependencies();
+        let validator_address = "cosmosvaloper1validator".to_string();
+        let delegator_address = "cosmos1delegator".to_string();
+
+        store_validator_at_height(
+            deps.as_mut(),
+            Addr::unchecked(&validator_address),
+            true,
+            Uint128::new(1000),
+            Uint128::new(500),
+            0,
+        )
+            .unwrap();
+
+        DELEGATIONS
+            .save(
+                deps.as_mut().storage,
+                (&Addr::unchecked(&delegator_address), &Addr::unchecked(&validator_address)),
+                &Delegation {
+                    delegator_address: Addr::unchecked(&delegator_address),
+                    validator_address: Addr::unchecked(&validator_address),
+                    shares: Uint128::new(300),
+                },
+                0,
+            )
+            .unwrap();
+
+        let response = before_validator_slashed(
+            deps.as_mut(),
+            mock_env(),
+            validator_address.clone(),
+            Decimal256::percent(50),
+        )
+            .unwrap();
+
+        assert_eq!(response.attributes[0].value, "before_validator_slashed");
+    }
 }
 
-#[test]
-pub fn test_migrate_update_version() {
-    let mut deps = mock_dependencies();
-    cw2::set_contract_version(&mut deps.storage, "my-contract", "old-version").unwrap();
-    migrate(deps.as_mut(), mock_env(), MigrateMsg {}).unwrap();
-    let version = cw2::get_contract_version(&deps.storage).unwrap();
-    assert_eq!(version.version, CONTRACT_VERSION);
-    assert_eq!(version.contract, CONTRACT_NAME);
-}

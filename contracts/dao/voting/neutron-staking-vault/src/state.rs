@@ -34,6 +34,8 @@ pub struct Validator {
     pub bonded: bool,
     pub total_tokens: Uint128,
     pub total_shares: Uint128,
+    // we do not delete validators
+    pub active: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]

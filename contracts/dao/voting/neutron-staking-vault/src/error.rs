@@ -1,4 +1,4 @@
-use cosmwasm_std::StdError;
+use cosmwasm_std::{OverflowError, StdError};
 use cw_utils::PaymentError;
 use thiserror::Error;
 
@@ -10,27 +10,51 @@ pub enum ContractError {
     #[error("{0}")]
     PaymentError(#[from] PaymentError),
 
-    #[error("config name cannot be empty.")]
+    #[error("{0}")]
+    MathError { error: String },
+
+    #[error("Config name cannot be empty.")]
     NameIsEmpty {},
 
-    #[error("config description cannot be empty.")]
+    #[error("Config description cannot be empty.")]
     DescriptionIsEmpty {},
 
-    #[error("config denom cannot be empty.")]
+    #[error("Config denom cannot be empty.")]
     DenomIsEmpty {},
 
     #[error("Unauthorized")]
     Unauthorized {},
 
-    #[error("Nothing to claim")]
-    NothingToClaim {},
+    #[error("Validator not found: {address}")]
+    ValidatorNotFound { address: String },
 
-    #[error("Can only unbond less than or equal to the amount you have bonded")]
-    InvalidUnbondAmount {},
+    #[error("Validator already exists: {address}")]
+    ValidatorAlreadyExists { address: String },
+
+    #[error("Validator is already active: {address}")]
+    ValidatorAlreadyActive { address: String },
+
+    #[error("Validator is not active: {address}")]
+    ValidatorNotActive { address: String },
+
+    #[error("Validator is not bonded: {validator}")]
+    ValidatorNotBonded { validator: String },
+
+    #[error("Delegation not found for delegator: {delegator} and validator: {validator}")]
+    DelegationNotFound {
+        delegator: String,
+        validator: String,
+    },
 
     #[error("Bonding is not available for this contract")]
     BondingDisabled {},
 
     #[error("Direct unbonding is not available for this contract")]
     DirectUnbondingDisabled {},
+
+    #[error("Insufficient funds for operation")]
+    InsufficientFunds {},
+
+    #[error("Cannot slash validator: {validator}")]
+    ValidatorSlashingError { validator: String },
 }
