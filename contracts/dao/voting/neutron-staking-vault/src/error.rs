@@ -10,19 +10,19 @@ pub enum ContractError {
     #[error("{0}")]
     PaymentError(#[from] PaymentError),
 
-    #[error("{0}")]
+    #[error("Math error occurred: {error}")]
     MathError { error: String },
 
-    #[error("Config name cannot be empty.")]
+    #[error("Configuration name cannot be empty.")]
     NameIsEmpty {},
 
-    #[error("Config description cannot be empty.")]
+    #[error("Configuration description cannot be empty.")]
     DescriptionIsEmpty {},
 
-    #[error("Config denom cannot be empty.")]
+    #[error("Configuration denom cannot be empty.")]
     DenomIsEmpty {},
 
-    #[error("Unauthorized")]
+    #[error("Unauthorized action.")]
     Unauthorized {},
 
     #[error("Validator not found: {address}")]
@@ -40,21 +40,30 @@ pub enum ContractError {
     #[error("Validator is not bonded: {validator}")]
     ValidatorNotBonded { validator: String },
 
-    #[error("Delegation not found for delegator: {delegator} and validator: {validator}")]
+    #[error("Delegation not found for delegator: {delegator}, validator: {validator}")]
     DelegationNotFound {
         delegator: String,
         validator: String,
     },
 
-    #[error("Bonding is not available for this contract")]
+    #[error("Bonding operations are disabled for this contract.")]
     BondingDisabled {},
 
-    #[error("Direct unbonding is not available for this contract")]
+    #[error("Direct unbonding operations are disabled for this contract.")]
     DirectUnbondingDisabled {},
 
-    #[error("Insufficient funds for operation")]
+    #[error("Insufficient funds for the requested operation.")]
     InsufficientFunds {},
 
-    #[error("Cannot slash validator: {validator}")]
+    #[error("Cannot slash the specified validator: {validator}")]
     ValidatorSlashingError { validator: String },
+
+    #[error("Validator data is missing in the query response: {address}")]
+    ValidatorDataMissing { address: String },
+
+    #[error("Invalid token data for validator: {address}")]
+    InvalidTokenData { address: String },
+
+    #[error("Generic overflow error occurred.")]
+    OverflowError(#[from] OverflowError),
 }
