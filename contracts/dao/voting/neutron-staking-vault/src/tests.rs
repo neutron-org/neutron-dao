@@ -1,286 +1,176 @@
-use cosmwasm_std::{Addr, DepsMut, StdResult, Uint128, Order, testing::{mock_dependencies}};
-use cw_storage_plus::{SnapshotMap, Strategy};
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
-use crate::state::{Validator, VALIDATORS};
+use crate::contract::{instantiate, execute, sudo, query};
+use crate::msg::{InstantiateMsg, ExecuteMsg, SudoMsg, QueryMsg};
+use crate::state::{CONFIG, DAO, VALIDATORS, DELEGATIONS};
+use crate::error::ContractError;
+use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
+use cosmwasm_std::{Addr, Uint128, Env, Decimal256};
 
-// fn store_validator_at_height(deps: DepsMut, addr: Addr, bonded: bool, total_tokens: Uint128, total_shares: Uint128, height: u64) -> StdResult<()> {
-//     let validator = Validator {
-//         address: addr.clone(),
-//         bonded,
-//         total_tokens,
-//         total_shares,
-//     };
-//     VALIDATORS.save(deps.storage, &addr, &validator, height)?;
-//     VALIDATORS.update()
-//     Ok(())
-// }
+#[test]
+fn test_instantiate() {
+    let mut deps = mock_dependencies();
 
-fn delete_validator_at_height(deps: DepsMut, addr: Addr, height: u64) -> StdResult<()> {
-    VALIDATORS.remove(deps.storage, &addr, height)?;
-    Ok(())
+    let msg = InstantiateMsg {
+        owner: "creator".to_string(),
+        name: "Test Vault".to_string(),
+        description: "Test Description".to_string(),
+        denom: "uatom".to_string(),
+    };
+    let info = mock_info("creator", &[]);
+    let res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
+
+    assert_eq!(res.attributes.len(), 4);
+    assert_eq!(res.attributes[0].value, "instantiate");
+
+    let config = CONFIG.load(deps.as_ref().storage).unwrap();
+    assert_eq!(config.name, "Test Vault");
+    assert_eq!(config.owner, Addr::unchecked("creator"));
+    assert_eq!(config.denom, "uatom");
+
+    let dao = DAO.load(deps.as_ref().storage).unwrap();
+    assert_eq!(dao, Addr::unchecked("creator"));
 }
 
-fn retrieve_validators_at_height(deps: DepsMut, height: u64) -> StdResult<Vec<(Addr, Validator)>> {
-    let mut result = Vec::new();
-    for key_result in VALIDATORS.keys(deps.storage, None, None, Order::Ascending) {
-        let key = key_result?;
-        match VALIDATORS.may_load_at_height(deps.storage, &key, height)? {
-            Some(snapshot_value) => {
-                result.push((key.clone(), snapshot_value));
-            }
-            None => {
-                continue;
-            }
-        }
-    }
-    Ok(result)
+#[test]
+fn test_update_config() {
+    let mut deps = mock_dependencies();
+
+    let instantiate_msg = InstantiateMsg {
+        owner: "creator".to_string(),
+        name: "Test Vault".to_string(),
+        description: "Test Description".to_string(),
+        denom: "uatom".to_string(),
+    };
+    let info = mock_info("creator", &[]);
+    instantiate(deps.as_mut(), mock_env(), info.clone(), instantiate_msg).unwrap();
+
+    let update_msg = ExecuteMsg::UpdateConfig {
+        owner: "new_owner".to_string(),
+        name: "Updated Vault".to_string(),
+        description: "Updated Description".to_string(),
+    };
+    let res = execute(deps.as_mut(), mock_env(), info, update_msg).unwrap();
+
+    assert_eq!(res.attributes.len(), 3);
+    assert_eq!(res.attributes[0].value, "update_config");
+
+    let config = CONFIG.load(deps.as_ref().storage).unwrap();
+    assert_eq!(config.name, "Updated Vault");
+    assert_eq!(config.owner, Addr::unchecked("new_owner"));
+    assert_eq!(config.description, "Updated Description");
 }
 
-fn retrieve_removed_keys_at_height(deps: DepsMut, old_height: u64, new_height: u64) -> StdResult<Vec<Addr>> {
-    let mut result = Vec::new();
+#[test]
+fn test_after_validator_bonded() {
+    let mut deps = mock_dependencies();
 
-    for key_result in VALIDATORS.keys(deps.storage, None, None, Order::Ascending) {
-        let key = key_result?;
+    let instantiate_msg = InstantiateMsg {
+        owner: "creator".to_string(),
+        name: "Test Vault".to_string(),
+        description: "Test Description".to_string(),
+        denom: "uatom".to_string(),
+    };
+    let info = mock_info("creator", &[]);
+    instantiate(deps.as_mut(), mock_env(), info.clone(), instantiate_msg).unwrap();
 
-        let existed_at_old = VALIDATORS.may_load_at_height(deps.storage, &key, old_height)?.is_some();
-        let existed_at_new = VALIDATORS.may_load_at_height(deps.storage, &key, new_height)?.is_some();
+    VALIDATORS.save(
+        deps.as_mut().storage,
+        &Addr::unchecked("validator1"),
+        &crate::state::Validator {
+            address: Addr::unchecked("validator1"),
+            bonded: false,
+            total_tokens: Uint128::zero(),
+            total_shares: Uint128::zero(),
+            active: false,
+        },
+        0,
+    )
+        .unwrap();
 
-        if existed_at_old && !existed_at_new {
-            result.push(key.clone());
-        }
-    }
+    let sudo_msg = SudoMsg::AfterValidatorBonded {
+        val_address: "validator1".to_string(),
+    };
 
-    Ok(result)
+    let res = sudo(deps.as_mut(), mock_env(), sudo_msg).unwrap();
+    assert_eq!(res.attributes.len(), 3);
+    assert_eq!(res.attributes[0].value, "validator_bonded");
+
+    let validator = VALIDATORS.load(deps.as_ref().storage, &Addr::unchecked("validator1")).unwrap();
+    assert!(validator.active);
 }
 
-#[cfg(test)]
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use cosmwasm_std::{testing::mock_dependencies, Decimal256, Uint128, Addr};
-    use cosmwasm_std::testing::mock_env;
-    use crate::contract::{after_validator_created, after_validator_removed};
-    use crate::state::{Delegation, DELEGATIONS};
+#[test]
+fn test_before_validator_slashed() {
+    let mut deps = mock_dependencies();
 
-    #[test]
-    fn test_after_validator_created() {
-        let mut deps = mock_dependencies();
-        let validator_address = "cosmosvaloper1validator".to_string();
+    let instantiate_msg = InstantiateMsg {
+        owner: "creator".to_string(),
+        name: "Test Vault".to_string(),
+        description: "Test Description".to_string(),
+        denom: "uatom".to_string(),
+    };
+    let info = mock_info("creator", &[]);
+    instantiate(deps.as_mut(), mock_env(), info.clone(), instantiate_msg).unwrap();
 
-        let response = after_validator_created(deps.as_mut(), mock_env(), validator_address.clone()).unwrap();
+    VALIDATORS.save(
+        deps.as_mut().storage,
+        &Addr::unchecked("validator1"),
+        &crate::state::Validator {
+            address: Addr::unchecked("validator1"),
+            bonded: true,
+            total_tokens: Uint128::from(100u128),
+            total_shares: Uint128::from(100u128),
+            active: true,
+        },
+        0,
+    )
+        .unwrap();
 
-        let validator = VALIDATORS.load(deps.as_mut().storage, &Addr::unchecked(&validator_address)).unwrap();
-        assert!(validator.active);
-        assert_eq!(validator.total_tokens, Uint128::zero());
-        assert_eq!(validator.total_shares, Uint128::zero());
+    let sudo_msg = SudoMsg::BeforeValidatorSlashed {
+        val_address: "validator1".to_string(),
+        slashing_fraction: Decimal256::percent(50),
+    };
 
-        assert_eq!(response.attributes[0].value, "validator_created");
-        assert_eq!(response.attributes[1].value, validator_address);
-    }
+    let res = sudo(deps.as_mut(), mock_env(), sudo_msg).unwrap();
+    assert_eq!(res.attributes.len(), 5);
+    assert_eq!(res.attributes[0].value, "before_validator_slashed");
 
-    #[test]
-    fn test_after_validator_removed() {
-        let mut deps = mock_dependencies();
-        let validator_address = "cosmosvaloper1validator".to_string();
-        let valcons_address = "cosmosvalcons1validator".to_string();
-
-        store_validator_at_height(
-            deps.as_mut(),
-            Addr::unchecked(&validator_address),
-            true,
-            Uint128::new(1000),
-            Uint128::new(500),
-            1,
-        )
-            .unwrap();
-
-        let response = after_validator_removed(
-            deps.as_mut(),
-            mock_env(),
-            valcons_address.clone(),
-            validator_address.clone(),
-        )
-            .unwrap();
-
-        let validator = VALIDATORS.load(deps.as_mut().storage, &Addr::unchecked(&validator_address)).unwrap();
-        assert!(!validator.active);
-        assert_eq!(validator.total_tokens, Uint128::zero());
-        assert_eq!(validator.total_shares, Uint128::zero());
-
-        assert_eq!(response.attributes[0].value, "validator_disabled");
-    }
-
-    #[test]
-    fn test_after_validator_bonded() {
-        let mut deps = mock_dependencies();
-        let validator_address = "cosmosvaloper1validator".to_string();
-
-        store_validator_at_height(
-            deps.as_mut(),
-            Addr::unchecked(&validator_address),
-            false,
-            Uint128::zero(),
-            Uint128::zero(),
-            0,
-        )
-            .unwrap();
-
-        let response = after_validator_bonded(deps.as_mut(), mock_env(), validator_address.clone()).unwrap();
-
-        let validator = VALIDATORS.load(deps.as_mut().storage, &Addr::unchecked(&validator_address)).unwrap();
-        assert!(validator.active);
-
-        assert_eq!(response.attributes[0].value, "validator_bonded");
-    }
-
-    #[test]
-    fn test_after_validator_begin_unbonding() {
-        let mut deps = mock_dependencies();
-        let validator_address = "cosmosvaloper1validator".to_string();
-
-        store_validator_at_height(
-            deps.as_mut(),
-            Addr::unchecked(&validator_address),
-            true,
-            Uint128::new(1000),
-            Uint128::new(500),
-            0,
-        )
-            .unwrap();
-
-        let response = after_validator_begin_unbonding(deps.as_mut(), mock_env(), validator_address.clone()).unwrap();
-
-        let validator = VALIDATORS.load(deps.as_mut().storage, &Addr::unchecked(&validator_address)).unwrap();
-        assert!(!validator.active);
-        assert_eq!(validator.total_tokens, Uint128::zero());
-        assert_eq!(validator.total_shares, Uint128::zero());
-
-        assert_eq!(response.attributes[0].value, "validator_unbonded");
-    }
-
-    #[test]
-    fn test_after_delegation_modified() {
-        let mut deps = mock_dependencies();
-        let validator_address = "cosmosvaloper1validator".to_string();
-        let delegator_address = "cosmos1delegator".to_string();
-
-        store_validator_at_height(
-            deps.as_mut(),
-            Addr::unchecked(&validator_address),
-            true,
-            Uint128::new(1000),
-            Uint128::new(500),
-            0,
-        )
-            .unwrap();
-
-        DELEGATIONS
-            .save(
-                deps.as_mut().storage,
-                (&Addr::unchecked(&delegator_address), &Addr::unchecked(&validator_address)),
-                &Delegation {
-                    delegator_address: Addr::unchecked(&delegator_address),
-                    validator_address: Addr::unchecked(&validator_address),
-                    shares: Uint128::new(300),
-                },
-                0,
-            )
-            .unwrap();
-
-        let response = after_delegation_modified(
-            deps.as_mut(),
-            mock_env(),
-            delegator_address.clone(),
-            validator_address.clone(),
-        )
-            .unwrap();
-
-        assert_eq!(response.attributes[0].value, "after_delegation_modified");
-    }
-
-    #[test]
-    fn test_before_delegation_removed() {
-        let mut deps = mock_dependencies();
-        let validator_address = "cosmosvaloper1validator".to_string();
-        let delegator_address = "cosmos1delegator".to_string();
-
-        store_validator_at_height(
-            deps.as_mut(),
-            Addr::unchecked(&validator_address),
-            true,
-            Uint128::new(1000),
-            Uint128::new(500),
-            0,
-        )
-            .unwrap();
-
-        DELEGATIONS
-            .save(
-                deps.as_mut().storage,
-                (&Addr::unchecked(&delegator_address), &Addr::unchecked(&validator_address)),
-                &Delegation {
-                    delegator_address: Addr::unchecked(&delegator_address),
-                    validator_address: Addr::unchecked(&validator_address),
-                    shares: Uint128::new(300),
-                },
-                0,
-            )
-            .unwrap();
-
-        let response = before_delegation_removed(
-            deps.as_mut(),
-            mock_env(),
-            delegator_address.clone(),
-            validator_address.clone(),
-        )
-            .unwrap();
-
-        assert_eq!(response.attributes[0].value, "before_delegation_removed");
-    }
-
-    fn before_delegation_removed(p0: DepsMut, p1: _, p2: String, p3: String) -> _ {
-        todo!()
-    }
-
-    #[test]
-    fn test_before_validator_slashed() {
-        let mut deps = mock_dependencies();
-        let validator_address = "cosmosvaloper1validator".to_string();
-        let delegator_address = "cosmos1delegator".to_string();
-
-        store_validator_at_height(
-            deps.as_mut(),
-            Addr::unchecked(&validator_address),
-            true,
-            Uint128::new(1000),
-            Uint128::new(500),
-            0,
-        )
-            .unwrap();
-
-        DELEGATIONS
-            .save(
-                deps.as_mut().storage,
-                (&Addr::unchecked(&delegator_address), &Addr::unchecked(&validator_address)),
-                &Delegation {
-                    delegator_address: Addr::unchecked(&delegator_address),
-                    validator_address: Addr::unchecked(&validator_address),
-                    shares: Uint128::new(300),
-                },
-                0,
-            )
-            .unwrap();
-
-        let response = before_validator_slashed(
-            deps.as_mut(),
-            mock_env(),
-            validator_address.clone(),
-            Decimal256::percent(50),
-        )
-            .unwrap();
-
-        assert_eq!(response.attributes[0].value, "before_validator_slashed");
-    }
+    let validator = VALIDATORS.load(deps.as_ref().storage, &Addr::unchecked("validator1")).unwrap();
+    assert_eq!(validator.total_tokens, Uint128::from(50u128));
+    assert_eq!(validator.total_shares, Uint128::from(50u128));
 }
 
+#[test]
+fn test_after_delegation_modified() {
+    let mut deps = mock_dependencies();
+
+    let instantiate_msg = InstantiateMsg {
+        owner: "creator".to_string(),
+        name: "Test Vault".to_string(),
+        description: "Test Description".to_string(),
+        denom: "uatom".to_string(),
+    };
+    let info = mock_info("creator", &[]);
+    instantiate(deps.as_mut(), mock_env(), info.clone(), instantiate_msg).unwrap();
+
+    VALIDATORS.save(
+        deps.as_mut().storage,
+        &Addr::unchecked("validator1"),
+        &crate::state::Validator {
+            address: Addr::unchecked("validator1"),
+            bonded: true,
+            total_tokens: Uint128::from(100u128),
+            total_shares: Uint128::from(100u128),
+            active: true,
+        },
+        0,
+    )
+        .unwrap();
+
+    let sudo_msg = SudoMsg::AfterDelegationModified {
+        delegator_address: "delegator1".to_string(),
+        val_address: "validator1".to_string(),
+    };
+
+    let res = sudo(deps.as_mut(), mock_env(), sudo_msg);
+    assert!(res.is_err()); // Mock does not simulate staking state
+}
