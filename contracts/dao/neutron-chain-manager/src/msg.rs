@@ -172,6 +172,67 @@ impl Strategy {
         }
     }
 
+    pub fn get_dynamicfees_update_param_permission(
+        &self,
+    ) -> Option<DynamicFeesUpdateParamsPermission> {
+        match self {
+            Strategy::AllowAll => Some(DynamicFeesUpdateParamsPermission { ntrn_prices: true }),
+            Strategy::AllowOnly(permissions) => {
+                match permissions.get(&PermissionType::UpdateDynamicfeesParamsPermission) {
+                    Some(Permission::UpdateDynamicfeesParamsPermission(
+                        dynamicfees_update_params,
+                    )) => Some(dynamicfees_update_params.clone()),
+                    _ => None,
+                }
+            }
+        }
+    }
+
+    pub fn get_globalfee_update_param_permission(&self) -> Option<GlobalfeeUpdateParamsPermission> {
+        match self {
+            Strategy::AllowAll => Some(GlobalfeeUpdateParamsPermission {
+                minimum_gas_prices: true,
+                bypass_min_fee_msg_types: true,
+                max_total_bypass_min_fee_msg_gas_usage: true,
+            }),
+            Strategy::AllowOnly(permissions) => {
+                match permissions.get(&PermissionType::UpdateGlobalfeeParamsPermission) {
+                    Some(Permission::UpdateGlobalfeeParamsPermission(globalfee_update_params)) => {
+                        Some(globalfee_update_params.clone())
+                    }
+                    _ => None,
+                }
+            }
+        }
+    }
+
+    pub fn get_ccv_update_param_permission(&self) -> Option<CCVUpdateParamsPermission> {
+        match self {
+            Strategy::AllowAll => Some(CCVUpdateParamsPermission {
+                blocks_per_distribution_transmission: true,
+                distribution_transmission_channel: true,
+                provider_fee_pool_addr_str: true,
+                ccv_timeout_period: true,
+                transfer_timeout_period: true,
+                consumer_redistribution_fraction: true,
+                historical_entries: true,
+                unbonding_period: true,
+                soft_opt_out_threshold: true,
+                reward_denoms: true,
+                provider_reward_denoms: true,
+                retry_delay_period: true,
+            }),
+            Strategy::AllowOnly(permissions) => {
+                match permissions.get(&PermissionType::UpdateCCVParamsPermission) {
+                    Some(Permission::UpdateCCVParamsPermission(ccv_update_params)) => {
+                        Some(ccv_update_params.clone())
+                    }
+                    _ => None,
+                }
+            }
+        }
+    }
+
     pub fn has_software_upgrade_permission(&self) -> bool {
         match self {
             Strategy::AllowAll => true,
@@ -210,6 +271,10 @@ pub enum Permission {
     UpdateCronParamsPermission(CronUpdateParamsPermission),
     UpdateTokenfactoryParamsPermission(TokenfactoryUpdateParamsPermission),
     UpdateDexParamsPermission(DexUpdateParamsPermission),
+    UpdateDynamicfeesParamsPermission(DynamicFeesUpdateParamsPermission),
+    UpdateGlobalfeeParamsPermission(GlobalfeeUpdateParamsPermission),
+    #[serde(rename = "update_ccv_params_permission")]
+    UpdateCCVParamsPermission(CCVUpdateParamsPermission),
     CronPermission(CronPermission),
     SoftwareUpgradePermission(SoftwareUpgradePermission),
 }
@@ -225,6 +290,13 @@ impl From<Permission> for PermissionType {
             Permission::UpdateDexParamsPermission(_) => PermissionType::UpdateDexParamsPermission,
             Permission::CronPermission(_) => PermissionType::CronPermission,
             Permission::SoftwareUpgradePermission(_) => PermissionType::SoftwareUpgradePermission,
+            Permission::UpdateDynamicfeesParamsPermission(_) => {
+                PermissionType::UpdateDynamicfeesParamsPermission
+            }
+            Permission::UpdateGlobalfeeParamsPermission(_) => {
+                PermissionType::UpdateGlobalfeeParamsPermission
+            }
+            Permission::UpdateCCVParamsPermission(_) => PermissionType::UpdateCCVParamsPermission,
         }
     }
 }
@@ -236,6 +308,9 @@ pub enum PermissionType {
     UpdateCronParamsPermission,
     UpdateTokenfactoryParamsPermission,
     UpdateDexParamsPermission,
+    UpdateDynamicfeesParamsPermission,
+    UpdateGlobalfeeParamsPermission,
+    UpdateCCVParamsPermission,
     CronPermission,
     SoftwareUpgradePermission,
 }
@@ -289,6 +364,42 @@ pub struct DexUpdateParamsPermission {
     pub paused: bool,
     pub max_jits_per_block: bool,
     pub good_til_purge_allowance: bool,
+}
+
+#[cw_serde]
+#[derive(Eq)]
+#[serde(rename_all = "snake_case")]
+pub struct DynamicFeesUpdateParamsPermission {
+    pub ntrn_prices: bool,
+}
+
+#[cw_serde]
+#[derive(Eq)]
+#[serde(rename_all = "snake_case")]
+pub struct GlobalfeeUpdateParamsPermission {
+    pub minimum_gas_prices: bool,
+    pub bypass_min_fee_msg_types: bool,
+    pub max_total_bypass_min_fee_msg_gas_usage: bool,
+}
+
+#[cw_serde]
+#[derive(Eq)]
+#[serde(rename_all = "snake_case")]
+pub struct CCVUpdateParamsPermission {
+    pub blocks_per_distribution_transmission: bool,
+    pub distribution_transmission_channel: bool,
+    pub provider_fee_pool_addr_str: bool,
+    pub ccv_timeout_period: bool,
+    pub transfer_timeout_period: bool,
+    pub consumer_redistribution_fraction: bool,
+    pub historical_entries: bool,
+    pub unbonding_period: bool,
+    // !!! DEPRECATED !!! soft_opt_out_threshold is deprecated.
+    // see https://github.com/cosmos/interchain-security/blob/main/docs/docs/adrs/adr-015-partial-set-security.md
+    pub soft_opt_out_threshold: bool,
+    pub reward_denoms: bool,
+    pub provider_reward_denoms: bool,
+    pub retry_delay_period: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
