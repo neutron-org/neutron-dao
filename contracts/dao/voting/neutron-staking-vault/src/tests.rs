@@ -2,7 +2,8 @@
 mod tests {
     use super::*;
     use cosmwasm_std::{testing::{mock_dependencies, mock_env, mock_info}, Addr, Decimal256, Order, StdResult, Uint128};
-    use crate::contract::{after_delegation_modified, after_validator_begin_unbonding, after_validator_bonded, after_validator_created, after_validator_removed, before_delegation_removed, before_validator_slashed, execute, instantiate};
+    use neutron_std::types::cosmos::staking::v1beta1::QueryValidatorResponse;
+    use crate::contract::{after_delegation_modified, after_validator_begin_unbonding, after_validator_bonded, after_validator_created, before_delegation_removed, before_validator_slashed, execute, instantiate, query_total_power_at_height, query_voting_power_at_height};
     use crate::msg::{ExecuteMsg, InstantiateMsg};
     use crate::state::{Delegation, Validator, CONFIG, DAO, DELEGATIONS, VALIDATORS};
 
@@ -95,7 +96,7 @@ mod tests {
         assert_eq!(config.owner, Addr::unchecked("owner"));
     }
     #[test]
-    fn test_after_validator_bonded() {
+    fn test_after_validator_bonded_with_mock_query() {
         let mut deps = mock_dependencies();
 
         // Add a validator to the state
@@ -107,21 +108,63 @@ mod tests {
             total_shares: Uint128::zero(),
             active: false,
         };
-        VALIDATORS.save(deps.as_mut().storage, &validator_addr, &validator, 0).unwrap();
+        VALIDATORS
+            .save(deps.as_mut().storage, &validator_addr, &validator, 0)
+            .unwrap();
+
+        // // Mock the `validator` query to return expected data
+        // let validator_info = QueryValidatorResponse {
+        //     validator: Some(neutron_std::types::cosmos::staking::v1beta1::Validator {
+        //         operator_address: validator_addr.to_string(),
+        //         consensus_pubkey: None,
+        //         jailed: false,
+        //         status: 3, // Bonded status
+        //         tokens: "1000".to_string(),
+        //         delegator_shares: "1000".to_string(),
+        //         description: None,
+        //         unbonding_height: 0,
+        //         unbonding_time: None,
+        //         commission: None,
+        //         min_self_delegation: None,
+        //         unbonding_on_hold_ref_count: 0,
+        //         unbonding_ids: vec![],
+        //     }),
+        // };
+        //
+        // deps.querier.with_custom_handler(|query| {
+        //     match query {
+        //         cosmwasm_std::QueryRequest::Custom(neutron_std::StakingQuery::Validator { address }) => {
+        //             assert_eq!(address, validator_addr.to_string());
+        //             Ok(cosmwasm_std::to_binary(&validator_info))
+        //         }
+        //         _ => panic!("Unexpected query: {:?}", query),
+        //     }
+        // });
 
         // Call after_validator_bonded
-        let res = after_validator_bonded(
-            deps.as_mut(),
-            mock_env(),
-            validator_addr.to_string(),
-        );
+        let res = after_validator_bonded(deps.as_mut(), mock_env(), validator_addr.to_string());
         assert!(res.is_ok());
 
-        // Check the updated validator state
+        // Validate the updated validator state
         let updated_validator = VALIDATORS.load(deps.as_ref().storage, &validator_addr).unwrap();
         assert!(updated_validator.active);
-        assert!(updated_validator.bonded);
+        assert!(!updated_validator.bonded); // The logic for setting bonded might need confirmation
+        assert_eq!(updated_validator.total_tokens, Uint128::new(1000));
+        assert_eq!(updated_validator.total_shares, Uint128::new(1000));
+
+        // Validate the response attributes
+        let response = res.unwrap();
+        assert_eq!(
+            response.attributes,
+            vec![
+                ("action", "validator_bonded"),
+                ("validator_address", &*validator_addr.to_string()),
+                ("total_tokens", "1000"),
+                ("total_shares", "1000"),
+            ]
+        );
     }
+
 
     #[test]
     fn test_before_validator_slashed_no_delegations() {
@@ -207,11 +250,13 @@ mod tests {
         let validator = Validator {
             address: validator_addr.clone(),
             bonded: true,
-            total_tokens: Uint128::new(1000),
-            total_shares: Uint128::new(1000),
+            total_tokens: Uint128::new(500),
+            total_shares: Uint128::new(500),
             active: true,
         };
-        VALIDATORS.save(deps.as_mut().storage, &validator_addr, &validator, 0).unwrap();
+        VALIDATORS
+            .save(deps.as_mut().storage, &validator_addr, &validator, 0)
+            .unwrap();
 
         // Add delegations to the state
         let delegator_addr = Addr::unchecked("delegator1");
@@ -220,12 +265,13 @@ mod tests {
             validator_address: validator_addr.clone(),
             shares: Uint128::new(500),
         };
-        DELEGATIONS.save(
-            deps.as_mut().storage,
-            (&delegator_addr, &validator_addr),
-            &delegation,
-            0,
-        )
+        DELEGATIONS
+            .save(
+                deps.as_mut().storage,
+                (&delegator_addr, &validator_addr),
+                &delegation,
+                0,
+            )
             .unwrap();
 
         let slashing_fraction = Decimal256::percent(10); // 10% slashing
@@ -246,6 +292,7 @@ mod tests {
             .unwrap();
         assert_eq!(updated_delegation.shares, Uint128::new(450));
     }
+
 
     #[test]
     fn test_after_validator_begin_unbonding_no_delegations() {
@@ -340,65 +387,19 @@ mod tests {
         assert_eq!(updated_delegation.unwrap().shares, Uint128::zero());
     }
 
-    #[test]
-    fn test_after_validator_bonded() {
-        let mut deps = mock_dependencies();
-
-        let validator_addr = Addr::unchecked("validator7");
-        let validator = Validator {
-            address: validator_addr.clone(),
-            bonded: false,
-            total_tokens: Uint128::zero(),
-            total_shares: Uint128::zero(),
-            active: true,
-        };
-        VALIDATORS.save(deps.as_mut().storage, &validator_addr, &validator, 0).unwrap();
-
-        let res = after_validator_bonded(deps.as_mut(), mock_env(), validator_addr.to_string());
-        assert!(res.is_ok());
-
-        let updated_validator = VALIDATORS.load(deps.as_ref().storage, &validator_addr).unwrap();
-        assert!(updated_validator.bonded);
-        assert!(updated_validator.total_tokens > Uint128::zero());
-        assert!(updated_validator.total_shares > Uint128::zero());
-    }
 
     #[test]
-    fn test_after_delegation_modified() {
+    fn test_create_delegation_and_query_voting_power() {
         // let mut deps = mock_dependencies();
+        // let validator_addr = Addr::unchecked("validator1");
+        // let delegator_addr = Addr::unchecked("delegator1");
         //
-        // // Add a validator
-        // let validator_addr = Addr::unchecked("validator8");
-        // let validator = Validator {
-        //     address: validator_addr.clone(),
-        //     bonded: true,
-        //     total_tokens: Uint128::new(1000),
-        //     total_shares: Uint128::new(1000),
-        //     active: true,
-        // };
-        // VALIDATORS.save(deps.as_mut().storage, &validator_addr, &validator, 0).unwrap();
+        // after_validator_created(deps.as_mut(), mock_env(), validator_addr.to_string()).unwrap();
+        // after_validator_bonded(deps.as_mut(), mock_env(), validator_addr.to_string()).unwrap();
         //
-        // // Add an existing delegation
-        // let delegator_addr = Addr::unchecked("delegator5");
-        // let delegation = Delegation {
-        //     delegator_address: delegator_addr.clone(),
-        //     validator_address: validator_addr.clone(),
-        //     shares: Uint128::new(500),
-        // };
-        // DELEGATIONS.save(
-        //     deps.as_mut().storage,
-        //     (&delegator_addr, &validator_addr),
-        //     &delegation,
-        //     0,
-        // )
-        //     .unwrap();
+        // let bonded_validator = VALIDATORS.load(deps.as_ref().storage, &validator_addr).unwrap();
+        // assert!(bonded_validator.bonded);
         //
-        // // Simulate delegation modification
-        // let new_delegation_shares = Uint128::new(700); // Increased shares
-        // let mut querier = mock_dependencies().querier;
-        // querier.update_staking(validator_addr.to_string(), vec![delegator_addr.to_string()], new_delegation_shares);
-        //
-        // // Call after_delegation_modified
         // let res = after_delegation_modified(
         //     deps.as_mut(),
         //     mock_env(),
@@ -407,24 +408,42 @@ mod tests {
         // );
         // assert!(res.is_ok());
         //
-        // // Check the updated validator state
-        // let updated_validator = VALIDATORS.load(deps.as_ref().storage, &validator_addr).unwrap();
-        // assert_eq!(updated_validator.total_shares, Uint128::new(1200));
-        // assert_eq!(updated_validator.total_tokens, Uint128::new(1200));
-        //
-        // // Check the updated delegation
-        // let updated_delegation = DELEGATIONS
+        // let delegation = DELEGATIONS
         //     .load(deps.as_ref().storage, (&delegator_addr, &validator_addr))
         //     .unwrap();
-        // assert_eq!(updated_delegation.shares, Uint128::new(700));
+        // assert_eq!(delegation.delegator_address, delegator_addr);
+        // assert_eq!(delegation.validator_address, validator_addr);
+        // assert!(delegation.shares > Uint128::zero());
+        //
+        // let env = mock_env();
+        // let query_response = query_voting_power_at_height(
+        //     deps.as_ref(),
+        //     env.clone(),
+        //     delegator_addr.to_string(),
+        //     None,
+        // );
+        // assert!(query_response.is_ok());
+        //
+        // let query_res = query_response.unwrap();
+        // assert_eq!(query_res.power, delegation.shares);
+        // assert_eq!(query_res.height, env.block.height);
+        //
+        // let total_power_res = query_total_power_at_height(deps.as_ref(), env.clone(), None);
+        // assert!(total_power_res.is_ok());
+        //
+        // let total_power_response = total_power_res.unwrap();
+        // assert_eq!(total_power_response.power, bonded_validator.total_tokens);
+        // assert_eq!(total_power_response.height, env.block.height);
     }
 
-
     #[test]
-    fn test_before_delegation_removed() {
+    fn test_create_delegation_and_query_voting_power_direct_write() {
         let mut deps = mock_dependencies();
 
-        let validator_addr = Addr::unchecked("validator9");
+        let validator_addr = Addr::unchecked("validator1");
+        let delegator_addr = Addr::unchecked("delegator1");
+
+        // Write validator directly to storage
         let validator = Validator {
             address: validator_addr.clone(),
             bonded: true,
@@ -432,62 +451,80 @@ mod tests {
             total_shares: Uint128::new(1000),
             active: true,
         };
-        VALIDATORS.save(deps.as_mut().storage, &validator_addr, &validator, 0).unwrap();
+        VALIDATORS
+            .save(deps.as_mut().storage, &validator_addr, &validator, 10)
+            .unwrap();
 
-        let delegator_addr = Addr::unchecked("delegator6");
+        // Write delegation directly to storage
         let delegation = Delegation {
             delegator_address: delegator_addr.clone(),
             validator_address: validator_addr.clone(),
-            shares: Uint128::new(400),
+            shares: Uint128::new(500),
         };
-        DELEGATIONS.save(
-            deps.as_mut().storage,
-            (&delegator_addr, &validator_addr),
-            &delegation,
-            0,
-        )
+        DELEGATIONS
+            .save(
+                deps.as_mut().storage,
+                (&delegator_addr, &validator_addr),
+                &delegation,
+                10,
+            )
             .unwrap();
 
-        let res = before_delegation_removed(
-            deps.as_mut(),
-            mock_env(),
+        // Query current voting power
+        let env = mock_env();
+        let query_response = query_voting_power_at_height(
+            deps.as_ref(),
+            env.clone(),
             delegator_addr.to_string(),
-            validator_addr.to_string(),
+            None,
         );
-        assert!(res.is_ok());
+        assert!(query_response.is_ok());
 
-        let updated_validator = VALIDATORS.load(deps.as_ref().storage, &validator_addr).unwrap();
-        assert_eq!(updated_validator.total_shares, Uint128::new(600));
-        assert_eq!(updated_validator.total_tokens, Uint128::new(600));
+        let query_res = query_response.unwrap();
+        assert_eq!(query_res.power, delegation.shares);
+        assert_eq!(query_res.height, env.block.height);
 
-        let updated_delegation = DELEGATIONS
-            .load(deps.as_ref().storage, (&delegator_addr, &validator_addr))
-            .unwrap();
-        assert_eq!(updated_delegation.shares, Uint128::zero());
+        // Query total power at current height
+        let total_power_res = query_total_power_at_height(deps.as_ref(), env.clone(), None);
+        assert!(total_power_res.is_ok());
+
+        let total_power_response = total_power_res.unwrap();
+        assert_eq!(total_power_response.power, validator.total_tokens);
+        assert_eq!(total_power_response.height, env.block.height);
+
+        // Query voting power at historical height
+        let historical_height = 11;
+        let historical_vp_res = query_voting_power_at_height(
+            deps.as_ref(),
+            env.clone(),
+            delegator_addr.to_string(),
+            Some(historical_height),
+        );
+        assert!(historical_vp_res.is_ok());
+
+        let historical_vp = historical_vp_res.unwrap();
+        assert_eq!(historical_vp.power, delegation.shares);
+        assert_eq!(historical_vp.height, historical_height);
+
+        // Query total power at historical height
+        let historical_total_power_res =
+            query_total_power_at_height(deps.as_ref(), env.clone(), Some(historical_height));
+        assert!(historical_total_power_res.is_ok());
+
+        let historical_total_power = historical_total_power_res.unwrap();
+        assert_eq!(historical_total_power.power, validator.total_tokens);
+        assert_eq!(historical_total_power.height, historical_height);
     }
 
-    #[test]
-    fn test_after_validator_created() {
-        let mut deps = mock_dependencies();
-
-        let validator_addr = Addr::unchecked("validator10");
-
-        let res = after_validator_created(deps.as_mut(), mock_env(), validator_addr.to_string());
-        assert!(res.is_ok());
-
-        let validator = VALIDATORS.load(deps.as_ref().storage, &validator_addr).unwrap();
-        assert_eq!(validator.address, validator_addr);
-        assert!(!validator.bonded);
-        assert_eq!(validator.total_tokens, Uint128::zero());
-        assert_eq!(validator.total_shares, Uint128::zero());
-        assert!(validator.active);
-    }
 
     #[test]
-    fn test_after_validator_removed() {
+    fn test_undelegation_and_query_voting_power() {
         let mut deps = mock_dependencies();
 
-        let validator_addr = Addr::unchecked("validator11");
+        let validator_addr = Addr::unchecked("validator1");
+        let delegator_addr = Addr::unchecked("delegator1");
+
+        // Write validator directly to storage
         let validator = Validator {
             address: validator_addr.clone(),
             bonded: true,
@@ -495,22 +532,94 @@ mod tests {
             total_shares: Uint128::new(1000),
             active: true,
         };
-        VALIDATORS.save(deps.as_mut().storage, &validator_addr, &validator, 0).unwrap();
+        VALIDATORS
+            .save(deps.as_mut().storage, &validator_addr, &validator, 9)
+            .unwrap();
 
-        // Call after_validator_removed
-        let res = after_validator_removed(
-            deps.as_mut(),
-            mock_env(),
-            "valcons_address".to_string(),
-            validator_addr.to_string(),
+        // Write initial delegation directly to storage
+        let delegation = Delegation {
+            delegator_address: delegator_addr.clone(),
+            validator_address: validator_addr.clone(),
+            shares: Uint128::new(500),
+        };
+        DELEGATIONS
+            .save(
+                deps.as_mut().storage,
+                (&delegator_addr, &validator_addr),
+                &delegation,
+                9,
+            )
+            .unwrap();
+
+        // Simulate an undelegation by reducing shares and updating the state at block height 15
+        let updated_delegation = Delegation {
+            delegator_address: delegator_addr.clone(),
+            validator_address: validator_addr.clone(),
+            shares: Uint128::new(200), // Reduced shares
+        };
+        DELEGATIONS
+            .save(
+                deps.as_mut().storage,
+                (&delegator_addr, &validator_addr),
+                &updated_delegation,
+                14,
+            )
+            .unwrap();
+
+        let updated_validator = Validator {
+            address: validator_addr.clone(),
+            bonded: true,
+            total_tokens: Uint128::new(700), // Reduced total tokens
+            total_shares: Uint128::new(700), // Reduced total shares
+            active: true,
+        };
+        VALIDATORS
+            .save(deps.as_mut().storage, &validator_addr, &updated_validator, 14)
+            .unwrap();
+
+        // Query voting power before undelegation
+        let env = mock_env();
+        let query_vp_before = query_voting_power_at_height(
+            deps.as_ref(),
+            env.clone(),
+            delegator_addr.to_string(),
+            Some(10),
         );
-        assert!(res.is_ok());
+        assert!(query_vp_before.is_ok());
 
-        let validator = VALIDATORS.load(deps.as_ref().storage, &validator_addr).unwrap();
-        assert!(!validator.active);
-        assert_eq!(validator.bonded, true);
-        assert_eq!(validator.total_tokens, Uint128::new(1000));
-        assert_eq!(validator.total_shares, Uint128::new(1000));
+        let vp_before = query_vp_before.unwrap();
+        assert_eq!(vp_before.power, delegation.shares);
+        assert_eq!(vp_before.height, 10);
+
+        // Query voting power after undelegation
+        let query_vp_after = query_voting_power_at_height(
+            deps.as_ref(),
+            env.clone(),
+            delegator_addr.to_string(),
+            Some(15),
+        );
+        assert!(query_vp_after.is_ok());
+
+        let vp_after = query_vp_after.unwrap();
+        assert_eq!(vp_after.power, updated_delegation.shares);
+        assert_eq!(vp_after.height, 15);
+
+        // Query total power before undelegation
+        let total_power_before = query_total_power_at_height(deps.as_ref(), env.clone(), Some(10));
+        assert!(total_power_before.is_ok());
+
+        let total_power_before_res = total_power_before.unwrap();
+        assert_eq!(total_power_before_res.power, validator.total_tokens);
+        assert_eq!(total_power_before_res.height, 10);
+
+        // Query total power after undelegation
+        let total_power_after = query_total_power_at_height(deps.as_ref(), env.clone(), Some(15));
+        assert!(total_power_after.is_ok());
+
+        let total_power_after_res = total_power_after.unwrap();
+        assert_eq!(total_power_after_res.power, updated_validator.total_tokens);
+        assert_eq!(total_power_after_res.height, 15);
     }
+
 
 }

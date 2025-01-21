@@ -4,14 +4,12 @@ use crate::state::{Config, Delegation, Validator, CONFIG, DAO, DELEGATIONS, VALI
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    coins, to_json_binary, Addr, BankMsg, Binary, CosmosMsg, Decimal256, DelegationResponse, Deps,
-    DepsMut, Env, MessageInfo, Order, Response, StdError, StdResult, Uint128, Uint256,
+    coins, to_json_binary, Addr, Binary, Decimal256, Deps, DepsMut, Env, MessageInfo, Order,
+    Response, StdError, StdResult, Uint128, Uint256,
 };
 use cw2::set_contract_version;
 use cwd_interface::voting::{TotalPowerAtHeightResponse, VotingPowerAtHeightResponse};
-use neutron_std::types::cosmos::staking::v1beta1::{
-    QueryValidatorRequest, QueryValidatorResponse, QueryValidatorsRequest, StakingQuerier,
-};
+use neutron_std::types::cosmos::staking::v1beta1::{QueryValidatorResponse, StakingQuerier};
 use std::str::FromStr;
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-voting-vault";
@@ -197,15 +195,25 @@ pub fn before_validator_slashed(
         });
     }
 
-    // Collect delegations to avoid simultaneous mutable and immutable borrows
+    let current_height = env.block.height;
     let delegations: Vec<(Addr, Delegation)> = DELEGATIONS
         .prefix(&validator_addr)
-        .range(deps.storage, None, None, Order::Ascending)
-        .map(|result| {
-            result
-                .map_err(|_| ContractError::Std(StdError::generic_err("Failed to load delegation")))
+        .keys(deps.storage, None, None, Order::Ascending)
+        .map::<Result<_, ContractError>, _>(|result| {
+            let delegator_key = result.map_err(|_| {
+                ContractError::Std(StdError::generic_err("Failed to load delegation key"))
+            })?;
+            // Load the delegation at the current height
+            let delegation = DELEGATIONS
+                .may_load_at_height(deps.storage, (&delegator_key, &validator_addr), current_height)?
+                .ok_or_else(|| {
+                    ContractError::Std(StdError::generic_err("Failed to load delegation at height"))
+                })?;
+            Ok((delegator_key, delegation))
         })
         .collect::<Result<_, _>>()?;
+
+    let mut total_slashed_delegation_shares = Uint128::zero();
 
     for (delegator_key, mut delegation) in delegations {
         let slashed_shares = (Decimal256::from_ratio(delegation.shares, Uint128::new(1))
@@ -222,6 +230,7 @@ pub fn before_validator_slashed(
             }
         })?;
 
+        total_slashed_delegation_shares += slashed_shares;
         delegation.shares = updated_shares;
 
         DELEGATIONS.save(
@@ -239,6 +248,16 @@ pub fn before_validator_slashed(
         .map_err(|_| ContractError::MathError {
             error: "Failed to convert total slashed shares to Uint128".to_string(),
         })?;
+
+    if total_slashed_shares != total_slashed_delegation_shares {
+        return Err(ContractError::MathError {
+            error: format!(
+                "Inconsistent slashing: total slashed delegation shares = {}, total validator shares = {}",
+                total_slashed_delegation_shares,
+                total_slashed_shares
+            ),
+        });
+    }
 
     validator.total_shares = validator
         .total_shares
