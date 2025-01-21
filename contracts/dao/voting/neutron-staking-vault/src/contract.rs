@@ -195,20 +195,24 @@ pub fn before_validator_slashed(
         });
     }
 
-    let current_height = env.block.height;
-    let delegations: Vec<(Addr, Delegation)> = DELEGATIONS
-        .prefix(&validator_addr)
+    let all_keys = DELEGATIONS
         .keys(deps.storage, None, None, Order::Ascending)
-        .map::<Result<_, ContractError>, _>(|result| {
-            let delegator_key = result.map_err(|_| {
-                ContractError::Std(StdError::generic_err("Failed to load delegation key"))
-            })?;
-            // Load the delegation at the current height
+        .map::<Result<(Addr, Addr), ContractError>, _>(|key| {
+            key.map_err(|_| {
+                ContractError::Std(StdError::generic_err("Failed to iterate over delegation keys"))
+            })
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+
+    let delegations: Vec<(Addr, Delegation)> = all_keys
+        .into_iter()
+        .filter(|(_, val)| *val == validator_addr)
+        .map::<Result<_, ContractError>, _>(|(delegator_key, val)| {
             let delegation = DELEGATIONS
-                .may_load_at_height(deps.storage, (&delegator_key, &validator_addr), current_height)?
-                .ok_or_else(|| {
-                    ContractError::Std(StdError::generic_err("Failed to load delegation at height"))
-                })?;
+                .may_load(deps.storage, (&delegator_key, &val))?
+                .ok_or(ContractError::Std(StdError::generic_err(
+                    "Failed to load delegation data",
+                )))?;
             Ok((delegator_key, delegation))
         })
         .collect::<Result<_, _>>()?;
@@ -216,19 +220,35 @@ pub fn before_validator_slashed(
     let mut total_slashed_delegation_shares = Uint128::zero();
 
     for (delegator_key, mut delegation) in delegations {
-        let slashed_shares = (Decimal256::from_ratio(delegation.shares, Uint128::new(1))
-            * slashing_fraction)
-            .atomics()
-            .try_into()
+        let slashed_shares: Uint128 = delegation
+            .shares
+            .checked_mul(Uint128::try_from(slashing_fraction.atomics()).unwrap())
             .map_err(|_| ContractError::MathError {
-                error: "Failed to convert slashed shares to Uint128".to_string(),
+                error: "Failed to calculate slashed shares".to_string(),
+            })?
+            .checked_div(Uint128::new(1_000_000_000_000_000_000))
+            .map_err(|_| ContractError::MathError {
+                error: "Failed to scale down slashed shares".to_string(),
             })?;
 
-        let updated_shares = delegation.shares.checked_sub(slashed_shares).map_err(|_| {
-            ContractError::MathError {
-                error: "Slashed shares exceed delegation shares".to_string(),
-            }
-        })?;
+        if slashed_shares > delegation.shares {
+            return Err(ContractError::MathError {
+                error: format!(
+                    "Slashed shares ({}) exceed delegation shares ({})",
+                    slashed_shares, delegation.shares
+                ),
+            });
+        }
+        let updated_shares = delegation
+            .shares
+            .checked_sub(slashed_shares)
+            .map_err(|_| ContractError::MathError {
+                error: format!(
+                    "Slashed shares ({}) exceed delegation shares ({})",
+                    slashed_shares, delegation.shares
+                ),
+            })?;
+
 
         total_slashed_delegation_shares += slashed_shares;
         delegation.shares = updated_shares;
@@ -241,12 +261,16 @@ pub fn before_validator_slashed(
         )?;
     }
 
-    let total_slashed_shares = (Decimal256::from_ratio(validator.total_shares, Uint128::new(1))
-        * slashing_fraction)
-        .atomics()
-        .try_into()
+
+    let total_slashed_shares: Uint128 = validator
+        .total_shares
+        .checked_mul(Uint128::try_from(slashing_fraction.atomics()).unwrap())
         .map_err(|_| ContractError::MathError {
-            error: "Failed to convert total slashed shares to Uint128".to_string(),
+            error: "Failed to calculate total slashed shares".to_string(),
+        })?
+        .checked_div(Uint128::new(1_000_000_000_000_000_000))
+        .map_err(|_| ContractError::MathError {
+            error: "Failed to scale down total slashed shares".to_string(),
         })?;
 
     if total_slashed_shares != total_slashed_delegation_shares {
@@ -262,9 +286,14 @@ pub fn before_validator_slashed(
     validator.total_shares = validator
         .total_shares
         .checked_sub(total_slashed_shares)
-        .map_err(|_| ContractError::MathError {
-            error: "Slashed shares exceed total validator shares".to_string(),
+        .map_err(|e| ContractError::MathError {
+            error: format!(
+                "Slashed shares exceed total validator shares: {}",
+                e.to_string()
+            ),
         })?;
+
+
     validator.total_tokens = validator.total_shares;
 
     VALIDATORS.save(deps.storage, &validator_addr, &validator, env.block.height)?;
@@ -273,9 +302,12 @@ pub fn before_validator_slashed(
         .add_attribute("action", "before_validator_slashed")
         .add_attribute("validator", validator_addr.to_string())
         .add_attribute("slashing_fraction", slashing_fraction.to_string())
-        .add_attribute("total_shares", validator.total_shares.to_string())
+        .add_attribute("total_slashed_shares", total_slashed_shares.to_string())
         .add_attribute("total_tokens", validator.total_tokens.to_string()))
 }
+
+
+
 
 pub(crate) fn after_validator_begin_unbonding(
     deps: DepsMut,
@@ -660,3 +692,31 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     Ok(Response::default())
 }
+
+pub(crate) fn get_delegations_filtered_by_validator(
+    deps: Deps,
+    validator_addr: Addr,
+) -> Result<Vec<(Addr, Delegation)>, ContractError> {
+    // Get all keys in the DELEGATIONS map
+    let all_keys = DELEGATIONS
+        .keys(deps.storage, None, None, Order::Ascending)
+        .collect::<StdResult<Vec<(Addr, Addr)>>>()?;
+
+    let mut delegations = Vec::new();
+
+    for (delegator_addr, key_validator_addr) in all_keys {
+        if key_validator_addr == validator_addr {
+            // Load the delegation if it matches the validator
+            if let Some(delegation) =
+                DELEGATIONS.may_load(deps.storage, (&delegator_addr, &key_validator_addr))?
+            {
+                delegations.push((delegator_addr, delegation));
+            }
+        }
+    }
+
+    Ok(delegations)
+}
+
+
+

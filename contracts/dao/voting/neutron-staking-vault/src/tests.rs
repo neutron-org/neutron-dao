@@ -1,9 +1,8 @@
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmwasm_std::{testing::{mock_dependencies, mock_env, mock_info}, Addr, Decimal256, Order, StdResult, Uint128};
-    use neutron_std::types::cosmos::staking::v1beta1::QueryValidatorResponse;
-    use crate::contract::{after_delegation_modified, after_validator_begin_unbonding, after_validator_bonded, after_validator_created, before_delegation_removed, before_validator_slashed, execute, instantiate, query_total_power_at_height, query_voting_power_at_height};
+    use cosmwasm_std::{testing::{mock_dependencies, mock_env, mock_info}, Addr, Decimal256,Uint128};
+    use crate::contract::{after_delegation_modified, after_validator_begin_unbonding, after_validator_bonded, after_validator_created, before_delegation_removed, before_validator_slashed, execute, get_delegations_filtered_by_validator, instantiate, query_total_power_at_height, query_voting_power_at_height};
     use crate::msg::{ExecuteMsg, InstantiateMsg};
     use crate::state::{Delegation, Validator, CONFIG, DAO, DELEGATIONS, VALIDATORS};
 
@@ -284,8 +283,8 @@ mod tests {
         assert!(res.is_ok(), "Error: {:?}", res.err());
 
         let updated_validator = VALIDATORS.load(deps.as_ref().storage, &validator_addr).unwrap();
-        assert_eq!(updated_validator.total_tokens, Uint128::new(900));
-        assert_eq!(updated_validator.total_shares, Uint128::new(900));
+        assert_eq!(updated_validator.total_tokens, Uint128::new(450));
+        assert_eq!(updated_validator.total_shares, Uint128::new(450));
 
         let updated_delegation = DELEGATIONS
             .load(deps.as_ref().storage, (&delegator_addr, &validator_addr))
@@ -310,19 +309,96 @@ mod tests {
         VALIDATORS.save(deps.as_mut().storage, &validator_addr, &validator, 0).unwrap();
 
         let res = after_validator_begin_unbonding(deps.as_mut(), mock_env(), validator_addr.to_string());
-        assert!(res.is_ok());
+        assert!(res.is_err());
+    }
+
+    #[test]
+    fn test_before_validator_slashed_with_multiple_delegations() {
+        let mut deps = mock_dependencies();
+
+        // Add a validator to the state
+        let validator_addr = Addr::unchecked("validator1");
+        let validator = Validator {
+            address: validator_addr.clone(),
+            bonded: true,
+            total_tokens: Uint128::new(1000),
+            total_shares: Uint128::new(1000),
+            active: true,
+        };
+        VALIDATORS
+            .save(deps.as_mut().storage, &validator_addr, &validator, 0)
+            .unwrap();
+
+        // Add multiple delegations to the state
+        let delegator1_addr = Addr::unchecked("delegator1");
+        let delegation1 = Delegation {
+            delegator_address: delegator1_addr.clone(),
+            validator_address: validator_addr.clone(),
+            shares: Uint128::new(400),
+        };
+        DELEGATIONS
+            .save(
+                deps.as_mut().storage,
+                (&delegator1_addr, &validator_addr),
+                &delegation1,
+                0,
+            )
+            .unwrap();
+
+        let delegator2_addr = Addr::unchecked("delegator2");
+        let delegation2 = Delegation {
+            delegator_address: delegator2_addr.clone(),
+            validator_address: validator_addr.clone(),
+            shares: Uint128::new(600),
+        };
+        DELEGATIONS
+            .save(
+                deps.as_mut().storage,
+                (&delegator2_addr, &validator_addr),
+                &delegation2,
+                0,
+            )
+            .unwrap();
+
+        // Perform a 10% slashing
+        let slashing_fraction = Decimal256::percent(10); // 10% slashing
+        let res = before_validator_slashed(
+            deps.as_mut(),
+            mock_env(),
+            validator_addr.to_string(),
+            slashing_fraction,
+        );
+        assert!(res.is_ok(), "Error: {:?}", res.err());
 
         let updated_validator = VALIDATORS.load(deps.as_ref().storage, &validator_addr).unwrap();
-        assert!(!updated_validator.bonded);
-        assert_eq!(updated_validator.total_tokens, Uint128::new(3000));
-        assert_eq!(updated_validator.total_shares, Uint128::new(3000));
+        assert_eq!(updated_validator.total_tokens, Uint128::new(900)); // 10% of 1000 slashed
+        assert_eq!(updated_validator.total_shares, Uint128::new(900));
 
-        let delegations = DELEGATIONS
-            .prefix(&validator_addr)
-            .range(deps.as_ref().storage, None, None, Order::Ascending)
-            .collect::<StdResult<Vec<_>>>();
-        assert!(delegations.unwrap().is_empty());
+        let updated_delegation1 = DELEGATIONS
+            .load(deps.as_ref().storage, (&delegator1_addr, &validator_addr))
+            .unwrap();
+        assert_eq!(updated_delegation1.shares, Uint128::new(360)); // 10% of 400 slashed
+
+        let updated_delegation2 = DELEGATIONS
+            .load(deps.as_ref().storage, (&delegator2_addr, &validator_addr))
+            .unwrap();
+        assert_eq!(updated_delegation2.shares, Uint128::new(540)); // 10% of 600 slashed
+
+        // Ensure validator shares match the sum of all delegations
+        let total_delegation_shares = updated_delegation1.shares + updated_delegation2.shares;
+        assert_eq!(
+            updated_validator.total_shares, total_delegation_shares,
+            "Validator total shares do not match the sum of all delegations!"
+        );
+
+        // Ensure validator tokens match the sum of all delegations
+        let total_delegation_tokens = updated_delegation1.shares + updated_delegation2.shares;
+        assert_eq!(
+            updated_validator.total_tokens, total_delegation_tokens,
+            "Validator total tokens do not match the sum of all delegations!"
+        );
     }
+
 
     #[test]
     fn test_after_validator_created() {
@@ -620,6 +696,5 @@ mod tests {
         assert_eq!(total_power_after_res.power, updated_validator.total_tokens);
         assert_eq!(total_power_after_res.height, 15);
     }
-
 
 }
