@@ -28,3 +28,4 @@ cwd-macros = { path = "../../../../packages/cwd-macros" }
 schemars = "0.8.8"
 serde = { version = "1.0.175", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0" }
+prost = "0.12.6"

@@ -2628,6 +2628,7 @@ dependencies = [
  "cwd-interface",
  "cwd-macros",
  "neutron-std 5.0.1-rc0 (git+https://github.com/neutron-org/neutron-std?branch=chore%2Fcosmwasm-std-1.5)",
+ "prost 0.12.6",
  "schemars",
  "serde",
  "thiserror",

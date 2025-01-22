@@ -1,10 +1,14 @@
+use cosmwasm_std::Uint128;
+use crate::state::Validator;
 #[cfg(test)]
+
 mod tests {
     use super::*;
-    use cosmwasm_std::{testing::{mock_dependencies, mock_env, mock_info}, Addr, Decimal256,Uint128};
-    use crate::contract::{after_delegation_modified, after_validator_begin_unbonding, after_validator_bonded, after_validator_created, before_delegation_removed, before_validator_slashed, execute, get_delegations_filtered_by_validator, instantiate, query_total_power_at_height, query_voting_power_at_height};
-    use crate::msg::{ExecuteMsg, InstantiateMsg};
-    use crate::state::{Delegation, Validator, CONFIG, DAO, DELEGATIONS, VALIDATORS};
+    use cosmwasm_std::{from_binary, testing::{mock_dependencies, mock_env, mock_info}, Addr, Decimal256, Uint128};
+    use cwd_interface::voting::TotalPowerAtHeightResponse;
+    use crate::contract::{after_delegation_modified, after_validator_begin_unbonding, after_validator_bonded, after_validator_created, before_delegation_removed, before_validator_slashed, execute, get_delegations_filtered_by_validator, instantiate, query, query_total_power_at_height, query_voting_power_at_height};
+    use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+    use crate::state::{Config, Delegation, Validator, BLACKLISTED_ADDRESSES, CONFIG, DAO, DELEGATIONS, VALIDATORS};
 
     #[test]
     fn test_instantiate() {
@@ -94,6 +98,193 @@ mod tests {
         assert_eq!(config.description, "A test DAO contract");
         assert_eq!(config.owner, Addr::unchecked("owner"));
     }
+
+    #[test]
+    fn test_add_and_remove_from_blacklist() {
+        let mut deps = mock_dependencies();
+
+        // Initialize config with owner
+        let config = Config {
+            name: String::from("Test Config"),
+            description: String::from("Testing blacklist functionality"),
+            owner: Addr::unchecked("admin"),
+            denom: String::from("testdenom"),
+        };
+        CONFIG.save(deps.as_mut().storage, &config).unwrap();
+
+        // Add addresses to the blacklist
+        let res = execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info("admin", &[]),
+            ExecuteMsg::AddToBlacklist {
+                addresses: vec![String::from(Addr::unchecked("addr1")), String::from(Addr::unchecked("addr2"))],
+            },
+        );
+        assert!(res.is_ok(), "Error adding to blacklist: {:?}", res.err());
+
+        // Verify that addresses are blacklisted
+        let is_addr1_blacklisted = BLACKLISTED_ADDRESSES.load(deps.as_ref().storage, Addr::unchecked("addr1")).unwrap_or(false);
+        let is_addr2_blacklisted = BLACKLISTED_ADDRESSES.load(deps.as_ref().storage, Addr::unchecked("addr2")).unwrap_or(false);
+        assert!(is_addr1_blacklisted, "Address addr1 is not blacklisted");
+        assert!(is_addr2_blacklisted, "Address addr2 is not blacklisted");
+
+        // Remove addresses from the blacklist
+        let res = execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info("admin", &[]),
+            ExecuteMsg::RemoveFromBlacklist {
+                addresses: vec![String::from(Addr::unchecked("addr1")), String::from(Addr::unchecked("addr2"))],
+            },
+        );
+        assert!(res.is_ok(), "Error removing from blacklist: {:?}", res.err());
+
+        // Verify that addresses are no longer blacklisted
+        let is_addr1_blacklisted = BLACKLISTED_ADDRESSES.may_load(deps.as_ref().storage, Addr::unchecked("addr1")).unwrap();
+        let is_addr2_blacklisted = BLACKLISTED_ADDRESSES.may_load(deps.as_ref().storage, Addr::unchecked("addr2")).unwrap();
+        assert!(is_addr1_blacklisted.is_none(), "Address addr1 is still blacklisted");
+        assert!(is_addr2_blacklisted.is_none(), "Address addr2 is still blacklisted");
+    }
+
+    #[test]
+    fn test_check_if_address_is_blacklisted() {
+        let mut deps = mock_dependencies();
+
+        // Initialize config with owner
+        let config = Config {
+            name: String::from("Test Config"),
+            description: String::from("Testing blacklist functionality"),
+            owner: Addr::unchecked("admin"),
+            denom: String::from("testdenom"),
+        };
+        CONFIG.save(deps.as_mut().storage, &config).unwrap();
+
+        // Add an address to the blacklist
+        let res = execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info("admin", &[]),
+            ExecuteMsg::AddToBlacklist {
+                addresses: vec![String::from(Addr::unchecked("addr1"))],
+            },
+        );
+        assert!(res.is_ok(), "Error adding to blacklist: {:?}", res.err());
+
+        // Query if the address is blacklisted
+        let query_res = query(
+            deps.as_ref(),
+            mock_env(),
+            QueryMsg::IsAddressBlacklisted {
+                address: "addr1".to_string(),
+            },
+        );
+        assert!(query_res.is_ok(), "Error querying blacklist status: {:?}", query_res.err());
+
+        let is_blacklisted: bool = from_binary(&query_res.unwrap()).unwrap();
+        assert!(is_blacklisted, "Address addr1 should be blacklisted");
+
+        // Query an address that is not blacklisted
+        let query_res = query(
+            deps.as_ref(),
+            mock_env(),
+            QueryMsg::IsAddressBlacklisted {
+                address: "addr2".to_string(),
+            },
+        );
+        assert!(query_res.is_ok(), "Error querying blacklist status: {:?}", query_res.err());
+
+        let is_blacklisted: bool = from_binary(&query_res.unwrap()).unwrap();
+        assert!(!is_blacklisted, "Address addr2 should not be blacklisted");
+    }
+
+    #[test]
+    fn test_total_vp_excludes_blacklisted_addresses() {
+        let mut deps = mock_dependencies();
+
+        // Add validators
+        let validator1 = Validator {
+            address: Addr::unchecked("validator1"),
+            bonded: true,
+            total_tokens: Uint128::new(1000),
+            total_shares: Uint128::new(1000),
+            active: true,
+        };
+        VALIDATORS
+            .save(deps.as_mut().storage, &Addr::unchecked("validator1"), &validator1, 0)
+            .unwrap();
+
+        let validator2 = Validator {
+            address: Addr::unchecked("validator2"),
+            bonded: true,
+            total_tokens: Uint128::new(500),
+            total_shares: Uint128::new(500),
+            active: true,
+        };
+        VALIDATORS
+            .save(deps.as_mut().storage, &Addr::unchecked("validator2"), &validator2, 0)
+            .unwrap();
+
+        // Add delegations
+        let delegation1 = Delegation {
+            delegator_address: Addr::unchecked("addr1"),
+            validator_address: Addr::unchecked("validator1"),
+            shares: Uint128::new(500),
+        };
+        DELEGATIONS
+            .save(
+                deps.as_mut().storage,
+                (&Addr::unchecked("addr1"), &Addr::unchecked("validator1")),
+                &delegation1,
+                0,
+            )
+            .unwrap();
+
+        let delegation2 = Delegation {
+            delegator_address: Addr::unchecked("addr2"),
+            validator_address: Addr::unchecked("validator2"),
+            shares: Uint128::new(500),
+        };
+        DELEGATIONS
+            .save(
+                deps.as_mut().storage,
+                (&Addr::unchecked("addr2"), &Addr::unchecked("validator2")),
+                &delegation2,
+                0,
+            )
+            .unwrap();
+
+        // Add addr2 to blacklist
+        let res = execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info("admin", &[]),
+            ExecuteMsg::AddToBlacklist {
+                addresses: vec![String::from(Addr::unchecked("addr2"))],
+            },
+        );
+        assert!(res.is_ok(), "Error adding to blacklist: {:?}", res.err());
+
+        // Query total power at current height
+        let query_res = query(
+            deps.as_ref(),
+            mock_env(),
+            QueryMsg::TotalPowerAtHeight { height: None },
+        );
+        assert!(query_res.is_ok(), "Error querying total power: {:?}", query_res.err());
+
+        let total_power: TotalPowerAtHeightResponse = from_binary(&query_res.unwrap()).unwrap();
+        assert_eq!(
+            total_power.power,
+            Uint128::new(1000),
+            "Total power should exclude blacklisted address"
+        );
+    }
+
+
+
+
+
     #[test]
     fn test_after_validator_bonded_with_mock_query() {
         let mut deps = mock_dependencies();

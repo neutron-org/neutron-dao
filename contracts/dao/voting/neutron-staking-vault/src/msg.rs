@@ -28,7 +28,14 @@ pub enum ExecuteMsg {
         description: String,
         owner: String,
     },
+    AddToBlacklist {
+        addresses: Vec<String>,
+    },
+    RemoveFromBlacklist {
+        addresses: Vec<String>, // List of addresses to remove from the blacklist
+    },
 }
+
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 #[serde(rename_all = "snake_case")]
@@ -69,7 +76,17 @@ pub enum SudoMsg {
 pub enum QueryMsg {
     #[returns(crate::state::Config)]
     Config {},
+
+    #[returns(Vec<Addr>)]
+    ListBlacklistedAddresses {
+        start_after: Option<String>,
+        limit: Option<u32>,
+    },
+
+    #[returns(bool)]
+    IsAddressBlacklisted { address: String },
 }
+
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct MigrateMsg {}

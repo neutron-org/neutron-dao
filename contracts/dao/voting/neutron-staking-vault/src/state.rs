@@ -1,6 +1,6 @@
 use crate::error::ContractError;
 use cosmwasm_std::{Addr, Uint128};
-use cw_storage_plus::{Item, SnapshotItem, SnapshotMap, Strategy};
+use cw_storage_plus::{Item, Map, SnapshotItem, SnapshotMap, Strategy};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -59,6 +59,13 @@ pub const DELEGATIONS: SnapshotMap<(&Addr, &Addr), Delegation> = SnapshotMap::ne
     "delegations__changelog",
     Strategy::EveryBlock,
 );
+
+// Map to track blacklisted addresses in the contract. They are excluded from VP calculatiion
+/// Key:
+/// - `Addr`: Address to be checked for blacklist status.
+/// Value:
+/// - `bool`: A boolean indicating whether the address is blacklisted (`true` if blacklisted, `false` otherwise).
+pub const BLACKLISTED_ADDRESSES: Map<Addr, bool> = Map::new("blacklisted_addresses");
 
 pub const CONFIG: Item<Config> = Item::new("config");
 pub const DAO: Item<Addr> = Item::new("dao");
