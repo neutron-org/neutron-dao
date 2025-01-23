@@ -42,20 +42,6 @@ pub struct WasmMockQuerier {
     base: MockQuerier,
 }
 
-impl Querier for WasmMockQuerier {
-    fn raw_query(&self, bin_request: &[u8]) -> QuerierResult {
-        let request: QueryRequest<Empty> = match from_json(bin_request) {
-            Ok(v) => v,
-            Err(e) => {
-                return QuerierResult::Err(SystemError::InvalidRequest {
-                    error: format!("Parsing query request: {}", e),
-                    request: bin_request.into(),
-                });
-            }
-        };
-        self.handle_query(&request)
-    }
-}
 
 impl WasmMockQuerier {
     pub fn handle_query(&self, request: &QueryRequest<Empty>) -> QuerierResult {

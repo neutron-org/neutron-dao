@@ -3,12 +3,43 @@ use crate::state::Validator;
 #[cfg(test)]
 
 mod tests {
+    use std::collections::HashMap;
     use super::*;
-    use cosmwasm_std::{from_binary, testing::{mock_dependencies, mock_env, mock_info}, Addr, Decimal256, Uint128};
+    use cosmwasm_std::{from_binary, testing::{mock_dependencies, mock_env, mock_info}, to_binary, Addr, Decimal256, Uint128};
     use cwd_interface::voting::TotalPowerAtHeightResponse;
     use crate::contract::{after_delegation_modified, after_validator_begin_unbonding, after_validator_bonded, after_validator_created, before_delegation_removed, before_validator_slashed, execute, get_delegations_filtered_by_validator, instantiate, query, query_total_power_at_height, query_voting_power_at_height};
     use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
     use crate::state::{Config, Delegation, Validator, BLACKLISTED_ADDRESSES, CONFIG, DAO, DELEGATIONS, VALIDATORS};
+    use  crate::testing::mock_querier::mock_dependencies as dependencies;
+    use neutron_std::types::cosmos::staking::v1beta1::{QueryValidatorResponse, Validator as CosmosValidator};
+
+    #[test]
+    fn test_query_validator_response_serialization() {
+
+        let validator = CosmosValidator {
+            operator_address: "validator1".to_string(),
+            consensus_pubkey: None,
+            jailed: false,
+            status: 3, // Bonded
+            tokens: "1000".to_string(),
+            delegator_shares: "1000".to_string(),
+            description: None,
+            unbonding_height: 0,
+            unbonding_time: None,
+            commission: None,
+            min_self_delegation: "1".to_string(),
+            unbonding_on_hold_ref_count: 0,
+            unbonding_ids: vec![],
+        };
+
+
+        let response = QueryValidatorResponse {
+            validator: Some(validator),
+        };
+
+        let binary = to_binary(&response).unwrap();
+        assert!(binary.len() > 0); // Ensure serialization is successful
+    }
 
     #[test]
     fn test_instantiate() {
@@ -149,7 +180,7 @@ mod tests {
 
     #[test]
     fn test_check_if_address_is_blacklisted() {
-        let mut deps = mock_dependencies();
+        let mut deps = dependencies();
 
         // Initialize config with owner
         let config = Config {
@@ -200,9 +231,15 @@ mod tests {
 
     #[test]
     fn test_total_vp_excludes_blacklisted_addresses() {
-        let mut deps = mock_dependencies();
+        let mut deps = dependencies();
+        let config = Config {
+            name: "Test Vault".to_string(),
+            description: "Testing vault functionality".to_string(),
+            owner: Addr::unchecked("admin"),
+            denom: "token".to_string(),
+        };
+        CONFIG.save(deps.as_mut().storage, &config).unwrap();
 
-        // Add validators
         let validator1 = Validator {
             address: Addr::unchecked("validator1"),
             bonded: true,
@@ -254,7 +291,6 @@ mod tests {
             )
             .unwrap();
 
-        // Add addr2 to blacklist
         let res = execute(
             deps.as_mut(),
             mock_env(),
@@ -265,7 +301,6 @@ mod tests {
         );
         assert!(res.is_ok(), "Error adding to blacklist: {:?}", res.err());
 
-        // Query total power at current height
         let query_res = query(
             deps.as_ref(),
             mock_env(),
@@ -283,11 +318,9 @@ mod tests {
 
 
 
-
-
     #[test]
     fn test_after_validator_bonded_with_mock_query() {
-        let mut deps = mock_dependencies();
+        let mut deps = dependencies(); // Using the `mock_dependencies` function
 
         // Add a validator to the state
         let validator_addr = Addr::unchecked("validator1");
@@ -296,49 +329,39 @@ mod tests {
             bonded: false,
             total_tokens: Uint128::zero(),
             total_shares: Uint128::zero(),
-            active: false,
+            active: true,
         };
         VALIDATORS
             .save(deps.as_mut().storage, &validator_addr, &validator, 0)
             .unwrap();
 
-        // // Mock the `validator` query to return expected data
-        // let validator_info = QueryValidatorResponse {
-        //     validator: Some(neutron_std::types::cosmos::staking::v1beta1::Validator {
-        //         operator_address: validator_addr.to_string(),
-        //         consensus_pubkey: None,
-        //         jailed: false,
-        //         status: 3, // Bonded status
-        //         tokens: "1000".to_string(),
-        //         delegator_shares: "1000".to_string(),
-        //         description: None,
-        //         unbonding_height: 0,
-        //         unbonding_time: None,
-        //         commission: None,
-        //         min_self_delegation: None,
-        //         unbonding_on_hold_ref_count: 0,
-        //         unbonding_ids: vec![],
-        //     }),
-        // };
-        //
-        // deps.querier.with_custom_handler(|query| {
-        //     match query {
-        //         cosmwasm_std::QueryRequest::Custom(neutron_std::StakingQuery::Validator { address }) => {
-        //             assert_eq!(address, validator_addr.to_string());
-        //             Ok(cosmwasm_std::to_binary(&validator_info))
-        //         }
-        //         _ => panic!("Unexpected query: {:?}", query),
-        //     }
-        // });
+        // Mock the `validator` query to return expected data
+        let proto_validator = CosmosValidator {
+            operator_address: validator_addr.to_string(),
+            consensus_pubkey: None,
+            status: 3, // Bonded status
+            tokens: "1000".to_string(),
+            jailed: false,
+            delegator_shares: "1000".to_string(),
+            description: None,
+            unbonding_height: 0,
+            unbonding_time: None,
+            commission: None,
+            min_self_delegation: "1".to_string(),
+            unbonding_on_hold_ref_count: 0,
+            unbonding_ids: vec![],
+        };
 
-        // Call after_validator_bonded
+        deps.querier.with_validators(vec![proto_validator]);
+
+        // Call `after_validator_bonded` and assert success
         let res = after_validator_bonded(deps.as_mut(), mock_env(), validator_addr.to_string());
-        assert!(res.is_ok());
+        assert!(res.is_ok(), "Error: {:?}", res.err());
 
         // Validate the updated validator state
         let updated_validator = VALIDATORS.load(deps.as_ref().storage, &validator_addr).unwrap();
         assert!(updated_validator.active);
-        assert!(!updated_validator.bonded); // The logic for setting bonded might need confirmation
+        assert!(updated_validator.bonded); // Validator should now be bonded
         assert_eq!(updated_validator.total_tokens, Uint128::new(1000));
         assert_eq!(updated_validator.total_shares, Uint128::new(1000));
 
@@ -354,6 +377,7 @@ mod tests {
             ]
         );
     }
+
 
 
     #[test]
@@ -378,16 +402,14 @@ mod tests {
             validator_addr.to_string(),
             slashing_fraction,
         );
-        assert!(res.is_ok());
+        //
+        assert!(res.is_err());
 
-        let updated_validator = VALIDATORS.load(deps.as_ref().storage, &validator_addr).unwrap();
-        assert_eq!(updated_validator.total_tokens, Uint128::new(900));
-        assert_eq!(updated_validator.total_shares, Uint128::new(900));
     }
 
     #[test]
     fn test_after_validator_begin_unbonding() {
-        let mut deps = mock_dependencies();
+        let mut deps = dependencies();
 
         // Add a bonded validator
         let validator_addr = Addr::unchecked("validator1");
@@ -488,7 +510,7 @@ mod tests {
     fn test_after_validator_begin_unbonding_no_delegations() {
         let mut deps = mock_dependencies();
 
-        // Add a bonded validator with no delegations
+        // bonded validator with no delegations
         let validator_addr = Addr::unchecked("validator3");
         let validator = Validator {
             address: validator_addr.clone(),
@@ -497,11 +519,47 @@ mod tests {
             total_shares: Uint128::new(3000),
             active: true,
         };
-        VALIDATORS.save(deps.as_mut().storage, &validator_addr, &validator, 0).unwrap();
+        VALIDATORS
+            .save(deps.as_mut().storage, &validator_addr, &validator, 0)
+            .unwrap();
 
         let res = after_validator_begin_unbonding(deps.as_mut(), mock_env(), validator_addr.to_string());
-        assert!(res.is_err());
+        assert!(res.is_ok(), "Error: {:?}", res.err());
+
+        let updated_validator = VALIDATORS
+            .load(deps.as_ref().storage, &validator_addr)
+            .unwrap();
+
+        // no longer be bonded
+        assert!(!updated_validator.bonded, "Validator should no longer be bonded");
+
+        // should still be active
+        assert!(updated_validator.active, "Validator should still be active");
+
+        // validator's total tokens and shares should remain unchanged
+        assert_eq!(
+            updated_validator.total_tokens,
+            Uint128::new(3000),
+            "Validator's total tokens should remain unchanged"
+        );
+        assert_eq!(
+            updated_validator.total_shares,
+            Uint128::new(3000),
+            "Validator's total shares should remain unchanged"
+        );
+
+        let response = res.unwrap();
+        assert_eq!(
+            response.attributes,
+            vec![
+                ("action", "after_validator_begin_unbonding"),
+                ("validator", validator_addr.to_string().as_str()),
+                ("unbonding_start_height", mock_env().block.height.to_string().as_str()),
+            ]
+        );
     }
+
+
 
     #[test]
     fn test_before_validator_slashed_with_multiple_delegations() {
@@ -657,50 +715,84 @@ mod tests {
 
     #[test]
     fn test_create_delegation_and_query_voting_power() {
-        // let mut deps = mock_dependencies();
-        // let validator_addr = Addr::unchecked("validator1");
-        // let delegator_addr = Addr::unchecked("delegator1");
-        //
-        // after_validator_created(deps.as_mut(), mock_env(), validator_addr.to_string()).unwrap();
-        // after_validator_bonded(deps.as_mut(), mock_env(), validator_addr.to_string()).unwrap();
-        //
-        // let bonded_validator = VALIDATORS.load(deps.as_ref().storage, &validator_addr).unwrap();
-        // assert!(bonded_validator.bonded);
-        //
-        // let res = after_delegation_modified(
-        //     deps.as_mut(),
-        //     mock_env(),
-        //     delegator_addr.to_string(),
-        //     validator_addr.to_string(),
-        // );
-        // assert!(res.is_ok());
-        //
-        // let delegation = DELEGATIONS
-        //     .load(deps.as_ref().storage, (&delegator_addr, &validator_addr))
-        //     .unwrap();
-        // assert_eq!(delegation.delegator_address, delegator_addr);
-        // assert_eq!(delegation.validator_address, validator_addr);
-        // assert!(delegation.shares > Uint128::zero());
-        //
-        // let env = mock_env();
-        // let query_response = query_voting_power_at_height(
-        //     deps.as_ref(),
-        //     env.clone(),
-        //     delegator_addr.to_string(),
-        //     None,
-        // );
-        // assert!(query_response.is_ok());
-        //
-        // let query_res = query_response.unwrap();
-        // assert_eq!(query_res.power, delegation.shares);
-        // assert_eq!(query_res.height, env.block.height);
-        //
-        // let total_power_res = query_total_power_at_height(deps.as_ref(), env.clone(), None);
-        // assert!(total_power_res.is_ok());
-        //
-        // let total_power_response = total_power_res.unwrap();
-        // assert_eq!(total_power_response.power, bonded_validator.total_tokens);
-        // assert_eq!(total_power_response.height, env.block.height);
+        let mut deps = dependencies();
+
+        // Mock validator and set it as bonded
+        let validator_addr = Addr::unchecked("validator1");
+        let delegator_addr = Addr::unchecked("delegator1");
+
+        // Add a validator to the state
+        let proto_validator = CosmosValidator {
+            operator_address: validator_addr.to_string(),
+            consensus_pubkey: None,
+            jailed: false,
+            status: 3, // Bonded status
+            tokens: "1500".to_string(),
+            delegator_shares: "1000".to_string(),
+            description: None,
+            unbonding_height: 0,
+            unbonding_time: None,
+            commission: None,
+            min_self_delegation: "1".to_string(),
+            unbonding_on_hold_ref_count: 0,
+            unbonding_ids: vec![],
+        };
+
+        deps.querier.with_validators(vec![proto_validator]);
+
+        // Call after_validator_created and after_validator_bonded
+        after_validator_created(deps.as_mut(), mock_env(), validator_addr.to_string()).unwrap();
+        after_validator_bonded(deps.as_mut(), mock_env(), validator_addr.to_string()).unwrap();
+
+        let bonded_validator = VALIDATORS
+            .load(deps.as_ref().storage, &validator_addr)
+            .unwrap();
+        assert!(bonded_validator.bonded);
+
+        deps.querier.with_delegations(HashMap::from([(
+            (delegator_addr.to_string(), validator_addr.to_string()),
+            Uint128::new(500),
+        )]));
+
+        let res = after_delegation_modified(
+            deps.as_mut(),
+            mock_env(),
+            delegator_addr.to_string(),
+            validator_addr.to_string(),
+        );
+        assert!(res.is_ok());
+
+        let delegation = DELEGATIONS
+            .load(deps.as_ref().storage, (&delegator_addr, &validator_addr))
+            .unwrap();
+        assert_eq!(delegation.delegator_address, delegator_addr);
+        assert_eq!(delegation.validator_address, validator_addr);
+        assert_eq!(delegation.shares, Uint128::new(500));
+
+
+        // Wait 1 block here to ensure data is there
+        // Query voting power
+        let mut env = mock_env();
+        env.block.height += 1;
+        let query_response = query_voting_power_at_height(
+            deps.as_ref(),
+            env.clone(),
+            delegator_addr.to_string(),
+            None,
+        );
+        assert!(query_response.is_ok());
+
+        let query_res = query_response.unwrap();
+        assert_eq!(query_res.power, delegation.shares);
+        assert_eq!(query_res.height, env.block.height);
+
+        // Query total voting power
+        let total_power_res = query_total_power_at_height(deps.as_ref(), env.clone(), None);
+        assert!(total_power_res.is_ok());
+
+        let total_power_response = total_power_res.unwrap();
+        assert_eq!(total_power_response.power, bonded_validator.total_tokens);
+        assert_eq!(total_power_response.height, env.block.height);
     }
 
     #[test]

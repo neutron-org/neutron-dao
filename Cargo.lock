@@ -2631,6 +2631,7 @@ dependencies = [
  "prost 0.12.6",
  "schemars",
  "serde",
+ "serde_json",
  "thiserror",
 ]
 
