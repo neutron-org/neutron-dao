@@ -1,6 +1,6 @@
 use std::collections::HashMap;
-use cosmwasm_std::{to_binary, Binary, ContractResult, Empty, OwnedDeps, Querier, QuerierResult, QueryRequest, SystemError, SystemResult, Uint128};
-use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage};
+use cosmwasm_std::{to_json_binary, ContractResult, Empty, OwnedDeps, Querier, QuerierResult, QueryRequest, SystemError, SystemResult, Uint128};
+use cosmwasm_std::testing::{MockApi, MockStorage};
 use neutron_std::types::cosmos::staking::v1beta1::{
     QueryDelegationRequest, QueryDelegationResponse, QueryValidatorRequest, QueryValidatorResponse,
     QueryValidatorsRequest, QueryValidatorsResponse, Validator,
@@ -57,7 +57,7 @@ impl WasmMockQuerier {
                         validator: Some(validator.clone()),
                     };
 
-                    match to_binary(&response) {
+                    match to_json_binary(&response) {
                         Ok(binary) => SystemResult::Ok(ContractResult::Ok(binary)),
                         Err(e) => SystemResult::Err(SystemError::InvalidResponse {
                             error: format!("Failed to serialize response: {}", e),
@@ -96,7 +96,7 @@ impl WasmMockQuerier {
                     pagination: None, // Mock doesn't handle pagination
                 };
 
-                match to_binary(&response) {
+                match to_json_binary(&response) {
                     Ok(binary) => SystemResult::Ok(ContractResult::Ok(binary)),
                     Err(e) => SystemResult::Err(SystemError::InvalidResponse {
                         error: format!("Failed to serialize response: {}", e),
@@ -132,7 +132,7 @@ impl WasmMockQuerier {
                     }),
                 };
 
-                match to_binary(&response) {
+                match to_json_binary(&response) {
                     Ok(binary) => SystemResult::Ok(ContractResult::Ok(binary)),
                     Err(e) => SystemResult::Err(SystemError::InvalidResponse {
                         error: format!("Failed to serialize response: {}", e),
@@ -152,7 +152,7 @@ impl WasmMockQuerier {
 
 impl Querier for WasmMockQuerier {
     fn raw_query(&self, bin_request: &[u8]) -> QuerierResult {
-        let request: QueryRequest<Empty> = match cosmwasm_std::from_slice(bin_request) {
+        let request: QueryRequest<Empty> = match cosmwasm_std::from_json(bin_request) {
             Ok(r) => r,
             Err(e) => {
                 return SystemResult::Err(SystemError::InvalidRequest {

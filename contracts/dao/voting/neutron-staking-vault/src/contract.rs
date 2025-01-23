@@ -4,8 +4,8 @@ use crate::state::{Config, Delegation, Validator, BLACKLISTED_ADDRESSES, CONFIG,
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    coins, to_json_binary, Addr, Binary, Decimal256, Deps, DepsMut, Env, MessageInfo, Order,
-    Response, StdError, StdResult, Uint128, Uint256,
+    to_json_binary, Addr, Binary, Decimal256, Deps, DepsMut, Env, MessageInfo, Order,
+    Response, StdError, StdResult, Uint128,
 };
 use cw2::set_contract_version;
 use cwd_interface::voting::{TotalPowerAtHeightResponse, VotingPowerAtHeightResponse};
@@ -67,7 +67,7 @@ pub fn execute(
 }
 
 
-pub fn execute_bond(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
+pub fn execute_bond(_deps: DepsMut, _env: Env, _info: MessageInfo) -> Result<Response, ContractError> {
     Err(ContractError::BondingDisabled {})
 }
 
@@ -636,10 +636,10 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::Name {} => query_name(deps),
         QueryMsg::Description {} => query_description(deps),
         QueryMsg::Config {} => to_json_binary(&CONFIG.load(deps.storage)?),
-        QueryMsg::ListBonders { start_after, limit } => {
+        QueryMsg::ListBonders { start_after: _, limit: _ } => {
             todo!()
         }
-        QueryMsg::BondingStatus { address, height } => {
+        QueryMsg::BondingStatus { address:_, height: _ } => {
             todo!()
         }
         QueryMsg::ListBlacklistedAddresses { start_after, limit } => {
@@ -796,32 +796,6 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
     // Set contract to version to latest
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     Ok(Response::default())
-}
-
-// this is just fyi. will be deleted.
-pub(crate) fn get_delegations_filtered_by_validator(
-    deps: Deps,
-    validator_addr: Addr,
-) -> Result<Vec<(Addr, Delegation)>, ContractError> {
-    // Get all keys in the DELEGATIONS map
-    let all_keys = DELEGATIONS
-        .keys(deps.storage, None, None, Order::Ascending)
-        .collect::<StdResult<Vec<(Addr, Addr)>>>()?;
-
-    let mut delegations = Vec::new();
-
-    for (delegator_addr, key_validator_addr) in all_keys {
-        if key_validator_addr == validator_addr {
-            // Load the delegation if it matches the validator
-            if let Some(delegation) =
-                DELEGATIONS.may_load(deps.storage, (&delegator_addr, &key_validator_addr))?
-            {
-                delegations.push((delegator_addr, delegation));
-            }
-        }
-    }
-
-    Ok(delegations)
 }
 
 

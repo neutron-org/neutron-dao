@@ -1,6 +1,6 @@
 use crate::error::ContractError;
 use cosmwasm_std::{Addr, Uint128};
-use cw_storage_plus::{Item, Map, SnapshotItem, SnapshotMap, Strategy};
+use cw_storage_plus::{Item, Map, SnapshotMap, Strategy};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 

@@ -1,13 +1,10 @@
-use cosmwasm_std::Uint128;
-use crate::state::Validator;
 #[cfg(test)]
 
 mod tests {
     use std::collections::HashMap;
-    use super::*;
-    use cosmwasm_std::{from_binary, testing::{mock_dependencies, mock_env, mock_info}, to_binary, Addr, Decimal256, Uint128};
+    use cosmwasm_std::{from_json, testing::{mock_dependencies, mock_env, mock_info}, to_json_binary, Addr, Decimal256, Uint128};
     use cwd_interface::voting::TotalPowerAtHeightResponse;
-    use crate::contract::{after_delegation_modified, after_validator_begin_unbonding, after_validator_bonded, after_validator_created, before_delegation_removed, before_validator_slashed, execute, get_delegations_filtered_by_validator, instantiate, query, query_total_power_at_height, query_voting_power_at_height};
+    use crate::contract::{after_delegation_modified, after_validator_begin_unbonding, after_validator_bonded, after_validator_created, before_delegation_removed, before_validator_slashed, execute, instantiate, query, query_total_power_at_height, query_voting_power_at_height};
     use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
     use crate::state::{Config, Delegation, Validator, BLACKLISTED_ADDRESSES, CONFIG, DAO, DELEGATIONS, VALIDATORS};
     use  crate::testing::mock_querier::mock_dependencies as dependencies;
@@ -37,7 +34,7 @@ mod tests {
             validator: Some(validator),
         };
 
-        let binary = to_binary(&response).unwrap();
+        let binary = to_json_binary(&response).unwrap();
         assert!(binary.len() > 0); // Ensure serialization is successful
     }
 
@@ -212,7 +209,7 @@ mod tests {
         );
         assert!(query_res.is_ok(), "Error querying blacklist status: {:?}", query_res.err());
 
-        let is_blacklisted: bool = from_binary(&query_res.unwrap()).unwrap();
+        let is_blacklisted: bool = from_json(&query_res.unwrap()).unwrap();
         assert!(is_blacklisted, "Address addr1 should be blacklisted");
 
         // Query an address that is not blacklisted
@@ -225,7 +222,7 @@ mod tests {
         );
         assert!(query_res.is_ok(), "Error querying blacklist status: {:?}", query_res.err());
 
-        let is_blacklisted: bool = from_binary(&query_res.unwrap()).unwrap();
+        let is_blacklisted: bool = from_json(&query_res.unwrap()).unwrap();
         assert!(!is_blacklisted, "Address addr2 should not be blacklisted");
     }
 
@@ -308,7 +305,7 @@ mod tests {
         );
         assert!(query_res.is_ok(), "Error querying total power: {:?}", query_res.err());
 
-        let total_power: TotalPowerAtHeightResponse = from_binary(&query_res.unwrap()).unwrap();
+        let total_power: TotalPowerAtHeightResponse = from_json(&query_res.unwrap()).unwrap();
         assert_eq!(
             total_power.power,
             Uint128::new(1000),
@@ -445,7 +442,6 @@ mod tests {
         let updated_validator = VALIDATORS.load(deps.as_ref().storage, &validator_addr).unwrap();
         assert!(!updated_validator.bonded);
 
-        // Check that delegations remain unchanged FOR NOW
         let updated_delegation = DELEGATIONS
             .load(deps.as_ref().storage, (&delegator_addr, &validator_addr))
             .unwrap();
