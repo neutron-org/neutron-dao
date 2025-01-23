@@ -81,7 +81,7 @@ pub fn execute_add_to_blacklist(
         return Err(ContractError::Unauthorized {});
     }
 
-    for address in addresses.clone() {
+    for address in &addresses {
         let addr = deps.api.addr_validate(&address)?;
         BLACKLISTED_ADDRESSES.save(deps.storage, addr, &true)?;
     }
