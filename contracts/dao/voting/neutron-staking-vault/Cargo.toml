@@ -1,6 +1,6 @@
 [package]
 authors = [""]
-description = "A DAO DAO voting module based on staked cw721 tokens."
+description = "A DAO DAO voting module based on natively staked assets"
 edition = "2021"
 name = "neutron-staking-vault"
 license = "Apache-2.0"
