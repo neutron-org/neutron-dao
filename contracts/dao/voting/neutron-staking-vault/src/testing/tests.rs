@@ -1018,7 +1018,7 @@ mod tests {
     #[cfg(test)]
     mod tests {
         use cosmwasm_std::testing::MockApi;
-        use cosmwasm_std::{Addr, Api, StdError};
+        use cosmwasm_std::{Addr, Api};
 
         #[test]
         fn test_addr_validate_with_validator_address() {
