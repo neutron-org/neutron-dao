@@ -16,6 +16,9 @@ use cw_storage_plus::Bound;
 pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-voting-vault";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
+// used for slashing calulations to get precise results
+pub(crate) const PREC_UINT: Uint128 = Uint128::new(1_000_000_000_000_000_000);
+
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
@@ -196,8 +199,7 @@ pub(crate) fn after_validator_bonded(
     let querier = StakingQuerier::new(&deps.querier);
 
     let validator_data: QueryValidatorResponse = querier
-        .validator(String::from(validator_addr.clone()))
-        .unwrap();
+        .validator(String::from(validator_addr.clone()))?;
 
     let validator_info = validator_data
         .validator
@@ -263,11 +265,13 @@ pub fn before_validator_slashed(
     for (delegator_key, mut delegation) in delegations {
         let slashed_shares: Uint128 = delegation
             .shares
-            .checked_mul(Uint128::try_from(slashing_fraction.atomics()).unwrap())
+            .checked_mul(Uint128::try_from(slashing_fraction.atomics()).map_err(|_| ContractError::MathError {
+                error: "Failed to convert slashing fraction to Uint128".to_string(),
+            })?)
             .map_err(|_| ContractError::MathError {
                 error: "Failed to calculate slashed shares".to_string(),
             })?
-            .checked_div(Uint128::new(1_000_000_000_000_000_000))
+            .checked_div(PREC_UINT)
             .map_err(|_| ContractError::MathError {
                 error: "Failed to scale down slashed shares".to_string(),
             })?;
@@ -309,7 +313,7 @@ pub fn before_validator_slashed(
         .map_err(|_| ContractError::MathError {
             error: "Failed to calculate total slashed shares".to_string(),
         })?
-        .checked_div(Uint128::new(1_000_000_000_000_000_000))
+        .checked_div(PREC_UINT)
         .map_err(|_| ContractError::MathError {
             error: "Failed to scale down total slashed shares".to_string(),
         })?;
@@ -368,27 +372,6 @@ pub(crate) fn after_validator_begin_unbonding(
     validator.bonded = false;
     VALIDATORS.save(deps.storage, &validator_addr, &validator, env.block.height)?;
 
-    // collect delegations to avoid simultaneous mutable and immutable borrows
-    let delegations: Vec<(Addr, Delegation)> = DELEGATIONS
-        .prefix(&validator_addr)
-        .range(deps.storage, None, None, Order::Ascending)
-        .map(|result| {
-            result
-                .map_err(|_| ContractError::Std(StdError::generic_err("Failed to load delegation")))
-        })
-        .collect::<Result<_, _>>()?;
-
-    // Process delegations
-    for (delegator_key, delegation) in delegations {
-        // do we need to do smth here?
-        DELEGATIONS.save(
-            deps.storage,
-            (&delegator_key, &validator_addr),
-            &delegation,
-            env.block.height,
-        )?;
-    }
-
     Ok(Response::new()
         .add_attribute("action", "after_validator_begin_unbonding")
         .add_attribute("validator", validator_addr.to_string())
@@ -407,8 +390,8 @@ pub(crate) fn after_delegation_modified(
 
     // Query current delegation from the chain
     let query_response = querier.delegation(
-        delegator.clone().to_string(),
-        validator_addr.clone().to_string(),
+        delegator.to_string(),
+        validator_addr.to_string(),
     )?;
 
     let delegation = if let Some(response) = query_response.delegation_response {
@@ -589,24 +572,33 @@ pub(crate) fn after_validator_created(
             });
         }
 
+        // Activate the validator if it exists but was inactive
         existing_validator.active = true;
-        VALIDATORS.save(
-            deps.storage,
-            &validator_addr,
-            &existing_validator,
-            env.block.height,
-        )?;
-
-        return Ok(Response::new()
-            .add_attribute("action", "validator_enabled")
-            .add_attribute("validator_address", val_address));
     }
+
+    let querier = StakingQuerier::new(&deps.querier);
+
+    let validator_data: QueryValidatorResponse = querier
+        .validator(validator_addr.to_string())
+        .map_err(|_| ContractError::ValidatorQueryFailed { address: val_address.clone() })?;
+
+    let validator_info = validator_data
+        .validator
+        .ok_or_else(|| ContractError::ValidatorNotFound { address: val_address.clone() })?;
+
+    let total_tokens = Uint128::from_str(&validator_info.tokens).map_err(|_| ContractError::InvalidTokenData {
+        address: val_address.clone(),
+    })?;
+
+    let total_shares = validator_info.delegator_shares.parse().map_err(|_| ContractError::InvalidTokenData {
+        address: val_address.clone(),
+    })?;
 
     let new_validator = Validator {
         address: validator_addr.clone(),
         bonded: false,                 // Initially not bonded
-        total_tokens: Uint128::zero(), // No tokens delegated yet
-        total_shares: Uint128::zero(), // No shares yet
+        total_tokens,
+        total_shares,
         active: true,                  // Set to active as it is newly created
     };
 
@@ -619,7 +611,9 @@ pub(crate) fn after_validator_created(
 
     Ok(Response::new()
         .add_attribute("action", "validator_created")
-        .add_attribute("validator_address", val_address))
+        .add_attribute("validator_address", val_address)
+        .add_attribute("total_tokens", total_tokens.to_string())
+        .add_attribute("total_shares", total_shares.to_string()))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

@@ -646,20 +646,59 @@ mod tests {
 
 
     #[test]
-    fn test_after_validator_created() {
-        let mut deps = mock_dependencies();
+    fn test_after_validator_created_with_mock_query() {
+        let mut deps = dependencies();
 
         let validator_addr = Addr::unchecked("validator4");
+
+        let proto_validator = CosmosValidator {
+            operator_address: validator_addr.to_string(),
+            consensus_pubkey: None,
+            jailed: false,
+            status: 2, // Unbonded status
+            tokens: "1000".to_string(),
+            delegator_shares: "1000".to_string(),
+            description: None,
+            unbonding_height: 0,
+            unbonding_time: None,
+            commission: None,
+            min_self_delegation: "1".to_string(),
+            unbonding_on_hold_ref_count: 0,
+            unbonding_ids: vec![],
+        };
+
+        deps.querier.with_validators(vec![proto_validator]);
+
         let res = after_validator_created(deps.as_mut(), mock_env(), validator_addr.to_string());
-        assert!(res.is_ok());
+        assert!(res.is_ok(), "Error: {:?}", res.err());
 
         let validator = VALIDATORS.load(deps.as_ref().storage, &validator_addr).unwrap();
         assert_eq!(validator.address, validator_addr);
-        assert!(!validator.bonded);
-        assert_eq!(validator.total_tokens, Uint128::zero());
-        assert_eq!(validator.total_shares, Uint128::zero());
-        assert!(validator.active);
+        assert!(!validator.bonded, "Validator should not be bonded initially");
+        assert_eq!(
+            validator.total_tokens,
+            Uint128::new(1000),
+            "Total tokens do not match the mocked data"
+        );
+        assert_eq!(
+            validator.total_shares,
+            Uint128::new(1000),
+            "Total shares do not match the mocked data"
+        );
+        assert!(validator.active, "Validator should be active");
+
+        let response = res.unwrap();
+        assert_eq!(
+            response.attributes,
+            vec![
+                ("action", "validator_created"),
+                ("validator_address", validator_addr.to_string().as_str()),
+                ("total_tokens", "1000"),
+                ("total_shares", "1000"),
+            ]
+        );
     }
+
 
     #[test]
     fn test_before_delegation_removed() {
@@ -975,5 +1014,37 @@ mod tests {
         assert_eq!(total_power_after_res.power, updated_validator.total_tokens);
         assert_eq!(total_power_after_res.height, 15);
     }
+
+    #[cfg(test)]
+    mod tests {
+        use cosmwasm_std::testing::MockApi;
+        use cosmwasm_std::{Addr, Api, StdError};
+
+        #[test]
+        fn test_addr_validate_with_validator_address() {
+            let api = MockApi::default();
+
+            // Valid validator address with neutron prefix
+            let valid_validator_address = "neutronvaloper1xyzxyzxyzxyzxyzxyzxyzxyzxyzxyzxyzxyz";
+            let validated_address = api.addr_validate(valid_validator_address);
+            assert!(validated_address.is_ok(), "Address validation failed for a valid validator address");
+            assert_eq!(
+                validated_address.unwrap(),
+                Addr::unchecked(valid_validator_address),
+                "The validated address does not match the input"
+            );
+
+            // Valid cosmos validator address: coinbase
+            let valid_validator_address = "cosmosvaloper1c4k24jzduc365kywrsvf5ujz4ya6mwympnc4en";
+            let validated_address = api.addr_validate(valid_validator_address);
+            assert!(validated_address.is_ok(), "Address validation failed for a valid validator address");
+            assert_eq!(
+                validated_address.unwrap(),
+                Addr::unchecked(valid_validator_address),
+                "The validated address does not match the input"
+            );
+        }
+    }
+
 
 }

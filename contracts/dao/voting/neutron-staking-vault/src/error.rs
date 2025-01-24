@@ -66,4 +66,7 @@ pub enum ContractError {
 
     #[error("Generic overflow error occurred.")]
     OverflowError(#[from] OverflowError),
+
+    #[error("Failed to query validator: {address}")]
+    ValidatorQueryFailed { address: String },
 }
