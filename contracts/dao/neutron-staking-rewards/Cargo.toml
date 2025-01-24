@@ -4,7 +4,7 @@ description = "A staking rewards implementation that distributes rewards to Neut
 edition = "2021"
 name = "neutron-staking-rewards"
 repository = "https://github.com/neutron-org/neutron-dao"
-version = "0.4.0"
+version = "0.1.0"
 
 [lib]
 crate-type = ["cdylib", "rlib"]

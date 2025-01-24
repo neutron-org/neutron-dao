@@ -95,6 +95,7 @@ pub fn execute(
 
 /// Updates configuration parameters for the contract.
 /// Only the current owner can call this method.
+#[allow(clippy::too_many_arguments)]
 fn update_config(
     mut deps: DepsMut,
     env: Env,
@@ -404,7 +405,7 @@ fn get_user_pending_rewards(
         ));
     }
 
-    return Ok(user_info.pending_rewards);
+    Ok(user_info.pending_rewards)
 }
 
 /// Safely queries the user’s staked amount from the external staking_info_proxy,
@@ -425,5 +426,5 @@ fn safe_query_user_stake(
         return Err(InvalidStakeDenom {});
     }
 
-    return Ok(user_stake);
+    Ok(user_stake)
 }

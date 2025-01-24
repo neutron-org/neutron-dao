@@ -40,7 +40,7 @@ impl Querier for WasmMockQuerier {
 }
 
 const STAKING_INFO_PROXY_CONTRACT: &str =
-    &"neutron1zfqexm2d6w4ddrl8h77lap2tjdvjd0r83lrjxalp29nq0zgkyfaq629dj9";
+    "neutron1zfqexm2d6w4ddrl8h77lap2tjdvjd0r83lrjxalp29nq0zgkyfaq629dj9";
 
 impl WasmMockQuerier {
     pub fn handle_query(&self, request: &QueryRequest<Empty>) -> QuerierResult {

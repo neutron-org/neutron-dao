@@ -16,7 +16,7 @@ pub struct Config {
 
 impl Config {
     pub fn validate(&self) -> Result<(), ContractError> {
-        if self.staking_denom.len() < 1 {
+        if self.staking_denom.is_empty() {
             return Err(ContractError::EmptyStakeDenom {});
         }
 

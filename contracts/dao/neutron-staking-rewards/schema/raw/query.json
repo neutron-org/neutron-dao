@@ -3,13 +3,50 @@
   "title": "QueryMsg",
   "oneOf": [
     {
+      "description": "Returns the contract config (static parameters only).",
       "type": "object",
       "required": [
-        "strategies"
+        "config"
       ],
       "properties": {
-        "strategies": {
+        "config": {
           "type": "object",
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Returns just the state info (global reward index, last update).",
+      "type": "object",
+      "required": [
+        "state"
+      ],
+      "properties": {
+        "state": {
+          "type": "object",
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Returns the user's current pending rewards.",
+      "type": "object",
+      "required": [
+        "rewards"
+      ],
+      "properties": {
+        "rewards": {
+          "type": "object",
+          "required": [
+            "user"
+          ],
+          "properties": {
+            "user": {
+              "type": "string"
+            }
+          },
           "additionalProperties": false
         }
       },
