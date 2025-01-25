@@ -261,7 +261,8 @@
                 "to_address": {
                   "type": "string"
                 }
-              }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -285,7 +286,8 @@
                     "$ref": "#/definitions/Coin"
                   }
                 }
-              }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -313,7 +315,8 @@
           "description": "*title** is a text title of proposal. Non unique.",
           "type": "string"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "ClearAdminProposal": {
       "description": "Deprecated. SudoContractProposal defines the struct for clear admin proposal.",
@@ -337,7 +340,8 @@
           "description": "*title** is a text title of proposal.",
           "type": "string"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "ClientUpdateProposal": {
       "description": "ClientUpdateProposal defines the struct for client update proposal.",
@@ -366,7 +370,8 @@
           "description": "*title** is a text title of proposal.",
           "type": "string"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "Coin": {
       "type": "object",
@@ -381,7 +386,8 @@
         "denom": {
           "type": "string"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "CosmosMsg_for_NeutronMsg": {
       "oneOf": [
@@ -430,7 +436,8 @@
                 "value": {
                   "$ref": "#/definitions/Binary"
                 }
-              }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -528,7 +535,8 @@
           "format": "uint32",
           "minimum": 0.0
         }
-      }
+      },
+      "additionalProperties": false
     },
     "DepositOption": {
       "type": "object",
@@ -539,7 +547,8 @@
         "disable_swap": {
           "type": "boolean"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "DexMsg": {
       "oneOf": [
@@ -613,7 +622,8 @@
                   "description": "Denom for the opposing side of the deposit",
                   "type": "string"
                 }
-              }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -672,7 +682,8 @@
                   "description": "Denom for the opposing side of the deposit",
                   "type": "string"
                 }
-              }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -753,7 +764,8 @@
                   "description": "Token being “bought”",
                   "type": "string"
                 }
-              }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -775,7 +787,8 @@
                   "description": "TrancheKey for the target limit order",
                   "type": "string"
                 }
-              }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -797,7 +810,8 @@
                   "description": "TrancheKey for the target limit order",
                   "type": "string"
                 }
-              }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -850,7 +864,8 @@
                     "$ref": "#/definitions/MultiHopRoute"
                   }
                 }
-              }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -911,7 +926,8 @@
                   "format": "uint64",
                   "minimum": 0.0
                 }
-              }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -948,7 +964,8 @@
             "$ref": "#/definitions/Coin"
           }
         }
-      }
+      },
+      "additionalProperties": false
     },
     "IbcMsg": {
       "description": "These are messages in the IBC lifecycle. Only usable by IBC-enabled contracts (contracts that directly speak the IBC protocol via 6 entry points)",
@@ -1000,7 +1017,8 @@
                   "description": "address on the remote chain to receive these tokens",
                   "type": "string"
                 }
-              }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -1034,7 +1052,8 @@
                     }
                   ]
                 }
-              }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -1055,7 +1074,8 @@
                 "channel_id": {
                   "type": "string"
                 }
-              }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -1086,7 +1106,8 @@
             }
           ]
         }
-      }
+      },
+      "additionalProperties": false
     },
     "IbcTimeoutBlock": {
       "description": "IBCTimeoutHeight Height is a monotonically increasing data type that can be compared against another Height for the purposes of updating and freezing clients. Ordering is (revision_number, timeout_height)",
@@ -1108,7 +1129,8 @@
           "format": "uint64",
           "minimum": 0.0
         }
-      }
+      },
+      "additionalProperties": false
     },
     "KVKey": {
       "description": "Describes a KV key for which you want to get value from the storage on remote chain",
@@ -1130,7 +1152,8 @@
           "description": "*path** is a path to the storage (storage prefix) where you want to read value by key (usually name of cosmos-packages module: 'staking', 'bank', etc.)",
           "type": "string"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "LimitOrderType": {
       "oneOf": [
@@ -1187,7 +1210,8 @@
           "description": "*msg** is a contract call message",
           "type": "string"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "MultiHopRoute": {
       "type": "object",
@@ -1201,7 +1225,8 @@
             "type": "string"
           }
         }
-      }
+      },
+      "additionalProperties": false
     },
     "NeutronMsg": {
       "description": "A number of Custom messages that can call into the Neutron bindings.",
@@ -1238,7 +1263,8 @@
                     "$ref": "#/definitions/Coin"
                   }
                 }
-              }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -1294,7 +1320,8 @@
                   "format": "uint64",
                   "minimum": 0.0
                 }
-              }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -1341,7 +1368,8 @@
                   "format": "uint64",
                   "minimum": 0.0
                 }
-              }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -1391,7 +1419,8 @@
                   "format": "uint64",
                   "minimum": 0.0
                 }
-              }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -1415,7 +1444,8 @@
                   "format": "uint64",
                   "minimum": 0.0
                 }
-              }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -1470,7 +1500,8 @@
                 "token": {
                   "$ref": "#/definitions/Coin"
                 }
-              }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -1491,7 +1522,8 @@
                 "admin_proposal": {
                   "$ref": "#/definitions/AdminProposal"
                 }
-              }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -1512,7 +1544,8 @@
                 "subdenom": {
                   "type": "string"
                 }
-              }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -1537,7 +1570,8 @@
                 "new_admin_address": {
                   "type": "string"
                 }
-              }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -1566,7 +1600,8 @@
                 "mint_to_address": {
                   "type": "string"
                 }
-              }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -1596,7 +1631,8 @@
                 "denom": {
                   "type": "string"
                 }
-              }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -1621,7 +1657,8 @@
                 "denom": {
                   "type": "string"
                 }
-              }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -1654,7 +1691,8 @@
                 "transfer_to_address": {
                   "type": "string"
                 }
-              }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -1714,7 +1752,8 @@
                   "description": "**uri_hash** is a sha256 hash of a document pointed by URI. It's used to verify that the document didn't change. Optional.",
                   "type": "string"
                 }
-              }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -1751,7 +1790,8 @@
                   "format": "uint64",
                   "minimum": 0.0
                 }
-              }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -1772,7 +1812,8 @@
                 "name": {
                   "type": "string"
                 }
-              }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -1795,7 +1836,8 @@
                   "format": "uint64",
                   "minimum": 0.0
                 }
-              }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -1836,7 +1878,8 @@
           "description": "*value** is a new value for given parameter. Non unique.",
           "type": "string"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "ParamChangePermission": {
       "type": "object",
@@ -1877,7 +1920,8 @@
           "description": "*title** is a text title of proposal. Non unique.",
           "type": "string"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "ParamPermission": {
       "type": "object",
@@ -1998,7 +2042,8 @@
           "description": "*title** is a text title of proposal.",
           "type": "string"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "Plan": {
       "description": "Plan defines the struct for planned upgrade.",
@@ -2022,7 +2067,8 @@
           "description": "*name** is a name for the upgrade",
           "type": "string"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "PrecDec": {
       "type": "object",
@@ -2033,7 +2079,8 @@
         "i": {
           "type": "string"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "ProposalExecuteMessage": {
       "description": "ProposalExecuteMessage defines the struct for sdk47 compatible admin proposal.",
@@ -2046,7 +2093,8 @@
           "description": "*message** is a json representing an sdk message passed to admin module to execute.",
           "type": "string"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "ProtobufAny": {
       "description": "Type for wrapping any protobuf message",
@@ -2068,7 +2116,8 @@
             }
           ]
         }
-      }
+      },
+      "additionalProperties": false
     },
     "RequestPacketTimeoutHeight": {
       "type": "object",
@@ -2089,7 +2138,8 @@
           "format": "uint64",
           "minimum": 0.0
         }
-      }
+      },
+      "additionalProperties": false
     },
     "SoftwareUpgradePermission": {
       "type": "object",
@@ -2104,7 +2154,8 @@
         "upgrade": {
           "type": "boolean"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "SoftwareUpgradeProposal": {
       "description": "Deprecated. SoftwareUpgradeProposal defines the struct for software upgrade proposal.",
@@ -2132,7 +2183,8 @@
           "description": "*title** is a text title of proposal. Non unique.",
           "type": "string"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "StrategyMsg": {
       "oneOf": [
@@ -2190,7 +2242,8 @@
           "description": "*title** is a text title of proposal.",
           "type": "string"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "Timestamp": {
       "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n``` # use cosmwasm_std::Timestamp; let ts = Timestamp::from_nanos(1_000_000_202); assert_eq!(ts.nanos(), 1_000_000_202); assert_eq!(ts.seconds(), 1); assert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2); assert_eq!(ts.nanos(), 3_000_000_202); assert_eq!(ts.seconds(), 3); assert_eq!(ts.subsec_nanos(), 202); ```",
@@ -2259,7 +2312,8 @@
           "description": "*title** is a text title of proposal.",
           "type": "string"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "UpdateAdminProposal": {
       "description": "Deprecated. UpdateAdminProposal defines the struct for update admin proposal.",
@@ -2288,7 +2342,8 @@
           "description": "*title** is a text title of proposal.",
           "type": "string"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "UpgradeProposal": {
       "description": "UpgradeProposal defines the struct for IBC upgrade proposal.",
@@ -2325,7 +2380,8 @@
             }
           ]
         }
-      }
+      },
+      "additionalProperties": false
     },
     "VoteOption": {
       "type": "string",
@@ -2371,7 +2427,8 @@
                     }
                   ]
                 }
-              }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -2421,7 +2478,8 @@
                     }
                   ]
                 }
-              }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -2458,7 +2516,8 @@
                   "format": "uint64",
                   "minimum": 0.0
                 }
-              }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -2483,7 +2542,8 @@
                 "contract_addr": {
                   "type": "string"
                 }
-              }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -2504,7 +2564,8 @@
                 "contract_addr": {
                   "type": "string"
                 }
-              }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false

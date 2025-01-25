@@ -5,8 +5,8 @@ use cosmos_sdk_proto::traits::Message;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, Addr, BalanceResponse, BankQuery, Binary, Coin, CosmosMsg, Decimal, Deps,
-    DepsMut, Env, MessageInfo, Reply, Response, StdResult, SubMsg, Uint128, WasmMsg,
+    to_json_binary, Addr, AnyMsg, BalanceResponse, BankQuery, Binary, Coin, CosmosMsg, Decimal,
+    Deps, DepsMut, Env, MessageInfo, Reply, Response, StdResult, SubMsg, Uint128, WasmMsg,
 };
 use cw2::set_contract_version;
 use neutron_sdk::bindings::msg::NeutronMsg;
@@ -94,6 +94,13 @@ pub fn execute_update_config(
     if info.sender != config.owner {
         return Err(ContractError::Unauthorized {});
     }
+
+    // Required to ensure that a malicious owner can't change the config while the
+    // loan is active
+    if ACTIVE_LOAN.load(deps.storage)?.is_some() {
+        return Err(FlashloanAlreadyActive {});
+    }
+
     if let Some(new_owner) = owner {
         let owner_address = deps.api.addr_validate(new_owner.as_str())?;
         config.owner = owner_address;
@@ -231,7 +238,7 @@ fn calculate_fee(
 ) -> Result<Vec<Coin>, ContractError> {
     let mut fee: Vec<Coin> = Vec::with_capacity(requested_amount.len());
     for coin in requested_amount {
-        let coin_fee = Coin::new((fee_rate * coin.amount).u128(), coin.denom);
+        let coin_fee = Coin::new(coin.amount.checked_mul_floor(fee_rate)?.u128(), coin.denom);
         fee.push(coin_fee)
     }
 
@@ -287,10 +294,10 @@ fn get_stargate_authz_bank_send_msg(
 
     // Then we wrap the authz message in a stargate message, because there is
     // no custom support for authz messages in CosmWasm.
-    let stargate_authz_msg_exec: CosmosMsg<NeutronMsg> = CosmosMsg::Stargate {
+    let stargate_authz_msg_exec: CosmosMsg<NeutronMsg> = CosmosMsg::Any(AnyMsg {
         type_url: AUTHZ_MSG_EXEC_TYPE_URL.to_string(),
-        value: Binary(authz_msg_exec.encode_to_vec()),
-    };
+        value: Binary::new(authz_msg_exec.encode_to_vec()),
+    });
 
     stargate_authz_msg_exec
 }

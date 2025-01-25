@@ -1,4 +1,6 @@
-use cosmwasm_std::{CheckedMultiplyRatioError, OverflowError, StdError};
+use cosmwasm_std::{
+    CheckedMultiplyFractionError, CheckedMultiplyRatioError, OverflowError, StdError,
+};
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]
@@ -43,6 +45,9 @@ pub enum ContractError {
 
     #[error("CheckedMultiplyRatioError error: {0}")]
     CheckedMultiplyRatioError(#[from] CheckedMultiplyRatioError),
+
+    #[error("CheckedMultiplyRatioError error: {0}")]
+    CheckedMultiplyFractionError(#[from] CheckedMultiplyFractionError),
 
     #[error("OverflowError error: {0}")]
     OverflowError(#[from] OverflowError),

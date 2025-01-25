@@ -2,45 +2,34 @@ use crate::contract::{execute_request_loan, instantiate};
 use crate::error::ContractError;
 use crate::msg::InstantiateMsg;
 use crate::testing::mock_querier::mock_dependencies;
-use cosmwasm_std::testing::{mock_env, mock_info};
+use cosmwasm_std::testing::{message_info, mock_env};
 use cosmwasm_std::{Coin, Decimal};
 
 #[test]
 fn test_instantiate() {
     let mut deps = mock_dependencies();
     let env = mock_env();
-    let info = mock_info("addr1", &[]);
-
-    instantiate(
-        deps.as_mut(),
-        env.clone(),
-        info.clone(),
-        InstantiateMsg {
-            owner: "neutron_dao_address".to_string(),
-            source: "neutron_dao_address".to_string(),
-            fee_rate: Decimal::from_ratio(1u128, 100u128),
-        },
-    )
-    .unwrap();
+    let info = message_info(&deps.api.addr_make("addr1"), &[]);
+    let instantiate_msg = InstantiateMsg {
+        owner: deps.api.addr_make("neutron_dao_address").to_string(),
+        source: deps.api.addr_make("neutron_dao_address").to_string(),
+        fee_rate: Decimal::from_ratio(1u128, 100u128),
+    };
+    instantiate(deps.as_mut(), env.clone(), info.clone(), instantiate_msg).unwrap();
 }
 
 #[test]
 fn test_request_loan_invalid_amount() {
     let mut deps = mock_dependencies();
     let env = mock_env();
-    let info = mock_info("addr1", &[]);
+    let info = message_info(&deps.api.addr_make("addr1"), &[]);
+    let instantiate_msg = InstantiateMsg {
+        owner: deps.api.addr_make("neutron_dao_address").to_string(),
+        source: deps.api.addr_make("neutron_dao_address").to_string(),
+        fee_rate: Decimal::from_ratio(1u128, 100u128),
+    };
 
-    instantiate(
-        deps.as_mut(),
-        env.clone(),
-        info.clone(),
-        InstantiateMsg {
-            owner: "neutron_dao_address".to_string(),
-            source: "neutron_dao_address".to_string(),
-            fee_rate: Decimal::from_ratio(1u128, 100u128),
-        },
-    )
-    .unwrap();
+    instantiate(deps.as_mut(), env.clone(), info.clone(), instantiate_msg).unwrap();
 
     // ------------------------------- Duplicate denoms
     let amount_duplicate_coins = vec![Coin::new(10u128, "untrn"), Coin::new(10u128, "untrn")];

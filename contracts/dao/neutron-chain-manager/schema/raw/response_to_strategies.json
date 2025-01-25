@@ -182,7 +182,8 @@
         "upgrade": {
           "type": "boolean"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "StrategyMsg": {
       "oneOf": [
