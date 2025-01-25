@@ -2484,6 +2484,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "neutron-flashloans"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "cosmos-sdk-proto",
+ "cosmwasm-schema 2.1.4",
+ "cosmwasm-std 2.1.4",
+ "cosmwasm-storage",
+ "cw-controllers",
+ "cw-multi-test",
+ "cw-paginate 0.2.0",
+ "cw-storage-plus 2.0.0",
+ "cw-utils 2.0.0",
+ "cw2 2.0.0",
+ "cwd-interface",
+ "cwd-macros",
+ "neutron-sdk 0.11.0",
+ "prost 0.12.6",
+ "prost-types",
+ "schemars",
+ "serde",
+ "serde-json-wasm 1.0.1",
+ "serde_with",
+ "thiserror",
+]
+
+[[package]]
 name = "neutron-lockdrop-vault"
 version = "0.1.0"
 dependencies = [
