@@ -418,7 +418,7 @@ mod tests {
             map.save(
                 &mut deps.storage,
                 ctr,
-                &Uint128::new(ctr.try_into().unwrap()),
+                &Uint128::new(ctr.into()),
                 env.block.height,
             )
             .unwrap();

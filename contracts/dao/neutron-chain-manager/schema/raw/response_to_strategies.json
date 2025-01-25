@@ -6,6 +6,62 @@
     "$ref": "#/definitions/StrategyMsg"
   },
   "definitions": {
+    "CCVUpdateParamsPermission": {
+      "type": "object",
+      "required": [
+        "blocks_per_distribution_transmission",
+        "ccv_timeout_period",
+        "consumer_redistribution_fraction",
+        "distribution_transmission_channel",
+        "historical_entries",
+        "provider_fee_pool_addr_str",
+        "provider_reward_denoms",
+        "retry_delay_period",
+        "reward_denoms",
+        "soft_opt_out_threshold",
+        "transfer_timeout_period",
+        "unbonding_period"
+      ],
+      "properties": {
+        "blocks_per_distribution_transmission": {
+          "type": "boolean"
+        },
+        "ccv_timeout_period": {
+          "type": "boolean"
+        },
+        "consumer_redistribution_fraction": {
+          "type": "boolean"
+        },
+        "distribution_transmission_channel": {
+          "type": "boolean"
+        },
+        "historical_entries": {
+          "type": "boolean"
+        },
+        "provider_fee_pool_addr_str": {
+          "type": "boolean"
+        },
+        "provider_reward_denoms": {
+          "type": "boolean"
+        },
+        "retry_delay_period": {
+          "type": "boolean"
+        },
+        "reward_denoms": {
+          "type": "boolean"
+        },
+        "soft_opt_out_threshold": {
+          "type": "boolean"
+        },
+        "transfer_timeout_period": {
+          "type": "boolean"
+        },
+        "unbonding_period": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
     "CronPermission": {
       "type": "object",
       "required": [
@@ -57,6 +113,38 @@
           "type": "boolean"
         },
         "paused": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "DynamicFeesUpdateParamsPermission": {
+      "type": "object",
+      "required": [
+        "ntrn_prices"
+      ],
+      "properties": {
+        "ntrn_prices": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "GlobalfeeUpdateParamsPermission": {
+      "type": "object",
+      "required": [
+        "bypass_min_fee_msg_types",
+        "max_total_bypass_min_fee_msg_gas_usage",
+        "minimum_gas_prices"
+      ],
+      "properties": {
+        "bypass_min_fee_msg_types": {
+          "type": "boolean"
+        },
+        "max_total_bypass_min_fee_msg_gas_usage": {
+          "type": "boolean"
+        },
+        "minimum_gas_prices": {
           "type": "boolean"
         }
       },
@@ -139,6 +227,42 @@
           "properties": {
             "update_dex_params_permission": {
               "$ref": "#/definitions/DexUpdateParamsPermission"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "update_dynamicfees_params_permission"
+          ],
+          "properties": {
+            "update_dynamicfees_params_permission": {
+              "$ref": "#/definitions/DynamicFeesUpdateParamsPermission"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "update_globalfee_params_permission"
+          ],
+          "properties": {
+            "update_globalfee_params_permission": {
+              "$ref": "#/definitions/GlobalfeeUpdateParamsPermission"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "update_c_c_v_params_permission"
+          ],
+          "properties": {
+            "update_c_c_v_params_permission": {
+              "$ref": "#/definitions/CCVUpdateParamsPermission"
             }
           },
           "additionalProperties": false

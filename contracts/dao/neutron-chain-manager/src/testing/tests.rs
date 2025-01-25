@@ -3,15 +3,19 @@ use crate::contract::{
 };
 use crate::error::ContractError::{InvalidDemotion, Unauthorized};
 use crate::msg::Permission::{
-    CronPermission, ParamChangePermission, UpdateCronParamsPermission, UpdateDexParamsPermission,
+    CronPermission, ParamChangePermission, UpdateCCVParamsPermission, UpdateCronParamsPermission,
+    UpdateDexParamsPermission, UpdateDynamicfeesParamsPermission, UpdateGlobalfeeParamsPermission,
     UpdateTokenfactoryParamsPermission,
 };
 use crate::msg::{
-    CronPermission as CronPermissionType, CronUpdateParamsPermission, DexUpdateParamsPermission,
+    CCVUpdateParamsPermission, CronPermission as CronPermissionType, CronUpdateParamsPermission,
+    DexUpdateParamsPermission, DynamicFeesUpdateParamsPermission, GlobalfeeUpdateParamsPermission,
     InstantiateMsg, ParamChangePermission as ParamChangePermissionType, ParamPermission,
     StrategyMsg, TokenfactoryUpdateParamsPermission,
 };
-use crate::testing::mock_querier::mock_dependencies;
+use crate::testing::mock_querier::{
+    consumer_params_to_update, default_consumer_params, mock_dependencies,
+};
 use cosmwasm_std::testing::{message_info, mock_env};
 use cosmwasm_std::{Addr, BankMsg, Coin, CosmosMsg, Uint128};
 use neutron_sdk::bindings::msg::{
@@ -920,6 +924,1144 @@ pub fn test_execute_execute_message_update_params_dex_unauthorized_good_til_purg
 
     let info = message_info(&Addr::unchecked("addr1"), &[]);
     let err = execute_execute_messages(deps.as_mut(), info.clone(), vec![msg]).unwrap_err();
+    assert_eq!(err, Unauthorized {});
+}
+
+/// Checks that if you have permissions, you can change all parameters of the dynamicfees
+/// module (new style parameter changes). NOTE: this does not check that the
+/// parameters have actually been changed.
+#[test]
+pub fn test_execute_execute_message_update_params_dynamicfees_authorized() {
+    let msg = CosmosMsg::Custom(NeutronMsg::SubmitAdminProposal {
+        admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
+            message: r#"{"@type":"/neutron.dynamicfees.v1.MsgUpdateParams",
+             "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
+             "params": {"ntrn_prices":[{"denom":"utia","amount":"1.5"}]}}"#
+                .to_string(),
+        }),
+    });
+
+    let mut deps = mock_dependencies();
+    let env = mock_env();
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    let non_priv_info = message_info(&Addr::unchecked("addr1"), &[]);
+
+    instantiate(
+        deps.as_mut(),
+        env.clone(),
+        info.clone(),
+        InstantiateMsg {
+            initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
+        },
+    )
+    .unwrap();
+
+    let err = execute_execute_messages(deps.as_mut(), non_priv_info.clone(), vec![msg.clone()])
+        .unwrap_err();
+    assert_eq!(err, Unauthorized {});
+
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    execute_add_strategy(
+        deps.as_mut(),
+        info.clone(),
+        Addr::unchecked("addr1".to_string()),
+        StrategyMsg::AllowOnly(vec![UpdateDynamicfeesParamsPermission(
+            DynamicFeesUpdateParamsPermission { ntrn_prices: true },
+        )]),
+    )
+    .unwrap();
+
+    execute_execute_messages(deps.as_mut(), non_priv_info.clone(), vec![msg]).unwrap();
+}
+
+/// Checks that you can't change `ntrn_prices` if you don't have the permission to do so
+/// (new style parameter changes).
+#[test]
+pub fn test_execute_execute_message_update_params_dynamicfees_unauthorized() {
+    let msg = CosmosMsg::Custom(NeutronMsg::SubmitAdminProposal {
+        admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
+            message: r#"{"@type":"/neutron.dynamicfees.v1.MsgUpdateParams",
+             "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
+             "params": {"ntrn_prices":[{"denom":"utia","amount":"1.5"}]}}"#
+                .to_string(),
+        }),
+    });
+
+    let mut deps = mock_dependencies();
+    let env = mock_env();
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    let non_priv_info = message_info(&Addr::unchecked("addr1"), &[]);
+
+    instantiate(
+        deps.as_mut(),
+        env.clone(),
+        info.clone(),
+        InstantiateMsg {
+            initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
+        },
+    )
+    .unwrap();
+
+    let err = execute_execute_messages(deps.as_mut(), non_priv_info.clone(), vec![msg.clone()])
+        .unwrap_err();
+    assert_eq!(err, Unauthorized {});
+
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    execute_add_strategy(
+        deps.as_mut(),
+        info.clone(),
+        Addr::unchecked("addr1".to_string()),
+        StrategyMsg::AllowOnly(vec![UpdateDynamicfeesParamsPermission(
+            DynamicFeesUpdateParamsPermission { ntrn_prices: false },
+        )]),
+    )
+    .unwrap();
+
+    let err =
+        execute_execute_messages(deps.as_mut(), non_priv_info.clone(), vec![msg]).unwrap_err();
+    assert_eq!(err, Unauthorized {});
+}
+
+/// Checks that if you have permissions, you can change all parameters of the globalfee
+/// module (new style parameter changes). NOTE: this does not check that the
+/// parameters have actually been changed.
+#[test]
+pub fn test_execute_execute_message_update_params_globalfee_authorized() {
+    let msg = CosmosMsg::Custom(NeutronMsg::SubmitAdminProposal {
+        admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
+            message: r#"{"@type":"/gaia.globalfee.v1beta1.MsgUpdateParams",
+             "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
+             "params": {"minimum_gas_prices":[{"denom":"utia","amount":"2.5"}],"bypass_min_fee_msg_types":["allowedMsgType2"],"max_total_bypass_min_fee_msg_gas_usage":100000}}"#
+                .to_string(),
+        }),
+    });
+
+    let mut deps = mock_dependencies();
+    let env = mock_env();
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    let non_priv_info = message_info(&Addr::unchecked("addr1"), &[]);
+
+    instantiate(
+        deps.as_mut(),
+        env.clone(),
+        info.clone(),
+        InstantiateMsg {
+            initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
+        },
+    )
+    .unwrap();
+
+    let err = execute_execute_messages(deps.as_mut(), non_priv_info.clone(), vec![msg.clone()])
+        .unwrap_err();
+    assert_eq!(err, Unauthorized {});
+
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    execute_add_strategy(
+        deps.as_mut(),
+        info.clone(),
+        Addr::unchecked("addr1".to_string()),
+        StrategyMsg::AllowOnly(vec![UpdateGlobalfeeParamsPermission(
+            GlobalfeeUpdateParamsPermission {
+                minimum_gas_prices: true,
+                bypass_min_fee_msg_types: true,
+                max_total_bypass_min_fee_msg_gas_usage: true,
+            },
+        )]),
+    )
+    .unwrap();
+
+    execute_execute_messages(deps.as_mut(), non_priv_info.clone(), vec![msg]).unwrap();
+}
+
+/// Checks that you can't change `minimum_gas_prices` if you don't have the permission to do so
+/// (new style parameter changes).
+#[test]
+pub fn test_execute_execute_message_update_params_globalfee_minimum_gas_prices_unauthorized() {
+    let msg = CosmosMsg::Custom(NeutronMsg::SubmitAdminProposal {
+        admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
+            message: r#"{"@type":"/gaia.globalfee.v1beta1.MsgUpdateParams",
+             "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
+             "params": {"minimum_gas_prices":[{"denom":"utia","amount":"2.5"}],"bypass_min_fee_msg_types":["allowedMsgType2"],"max_total_bypass_min_fee_msg_gas_usage":100000}}"#
+                .to_string(),
+        }),
+    });
+
+    let mut deps = mock_dependencies();
+    let env = mock_env();
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    let non_priv_info = message_info(&Addr::unchecked("addr1"), &[]);
+
+    instantiate(
+        deps.as_mut(),
+        env.clone(),
+        info.clone(),
+        InstantiateMsg {
+            initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
+        },
+    )
+    .unwrap();
+
+    let err = execute_execute_messages(deps.as_mut(), non_priv_info.clone(), vec![msg.clone()])
+        .unwrap_err();
+    assert_eq!(err, Unauthorized {});
+
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    execute_add_strategy(
+        deps.as_mut(),
+        info.clone(),
+        Addr::unchecked("addr1".to_string()),
+        StrategyMsg::AllowOnly(vec![UpdateGlobalfeeParamsPermission(
+            GlobalfeeUpdateParamsPermission {
+                minimum_gas_prices: false,
+                bypass_min_fee_msg_types: true,
+                max_total_bypass_min_fee_msg_gas_usage: true,
+            },
+        )]),
+    )
+    .unwrap();
+
+    let err =
+        execute_execute_messages(deps.as_mut(), non_priv_info.clone(), vec![msg]).unwrap_err();
+    assert_eq!(err, Unauthorized {});
+}
+
+/// Checks that you can't change `bypass_min_fee_msg_types` if you don't have the permission to do so
+/// (new style parameter changes).
+#[test]
+pub fn test_execute_execute_message_update_params_globalfee_bypass_min_fee_msg_types_unauthorized()
+{
+    let msg = CosmosMsg::Custom(NeutronMsg::SubmitAdminProposal {
+        admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
+            message: r#"{"@type":"/gaia.globalfee.v1beta1.MsgUpdateParams",
+             "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
+             "params": {"minimum_gas_prices":[{"denom":"utia","amount":"2.5"}],"bypass_min_fee_msg_types":["allowedMsgType2"],"max_total_bypass_min_fee_msg_gas_usage":100000}}"#
+                .to_string(),
+        }),
+    });
+
+    let mut deps = mock_dependencies();
+    let env = mock_env();
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    let non_priv_info = message_info(&Addr::unchecked("addr1"), &[]);
+
+    instantiate(
+        deps.as_mut(),
+        env.clone(),
+        info.clone(),
+        InstantiateMsg {
+            initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
+        },
+    )
+    .unwrap();
+
+    let err = execute_execute_messages(deps.as_mut(), non_priv_info.clone(), vec![msg.clone()])
+        .unwrap_err();
+    assert_eq!(err, Unauthorized {});
+
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    execute_add_strategy(
+        deps.as_mut(),
+        info.clone(),
+        Addr::unchecked("addr1".to_string()),
+        StrategyMsg::AllowOnly(vec![UpdateGlobalfeeParamsPermission(
+            GlobalfeeUpdateParamsPermission {
+                minimum_gas_prices: true,
+                bypass_min_fee_msg_types: false,
+                max_total_bypass_min_fee_msg_gas_usage: true,
+            },
+        )]),
+    )
+    .unwrap();
+
+    let err =
+        execute_execute_messages(deps.as_mut(), non_priv_info.clone(), vec![msg]).unwrap_err();
+    assert_eq!(err, Unauthorized {});
+}
+
+/// Checks that you can't change `max_total_bypass_min_fee_msg_gas_usage` if you don't have the permission to do so
+/// (new style parameter changes).
+#[test]
+pub fn test_execute_execute_message_update_params_globalfee_max_total_bypass_min_fee_msg_gas_usage_unauthorized(
+) {
+    let msg = CosmosMsg::Custom(NeutronMsg::SubmitAdminProposal {
+        admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
+            message: r#"{"@type":"/gaia.globalfee.v1beta1.MsgUpdateParams",
+             "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
+             "params": {"minimum_gas_prices":[{"denom":"utia","amount":"2.5"}],"bypass_min_fee_msg_types":["allowedMsgType2"],"max_total_bypass_min_fee_msg_gas_usage":100000}}"#
+                .to_string(),
+        }),
+    });
+
+    let mut deps = mock_dependencies();
+    let env = mock_env();
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    let non_priv_info = message_info(&Addr::unchecked("addr1"), &[]);
+
+    instantiate(
+        deps.as_mut(),
+        env.clone(),
+        info.clone(),
+        InstantiateMsg {
+            initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
+        },
+    )
+    .unwrap();
+
+    let err = execute_execute_messages(deps.as_mut(), non_priv_info.clone(), vec![msg.clone()])
+        .unwrap_err();
+    assert_eq!(err, Unauthorized {});
+
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    execute_add_strategy(
+        deps.as_mut(),
+        info.clone(),
+        Addr::unchecked("addr1".to_string()),
+        StrategyMsg::AllowOnly(vec![UpdateGlobalfeeParamsPermission(
+            GlobalfeeUpdateParamsPermission {
+                minimum_gas_prices: true,
+                bypass_min_fee_msg_types: true,
+                max_total_bypass_min_fee_msg_gas_usage: false,
+            },
+        )]),
+    )
+    .unwrap();
+
+    let err =
+        execute_execute_messages(deps.as_mut(), non_priv_info.clone(), vec![msg]).unwrap_err();
+    assert_eq!(err, Unauthorized {});
+}
+
+/// Checks that if you have permissions, you can change all parameters of the consumer
+/// module (new style parameter changes). NOTE: this does not check that the
+/// parameters have actually been changed.
+#[test]
+pub fn test_execute_execute_message_update_params_consumer_authorized() {
+    let params = consumer_params_to_update();
+    let msg = CosmosMsg::Custom(NeutronMsg::SubmitAdminProposal {
+        admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
+            message: format!(
+                r#"{{"@type":"/interchain_security.ccv.consumer.v1.MsgUpdateParams",
+             "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
+             "params": {}}}"#,
+                serde_json_wasm::to_string(&params).unwrap()
+            )
+            .to_string(),
+        }),
+    });
+
+    let mut deps = mock_dependencies();
+    let env = mock_env();
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    let non_priv_info = message_info(&Addr::unchecked("addr1"), &[]);
+
+    instantiate(
+        deps.as_mut(),
+        env.clone(),
+        info.clone(),
+        InstantiateMsg {
+            initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
+        },
+    )
+    .unwrap();
+
+    let err = execute_execute_messages(deps.as_mut(), non_priv_info.clone(), vec![msg.clone()])
+        .unwrap_err();
+    assert_eq!(err, Unauthorized {});
+
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    execute_add_strategy(
+        deps.as_mut(),
+        info.clone(),
+        Addr::unchecked("addr1".to_string()),
+        StrategyMsg::AllowOnly(vec![UpdateCCVParamsPermission(CCVUpdateParamsPermission {
+            blocks_per_distribution_transmission: true,
+            distribution_transmission_channel: true,
+            provider_fee_pool_addr_str: true,
+            ccv_timeout_period: true,
+            transfer_timeout_period: true,
+            consumer_redistribution_fraction: true,
+            historical_entries: true,
+            unbonding_period: true,
+            soft_opt_out_threshold: true,
+            reward_denoms: true,
+            provider_reward_denoms: true,
+            retry_delay_period: true,
+        })]),
+    )
+    .unwrap();
+
+    execute_execute_messages(deps.as_mut(), non_priv_info.clone(), vec![msg]).unwrap();
+}
+
+/// Checks that you can't change `enabled`. It is not allowed to change `enabled` param.
+/// (new style parameter changes).
+#[test]
+pub fn test_execute_execute_message_update_params_consumer_disable_unauthorized() {
+    let mut params = default_consumer_params();
+    params.enabled = false;
+    let msg = CosmosMsg::Custom(NeutronMsg::SubmitAdminProposal {
+        admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
+            message: format!(
+                r#"{{"@type":"/interchain_security.ccv.consumer.v1.MsgUpdateParams",
+             "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
+             "params": {}}}"#,
+                serde_json_wasm::to_string(&params).unwrap()
+            )
+            .to_string(),
+        }),
+    });
+
+    let mut deps = mock_dependencies();
+    let env = mock_env();
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    let non_priv_info = message_info(&Addr::unchecked("addr1"), &[]);
+
+    instantiate(
+        deps.as_mut(),
+        env.clone(),
+        info.clone(),
+        InstantiateMsg {
+            initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
+        },
+    )
+    .unwrap();
+
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    execute_add_strategy(
+        deps.as_mut(),
+        info.clone(),
+        Addr::unchecked("addr1".to_string()),
+        StrategyMsg::AllowOnly(vec![UpdateCCVParamsPermission(CCVUpdateParamsPermission {
+            blocks_per_distribution_transmission: true,
+            distribution_transmission_channel: true,
+            provider_fee_pool_addr_str: true,
+            ccv_timeout_period: true,
+            transfer_timeout_period: true,
+            consumer_redistribution_fraction: true,
+            historical_entries: true,
+            unbonding_period: true,
+            soft_opt_out_threshold: true,
+            reward_denoms: true,
+            provider_reward_denoms: true,
+            retry_delay_period: true,
+        })]),
+    )
+    .unwrap();
+
+    let err =
+        execute_execute_messages(deps.as_mut(), non_priv_info.clone(), vec![msg]).unwrap_err();
+    assert_eq!(err, Unauthorized {});
+}
+
+/// Checks that you can't change `blocks_per_distribution_transmission` if you don't have the permission to do so
+/// (new style parameter changes).
+#[test]
+pub fn test_execute_execute_message_update_params_consumer_blocks_per_distribution_transmission_unauthorized(
+) {
+    let params = consumer_params_to_update();
+    let msg = CosmosMsg::Custom(NeutronMsg::SubmitAdminProposal {
+        admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
+            message: format!(
+                r#"{{"@type":"/interchain_security.ccv.consumer.v1.MsgUpdateParams",
+             "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
+             "params": {}}}"#,
+                serde_json_wasm::to_string(&params).unwrap()
+            )
+            .to_string(),
+        }),
+    });
+
+    let mut deps = mock_dependencies();
+    let env = mock_env();
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    let non_priv_info = message_info(&Addr::unchecked("addr1"), &[]);
+
+    instantiate(
+        deps.as_mut(),
+        env.clone(),
+        info.clone(),
+        InstantiateMsg {
+            initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
+        },
+    )
+    .unwrap();
+
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    execute_add_strategy(
+        deps.as_mut(),
+        info.clone(),
+        Addr::unchecked("addr1".to_string()),
+        StrategyMsg::AllowOnly(vec![UpdateCCVParamsPermission(CCVUpdateParamsPermission {
+            blocks_per_distribution_transmission: false,
+            distribution_transmission_channel: true,
+            provider_fee_pool_addr_str: true,
+            ccv_timeout_period: true,
+            transfer_timeout_period: true,
+            consumer_redistribution_fraction: true,
+            historical_entries: true,
+            unbonding_period: true,
+            soft_opt_out_threshold: true,
+            reward_denoms: true,
+            provider_reward_denoms: true,
+            retry_delay_period: true,
+        })]),
+    )
+    .unwrap();
+
+    let err =
+        execute_execute_messages(deps.as_mut(), non_priv_info.clone(), vec![msg]).unwrap_err();
+    assert_eq!(err, Unauthorized {});
+}
+
+/// Checks that you can't change `distribution_transmission_channel` if you don't have the permission to do so
+/// (new style parameter changes).
+#[test]
+pub fn test_execute_execute_message_update_params_consumer_distribution_transmission_channel_unauthorized(
+) {
+    let params = consumer_params_to_update();
+    let msg = CosmosMsg::Custom(NeutronMsg::SubmitAdminProposal {
+        admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
+            message: format!(
+                r#"{{"@type":"/interchain_security.ccv.consumer.v1.MsgUpdateParams",
+             "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
+             "params": {}}}"#,
+                serde_json_wasm::to_string(&params).unwrap()
+            )
+            .to_string(),
+        }),
+    });
+
+    let mut deps = mock_dependencies();
+    let env = mock_env();
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    let non_priv_info = message_info(&Addr::unchecked("addr1"), &[]);
+
+    instantiate(
+        deps.as_mut(),
+        env.clone(),
+        info.clone(),
+        InstantiateMsg {
+            initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
+        },
+    )
+    .unwrap();
+
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    execute_add_strategy(
+        deps.as_mut(),
+        info.clone(),
+        Addr::unchecked("addr1".to_string()),
+        StrategyMsg::AllowOnly(vec![UpdateCCVParamsPermission(CCVUpdateParamsPermission {
+            blocks_per_distribution_transmission: true,
+            distribution_transmission_channel: false,
+            provider_fee_pool_addr_str: true,
+            ccv_timeout_period: true,
+            transfer_timeout_period: true,
+            consumer_redistribution_fraction: true,
+            historical_entries: true,
+            unbonding_period: true,
+            soft_opt_out_threshold: true,
+            reward_denoms: true,
+            provider_reward_denoms: true,
+            retry_delay_period: true,
+        })]),
+    )
+    .unwrap();
+
+    let err =
+        execute_execute_messages(deps.as_mut(), non_priv_info.clone(), vec![msg]).unwrap_err();
+    assert_eq!(err, Unauthorized {});
+}
+
+/// Checks that you can't change `provider_fee_pool_addr_str` if you don't have the permission to do so
+/// (new style parameter changes).
+#[test]
+pub fn test_execute_execute_message_update_params_consumer_provider_fee_pool_addr_str_unauthorized()
+{
+    let params = consumer_params_to_update();
+    let msg = CosmosMsg::Custom(NeutronMsg::SubmitAdminProposal {
+        admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
+            message: format!(
+                r#"{{"@type":"/interchain_security.ccv.consumer.v1.MsgUpdateParams",
+             "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
+             "params": {}}}"#,
+                serde_json_wasm::to_string(&params).unwrap()
+            )
+            .to_string(),
+        }),
+    });
+
+    let mut deps = mock_dependencies();
+    let env = mock_env();
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    let non_priv_info = message_info(&Addr::unchecked("addr1"), &[]);
+
+    instantiate(
+        deps.as_mut(),
+        env.clone(),
+        info.clone(),
+        InstantiateMsg {
+            initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
+        },
+    )
+    .unwrap();
+
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    execute_add_strategy(
+        deps.as_mut(),
+        info.clone(),
+        Addr::unchecked("addr1".to_string()),
+        StrategyMsg::AllowOnly(vec![UpdateCCVParamsPermission(CCVUpdateParamsPermission {
+            blocks_per_distribution_transmission: true,
+            distribution_transmission_channel: true,
+            provider_fee_pool_addr_str: false,
+            ccv_timeout_period: true,
+            transfer_timeout_period: true,
+            consumer_redistribution_fraction: true,
+            historical_entries: true,
+            unbonding_period: true,
+            soft_opt_out_threshold: true,
+            reward_denoms: true,
+            provider_reward_denoms: true,
+            retry_delay_period: true,
+        })]),
+    )
+    .unwrap();
+
+    let err =
+        execute_execute_messages(deps.as_mut(), non_priv_info.clone(), vec![msg]).unwrap_err();
+    assert_eq!(err, Unauthorized {});
+}
+
+/// Checks that you can't change `ccv_timeout_period` if you don't have the permission to do so
+/// (new style parameter changes).
+#[test]
+pub fn test_execute_execute_message_update_params_consumer_ccv_timeout_period_unauthorized() {
+    let params = consumer_params_to_update();
+    let msg = CosmosMsg::Custom(NeutronMsg::SubmitAdminProposal {
+        admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
+            message: format!(
+                r#"{{"@type":"/interchain_security.ccv.consumer.v1.MsgUpdateParams",
+             "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
+             "params": {}}}"#,
+                serde_json_wasm::to_string(&params).unwrap()
+            )
+            .to_string(),
+        }),
+    });
+
+    let mut deps = mock_dependencies();
+    let env = mock_env();
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    let non_priv_info = message_info(&Addr::unchecked("addr1"), &[]);
+
+    instantiate(
+        deps.as_mut(),
+        env.clone(),
+        info.clone(),
+        InstantiateMsg {
+            initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
+        },
+    )
+    .unwrap();
+
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    execute_add_strategy(
+        deps.as_mut(),
+        info.clone(),
+        Addr::unchecked("addr1".to_string()),
+        StrategyMsg::AllowOnly(vec![UpdateCCVParamsPermission(CCVUpdateParamsPermission {
+            blocks_per_distribution_transmission: true,
+            distribution_transmission_channel: true,
+            provider_fee_pool_addr_str: true,
+            ccv_timeout_period: false,
+            transfer_timeout_period: true,
+            consumer_redistribution_fraction: true,
+            historical_entries: true,
+            unbonding_period: true,
+            soft_opt_out_threshold: true,
+            reward_denoms: true,
+            provider_reward_denoms: true,
+            retry_delay_period: true,
+        })]),
+    )
+    .unwrap();
+
+    let err =
+        execute_execute_messages(deps.as_mut(), non_priv_info.clone(), vec![msg]).unwrap_err();
+    assert_eq!(err, Unauthorized {});
+}
+
+/// Checks that you can't change `transfer_timeout_period` if you don't have the permission to do so
+/// (new style parameter changes).
+#[test]
+pub fn test_execute_execute_message_update_params_consumer_transfer_timeout_period_unauthorized() {
+    let params = consumer_params_to_update();
+    let msg = CosmosMsg::Custom(NeutronMsg::SubmitAdminProposal {
+        admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
+            message: format!(
+                r#"{{"@type":"/interchain_security.ccv.consumer.v1.MsgUpdateParams",
+             "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
+             "params": {}}}"#,
+                serde_json_wasm::to_string(&params).unwrap()
+            )
+            .to_string(),
+        }),
+    });
+
+    let mut deps = mock_dependencies();
+    let env = mock_env();
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    let non_priv_info = message_info(&Addr::unchecked("addr1"), &[]);
+
+    instantiate(
+        deps.as_mut(),
+        env.clone(),
+        info.clone(),
+        InstantiateMsg {
+            initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
+        },
+    )
+    .unwrap();
+
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    execute_add_strategy(
+        deps.as_mut(),
+        info.clone(),
+        Addr::unchecked("addr1".to_string()),
+        StrategyMsg::AllowOnly(vec![UpdateCCVParamsPermission(CCVUpdateParamsPermission {
+            blocks_per_distribution_transmission: true,
+            distribution_transmission_channel: true,
+            provider_fee_pool_addr_str: true,
+            ccv_timeout_period: true,
+            transfer_timeout_period: false,
+            consumer_redistribution_fraction: true,
+            historical_entries: true,
+            unbonding_period: true,
+            soft_opt_out_threshold: true,
+            reward_denoms: true,
+            provider_reward_denoms: true,
+            retry_delay_period: true,
+        })]),
+    )
+    .unwrap();
+
+    let err =
+        execute_execute_messages(deps.as_mut(), non_priv_info.clone(), vec![msg]).unwrap_err();
+    assert_eq!(err, Unauthorized {});
+}
+
+/// Checks that you can't change `consumer_redistribution_fraction` if you don't have the permission to do so
+/// (new style parameter changes).
+#[test]
+pub fn test_execute_execute_message_update_params_consumer_consumer_redistribution_fraction_unauthorized(
+) {
+    let params = consumer_params_to_update();
+    let msg = CosmosMsg::Custom(NeutronMsg::SubmitAdminProposal {
+        admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
+            message: format!(
+                r#"{{"@type":"/interchain_security.ccv.consumer.v1.MsgUpdateParams",
+             "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
+             "params": {}}}"#,
+                serde_json_wasm::to_string(&params).unwrap()
+            )
+            .to_string(),
+        }),
+    });
+
+    let mut deps = mock_dependencies();
+    let env = mock_env();
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    let non_priv_info = message_info(&Addr::unchecked("addr1"), &[]);
+
+    instantiate(
+        deps.as_mut(),
+        env.clone(),
+        info.clone(),
+        InstantiateMsg {
+            initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
+        },
+    )
+    .unwrap();
+
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    execute_add_strategy(
+        deps.as_mut(),
+        info.clone(),
+        Addr::unchecked("addr1".to_string()),
+        StrategyMsg::AllowOnly(vec![UpdateCCVParamsPermission(CCVUpdateParamsPermission {
+            blocks_per_distribution_transmission: true,
+            distribution_transmission_channel: true,
+            provider_fee_pool_addr_str: true,
+            ccv_timeout_period: true,
+            transfer_timeout_period: true,
+            consumer_redistribution_fraction: false,
+            historical_entries: true,
+            unbonding_period: true,
+            soft_opt_out_threshold: true,
+            reward_denoms: true,
+            provider_reward_denoms: true,
+            retry_delay_period: true,
+        })]),
+    )
+    .unwrap();
+
+    let err =
+        execute_execute_messages(deps.as_mut(), non_priv_info.clone(), vec![msg]).unwrap_err();
+    assert_eq!(err, Unauthorized {});
+}
+
+/// Checks that you can't change `historical_entries` if you don't have the permission to do so
+/// (new style parameter changes).
+#[test]
+pub fn test_execute_execute_message_update_params_consumer_historical_entries_unauthorized() {
+    let params = consumer_params_to_update();
+    let msg = CosmosMsg::Custom(NeutronMsg::SubmitAdminProposal {
+        admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
+            message: format!(
+                r#"{{"@type":"/interchain_security.ccv.consumer.v1.MsgUpdateParams",
+             "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
+             "params": {}}}"#,
+                serde_json_wasm::to_string(&params).unwrap()
+            )
+            .to_string(),
+        }),
+    });
+
+    let mut deps = mock_dependencies();
+    let env = mock_env();
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    let non_priv_info = message_info(&Addr::unchecked("addr1"), &[]);
+
+    instantiate(
+        deps.as_mut(),
+        env.clone(),
+        info.clone(),
+        InstantiateMsg {
+            initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
+        },
+    )
+    .unwrap();
+
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    execute_add_strategy(
+        deps.as_mut(),
+        info.clone(),
+        Addr::unchecked("addr1".to_string()),
+        StrategyMsg::AllowOnly(vec![UpdateCCVParamsPermission(CCVUpdateParamsPermission {
+            blocks_per_distribution_transmission: true,
+            distribution_transmission_channel: true,
+            provider_fee_pool_addr_str: true,
+            ccv_timeout_period: true,
+            transfer_timeout_period: true,
+            consumer_redistribution_fraction: true,
+            historical_entries: false,
+            unbonding_period: true,
+            soft_opt_out_threshold: true,
+            reward_denoms: true,
+            provider_reward_denoms: true,
+            retry_delay_period: true,
+        })]),
+    )
+    .unwrap();
+
+    let err =
+        execute_execute_messages(deps.as_mut(), non_priv_info.clone(), vec![msg]).unwrap_err();
+    assert_eq!(err, Unauthorized {});
+}
+
+/// Checks that you can't change `unbonding_period` if you don't have the permission to do so
+/// (new style parameter changes).
+#[test]
+pub fn test_execute_execute_message_update_params_consumer_unbonding_period_unauthorized() {
+    let params = consumer_params_to_update();
+    let msg = CosmosMsg::Custom(NeutronMsg::SubmitAdminProposal {
+        admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
+            message: format!(
+                r#"{{"@type":"/interchain_security.ccv.consumer.v1.MsgUpdateParams",
+             "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
+             "params": {}}}"#,
+                serde_json_wasm::to_string(&params).unwrap()
+            )
+            .to_string(),
+        }),
+    });
+
+    let mut deps = mock_dependencies();
+    let env = mock_env();
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    let non_priv_info = message_info(&Addr::unchecked("addr1"), &[]);
+
+    instantiate(
+        deps.as_mut(),
+        env.clone(),
+        info.clone(),
+        InstantiateMsg {
+            initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
+        },
+    )
+    .unwrap();
+
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    execute_add_strategy(
+        deps.as_mut(),
+        info.clone(),
+        Addr::unchecked("addr1".to_string()),
+        StrategyMsg::AllowOnly(vec![UpdateCCVParamsPermission(CCVUpdateParamsPermission {
+            blocks_per_distribution_transmission: true,
+            distribution_transmission_channel: true,
+            provider_fee_pool_addr_str: true,
+            ccv_timeout_period: true,
+            transfer_timeout_period: true,
+            consumer_redistribution_fraction: true,
+            historical_entries: true,
+            unbonding_period: false,
+            soft_opt_out_threshold: true,
+            reward_denoms: true,
+            provider_reward_denoms: true,
+            retry_delay_period: true,
+        })]),
+    )
+    .unwrap();
+
+    let err =
+        execute_execute_messages(deps.as_mut(), non_priv_info.clone(), vec![msg]).unwrap_err();
+    assert_eq!(err, Unauthorized {});
+}
+
+/// Checks that you can't change `soft_opt_out_threshold` if you don't have the permission to do so
+/// (new style parameter changes).
+#[test]
+pub fn test_execute_execute_message_update_params_consumer_soft_opt_out_threshold_unauthorized() {
+    let params = consumer_params_to_update();
+    let msg = CosmosMsg::Custom(NeutronMsg::SubmitAdminProposal {
+        admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
+            message: format!(
+                r#"{{"@type":"/interchain_security.ccv.consumer.v1.MsgUpdateParams",
+             "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
+             "params": {}}}"#,
+                serde_json_wasm::to_string(&params).unwrap()
+            )
+            .to_string(),
+        }),
+    });
+
+    let mut deps = mock_dependencies();
+    let env = mock_env();
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    let non_priv_info = message_info(&Addr::unchecked("addr1"), &[]);
+
+    instantiate(
+        deps.as_mut(),
+        env.clone(),
+        info.clone(),
+        InstantiateMsg {
+            initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
+        },
+    )
+    .unwrap();
+
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    execute_add_strategy(
+        deps.as_mut(),
+        info.clone(),
+        Addr::unchecked("addr1".to_string()),
+        StrategyMsg::AllowOnly(vec![UpdateCCVParamsPermission(CCVUpdateParamsPermission {
+            blocks_per_distribution_transmission: true,
+            distribution_transmission_channel: true,
+            provider_fee_pool_addr_str: true,
+            ccv_timeout_period: true,
+            transfer_timeout_period: true,
+            consumer_redistribution_fraction: true,
+            historical_entries: true,
+            unbonding_period: true,
+            soft_opt_out_threshold: false,
+            reward_denoms: true,
+            provider_reward_denoms: true,
+            retry_delay_period: true,
+        })]),
+    )
+    .unwrap();
+
+    let err =
+        execute_execute_messages(deps.as_mut(), non_priv_info.clone(), vec![msg]).unwrap_err();
+    assert_eq!(err, Unauthorized {});
+}
+
+/// Checks that you can't change `reward_denoms` if you don't have the permission to do so
+/// (new style parameter changes).
+#[test]
+pub fn test_execute_execute_message_update_params_consumer_reward_denoms_unauthorized() {
+    let params = consumer_params_to_update();
+    let msg = CosmosMsg::Custom(NeutronMsg::SubmitAdminProposal {
+        admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
+            message: format!(
+                r#"{{"@type":"/interchain_security.ccv.consumer.v1.MsgUpdateParams",
+             "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
+             "params": {}}}"#,
+                serde_json_wasm::to_string(&params).unwrap()
+            )
+            .to_string(),
+        }),
+    });
+
+    let mut deps = mock_dependencies();
+    let env = mock_env();
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    let non_priv_info = message_info(&Addr::unchecked("addr1"), &[]);
+
+    instantiate(
+        deps.as_mut(),
+        env.clone(),
+        info.clone(),
+        InstantiateMsg {
+            initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
+        },
+    )
+    .unwrap();
+
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    execute_add_strategy(
+        deps.as_mut(),
+        info.clone(),
+        Addr::unchecked("addr1".to_string()),
+        StrategyMsg::AllowOnly(vec![UpdateCCVParamsPermission(CCVUpdateParamsPermission {
+            blocks_per_distribution_transmission: true,
+            distribution_transmission_channel: true,
+            provider_fee_pool_addr_str: true,
+            ccv_timeout_period: true,
+            transfer_timeout_period: true,
+            consumer_redistribution_fraction: true,
+            historical_entries: true,
+            unbonding_period: true,
+            soft_opt_out_threshold: true,
+            reward_denoms: false,
+            provider_reward_denoms: true,
+            retry_delay_period: true,
+        })]),
+    )
+    .unwrap();
+
+    let err =
+        execute_execute_messages(deps.as_mut(), non_priv_info.clone(), vec![msg]).unwrap_err();
+    assert_eq!(err, Unauthorized {});
+}
+
+/// Checks that you can't change `provider_reward_denoms` if you don't have the permission to do so
+/// (new style parameter changes).
+#[test]
+pub fn test_execute_execute_message_update_params_consumer_provider_reward_denoms_unauthorized() {
+    let params = consumer_params_to_update();
+    let msg = CosmosMsg::Custom(NeutronMsg::SubmitAdminProposal {
+        admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
+            message: format!(
+                r#"{{"@type":"/interchain_security.ccv.consumer.v1.MsgUpdateParams",
+             "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
+             "params": {}}}"#,
+                serde_json_wasm::to_string(&params).unwrap()
+            )
+            .to_string(),
+        }),
+    });
+
+    let mut deps = mock_dependencies();
+    let env = mock_env();
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    let non_priv_info = message_info(&Addr::unchecked("addr1"), &[]);
+
+    instantiate(
+        deps.as_mut(),
+        env.clone(),
+        info.clone(),
+        InstantiateMsg {
+            initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
+        },
+    )
+    .unwrap();
+
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    execute_add_strategy(
+        deps.as_mut(),
+        info.clone(),
+        Addr::unchecked("addr1".to_string()),
+        StrategyMsg::AllowOnly(vec![UpdateCCVParamsPermission(CCVUpdateParamsPermission {
+            blocks_per_distribution_transmission: true,
+            distribution_transmission_channel: true,
+            provider_fee_pool_addr_str: true,
+            ccv_timeout_period: true,
+            transfer_timeout_period: true,
+            consumer_redistribution_fraction: true,
+            historical_entries: true,
+            unbonding_period: true,
+            soft_opt_out_threshold: true,
+            reward_denoms: true,
+            provider_reward_denoms: false,
+            retry_delay_period: true,
+        })]),
+    )
+    .unwrap();
+
+    let err =
+        execute_execute_messages(deps.as_mut(), non_priv_info.clone(), vec![msg]).unwrap_err();
+    assert_eq!(err, Unauthorized {});
+}
+
+/// Checks that you can't change `retry_delay_period` if you don't have the permission to do so
+/// (new style parameter changes).
+#[test]
+pub fn test_execute_execute_message_update_params_consumer_retry_delay_period_unauthorized() {
+    let params = consumer_params_to_update();
+    let msg = CosmosMsg::Custom(NeutronMsg::SubmitAdminProposal {
+        admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
+            message: format!(
+                r#"{{"@type":"/interchain_security.ccv.consumer.v1.MsgUpdateParams",
+             "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
+             "params": {}}}"#,
+                serde_json_wasm::to_string(&params).unwrap()
+            )
+            .to_string(),
+        }),
+    });
+
+    let mut deps = mock_dependencies();
+    let env = mock_env();
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    let non_priv_info = message_info(&Addr::unchecked("addr1"), &[]);
+
+    instantiate(
+        deps.as_mut(),
+        env.clone(),
+        info.clone(),
+        InstantiateMsg {
+            initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
+        },
+    )
+    .unwrap();
+
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    execute_add_strategy(
+        deps.as_mut(),
+        info.clone(),
+        Addr::unchecked("addr1".to_string()),
+        StrategyMsg::AllowOnly(vec![UpdateCCVParamsPermission(CCVUpdateParamsPermission {
+            blocks_per_distribution_transmission: true,
+            distribution_transmission_channel: true,
+            provider_fee_pool_addr_str: true,
+            ccv_timeout_period: true,
+            transfer_timeout_period: true,
+            consumer_redistribution_fraction: true,
+            historical_entries: true,
+            unbonding_period: true,
+            soft_opt_out_threshold: true,
+            reward_denoms: true,
+            provider_reward_denoms: true,
+            retry_delay_period: false,
+        })]),
+    )
+    .unwrap();
+
+    let err =
+        execute_execute_messages(deps.as_mut(), non_priv_info.clone(), vec![msg]).unwrap_err();
     assert_eq!(err, Unauthorized {});
 }
 
