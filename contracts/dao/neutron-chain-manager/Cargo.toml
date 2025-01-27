@@ -4,7 +4,7 @@ description = "A chain manager implementation that grants fine-grained admin per
 edition = "2021"
 name = "neutron-chain-manager"
 repository = "https://github.com/neutron-org/neutron-dao"
-version = "0.4.0"
+version = "0.5.0"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
