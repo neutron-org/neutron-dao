@@ -1,12 +1,16 @@
+use crate::error::ContractError;
+use crate::error::ContractError::{NoStakingRewardsContractSet, Unauthorized};
+use crate::msg::{
+    ConfigResponse, ExecuteMsg, InstantiateMsg, MigrateMsg, ProviderStakeQuery, ProvidersResponse,
+    QueryMsg,
+};
+use crate::state::{Config, CONFIG, PROVIDERS};
 use cosmwasm_std::{
-    entry_point, to_json_binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
+    entry_point, to_json_binary, Addr, Coin, Deps, DepsMut, Env, MessageInfo, Order, Response,
+    StdError, StdResult, WasmMsg,
 };
 use cw2::set_contract_version;
-
-use crate::error::ContractError;
-use crate::error::ContractError::Unauthorized;
-use crate::msg::{ConfigResponse, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
-use crate::state::{Config, CONFIG};
+use neutron_staking_rewards::msg::ExecuteMsg::UpdateStake as RewardsMsgUpdateStake;
 
 const CONTRACT_NAME: &str = "crates.io:neutron-staking-info-proxy";
 const CONTRACT_VERSION: &str = "0.1.0";
@@ -21,14 +25,22 @@ pub fn instantiate(
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     let owner = deps.api.addr_validate(&msg.owner)?;
-    let staking_vault = deps.api.addr_validate(&msg.staking_vault)?;
+    let staking_rewards: Option<Addr> = msg
+        .staking_rewards
+        .map(|s| deps.api.addr_validate(&s))
+        .transpose()?;
     let config = Config {
         owner,
-        staking_vault,
+        staking_rewards,
+        staking_denom: msg.staking_denom,
     };
     config.validate()?;
-
     CONFIG.save(deps.storage, &config)?;
+
+    for provider in msg.providers.iter() {
+        let addr = deps.api.addr_validate(&provider)?;
+        PROVIDERS.save(deps.storage, addr, &())?;
+    }
 
     Ok(Response::new())
 }
@@ -43,8 +55,18 @@ pub fn execute(
     match msg {
         ExecuteMsg::UpdateConfig {
             owner,
-            staking_vault,
-        } => update_config(deps, env, info, owner, staking_vault),
+            staking_rewards,
+            staking_denom,
+            providers,
+        } => update_config(
+            deps,
+            env,
+            info,
+            owner,
+            staking_rewards,
+            staking_denom,
+            providers,
+        ),
         // Updates the stake information for a particular user
         ExecuteMsg::UpdateStake { user } => update_stake(deps, env, info, user),
     }
@@ -58,7 +80,9 @@ fn update_config(
     _: Env,
     info: MessageInfo,
     owner: Option<String>,
-    staking_vault: Option<String>,
+    staking_rewards: Option<String>,
+    staking_denom: Option<String>,
+    providers: Option<Vec<String>>,
 ) -> Result<Response, ContractError> {
     // Load the existing configuration
     let mut config = CONFIG.load(deps.storage)?;
@@ -71,22 +95,31 @@ fn update_config(
     if let Some(owner) = owner {
         config.owner = deps.api.addr_validate(&owner)?;
     }
-
-    if let Some(staking_vault) = staking_vault {
-        config.staking_vault = deps.api.addr_validate(&staking_vault)?;
+    if let Some(staking_rewards) = staking_rewards {
+        config.staking_rewards = Some(deps.api.addr_validate(&staking_rewards)?);
     }
-
+    if let Some(staking_denom) = staking_denom {
+        config.staking_denom = staking_denom;
+    }
     // Validate updated config and save
     config.validate()?;
     CONFIG.save(deps.storage, &config)?;
+
+    if let Some(providers) = providers {
+        PROVIDERS.clear(deps.storage);
+        for provider in providers.iter() {
+            let addr = deps.api.addr_validate(&provider)?;
+            PROVIDERS.save(deps.storage, addr, &())?;
+        }
+    }
 
     Ok(Response::new()
         .add_attribute("action", "update_config")
         .add_attribute("owner", config.owner.to_string()))
 }
 
-/// Called by the staking_info_proxy to update a user’s staked amount in this contract’s state.
-/// This keeps track of user-level reward data (pending rewards, reward index).
+/// Proxies update_stake query from provider to the `config.staking_rewards` contract.
+/// Only allowed for contracts in `PROVIDERS` set.
 fn update_stake(
     deps: DepsMut,
     _: Env,
@@ -95,13 +128,25 @@ fn update_stake(
 ) -> Result<Response, ContractError> {
     let config = CONFIG.load(deps.storage)?;
 
-    if info.sender != config.staking_vault {
+    if !PROVIDERS.has(deps.storage, info.sender) {
         return Err(Unauthorized {});
     }
 
+    let msg = WasmMsg::Execute {
+        contract_addr: config
+            .staking_rewards
+            .ok_or(NoStakingRewardsContractSet {})?
+            .to_string(),
+        msg: to_json_binary(&RewardsMsgUpdateStake {
+            user: user.to_string(),
+        })?,
+        funds: vec![],
+    };
+
     Ok(Response::new()
+        .add_message(msg)
         .add_attribute("action", "update_stake")
-        .add_attribute("user", user.clone()))
+        .add_attribute("user", user))
 }
 
 // ----------------------------------------
@@ -111,15 +156,46 @@ fn update_stake(
 pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> Result<cosmwasm_std::Binary, ContractError> {
     match msg {
         QueryMsg::Config {} => Ok(to_json_binary(&query_config(deps)?)?),
+        QueryMsg::Providers {} => Ok(to_json_binary(&query_providers(deps)?)?),
+        QueryMsg::StakeQuery { user } => Ok(to_json_binary(&query_stake_query(deps, user)?)?),
     }
 }
 
-/// Returns only the config (no state fields).
+/// Returns config.
 fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     let config = CONFIG.load(deps.storage)?;
     Ok(ConfigResponse {
         owner: config.owner.to_string(),
-        staking_vault: config.staking_vault.to_string(),
+        staking_rewards: config.staking_rewards.map(|s| s.to_string()),
+    })
+}
+
+/// Returns providers.
+fn query_providers(deps: Deps) -> StdResult<ProvidersResponse> {
+    let providers: Vec<String> = PROVIDERS
+        .keys(deps.storage, None, None, Order::Ascending)
+        .into_iter()
+        .flat_map(|k| k.map(|k| k.to_string()))
+        .collect();
+    Ok(ProvidersResponse { providers })
+}
+
+/// Returns sum of stake of each provider
+fn query_stake_query(deps: Deps, user: String) -> StdResult<Coin> {
+    let user = deps.api.addr_validate(&user)?;
+    let config = CONFIG.load(deps.storage)?;
+    let stake = PROVIDERS
+        .keys(deps.storage, None, None, Order::Ascending)
+        .collect::<Result<Vec<Addr>, StdError>>()?
+        .iter()
+        .flat_map(|provider| safe_query_user_stake(deps, &user, provider))
+        .filter(|c| c.denom == config.staking_denom)
+        .map(|c| c.amount)
+        .sum();
+
+    Ok(Coin {
+        amount: stake,
+        denom: config.staking_denom,
     })
 }
 
@@ -131,4 +207,24 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
     // Set contract to version to latest
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     Ok(Response::default())
+}
+
+// ----------------------------------------
+//  Internal Logic
+// ----------------------------------------
+
+/// Safely queries the user’s staked amount from the external provider,
+/// ensuring that the returned denom matches this contract’s expected staking_denom.
+fn safe_query_user_stake(
+    deps: Deps,
+    user_addr: &Addr,
+    provider: &Addr,
+) -> Result<Coin, ContractError> {
+    let user_stake: Coin = deps.querier.query_wasm_smart(
+        provider,
+        &ProviderStakeQuery::User {
+            address: user_addr.to_string(),
+        },
+    )?;
+    Ok(user_stake)
 }
