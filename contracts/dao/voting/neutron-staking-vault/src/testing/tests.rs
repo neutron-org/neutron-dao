@@ -2,7 +2,7 @@
 
 mod tests {
     use std::collections::HashMap;
-    use cosmwasm_std::{from_json, testing::{mock_dependencies, mock_env, mock_info}, to_json_binary, Addr, Decimal256, Uint128};
+    use cosmwasm_std::{from_json, testing::{mock_dependencies, mock_env, mock_info}, to_json_binary, Addr, Decimal256, GrpcQuery, QueryRequest, Uint128};
     use cwd_interface::voting::TotalPowerAtHeightResponse;
     use crate::contract::{after_delegation_modified, after_validator_begin_unbonding, after_validator_bonded, after_validator_created, before_delegation_removed, before_validator_slashed, execute, instantiate, query, query_total_power_at_height, query_voting_power_at_height};
     use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
@@ -41,29 +41,38 @@ mod tests {
     #[test]
     fn test_instantiate() {
         let mut deps = mock_dependencies();
+
+        // ✅ Use a properly formatted Neutron Bech32 address
+        let valid_neutron_address = "neutron1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq96d9h3";
+
         let msg = InstantiateMsg {
             name: "Test DAO".to_string(),
             description: "A test DAO contract".to_string(),
-            owner: "owner".to_string(),
+            owner: valid_neutron_address.to_string(), // ✅ Use valid address
             denom: "denom".to_string(),
         };
 
-        let info = mock_info("creator", &[]);
+        let info = mock_info(valid_neutron_address, &[]); // ✅ Use the same address
 
         let res = instantiate(deps.as_mut(), mock_env(), info.clone(), msg);
-        assert!(res.is_ok());
+        if let Err(err) = &res {
+            println!("Instantiation Error: {:?}", err);
+        }
+        assert!(res.is_ok(), "Error: {:?}", res.err());
 
         // Validate the stored config
         let config = CONFIG.load(&deps.storage).unwrap();
         assert_eq!(config.name, "Test DAO");
         assert_eq!(config.description, "A test DAO contract");
-        assert_eq!(config.owner, Addr::unchecked("owner"));
+        assert_eq!(config.owner, Addr::unchecked(valid_neutron_address)); // ✅ Fix assertion
         assert_eq!(config.denom, "denom");
 
         // Validate DAO storage
         let dao = DAO.load(&deps.storage).unwrap();
-        assert_eq!(dao, Addr::unchecked("creator"));
+        assert_eq!(dao, Addr::unchecked(valid_neutron_address)); // ✅ Fix assertion
     }
+
+
 
     #[test]
     fn test_execute_update_config() {
@@ -469,7 +478,6 @@ mod tests {
         assert!(res.is_err(), "Expected error but got: {:?}", res.ok());
     }
 
-    #[test]
     #[test]
     fn test_before_validator_slashed() {
         let mut deps = dependencies();

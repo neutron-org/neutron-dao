@@ -1,27 +1,9 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Config",
-  "description": "Configuration settings for the smart contract.\n\nThis struct holds key details about the vault, including: - `name`: The name of the vault. - `description`: A short text description of the vault. - `owner`: The address of the vault owner/admin. - `denom`: The token denomination used for delegations and governance.",
-  "type": "object",
-  "required": [
-    "denom",
-    "description",
-    "name",
-    "owner"
-  ],
-  "properties": {
-    "denom": {
-      "type": "string"
-    },
-    "description": {
-      "type": "string"
-    },
-    "name": {
-      "type": "string"
-    },
-    "owner": {
-      "$ref": "#/definitions/Addr"
-    }
+  "title": "Array_of_Addr",
+  "type": "array",
+  "items": {
+    "$ref": "#/definitions/Addr"
   },
   "definitions": {
     "Addr": {

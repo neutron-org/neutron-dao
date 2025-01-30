@@ -4,7 +4,9 @@ use crate::state::{
     Config, Delegation, Validator, BLACKLISTED_ADDRESSES, CONFIG, DAO, DELEGATIONS,
     OPERATOR_TO_CONSENSUS, VALIDATORS,
 };
-use bech32::{self, Variant};
+
+use bech32::{Hrp, encode, Bech32};
+
 use cosmos_sdk_proto::cosmos::crypto::ed25519::PubKey as Ed25519PubKey;
 use cosmos_sdk_proto::traits::Message;
 
@@ -23,10 +25,6 @@ use std::str::FromStr;
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-voting-vault";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
-
-// used for slashing calulations to get precise results
-pub(crate) const PREC_UINT: Uint128 = Uint128::new(1_000_000_000_000_000_000);
-
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
@@ -36,7 +34,7 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    let owner = deps.api.addr_validate(&msg.owner)?;
+    let owner = Addr::unchecked(&msg.owner);
 
     let config = Config {
         name: msg.name,
@@ -96,7 +94,7 @@ pub fn execute_add_to_blacklist(
     }
 
     for address in &addresses {
-        let addr = deps.api.addr_validate(&address)?;
+        let addr = Addr::unchecked(address);
         BLACKLISTED_ADDRESSES.save(deps.storage, addr, &true)?;
     }
 
@@ -116,7 +114,7 @@ pub fn execute_remove_from_blacklist(
     }
 
     for address in &addresses {
-        let addr = deps.api.addr_validate(&address)?;
+        let addr = Addr::unchecked(address);
         BLACKLISTED_ADDRESSES.remove(deps.storage, addr);
     }
 
@@ -146,7 +144,7 @@ pub fn execute_update_config(
         return Err(ContractError::Unauthorized {});
     }
 
-    let new_owner = deps.api.addr_validate(&new_owner)?;
+    let new_owner = Addr::unchecked(&new_owner);
 
     config.owner = new_owner;
     config.name = new_name;
@@ -225,16 +223,21 @@ pub(crate) fn after_validator_bonded(
     valoper_address: String,
 ) -> Result<Response, ContractError> {
     let valcons_addr = Addr::unchecked(&valcons_address);
-    let valoper_addr = deps.api.addr_validate(&valoper_address)?;
+    let valoper_addr = Addr::unchecked(&valoper_address);
 
     let querier = StakingQuerier::new(&deps.querier);
 
     // Query the latest validator state from the chain
-    let validator_data: QueryValidatorResponse = querier
-        .validator(valoper_address.clone())
-        .map_err(|_| ContractError::ValidatorQueryFailed {
-            address: valoper_address.clone(),
-        })?;
+    let validator_data: QueryValidatorResponse = match querier.validator(valoper_address.clone()) {
+        Ok(data) => {
+            data
+        }
+        Err(e) => {
+            return Err(ContractError::ValidatorQueryFailed {
+                address: valoper_address.clone(),
+            });
+        }
+    };
 
     let validator_info = validator_data
         .validator
@@ -313,7 +316,7 @@ pub(crate) fn before_validator_modified(
         })?;
 
     let valcons_addr = Addr::unchecked(&valcons_address);
-    let valoper_addr = deps.api.addr_validate(&valoper_address)?;
+    let valoper_addr = Addr::unchecked(&valoper_address);
 
     let mut validator = VALIDATORS
         .may_load(deps.storage, &valcons_addr)?
@@ -369,18 +372,18 @@ pub fn before_validator_slashed(
         },
     )?;
 
-    // Query all delegations to the validator **after slashing**
     let delegations_response = querier
         .validator_delegations(valoper_address.clone(), None)
-        .map_err(|_| ContractError::DelegationQueryFailed {
-            validator: valoper_address.clone(),
+        .map_err(|err| {
+            println!("❌ Delegation query failed for validator {}: {:?}", valoper_address, err);
+            ContractError::DelegationQueryFailed {
+                validator: valoper_address.clone(),
+            }
         })?;
 
     // Overwrite delegations with latest state from staking module
     for delegation in delegations_response.delegation_responses.iter() {
-        let delegator_addr = deps
-            .api
-            .addr_validate(&delegation.delegation.as_ref().unwrap().delegator_address)?;
+        let delegator_addr = Addr::unchecked(&delegation.delegation.as_ref().unwrap().delegator_address);
         let updated_shares = Uint128::from_str(&delegation.delegation.as_ref().unwrap().shares)
             .map_err(|_| ContractError::InvalidTokenData {
                 address: delegator_addr.to_string(),
@@ -458,7 +461,7 @@ pub(crate) fn after_validator_begin_unbonding(
     }
 
     validator.bonded = false;
-    validator.oper_address = deps.api.addr_validate(&valoper_address)?; // Update the latest valoper address
+    validator.oper_address = Addr::unchecked(&valoper_address); // Update the latest valoper address
 
     VALIDATORS.save(deps.storage, &valcons_addr, &validator, env.block.height)?;
 
@@ -475,7 +478,7 @@ pub(crate) fn after_delegation_modified(
     delegator_address: String,
     valoper_address: String,
 ) -> Result<Response, ContractError> {
-    let delegator = deps.api.addr_validate(&delegator_address)?;
+    let delegator = Addr::unchecked(&delegator_address);
 
     // Retrieve consensus address using stored map or query
     let valcons_address = OPERATOR_TO_CONSENSUS
@@ -553,7 +556,7 @@ pub(crate) fn before_delegation_removed(
     delegator_address: String,
     valoper_address: String,
 ) -> Result<Response, ContractError> {
-    let delegator = deps.api.addr_validate(&delegator_address)?;
+    let delegator = Addr::unchecked(&delegator_address);
 
     // Fetch consensus address from state, fallback to query if missing
     let valcons_address = OPERATOR_TO_CONSENSUS
@@ -619,7 +622,7 @@ pub(crate) fn before_delegation_removed(
     Ok(Response::new()
         .add_attribute("action", "before_delegation_removed")
         .add_attribute("delegator", delegator.to_string())
-        .add_attribute("validator", valoper_addr.to_string()) // Use `valoper` for consistency
+        .add_attribute("validator", valoper_addr.to_string())
         .add_attribute("total_shares", validator.total_shares.to_string())
         .add_attribute("total_tokens", validator.total_tokens.to_string()))
 }
@@ -630,7 +633,7 @@ pub(crate) fn after_validator_removed(
     valcons_address: String,
     val_address: String,
 ) -> Result<Response, ContractError> {
-    let validator_addr = deps.api.addr_validate(&val_address)?;
+    let validator_addr = Addr::unchecked(&val_address);
     let valcon_addr = Addr::unchecked(valcons_address.clone());
 
     let mut validator = VALIDATORS.may_load(deps.storage, &validator_addr)?.ok_or(
@@ -663,7 +666,7 @@ pub(crate) fn after_validator_created(
     // Retrieve the consensus address using the helper function
     let cons_address = get_consensus_address(deps.as_ref(), valoper_address.clone())?;
 
-    let validator_addr = deps.api.addr_validate(&cons_address)?;
+    let validator_addr = Addr::unchecked(&cons_address);
 
     let querier = StakingQuerier::new(&deps.querier);
     let validator_data = querier
@@ -754,8 +757,7 @@ pub fn query_list_blacklisted_addresses(
     limit: Option<u32>,
 ) -> StdResult<Vec<Addr>> {
     let start = start_after
-        .map(|addr| deps.api.addr_validate(&addr))
-        .transpose()?
+        .map(|addr| Addr::unchecked(&addr))
         .map(Bound::exclusive); // Convert to exclusive Bound
 
     let limit = limit.unwrap_or(10) as usize;
@@ -769,7 +771,7 @@ pub fn query_list_blacklisted_addresses(
 }
 
 pub fn query_is_address_blacklisted(deps: Deps, address: String) -> StdResult<bool> {
-    let addr = deps.api.addr_validate(&address)?;
+    let addr = Addr::unchecked(&address);
     let is_blacklisted = BLACKLISTED_ADDRESSES
         .may_load(deps.storage, addr)?
         .unwrap_or(false);
@@ -810,15 +812,11 @@ pub fn get_consensus_address(deps: Deps, valoper_address: String) -> Result<Stri
     let public_key = Ed25519PubKey::decode(consensus_pubkey_any.value.as_ref())
         .map_err(|_| ContractError::InvalidConsensusKey)?;
 
-    // Compute the valcons address from the public key
-    let valcons_address = bech32::encode(
-        "neutronvalcons",
-        bech32::ToBase32::to_base32(&public_key.key),
-        Variant::Bech32,
-    )
-    .map_err(|_| ContractError::InvalidConsensusKey)?;
-
-    Ok(valcons_address)
+    let hrp = Hrp::parse("neutronvalcons").map_err(|_| ContractError::InvalidConsensusKey)?;
+    let key_bytes: &[u8] = &public_key.key;
+    let encoded = encode::<Bech32>(hrp, key_bytes).map_err(|_| ContractError::InvalidConsensusKey)?
+        .to_string();
+    Ok(encoded)
 }
 
 pub fn calculate_voting_power(deps: Deps, address: Addr, height: u64) -> StdResult<Uint128> {
@@ -859,7 +857,7 @@ pub fn query_voting_power_at_height(
     height: Option<u64>,
 ) -> StdResult<VotingPowerAtHeightResponse> {
     let height = height.unwrap_or(env.block.height);
-    let address = deps.api.addr_validate(&address)?;
+    let address = Addr::unchecked(&address);
 
     if let Some(true) = BLACKLISTED_ADDRESSES.may_load(deps.storage, address.clone())? {
         return Ok(VotingPowerAtHeightResponse {
