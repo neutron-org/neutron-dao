@@ -59,7 +59,7 @@ pub enum ContractError {
     ValidatorSlashingError { validator: String },
 
     #[error("Validator data is missing in the query response: {address}")]
-    ValidatorDataMissing { address: String },
+    NoPubKey { address: String },
 
     #[error("Invalid token data for validator: {address}")]
     InvalidTokenData { address: String },
@@ -69,4 +69,16 @@ pub enum ContractError {
 
     #[error("Failed to query validator: {address}")]
     ValidatorQueryFailed { address: String },
+
+    #[error("Failed to calculate consensus key")]
+    InvalidConsensusKey,
+
+    #[error("Failed to calculate consensus key: {validator}")]
+    DelegationQueryFailed { validator: String },
+
+    #[error("Failed to get delegation balance : {delegator} {validator}")]
+    DelegationBalanceNotFound { delegator: String, validator: String },
+
+    #[error("Invalid shares")]
+    InvalidSharesFormat,
 }

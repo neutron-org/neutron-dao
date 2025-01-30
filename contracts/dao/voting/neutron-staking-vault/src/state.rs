@@ -4,6 +4,13 @@ use cw_storage_plus::{Item, Map, SnapshotMap, Strategy};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+/// Configuration settings for the smart contract.
+///
+/// This struct holds key details about the vault, including:
+/// - `name`: The name of the vault.
+/// - `description`: A short text description of the vault.
+/// - `owner`: The address of the vault owner/admin.
+/// - `denom`: The token denomination used for delegations and governance.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 pub struct Config {
     pub name: String,
@@ -13,7 +20,14 @@ pub struct Config {
 }
 
 impl Config {
-    /// checks whether the config fields are valid.
+    /// Validates whether the configuration parameters are correctly set.
+    ///
+    /// - Ensures that `name`, `description`, and `denom` are not empty.
+    /// - If any field is invalid, returns an appropriate `ContractError`.
+    ///
+    /// Returns:
+    /// - `Ok(())` if all fields are valid.
+    /// - `Err(ContractError)` if validation fails.
     pub fn validate(&self) -> Result<(), ContractError> {
         if self.name.is_empty() {
             return Err(ContractError::NameIsEmpty {});
@@ -28,16 +42,32 @@ impl Config {
     }
 }
 
+/// Represents a validator in the staking system.
+///
+/// A validator is responsible for securing the network and participating in consensus.
+/// Each validator has:
+/// - `cons_address`: The **consensus address** (`valcons`), used for signing blocks.
+/// - `oper_address`: The **operator address** (`valoper`), used for staking/delegation.
+/// - `bonded`: Whether the validator is bonded (actively participating in consensus).
+/// - `total_tokens`: Total staked tokens delegated to this validator.
+/// - `total_shares`: Total delegation shares representing ownership over the staked tokens.
+/// - `active`: Whether the validator is active in the network.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 pub struct Validator {
-    pub address: Addr,
+    pub cons_address: Addr,
+    pub oper_address: Addr,
     pub bonded: bool,
     pub total_tokens: Uint128,
     pub total_shares: Uint128,
-    // we do not delete validators
     pub active: bool,
 }
 
+/// Represents a delegation made by a user to a validator.
+///
+/// A delegation means that a **delegator** (user) has assigned their stake to a **validator**.
+/// - `delegator_address`: The user's wallet address that owns the stake.
+/// - `validator_address`: The operator address (`valoper`) of the validator receiving the delegation.
+/// - `shares`: The amount of **delegation shares** received in exchange for staked tokens.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 pub struct Delegation {
     pub delegator_address: Addr,
@@ -45,6 +75,13 @@ pub struct Delegation {
     pub shares: Uint128,
 }
 
+/// Storage mapping for all validators, indexed by **consensus address (`valcons`)**.
+///
+/// This stores validator information under their **consensus address**.
+/// - **Key:** `&Addr` → Validator's **consensus address** (`valcons`).
+/// - **Value:** `Validator` struct containing all validator details.
+///
+/// We use `SnapshotMap` to enable querying historical validator states at any height.
 pub const VALIDATORS: SnapshotMap<&Addr, Validator> = SnapshotMap::new(
     "validators",
     "validators__checkpoints",
@@ -52,7 +89,13 @@ pub const VALIDATORS: SnapshotMap<&Addr, Validator> = SnapshotMap::new(
     Strategy::EveryBlock,
 );
 
-// (delegator_addr, validator_addr)
+/// Storage mapping for delegations, indexed by **(delegator, validator operator address)**.
+///
+/// This stores delegation details for each user that stakes with a validator.
+/// - **Key:** `(&Addr, &Addr)` → **(delegator address, validator operator address (`valoper`))**.
+/// - **Value:** `Delegation` struct containing delegation details.
+///
+/// We use `SnapshotMap` to allow tracking delegation history over time.
 pub const DELEGATIONS: SnapshotMap<(&Addr, &Addr), Delegation> = SnapshotMap::new(
     "delegations",
     "delegations__checkpoints",
@@ -60,23 +103,38 @@ pub const DELEGATIONS: SnapshotMap<(&Addr, &Addr), Delegation> = SnapshotMap::ne
     Strategy::EveryBlock,
 );
 
-// Map to track blacklisted addresses in the contract. They are excluded from VP calculatiion
-/// Key:
-/// - `Addr`: Address to be checked for blacklist status.
-/// Value:
-/// - `bool`: A boolean indicating whether the address is blacklisted (`true` if blacklisted, `false` otherwise).
+/// Maps operator addresses (`valoper`) to their consensus addresses (`valcons`).
+///
+/// This mapping allows quick retrieval of a validator's **consensus address** based on their **operator address**.
+/// - **Key:** `&Addr` → **Operator address** (`valoper`).
+/// - **Value:** `Addr` → **Consensus address** (`valcons`).
+pub const OPERATOR_TO_CONSENSUS: Map<&Addr, Addr> = Map::new("operator_to_consensus");
+
+/// Stores a list of **blacklisted addresses**, preventing them from influencing voting power.
+///
+/// If an address is blacklisted, its stake is **excluded** from governance and voting power calculations.
+/// - **Key:** `Addr` → The blacklisted wallet address.
+/// - **Value:** `bool` → `true` if blacklisted.
 pub const BLACKLISTED_ADDRESSES: Map<Addr, bool> = Map::new("blacklisted_addresses");
 
+/// Stores the core **configuration** of the contract.
+///
+/// Contains metadata such as the contract's **name, description, owner, and token denom**.
 pub const CONFIG: Item<Config> = Item::new("config");
-pub const DAO: Item<Addr> = Item::new("dao");
 
+/// Stores the **DAO address** responsible for managing governance decisions.
+pub const DAO: Item<Addr> = Item::new("dao");
 
 #[cfg(test)]
 mod tests {
-    use super::Config;
+    use super::{Config, OPERATOR_TO_CONSENSUS};
     use crate::error::ContractError;
-    use cosmwasm_std::Addr;
+    use cosmwasm_std::{Addr, Storage};
+    use cosmwasm_std::testing::mock_dependencies;
 
+    /// Tests the validation logic for the `Config` struct.
+    ///
+    /// Ensures that empty fields are properly rejected with the correct `ContractError`.
     #[test]
     fn test_config_validate() {
         let cfg_ok = Config {
@@ -119,5 +177,28 @@ mod tests {
             cfg_empty_denom.validate(),
             Err(ContractError::DenomIsEmpty {})
         );
+    }
+
+    /// Tests that the `OPERATOR_TO_CONSENSUS` mapping correctly stores and retrieves addresses.
+    ///
+    /// - Saves a mapping from `valoper` → `valcons`.
+    /// - Loads the stored mapping and checks for correctness.
+    #[test]
+    fn test_operator_to_consensus_mapping() {
+        let mut deps = mock_dependencies();
+
+        let oper_addr = Addr::unchecked("neutronvaloper1xyz");
+        let cons_addr = Addr::unchecked("neutronvalcons1xyz");
+
+        // Store mapping in OPERATOR_TO_CONSENSUS
+        OPERATOR_TO_CONSENSUS
+            .save(deps.as_mut().storage, &oper_addr, &cons_addr)
+            .unwrap();
+
+        // Load and check the stored value
+        let stored_cons_addr = OPERATOR_TO_CONSENSUS
+            .load(deps.as_ref().storage, &oper_addr)
+            .unwrap();
+        assert_eq!(stored_cons_addr, cons_addr);
     }
 }

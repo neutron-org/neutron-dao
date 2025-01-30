@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Decimal256, Uint128};
+use cosmwasm_std::{Addr, Decimal256, Uint128, Uint64};
 use cwd_interface::voting::InfoResponse;
 use cwd_interface::voting::{
     BondingStatusResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
@@ -36,37 +36,63 @@ pub enum ExecuteMsg {
     },
 }
 
-
-#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum SudoMsg {
     AfterValidatorBonded {
-        val_address: String,
+        cons_addr: String,
+        val_addr: String,
     },
+
+    AfterValidatorRemoved {
+        cons_addr: String,
+        val_addr: String,
+    },
+
+    AfterValidatorCreated {
+        val_addr: String,
+    },
+
     AfterValidatorBeginUnbonding {
-        val_address: String,
+        cons_addr: String,
+        val_addr: String,
+    },
+
+    BeforeValidatorModified {
+        val_addr: String,
+    },
+
+    BeforeDelegationCreated {
+        del_addr: String,
+        val_addr: String,
+    },
+
+    BeforeDelegationSharesModified {
+        del_addr: String,
+        val_addr: String,
+    },
+
+    BeforeDelegationRemoved {
+        del_addr: String,
+        val_addr: String,
+    },
+
+    AfterDelegationModified {
+        del_addr: String,
+        val_addr: String,
     },
 
     BeforeValidatorSlashed {
-        val_address: String,
-        slashing_fraction: Decimal256,
+        val_addr: String,
+        fraction: Decimal256,
     },
-    AfterDelegationModified {
-        delegator_address: String,
-        val_address: String,
-    },
-    BeforeDelegationRemoved {
-        delegator_address: String,
-        val_address: String,
-    },
-    AfterValidatorCreated {
-        val_address: String,
-    },
-    AfterValidatorRemoved {
-        valcons_address: String,
-        val_address: String,
+
+    AfterUnbondingInitiated {
+        id: Uint64,
     },
 }
+
+
 
 #[voting_query]
 #[voting_vault_query]
