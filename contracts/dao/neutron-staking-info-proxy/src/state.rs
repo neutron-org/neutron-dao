@@ -6,15 +6,15 @@ use cw_storage_plus::{Item, Map};
 /// Configuration.
 #[cw_serde]
 pub struct Config {
-    /// owner can update contract's config
+    /// The owner can update the contract's configuration and providers.
     pub owner: Addr,
-    /// contract address which we proxy to.
+    /// The contract address to which requests are proxied.
     pub staking_rewards: Option<Addr>,
-    /// denom in which staking rewards work.
+    /// The denom used for staking rewards.
     pub staking_denom: String,
 }
 
-/// List of providers from which to query staking info
+/// List of providers for querying staking information.
 pub const PROVIDERS: Map<Addr, ()> = Map::new("providers");
 
 impl Config {
@@ -23,4 +23,5 @@ impl Config {
     }
 }
 
+/// Contract's configuration parameters.
 pub const CONFIG: Item<Config> = Item::new("config");

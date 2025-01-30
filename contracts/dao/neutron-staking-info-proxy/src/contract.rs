@@ -97,7 +97,16 @@ fn update_config(
 
     Ok(Response::new()
         .add_attribute("action", "update_config")
-        .add_attribute("owner", config.owner.to_string()))
+        .add_attribute("owner", config.owner.to_string())
+        .add_attribute(
+            "staking_rewards",
+            config
+                .staking_rewards
+                .map(|s| s.to_string())
+                .unwrap_or_default()
+                .to_string(),
+        )
+        .add_attribute("staking_denom", config.staking_denom.to_string()))
 }
 
 /// Sets new set of providers that will proxy stake info to rewards contract.
@@ -106,7 +115,7 @@ fn update_providers(
     deps: DepsMut,
     _: Env,
     info: MessageInfo,
-    providers: Option<Vec<String>>,
+    providers: Vec<String>,
 ) -> Result<Response, ContractError> {
     let config = CONFIG.load(deps.storage)?;
 
@@ -116,16 +125,14 @@ fn update_providers(
     }
 
     // Set new providers instead of old ones
-    if let Some(providers) = providers {
-        PROVIDERS.clear(deps.storage);
-        for provider in providers.iter() {
-            let addr = deps.api.addr_validate(provider)?;
-            PROVIDERS.save(deps.storage, addr, &())?;
-        }
+    PROVIDERS.clear(deps.storage);
+    for provider in providers.iter() {
+        let addr = deps.api.addr_validate(provider)?;
+        PROVIDERS.save(deps.storage, addr, &())?;
     }
 
     Ok(Response::new()
-        .add_attribute("action", "update_config")
+        .add_attribute("action", "update_providers")
         .add_attribute("owner", config.owner.to_string()))
 }
 
@@ -192,7 +199,7 @@ fn query_providers(deps: Deps) -> StdResult<ProvidersResponse> {
     Ok(ProvidersResponse { providers })
 }
 
-/// Returns sum of stake of each provider
+/// Returns sum of stake of each provider filtered by `config.staking_denom`.
 fn query_stake_query(deps: Deps, user: String) -> StdResult<Coin> {
     let user = deps.api.addr_validate(&user)?;
     let config = CONFIG.load(deps.storage)?;
@@ -200,7 +207,7 @@ fn query_stake_query(deps: Deps, user: String) -> StdResult<Coin> {
         .keys(deps.storage, None, None, Order::Ascending)
         .collect::<Result<Vec<Addr>, StdError>>()?
         .iter()
-        .flat_map(|provider| safe_query_user_stake(deps, &user, provider))
+        .flat_map(|provider| query_user_stake(deps, &user, provider))
         .filter(|c| c.denom == config.staking_denom)
         .map(|c| c.amount)
         .sum();
@@ -225,13 +232,9 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
 //  Internal Logic
 // ----------------------------------------
 
-/// Safely queries the user’s staked amount from the external provider,
+/// Queries the user’s staked amount from the external provider,
 /// ensuring that the returned denom matches this contract’s expected staking_denom.
-fn safe_query_user_stake(
-    deps: Deps,
-    user_addr: &Addr,
-    provider: &Addr,
-) -> Result<Coin, ContractError> {
+fn query_user_stake(deps: Deps, user_addr: &Addr, provider: &Addr) -> Result<Coin, ContractError> {
     let user_stake: Coin = deps.querier.query_wasm_smart(
         provider,
         &ProviderStakeQuery::User {
