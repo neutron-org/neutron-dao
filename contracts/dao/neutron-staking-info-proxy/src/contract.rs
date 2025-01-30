@@ -38,7 +38,7 @@ pub fn instantiate(
     CONFIG.save(deps.storage, &config)?;
 
     for provider in msg.providers.iter() {
-        let addr = deps.api.addr_validate(&provider)?;
+        let addr = deps.api.addr_validate(provider)?;
         PROVIDERS.save(deps.storage, addr, &())?;
     }
 
@@ -57,17 +57,8 @@ pub fn execute(
             owner,
             staking_rewards,
             staking_denom,
-            providers,
-        } => update_config(
-            deps,
-            env,
-            info,
-            owner,
-            staking_rewards,
-            staking_denom,
-            providers,
-        ),
-        // Updates the stake information for a particular user
+        } => update_config(deps, env, info, owner, staking_rewards, staking_denom),
+        ExecuteMsg::UpdateProviders { providers } => update_providers(deps, env, info, providers),
         ExecuteMsg::UpdateStake { user } => update_stake(deps, env, info, user),
     }
 }
@@ -82,7 +73,6 @@ fn update_config(
     owner: Option<String>,
     staking_rewards: Option<String>,
     staking_denom: Option<String>,
-    providers: Option<Vec<String>>,
 ) -> Result<Response, ContractError> {
     // Load the existing configuration
     let mut config = CONFIG.load(deps.storage)?;
@@ -105,10 +95,31 @@ fn update_config(
     config.validate()?;
     CONFIG.save(deps.storage, &config)?;
 
+    Ok(Response::new()
+        .add_attribute("action", "update_config")
+        .add_attribute("owner", config.owner.to_string()))
+}
+
+/// Sets new set of providers that will proxy stake info to rewards contract.
+/// Only the current owner can call this method.
+fn update_providers(
+    deps: DepsMut,
+    _: Env,
+    info: MessageInfo,
+    providers: Option<Vec<String>>,
+) -> Result<Response, ContractError> {
+    let config = CONFIG.load(deps.storage)?;
+
+    // Ensure only the contract owner can update the configuration
+    if info.sender != config.owner {
+        return Err(Unauthorized {});
+    }
+
+    // Set new providers instead of old ones
     if let Some(providers) = providers {
         PROVIDERS.clear(deps.storage);
         for provider in providers.iter() {
-            let addr = deps.api.addr_validate(&provider)?;
+            let addr = deps.api.addr_validate(provider)?;
             PROVIDERS.save(deps.storage, addr, &())?;
         }
     }
@@ -144,6 +155,8 @@ fn update_stake(
     };
 
     Ok(Response::new()
+        // Add message without error handling because
+        // we can rollback tx here without any problems - no state saved anyways
         .add_message(msg)
         .add_attribute("action", "update_stake")
         .add_attribute("user", user))
@@ -174,7 +187,6 @@ fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
 fn query_providers(deps: Deps) -> StdResult<ProvidersResponse> {
     let providers: Vec<String> = PROVIDERS
         .keys(deps.storage, None, None, Order::Ascending)
-        .into_iter()
         .flat_map(|k| k.map(|k| k.to_string()))
         .collect();
     Ok(ProvidersResponse { providers })

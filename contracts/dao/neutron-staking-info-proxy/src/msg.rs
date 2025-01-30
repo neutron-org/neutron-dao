@@ -16,9 +16,11 @@ pub enum ExecuteMsg {
         owner: Option<String>,
         staking_rewards: Option<String>,
         staking_denom: Option<String>,
-        providers: Option<Vec<String>>,
     },
-    ///
+    /// Update staking info providers. Must be called by `owner`
+    UpdateProviders { providers: Option<Vec<String>> },
+    /// Proxies update stake from set providers to the staking rewards contract.
+    /// Must be called by one of the `PROVIDERS`.
     UpdateStake { user: String },
 }
 
