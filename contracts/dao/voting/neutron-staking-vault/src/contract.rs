@@ -1,22 +1,25 @@
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, SudoMsg};
-use crate::state::{Config, Delegation, Validator, BLACKLISTED_ADDRESSES, CONFIG, DAO, DELEGATIONS, OPERATOR_TO_CONSENSUS, VALIDATORS};
+use crate::state::{
+    Config, Delegation, Validator, BLACKLISTED_ADDRESSES, CONFIG, DAO, DELEGATIONS,
+    OPERATOR_TO_CONSENSUS, VALIDATORS,
+};
+use bech32::{self, Variant};
 use cosmos_sdk_proto::cosmos::crypto::ed25519::PubKey as Ed25519PubKey;
 use cosmos_sdk_proto::traits::Message;
-use bech32::{self, Variant};
 
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
+use cosmwasm_std::OverflowOperation::Add;
 use cosmwasm_std::{
-    to_json_binary, Addr, Binary, Decimal256, Deps, DepsMut, Env, MessageInfo, Order,
-    Response, StdError, StdResult, Uint128,
+    to_json_binary, Addr, Binary, Decimal256, Deps, DepsMut, Env, MessageInfo, Order, Response,
+    StdError, StdResult, Uint128,
 };
 use cw2::set_contract_version;
+use cw_storage_plus::Bound;
 use cwd_interface::voting::{TotalPowerAtHeightResponse, VotingPowerAtHeightResponse};
 use neutron_std::types::cosmos::staking::v1beta1::{QueryValidatorResponse, StakingQuerier};
 use std::str::FromStr;
-use cosmwasm_std::OverflowOperation::Add;
-use cw_storage_plus::Bound;
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-voting-vault";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -74,8 +77,11 @@ pub fn execute(
     }
 }
 
-
-pub fn execute_bond(_deps: DepsMut, _env: Env, _info: MessageInfo) -> Result<Response, ContractError> {
+pub fn execute_bond(
+    _deps: DepsMut,
+    _env: Env,
+    _info: MessageInfo,
+) -> Result<Response, ContractError> {
     Err(ContractError::BondingDisabled {})
 }
 
@@ -119,7 +125,6 @@ pub fn execute_remove_from_blacklist(
         .add_attribute("removed_addresses", format!("{:?}", addresses)))
 }
 
-
 pub fn execute_unbond(
     _: DepsMut,
     _: Env,
@@ -158,18 +163,19 @@ pub fn execute_update_config(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn sudo(deps: DepsMut, env: Env, msg: SudoMsg) -> Result<Response, ContractError> {
     match msg {
-        SudoMsg::AfterValidatorBonded { cons_addr, val_addr } => {
-            after_validator_bonded(deps, env, cons_addr, val_addr)
-        }
-        SudoMsg::AfterValidatorRemoved { cons_addr, val_addr } => {
-            after_validator_removed(deps, env, cons_addr, val_addr)
-        }
-        SudoMsg::AfterValidatorCreated { val_addr } => {
-            after_validator_created(deps, env, val_addr)
-        }
-        SudoMsg::AfterValidatorBeginUnbonding { cons_addr, val_addr } => {
-            after_validator_begin_unbonding(deps, env, cons_addr, val_addr)
-        }
+        SudoMsg::AfterValidatorBonded {
+            cons_addr,
+            val_addr,
+        } => after_validator_bonded(deps, env, cons_addr, val_addr),
+        SudoMsg::AfterValidatorRemoved {
+            cons_addr,
+            val_addr,
+        } => after_validator_removed(deps, env, cons_addr, val_addr),
+        SudoMsg::AfterValidatorCreated { val_addr } => after_validator_created(deps, env, val_addr),
+        SudoMsg::AfterValidatorBeginUnbonding {
+            cons_addr,
+            val_addr,
+        } => after_validator_begin_unbonding(deps, env, cons_addr, val_addr),
         SudoMsg::BeforeValidatorModified { val_addr } => {
             before_validator_modified(deps, env, val_addr)
         }
@@ -204,7 +210,6 @@ pub(crate) fn before_delegation_shares_modified(
     Ok(Response::new().add_attribute("action", "before_delegation_shares_modified"))
 }
 
-
 pub(crate) fn after_unbonding_initiated(
     _deps: DepsMut,
     _env: Env,
@@ -212,7 +217,6 @@ pub(crate) fn after_unbonding_initiated(
 ) -> Result<Response, ContractError> {
     Ok(Response::new().add_attribute("action", "after_unbonding_initiated"))
 }
-
 
 pub(crate) fn after_validator_bonded(
     deps: DepsMut,
@@ -228,19 +232,28 @@ pub(crate) fn after_validator_bonded(
     // Query the latest validator state from the chain
     let validator_data: QueryValidatorResponse = querier
         .validator(valoper_address.clone())
-        .map_err(|_| ContractError::ValidatorQueryFailed { address: valoper_address.clone() })?;
+        .map_err(|_| ContractError::ValidatorQueryFailed {
+            address: valoper_address.clone(),
+        })?;
 
     let validator_info = validator_data
         .validator
-        .ok_or(ContractError::ValidatorNotFound { address: valoper_address.clone() })?;
+        .ok_or(ContractError::ValidatorNotFound {
+            address: valoper_address.clone(),
+        })?;
 
-    let total_tokens = Uint128::from_str(&validator_info.tokens).map_err(|_| ContractError::InvalidTokenData {
-        address: valoper_address.clone(),
-    })?;
+    let total_tokens =
+        Uint128::from_str(&validator_info.tokens).map_err(|_| ContractError::InvalidTokenData {
+            address: valoper_address.clone(),
+        })?;
 
-    let total_shares = validator_info.delegator_shares.parse().map_err(|_| ContractError::InvalidTokenData {
-        address: valoper_address.clone(),
-    })?;
+    let total_shares =
+        validator_info
+            .delegator_shares
+            .parse()
+            .map_err(|_| ContractError::InvalidTokenData {
+                address: valoper_address.clone(),
+            })?;
 
     // Load validator, or initialize if missing
     let mut validator = VALIDATORS
@@ -273,8 +286,6 @@ pub(crate) fn after_validator_bonded(
         .add_attribute("total_shares", validator.total_shares.to_string()))
 }
 
-
-
 pub(crate) fn before_validator_modified(
     deps: DepsMut,
     env: Env,
@@ -294,9 +305,11 @@ pub(crate) fn before_validator_modified(
             address: valoper_address.clone(),
         })?;
 
-    let valcons_address = get_consensus_address(deps.as_ref(), valoper_address.clone())
-        .map_err(|_| ContractError::ValidatorQueryFailed {
-            address: valoper_address.clone(),
+    let valcons_address =
+        get_consensus_address(deps.as_ref(), valoper_address.clone()).map_err(|_| {
+            ContractError::ValidatorQueryFailed {
+                address: valoper_address.clone(),
+            }
         })?;
 
     let valcons_addr = Addr::unchecked(&valcons_address);
@@ -327,7 +340,6 @@ pub(crate) fn before_validator_modified(
         .add_attribute("valoper_address", valoper_address))
 }
 
-
 pub(crate) fn before_delegation_created(
     _deps: DepsMut,
     _env: Env,
@@ -357,21 +369,18 @@ pub fn before_validator_slashed(
         },
     )?;
 
-    if !validator.bonded {
-        return Err(ContractError::ValidatorNotBonded {
-            validator: valcons_addr.to_string(),
-        });
-    }
-
     // Query all delegations to the validator **after slashing**
-    let delegations_response = querier.validator_delegations(valoper_address.clone(), None)
+    let delegations_response = querier
+        .validator_delegations(valoper_address.clone(), None)
         .map_err(|_| ContractError::DelegationQueryFailed {
             validator: valoper_address.clone(),
         })?;
 
     // Overwrite delegations with latest state from staking module
     for delegation in delegations_response.delegation_responses.iter() {
-        let delegator_addr = deps.api.addr_validate(&delegation.delegation.as_ref().unwrap().delegator_address)?;
+        let delegator_addr = deps
+            .api
+            .addr_validate(&delegation.delegation.as_ref().unwrap().delegator_address)?;
         let updated_shares = Uint128::from_str(&delegation.delegation.as_ref().unwrap().shares)
             .map_err(|_| ContractError::InvalidTokenData {
                 address: delegator_addr.to_string(),
@@ -403,15 +412,18 @@ pub fn before_validator_slashed(
             address: valoper_address.clone(),
         })?;
 
-    validator.total_tokens = Uint128::from_str(&validator_info.tokens)
-        .map_err(|_| ContractError::InvalidTokenData {
+    validator.total_tokens =
+        Uint128::from_str(&validator_info.tokens).map_err(|_| ContractError::InvalidTokenData {
             address: valoper_address.clone(),
         })?;
 
-    validator.total_shares = validator_info.delegator_shares.parse()
-        .map_err(|_| ContractError::InvalidTokenData {
-            address: valoper_address.clone(),
-        })?;
+    validator.total_shares =
+        validator_info
+            .delegator_shares
+            .parse()
+            .map_err(|_| ContractError::InvalidTokenData {
+                address: valoper_address.clone(),
+            })?;
 
     // Save updated validator state
     VALIDATORS.save(deps.storage, &valcons_addr, &validator, env.block.height)?;
@@ -424,7 +436,6 @@ pub fn before_validator_slashed(
         .add_attribute("total_shares", validator.total_shares.to_string())
         .add_attribute("slashing_fraction", slashing_fraction.to_string()))
 }
-
 
 pub(crate) fn after_validator_begin_unbonding(
     deps: DepsMut,
@@ -458,7 +469,6 @@ pub(crate) fn after_validator_begin_unbonding(
         .add_attribute("unbonding_start_height", env.block.height.to_string()))
 }
 
-
 pub(crate) fn after_delegation_modified(
     deps: DepsMut,
     env: Env,
@@ -470,7 +480,9 @@ pub(crate) fn after_delegation_modified(
     // Retrieve consensus address using stored map or query
     let valcons_address = OPERATOR_TO_CONSENSUS
         .may_load(deps.storage, &Addr::unchecked(&valoper_address))?
-        .unwrap_or_else(|| Addr::unchecked(get_consensus_address(deps.as_ref(), valoper_address.clone()).unwrap()));
+        .unwrap_or_else(|| {
+            Addr::unchecked(get_consensus_address(deps.as_ref(), valoper_address.clone()).unwrap())
+        });
 
     let validator_addr = Addr::unchecked(valcons_address);
 
@@ -502,8 +514,8 @@ pub(crate) fn after_delegation_modified(
     let total_validator_shares = Uint128::from_str(&validator_data.delegator_shares)
         .map_err(|_| ContractError::InvalidSharesFormat)?;
 
-    let total_validator_tokens = Uint128::from_str(&validator_data.tokens)
-        .map_err(|_| ContractError::InvalidTokenData {
+    let total_validator_tokens =
+        Uint128::from_str(&validator_data.tokens).map_err(|_| ContractError::InvalidTokenData {
             address: valoper_address.clone(),
         })?;
 
@@ -534,7 +546,6 @@ pub(crate) fn after_delegation_modified(
         .add_attribute("total_tokens", validator.total_tokens.to_string())
         .add_attribute("delegation_shares", actual_shares.to_string()))
 }
-
 
 pub(crate) fn before_delegation_removed(
     deps: DepsMut,
@@ -613,9 +624,6 @@ pub(crate) fn before_delegation_removed(
         .add_attribute("total_tokens", validator.total_tokens.to_string()))
 }
 
-
-
-
 pub(crate) fn after_validator_removed(
     deps: DepsMut,
     env: Env,
@@ -642,7 +650,7 @@ pub(crate) fn after_validator_removed(
     VALIDATORS.save(deps.storage, &valcon_addr, &validator, env.block.height)?;
 
     Ok(Response::new()
-        .add_attribute("action", "validator_disabled")
+        .add_attribute("action", "after_validator_removed")
         .add_attribute("valcons_address", valcons_address.to_string())
         .add_attribute("validator_address", val_address))
 }
@@ -657,17 +665,6 @@ pub(crate) fn after_validator_created(
 
     let validator_addr = deps.api.addr_validate(&cons_address)?;
 
-    // Check if the validator already exists
-    if let Some(mut existing_validator) = VALIDATORS.may_load(deps.storage, &validator_addr)? {
-        if existing_validator.active {
-            return Err(ContractError::ValidatorAlreadyExists {
-                address: valoper_address,
-            });
-        }
-        // Reactivate the validator if it was inactive
-        existing_validator.active = true;
-    }
-
     let querier = StakingQuerier::new(&deps.querier);
     let validator_data = querier
         .validator(valoper_address.clone())
@@ -679,17 +676,18 @@ pub(crate) fn after_validator_created(
             address: valoper_address.clone(),
         })?;
 
-    let total_tokens = Uint128::from_str(&validator_data.tokens)
-        .map_err(|_| ContractError::InvalidTokenData {
+    let total_tokens =
+        Uint128::from_str(&validator_data.tokens).map_err(|_| ContractError::InvalidTokenData {
             address: valoper_address.clone(),
         })?;
 
-    let total_shares = validator_data
-        .delegator_shares
-        .parse()
-        .map_err(|_| ContractError::InvalidTokenData {
-            address: valoper_address.clone(),
-        })?;
+    let total_shares =
+        validator_data
+            .delegator_shares
+            .parse()
+            .map_err(|_| ContractError::InvalidTokenData {
+                address: valoper_address.clone(),
+            })?;
 
     let new_validator = Validator {
         cons_address: validator_addr.clone(),
@@ -715,7 +713,6 @@ pub(crate) fn after_validator_created(
         .add_attribute("total_shares", total_shares.to_string()))
 }
 
-
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
@@ -730,10 +727,16 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::Name {} => query_name(deps),
         QueryMsg::Description {} => query_description(deps),
         QueryMsg::Config {} => to_json_binary(&CONFIG.load(deps.storage)?),
-        QueryMsg::ListBonders { start_after: _, limit: _ } => {
+        QueryMsg::ListBonders {
+            start_after: _,
+            limit: _,
+        } => {
             todo!()
         }
-        QueryMsg::BondingStatus { address:_, height: _ } => {
+        QueryMsg::BondingStatus {
+            address: _,
+            height: _,
+        } => {
             todo!()
         }
         QueryMsg::ListBlacklistedAddresses { start_after, limit } => {
@@ -767,7 +770,9 @@ pub fn query_list_blacklisted_addresses(
 
 pub fn query_is_address_blacklisted(deps: Deps, address: String) -> StdResult<bool> {
     let addr = deps.api.addr_validate(&address)?;
-    let is_blacklisted = BLACKLISTED_ADDRESSES.may_load(deps.storage, addr)?.unwrap_or(false);
+    let is_blacklisted = BLACKLISTED_ADDRESSES
+        .may_load(deps.storage, addr)?
+        .unwrap_or(false);
     Ok(is_blacklisted)
 }
 
@@ -776,18 +781,20 @@ pub fn get_consensus_address(deps: Deps, valoper_address: String) -> Result<Stri
     let valoper_addr = Addr::unchecked(valoper_address.clone());
 
     // First, check if we already have the consensus address stored
-    if let Some(stored_cons_address) = OPERATOR_TO_CONSENSUS.may_load(deps.storage, &valoper_addr)? {
+    if let Some(stored_cons_address) =
+        OPERATOR_TO_CONSENSUS.may_load(deps.storage, &valoper_addr)?
+    {
         return Ok(stored_cons_address.to_string());
     }
 
     let querier = StakingQuerier::new(&deps.querier);
 
     // Query validator details from the chain
-    let validator_data = querier
-        .validator(valoper_address.clone())
-        .map_err(|_| ContractError::ValidatorQueryFailed {
+    let validator_data = querier.validator(valoper_address.clone()).map_err(|_| {
+        ContractError::ValidatorQueryFailed {
             address: valoper_address.clone(),
-        })?;
+        }
+    })?;
 
     let consensus_pubkey_any = validator_data
         .validator
@@ -809,33 +816,29 @@ pub fn get_consensus_address(deps: Deps, valoper_address: String) -> Result<Stri
         bech32::ToBase32::to_base32(&public_key.key),
         Variant::Bech32,
     )
-        .map_err(|_| ContractError::InvalidConsensusKey)?;
+    .map_err(|_| ContractError::InvalidConsensusKey)?;
 
     Ok(valcons_address)
 }
 
-
-
-
-
-pub fn calculate_voting_power(
-    deps: Deps,
-    address: Addr,
-    height: u64,
-) -> StdResult<Uint128> {
+pub fn calculate_voting_power(deps: Deps, address: Addr, height: u64) -> StdResult<Uint128> {
     let mut power = Uint128::zero();
 
     for val_cons_addr_r in VALIDATORS.keys(deps.storage, None, None, Order::Ascending) {
         let val_cons_addr = val_cons_addr_r?;
 
-        if let Some(validator) = VALIDATORS.may_load_at_height(deps.storage, &val_cons_addr, height)? {
+        if let Some(validator) =
+            VALIDATORS.may_load_at_height(deps.storage, &val_cons_addr, height)?
+        {
             if validator.bonded {
                 // Use validator's **operator address** to fetch delegations
                 let val_oper_addr = validator.oper_address.clone();
 
-                if let Some(delegation) =
-                    DELEGATIONS.may_load_at_height(deps.storage, (&address, &val_oper_addr), height)?
-                {
+                if let Some(delegation) = DELEGATIONS.may_load_at_height(
+                    deps.storage,
+                    (&address, &val_oper_addr),
+                    height,
+                )? {
                     let delegation_power = delegation
                         .shares
                         .checked_mul(validator.total_tokens)?
@@ -848,7 +851,6 @@ pub fn calculate_voting_power(
 
     Ok(power)
 }
-
 
 pub fn query_voting_power_at_height(
     deps: Deps,
@@ -871,8 +873,6 @@ pub fn query_voting_power_at_height(
     Ok(VotingPowerAtHeightResponse { power, height })
 }
 
-
-
 pub fn query_total_power_at_height(
     deps: Deps,
     env: Env,
@@ -894,7 +894,8 @@ pub fn query_total_power_at_height(
     let mut blacklisted_power = Uint128::zero();
     for blacklisted_addr in BLACKLISTED_ADDRESSES.keys(deps.storage, None, None, Order::Ascending) {
         let addr = blacklisted_addr?;
-        blacklisted_power = blacklisted_power.checked_add(calculate_voting_power(deps, addr, height)?)?;
+        blacklisted_power =
+            blacklisted_power.checked_add(calculate_voting_power(deps, addr, height)?)?;
     }
 
     // subtr blacklisted voting power
@@ -905,7 +906,6 @@ pub fn query_total_power_at_height(
         height,
     })
 }
-
 
 pub fn query_info(deps: Deps) -> StdResult<Binary> {
     let info = cw2::get_contract_version(deps.storage)?;
@@ -941,7 +941,3 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     Ok(Response::default())
 }
-
-
-
-
