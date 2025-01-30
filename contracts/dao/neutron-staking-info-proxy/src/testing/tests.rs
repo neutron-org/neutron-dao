@@ -1,12 +1,15 @@
-use crate::contract::{execute, instantiate};
+use crate::contract::{execute, instantiate, query};
 use crate::error::ContractError::Unauthorized;
-use crate::msg::{ExecuteMsg, InstantiateMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::{CONFIG, PROVIDERS};
-use crate::testing::mock_querier::{mock_dependencies, STAKING_REWARDS_CONTRACT};
+use crate::testing::mock_querier::{
+    mock_dependencies, PROVIDER1, PROVIDER2, PROVIDER3, PROVIDER4, STAKING_REWARDS_CONTRACT,
+};
 use cosmwasm_std::testing::MockApi;
 use cosmwasm_std::{
+    from_json,
     testing::{message_info, mock_env},
-    to_json_binary, Addr, Order, SubMsg, WasmMsg,
+    to_json_binary, Addr, Coin, Order, SubMsg, Uint128, WasmMsg,
 };
 use neutron_staking_rewards::msg::ExecuteMsg::UpdateStake as RewardsMsgUpdateStake;
 
@@ -160,7 +163,72 @@ fn test_update_stake() {
 /// Tests the following scenario:
 ///     1. Query with no providers set
 ///     2. Query with one provider
-///     3. Query with multiple providers, some of them return non staking denom
-///     4. Query with multiple providers, some of them return error
+///     3. Query with multiple providers, some of them return error
+///     4. Query with multiple providers, some of them return non staking denom
 #[test]
-fn test_query_stake_query() {}
+fn test_query_stake_query() {
+    let mut deps = mock_dependencies();
+
+    // Instantiate
+    let env = mock_env();
+    let info = message_info(&deps.api.addr_make("owner"), &[]);
+    let msg = InstantiateMsg {
+        owner: deps.api.addr_make("owner").into(),
+        staking_rewards: Some(STAKING_REWARDS_CONTRACT.to_string()),
+        staking_denom: "untrn".to_string(),
+        providers: vec![],
+    };
+    let res = instantiate(deps.as_mut(), env.clone(), info.clone(), msg).unwrap();
+    assert_eq!(res.messages.len(), 0);
+
+    let query_msg = QueryMsg::StakeQuery {
+        user: deps.api.addr_make("user").to_string(),
+    };
+
+    // No providers returns zero in any case
+    let q1 = query(deps.as_ref(), env.clone(), query_msg.clone()).unwrap();
+    let c1: Coin = from_json(q1).unwrap();
+    assert_eq!(c1.amount, Uint128::zero());
+
+    // Set providers
+    let set_msg = ExecuteMsg::UpdateProviders {
+        providers: vec![PROVIDER1.to_string(), PROVIDER2.to_string()],
+    };
+    let res = execute(deps.as_mut(), env.clone(), info.clone(), set_msg.clone());
+    assert!(res.is_ok());
+
+    // Check that has some result
+    let q2 = query(deps.as_ref(), env.clone(), query_msg.clone()).unwrap();
+    let c2: Coin = from_json(q2).unwrap();
+    assert_eq!(c2.amount, Uint128::new(300));
+
+    // Set providers with one that returns Err
+    let set_msg = ExecuteMsg::UpdateProviders {
+        providers: vec![
+            PROVIDER1.to_string(),
+            PROVIDER2.to_string(),
+            PROVIDER3.to_string(),
+        ],
+    };
+    let res = execute(deps.as_mut(), env.clone(), info.clone(), set_msg.clone());
+    assert!(res.is_ok());
+
+    let q3 = query(deps.as_ref(), env.clone(), query_msg.clone()).unwrap();
+    let c3: Coin = from_json(q3).unwrap();
+    assert_eq!(c3.amount, Uint128::new(300));
+
+    // Set providers with one that returns result in different denom
+    let set_msg = ExecuteMsg::UpdateProviders {
+        providers: vec![
+            PROVIDER1.to_string(),
+            PROVIDER2.to_string(),
+            PROVIDER4.to_string(),
+        ],
+    };
+    let res = execute(deps.as_mut(), env.clone(), info.clone(), set_msg.clone());
+    assert!(res.is_ok());
+
+    let q4 = query(deps.as_ref(), env.clone(), query_msg.clone()).unwrap();
+    let c4: Coin = from_json(q4).unwrap();
+    assert_eq!(c4.amount, Uint128::new(300));
+}

@@ -1,8 +1,8 @@
 use crate::msg::ProviderStakeQuery;
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage};
 use cosmwasm_std::{
-    from_json, to_json_binary, Binary, ContractResult, Empty, OwnedDeps, Querier, QuerierResult,
-    QueryRequest, StdResult, SystemError, SystemResult, WasmQuery,
+    from_json, to_json_binary, Binary, Coin, ContractResult, Empty, OwnedDeps, Querier,
+    QuerierResult, QueryRequest, StdResult, SystemError, SystemResult, Uint128, WasmQuery,
 };
 use std::marker::PhantomData;
 
@@ -42,15 +42,45 @@ pub const STAKING_REWARDS_CONTRACT: &str =
 pub const PROVIDER1: &str = "neutron173ngx9yztcjyr40nay83qwee6hsvrjzz0ahn97cjug2ckdzaz7lswtwnqh";
 pub const PROVIDER2: &str = "neutron15nxt28yhceft6k32zk87mvdnk7qact5uj4q8cc26ldmqzpav2txq4dda03";
 
+pub const PROVIDER3: &str = "neutron1zv35zgj7d6khqxfl3tx95scjljz0rvmkxcsxmggqxrltkm8ystsqvt0qc7";
+
+pub const PROVIDER4: &str = "neutron1wyvwhmnvc43reeptqllqmu3a55cz5lj4remvv7gwwt79kdxvchws7npv9u";
+
 impl WasmMockQuerier {
     pub fn handle_query(&self, request: &QueryRequest<Empty>) -> QuerierResult {
         match &request {
             QueryRequest::Wasm(WasmQuery::Smart { contract_addr, msg }) => {
                 match contract_addr.as_str() {
-                    STAKING_REWARDS_CONTRACT => {
+                    PROVIDER1 => {
                         let q: ProviderStakeQuery = from_json(msg).unwrap();
                         let resp: StdResult<Binary> = match q {
-                            ProviderStakeQuery::User { address: _ } => to_json_binary(&1),
+                            ProviderStakeQuery::User { address: _ } => to_json_binary(&Coin {
+                                denom: "untrn".to_string(),
+                                amount: Uint128::new(100),
+                            }),
+                        };
+                        SystemResult::Ok(ContractResult::from(resp))
+                    }
+                    PROVIDER2 => {
+                        let q: ProviderStakeQuery = from_json(msg).unwrap();
+                        let resp: StdResult<Binary> = match q {
+                            ProviderStakeQuery::User { address: _ } => to_json_binary(&Coin {
+                                denom: "untrn".to_string(),
+                                amount: Uint128::new(200),
+                            }),
+                        };
+                        SystemResult::Ok(ContractResult::from(resp))
+                    }
+                    PROVIDER3 => {
+                        SystemResult::Ok(ContractResult::Err("something happened".to_string()))
+                    }
+                    PROVIDER4 => {
+                        let q: ProviderStakeQuery = from_json(msg).unwrap();
+                        let resp: StdResult<Binary> = match q {
+                            ProviderStakeQuery::User { address: _ } => to_json_binary(&Coin {
+                                denom: "memecoin".to_string(),
+                                amount: Uint128::new(900),
+                            }),
                         };
                         SystemResult::Ok(ContractResult::from(resp))
                     }

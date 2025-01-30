@@ -200,6 +200,7 @@ fn query_providers(deps: Deps) -> StdResult<ProvidersResponse> {
 }
 
 /// Returns sum of stake of each provider filtered by `config.staking_denom`.
+/// Ignores PROVIDERS that returned Err instead of Ok
 fn query_stake_query(deps: Deps, user: String) -> StdResult<Coin> {
     let user = deps.api.addr_validate(&user)?;
     let config = CONFIG.load(deps.storage)?;
