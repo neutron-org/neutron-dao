@@ -36,7 +36,7 @@ pub enum QueryMsg {
     Providers {},
     /// Retrieves the user's stake summed across all providers, filtered by `config.staking_denom`.
     #[returns(Coin)]
-    StakeQuery { user: String },
+    StakeQuery { user: String, height: Option<u64> },
 }
 
 /// Response for `QueryMsg::Config`
@@ -55,9 +55,10 @@ pub struct ProvidersResponse {
 #[cw_serde]
 pub struct MigrateMsg {}
 
-/// Queries stake information from the provider.
+/// Queries stake information from the provider for specific user and height.
+/// If height is None, latest block stake info will be issued
 #[cw_serde]
 pub enum ProviderStakeQuery {
     /// Returns user stake from provider in Vec<Coin>
-    User { address: String },
+    UserStake { address: String, height: Option<u64> },
 }

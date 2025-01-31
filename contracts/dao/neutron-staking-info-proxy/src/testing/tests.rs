@@ -183,6 +183,7 @@ fn test_query_stake_query() {
 
     let query_msg = QueryMsg::StakeQuery {
         user: deps.api.addr_make("user").to_string(),
+        height: None,
     };
 
     // No providers returns zero in any case

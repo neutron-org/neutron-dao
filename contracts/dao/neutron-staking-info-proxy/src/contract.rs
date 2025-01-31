@@ -177,7 +177,7 @@ pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> Result<cosmwasm_std::Binary, 
     match msg {
         QueryMsg::Config {} => Ok(to_json_binary(&query_config(deps)?)?),
         QueryMsg::Providers {} => Ok(to_json_binary(&query_providers(deps)?)?),
-        QueryMsg::StakeQuery { user } => Ok(to_json_binary(&query_stake_query(deps, user)?)?),
+        QueryMsg::StakeQuery { user, height } => Ok(to_json_binary(&query_stake_query(deps, user, height)?)?),
     }
 }
 
@@ -201,14 +201,14 @@ fn query_providers(deps: Deps) -> StdResult<ProvidersResponse> {
 
 /// Returns sum of stake of each provider filtered by `config.staking_denom`.
 /// Ignores PROVIDERS that returned Err instead of Ok
-fn query_stake_query(deps: Deps, user: String) -> StdResult<Coin> {
+fn query_stake_query(deps: Deps, user: String, height: Option<u64>) -> StdResult<Coin> {
     let user = deps.api.addr_validate(&user)?;
     let config = CONFIG.load(deps.storage)?;
     let stake = PROVIDERS
         .keys(deps.storage, None, None, Order::Ascending)
         .collect::<Result<Vec<Addr>, StdError>>()?
         .iter()
-        .flat_map(|provider| query_user_stake(deps, &user, provider))
+        .flat_map(|provider| query_user_stake(deps, &user, provider, height))
         .filter(|c| c.denom == config.staking_denom)
         .map(|c| c.amount)
         .sum();
@@ -235,11 +235,12 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
 
 /// Queries the user’s staked amount from the external provider,
 /// ensuring that the returned denom matches this contract’s expected staking_denom.
-fn query_user_stake(deps: Deps, user_addr: &Addr, provider: &Addr) -> Result<Coin, ContractError> {
+fn query_user_stake(deps: Deps, user_addr: &Addr, provider: &Addr, height: Option<u64>) -> Result<Coin, ContractError> {
     let user_stake: Coin = deps.querier.query_wasm_smart(
         provider,
-        &ProviderStakeQuery::User {
+        &ProviderStakeQuery::UserStake {
             address: user_addr.to_string(),
+            height,
         },
     )?;
     Ok(user_stake)

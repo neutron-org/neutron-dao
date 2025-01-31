@@ -54,7 +54,7 @@ impl WasmMockQuerier {
                     PROVIDER1 => {
                         let q: ProviderStakeQuery = from_json(msg).unwrap();
                         let resp: StdResult<Binary> = match q {
-                            ProviderStakeQuery::User { address: _ } => to_json_binary(&Coin {
+                            ProviderStakeQuery::UserStake { address: _, height: _ } => to_json_binary(&Coin {
                                 denom: "untrn".to_string(),
                                 amount: Uint128::new(100),
                             }),
@@ -64,7 +64,7 @@ impl WasmMockQuerier {
                     PROVIDER2 => {
                         let q: ProviderStakeQuery = from_json(msg).unwrap();
                         let resp: StdResult<Binary> = match q {
-                            ProviderStakeQuery::User { address: _ } => to_json_binary(&Coin {
+                            ProviderStakeQuery::UserStake { address: _, height: _ } => to_json_binary(&Coin {
                                 denom: "untrn".to_string(),
                                 amount: Uint128::new(200),
                             }),
@@ -77,7 +77,7 @@ impl WasmMockQuerier {
                     PROVIDER4 => {
                         let q: ProviderStakeQuery = from_json(msg).unwrap();
                         let resp: StdResult<Binary> = match q {
-                            ProviderStakeQuery::User { address: _ } => to_json_binary(&Coin {
+                            ProviderStakeQuery::UserStake { address: _, height: _ } => to_json_binary(&Coin {
                                 denom: "memecoin".to_string(),
                                 amount: Uint128::new(900),
                             }),
