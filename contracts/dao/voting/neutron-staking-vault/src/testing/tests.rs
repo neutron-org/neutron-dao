@@ -294,6 +294,16 @@ mod tests {
         let cons_addr2 = Addr::unchecked("neutronvalcons2xyz");
         let oper_addr2 = Addr::unchecked("neutronvaloper2xyz");
 
+        // Store the operator-to-consensus mapping
+        OPERATOR_TO_CONSENSUS
+            .save(deps.as_mut().storage, &oper_addr1, &cons_addr1)
+            .unwrap();
+        OPERATOR_TO_CONSENSUS
+            .save(deps.as_mut().storage, &oper_addr2, &cons_addr2)
+            .unwrap();
+
+
+
         // Add validators using consensus address as the key
         let validator1 = Validator {
             cons_address: cons_addr1.clone(),
@@ -1001,6 +1011,12 @@ mod tests {
         let oper_addr = Addr::unchecked("neutronvaloper1xyz");
         let delegator_addr = Addr::unchecked("delegator1");
 
+        // Store operator-to-consensus mapping
+        OPERATOR_TO_CONSENSUS
+            .save(deps.as_mut().storage, &oper_addr, &cons_addr)
+            .unwrap();
+
+
         // Store validator directly in state (Using consensus address as key)
         let validator = Validator {
             cons_address: cons_addr.clone(), // `valcons`
@@ -1034,7 +1050,7 @@ mod tests {
             deps.as_ref(),
             env.clone(),
             delegator_addr.to_string(),
-            None, // Latest height
+            Some(env.block.height +1) , // Latest height
         );
         assert!(query_response.is_ok(), "Failed to query voting power");
 

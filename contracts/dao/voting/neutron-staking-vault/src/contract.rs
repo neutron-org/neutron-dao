@@ -367,10 +367,6 @@ pub fn before_validator_slashed(
     let delegations_response = querier
         .validator_delegations(valoper_address.clone(), None)
         .map_err(|err| {
-            println!(
-                "❌ Delegation query failed for validator {}: {:?}",
-                valoper_address, err
-            );
             ContractError::DelegationQueryFailed {
                 validator: valoper_address.clone(),
             }
@@ -805,26 +801,17 @@ pub fn get_consensus_address(deps: Deps, valoper_address: String) -> Result<Stri
 
 pub fn calculate_voting_power(deps: Deps, address: Addr, height: u64) -> StdResult<Uint128> {
     let mut power = Uint128::zero();
-
     for val_cons_addr_r in VALIDATORS.keys(deps.storage, None, None, Order::Ascending) {
         let val_cons_addr = val_cons_addr_r?;
 
-        if let Some(validator) =
-            VALIDATORS.may_load_at_height(deps.storage, &val_cons_addr, height)?
-        {
+        if let Some(validator) = VALIDATORS.may_load_at_height(deps.storage, &val_cons_addr, height)? {
             if validator.bonded {
-                // Use validator's **operator address** to fetch delegations
                 let val_oper_addr = validator.oper_address.clone();
 
-                let valcons_address = OPERATOR_TO_CONSENSUS
-                    .may_load(deps.storage, &val_oper_addr)?
-                    .unwrap_or_else(|| {
-                        Addr::unchecked(get_consensus_address(deps, val_oper_addr.to_string()).unwrap())
-                    });
-
+                // Check delegations using correct address
                 if let Some(delegation) = DELEGATIONS.may_load_at_height(
                     deps.storage,
-                    (&address, &valcons_address),
+                    (&address, &val_oper_addr),
                     height,
                 )? {
                     let delegation_power = delegation
