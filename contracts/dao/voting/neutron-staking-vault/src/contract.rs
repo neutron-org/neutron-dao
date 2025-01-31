@@ -5,7 +5,7 @@ use crate::state::{
     OPERATOR_TO_CONSENSUS, VALIDATORS,
 };
 
-use bech32::{Hrp, encode, Bech32};
+use bech32::{encode, Bech32, Hrp};
 
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
@@ -16,8 +16,8 @@ use cosmwasm_std::{
 use cw2::set_contract_version;
 use cw_storage_plus::Bound;
 use neutron_std::types::cosmos::staking::v1beta1::{QueryValidatorResponse, StakingQuerier};
-use std::str::FromStr;
 use prost::Message;
+use std::str::FromStr;
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-voting-vault";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -223,9 +223,7 @@ pub(crate) fn after_validator_bonded(
 
     // Query the latest validator state from the chain
     let validator_data: QueryValidatorResponse = match querier.validator(valoper_address.clone()) {
-        Ok(data) => {
-            data
-        }
+        Ok(data) => data,
         Err(e) => {
             return Err(ContractError::ValidatorQueryFailed {
                 address: valoper_address.clone(),
@@ -369,7 +367,10 @@ pub fn before_validator_slashed(
     let delegations_response = querier
         .validator_delegations(valoper_address.clone(), None)
         .map_err(|err| {
-            println!("❌ Delegation query failed for validator {}: {:?}", valoper_address, err);
+            println!(
+                "❌ Delegation query failed for validator {}: {:?}",
+                valoper_address, err
+            );
             ContractError::DelegationQueryFailed {
                 validator: valoper_address.clone(),
             }
@@ -377,7 +378,8 @@ pub fn before_validator_slashed(
 
     // Overwrite delegations with latest state from staking module
     for delegation in delegations_response.delegation_responses.iter() {
-        let delegator_addr = Addr::unchecked(&delegation.delegation.as_ref().unwrap().delegator_address);
+        let delegator_addr =
+            Addr::unchecked(&delegation.delegation.as_ref().unwrap().delegator_address);
         let updated_shares = Uint128::from_str(&delegation.delegation.as_ref().unwrap().shares)
             .map_err(|_| ContractError::InvalidTokenData {
                 address: delegator_addr.to_string(),
@@ -787,12 +789,15 @@ pub fn get_consensus_address(deps: Deps, valoper_address: String) -> Result<Stri
         })?;
 
     // Decode consensus public key from Protobuf Any
-    let public_key = neutron_std::types::cosmos::crypto::ed25519::PubKey::decode(consensus_pubkey_any.value.as_ref())
-        .map_err(|_| ContractError::InvalidConsensusKey)?;
+    let public_key = neutron_std::types::cosmos::crypto::ed25519::PubKey::decode(
+        consensus_pubkey_any.value.as_ref(),
+    )
+    .map_err(|_| ContractError::InvalidConsensusKey)?;
 
     let hrp = Hrp::parse("neutronvalcons").map_err(|_| ContractError::InvalidConsensusKey)?;
     let key_bytes: &[u8] = &public_key.key;
-    let encoded = encode::<Bech32>(hrp, key_bytes).map_err(|_| ContractError::InvalidConsensusKey)?
+    let encoded = encode::<Bech32>(hrp, key_bytes)
+        .map_err(|_| ContractError::InvalidConsensusKey)?
         .to_string();
     Ok(encoded)
 }

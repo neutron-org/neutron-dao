@@ -1,17 +1,29 @@
 #[cfg(test)]
 
 mod tests {
-    use std::collections::HashMap;
-    use cosmwasm_std::{from_json, testing::{mock_dependencies, mock_env, mock_info}, to_json_binary, Addr, Decimal256, GrpcQuery, QueryRequest, Uint128};
-    use crate::contract::{after_delegation_modified, after_validator_begin_unbonding, after_validator_bonded, after_validator_created, before_delegation_removed, before_validator_slashed, execute, instantiate, query, query_total_power_at_height, query_voting_power_at_height};
+    use crate::contract::{
+        after_delegation_modified, after_validator_begin_unbonding, after_validator_bonded,
+        after_validator_created, before_delegation_removed, before_validator_slashed, execute,
+        instantiate, query, query_total_power_at_height, query_voting_power_at_height,
+    };
     use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
-    use crate::state::{Config, Delegation, Validator, BLACKLISTED_ADDRESSES, CONFIG, DAO, DELEGATIONS, OPERATOR_TO_CONSENSUS, VALIDATORS};
-    use  crate::testing::mock_querier::mock_dependencies as dependencies;
-    use neutron_std::types::cosmos::staking::v1beta1::{QueryDelegationResponse, QueryValidatorResponse, Validator as CosmosValidator};
+    use crate::state::{
+        Config, Delegation, Validator, BLACKLISTED_ADDRESSES, CONFIG, DAO, DELEGATIONS,
+        OPERATOR_TO_CONSENSUS, VALIDATORS,
+    };
+    use crate::testing::mock_querier::mock_dependencies as dependencies;
+    use cosmwasm_std::{
+        from_json,
+        testing::{mock_dependencies, mock_env, mock_info},
+        to_json_binary, Addr, Decimal256, GrpcQuery, QueryRequest, Uint128,
+    };
+    use neutron_std::types::cosmos::staking::v1beta1::{
+        QueryDelegationResponse, QueryValidatorResponse, Validator as CosmosValidator,
+    };
+    use std::collections::HashMap;
 
     #[test]
     fn test_query_validator_response_serialization() {
-
         let validator = CosmosValidator {
             operator_address: "validator1".to_string(),
             consensus_pubkey: None,
@@ -27,7 +39,6 @@ mod tests {
             unbonding_on_hold_ref_count: 0,
             unbonding_ids: vec![],
         };
-
 
         let response = QueryValidatorResponse {
             validator: Some(validator),
@@ -70,8 +81,6 @@ mod tests {
         let dao = DAO.load(&deps.storage).unwrap();
         assert_eq!(dao, Addr::unchecked(valid_neutron_address)); // ✅ Fix assertion
     }
-
-
 
     #[test]
     fn test_execute_update_config() {
@@ -154,14 +163,21 @@ mod tests {
             mock_env(),
             mock_info("admin", &[]),
             ExecuteMsg::AddToBlacklist {
-                addresses: vec![String::from(Addr::unchecked("addr1")), String::from(Addr::unchecked("addr2"))],
+                addresses: vec![
+                    String::from(Addr::unchecked("addr1")),
+                    String::from(Addr::unchecked("addr2")),
+                ],
             },
         );
         assert!(res.is_ok(), "Error adding to blacklist: {:?}", res.err());
 
         // Verify that addresses are blacklisted
-        let is_addr1_blacklisted = BLACKLISTED_ADDRESSES.load(deps.as_ref().storage, Addr::unchecked("addr1")).unwrap_or(false);
-        let is_addr2_blacklisted = BLACKLISTED_ADDRESSES.load(deps.as_ref().storage, Addr::unchecked("addr2")).unwrap_or(false);
+        let is_addr1_blacklisted = BLACKLISTED_ADDRESSES
+            .load(deps.as_ref().storage, Addr::unchecked("addr1"))
+            .unwrap_or(false);
+        let is_addr2_blacklisted = BLACKLISTED_ADDRESSES
+            .load(deps.as_ref().storage, Addr::unchecked("addr2"))
+            .unwrap_or(false);
         assert!(is_addr1_blacklisted, "Address addr1 is not blacklisted");
         assert!(is_addr2_blacklisted, "Address addr2 is not blacklisted");
 
@@ -171,16 +187,33 @@ mod tests {
             mock_env(),
             mock_info("admin", &[]),
             ExecuteMsg::RemoveFromBlacklist {
-                addresses: vec![String::from(Addr::unchecked("addr1")), String::from(Addr::unchecked("addr2"))],
+                addresses: vec![
+                    String::from(Addr::unchecked("addr1")),
+                    String::from(Addr::unchecked("addr2")),
+                ],
             },
         );
-        assert!(res.is_ok(), "Error removing from blacklist: {:?}", res.err());
+        assert!(
+            res.is_ok(),
+            "Error removing from blacklist: {:?}",
+            res.err()
+        );
 
         // Verify that addresses are no longer blacklisted
-        let is_addr1_blacklisted = BLACKLISTED_ADDRESSES.may_load(deps.as_ref().storage, Addr::unchecked("addr1")).unwrap();
-        let is_addr2_blacklisted = BLACKLISTED_ADDRESSES.may_load(deps.as_ref().storage, Addr::unchecked("addr2")).unwrap();
-        assert!(is_addr1_blacklisted.is_none(), "Address addr1 is still blacklisted");
-        assert!(is_addr2_blacklisted.is_none(), "Address addr2 is still blacklisted");
+        let is_addr1_blacklisted = BLACKLISTED_ADDRESSES
+            .may_load(deps.as_ref().storage, Addr::unchecked("addr1"))
+            .unwrap();
+        let is_addr2_blacklisted = BLACKLISTED_ADDRESSES
+            .may_load(deps.as_ref().storage, Addr::unchecked("addr2"))
+            .unwrap();
+        assert!(
+            is_addr1_blacklisted.is_none(),
+            "Address addr1 is still blacklisted"
+        );
+        assert!(
+            is_addr2_blacklisted.is_none(),
+            "Address addr2 is still blacklisted"
+        );
     }
 
     #[test]
@@ -215,7 +248,11 @@ mod tests {
                 address: "addr1".to_string(),
             },
         );
-        assert!(query_res.is_ok(), "Error querying blacklist status: {:?}", query_res.err());
+        assert!(
+            query_res.is_ok(),
+            "Error querying blacklist status: {:?}",
+            query_res.err()
+        );
 
         let is_blacklisted: bool = from_json(&query_res.unwrap()).unwrap();
         assert!(is_blacklisted, "Address addr1 should be blacklisted");
@@ -228,12 +265,15 @@ mod tests {
                 address: "addr2".to_string(),
             },
         );
-        assert!(query_res.is_ok(), "Error querying blacklist status: {:?}", query_res.err());
+        assert!(
+            query_res.is_ok(),
+            "Error querying blacklist status: {:?}",
+            query_res.err()
+        );
 
         let is_blacklisted: bool = from_json(&query_res.unwrap()).unwrap();
         assert!(!is_blacklisted, "Address addr2 should not be blacklisted");
     }
-
 
     #[test]
     fn test_total_vp_excludes_blacklisted_addresses() {
@@ -264,7 +304,12 @@ mod tests {
             active: true,
         };
         VALIDATORS
-            .save(deps.as_mut().storage, &cons_addr1, &validator1, env.block.height)
+            .save(
+                deps.as_mut().storage,
+                &cons_addr1,
+                &validator1,
+                env.block.height,
+            )
             .unwrap();
 
         let validator2 = Validator {
@@ -276,7 +321,12 @@ mod tests {
             active: true,
         };
         VALIDATORS
-            .save(deps.as_mut().storage, &cons_addr2, &validator2, env.block.height)
+            .save(
+                deps.as_mut().storage,
+                &cons_addr2,
+                &validator2,
+                env.block.height,
+            )
             .unwrap();
 
         // Add delegations using operator address
@@ -315,9 +365,15 @@ mod tests {
         let initial_query_res = query(
             deps.as_ref(),
             env.clone(),
-            QueryMsg::TotalPowerAtHeight { height: Some(env.block.height + 1) },
+            QueryMsg::TotalPowerAtHeight {
+                height: Some(env.block.height + 1),
+            },
         );
-        assert!(initial_query_res.is_ok(), "Error querying total power before blacklisting: {:?}", initial_query_res.err());
+        assert!(
+            initial_query_res.is_ok(),
+            "Error querying total power before blacklisting: {:?}",
+            initial_query_res.err()
+        );
 
         let initial_total_power: Uint128 = from_json(&initial_query_res.unwrap()).unwrap();
 
@@ -341,15 +397,29 @@ mod tests {
 
         // Ensure validator1 still exists and has tokens
         let validator1_state = VALIDATORS.load(deps.as_ref().storage, &cons_addr1).unwrap();
-        assert_eq!(validator1_state.total_tokens, Uint128::new(1000), "Validator1's tokens are incorrect");
+        assert_eq!(
+            validator1_state.total_tokens,
+            Uint128::new(1000),
+            "Validator1's tokens are incorrect"
+        );
 
         // Ensure validator2 still exists
         let validator2_state = VALIDATORS.load(deps.as_ref().storage, &cons_addr2).unwrap();
-        assert_eq!(validator2_state.total_tokens, Uint128::new(500), "Validator2's tokens are incorrect");
+        assert_eq!(
+            validator2_state.total_tokens,
+            Uint128::new(500),
+            "Validator2's tokens are incorrect"
+        );
 
         // Ensure delegation1 is still present
-        let delegation1_state = DELEGATIONS.load(deps.as_ref().storage, (&delegator1, &oper_addr1)).unwrap();
-        assert_eq!(delegation1_state.shares, Uint128::new(500), "Delegation1 shares incorrect");
+        let delegation1_state = DELEGATIONS
+            .load(deps.as_ref().storage, (&delegator1, &oper_addr1))
+            .unwrap();
+        assert_eq!(
+            delegation1_state.shares,
+            Uint128::new(500),
+            "Delegation1 shares incorrect"
+        );
 
         // Ensure delegation2 is blacklisted correctly
         let is_blacklisted = BLACKLISTED_ADDRESSES
@@ -361,9 +431,15 @@ mod tests {
         let query_res = query(
             deps.as_ref(),
             env.clone(),
-            QueryMsg::TotalPowerAtHeight { height: Some(env.block.height + 1) },
+            QueryMsg::TotalPowerAtHeight {
+                height: Some(env.block.height + 1),
+            },
         );
-        assert!(query_res.is_ok(), "Error querying total power after blacklisting: {:?}", query_res.err());
+        assert!(
+            query_res.is_ok(),
+            "Error querying total power after blacklisting: {:?}",
+            query_res.err()
+        );
 
         let total_power: Uint128 = from_json(&query_res.unwrap()).unwrap();
 
@@ -374,9 +450,6 @@ mod tests {
             "Total power should exclude blacklisted address"
         );
     }
-
-
-
 
     #[test]
     fn test_after_validator_bonded_with_mock_query() {
@@ -419,7 +492,12 @@ mod tests {
         deps.querier.with_validators(vec![proto_validator]);
 
         // Call `after_validator_bonded` with the validator's operator address
-        let res = after_validator_bonded(deps.as_mut(), mock_env(), cons_addr.to_string(), oper_addr.to_string());
+        let res = after_validator_bonded(
+            deps.as_mut(),
+            mock_env(),
+            cons_addr.to_string(),
+            oper_addr.to_string(),
+        );
         assert!(res.is_ok(), "Error: {:?}", res.err());
 
         // Validate the updated validator state
@@ -443,7 +521,6 @@ mod tests {
         );
     }
 
-
     #[test]
     fn test_before_validator_slashed_no_delegations() {
         let mut deps = mock_dependencies();
@@ -461,7 +538,9 @@ mod tests {
             total_shares: Uint128::new(1000),
             active: true,
         };
-        VALIDATORS.save(deps.as_mut().storage, &cons_addr, &validator, 0).unwrap();
+        VALIDATORS
+            .save(deps.as_mut().storage, &cons_addr, &validator, 0)
+            .unwrap();
 
         let slashing_fraction = Decimal256::percent(10); // 10% slashing
 
@@ -501,7 +580,12 @@ mod tests {
             active: true,
         };
         VALIDATORS
-            .save(deps.as_mut().storage, &cons_addr, &validator, env.block.height)
+            .save(
+                deps.as_mut().storage,
+                &cons_addr,
+                &validator,
+                env.block.height,
+            )
             .unwrap();
 
         // Store delegation using operator address
@@ -509,7 +593,7 @@ mod tests {
         let delegation = Delegation {
             delegator_address: delegator_addr.clone(),
             validator_address: oper_addr.clone(), // Uses operator address
-            shares: Uint128::new(500), // Shares do not change after slashing
+            shares: Uint128::new(500),            // Shares do not change after slashing
         };
         DELEGATIONS
             .save(
@@ -526,7 +610,7 @@ mod tests {
         let proto_validator = CosmosValidator {
             operator_address: oper_addr.to_string(),
             consensus_pubkey: None,
-            status: 3, // Bonded status
+            status: 3,                 // Bonded status
             tokens: "450".to_string(), // 10% slashed, from 500 → 450
             jailed: false,
             delegator_shares: "500".to_string(), // Shares remain 500
@@ -575,8 +659,8 @@ mod tests {
                 ("action", "before_validator_slashed"),
                 ("valcons_address", cons_addr.to_string().as_str()), // Ensure correct valcons key
                 ("valoper_address", oper_addr.to_string().as_str()), // Ensure correct valoper key
-                ("total_tokens", "450"), // Slashed tokens
-                ("total_shares", "500"), // Shares remain unchanged
+                ("total_tokens", "450"),                             // Slashed tokens
+                ("total_shares", "500"),                             // Shares remain unchanged
                 ("slashing_fraction", slashing_fraction.to_string().as_str()),
             ]
         );
@@ -606,7 +690,12 @@ mod tests {
             active: true,
         };
         VALIDATORS
-            .save(deps.as_mut().storage, &cons_addr, &validator, env.block.height)
+            .save(
+                deps.as_mut().storage,
+                &cons_addr,
+                &validator,
+                env.block.height,
+            )
             .unwrap();
 
         // Store multiple delegations using the operator address
@@ -625,10 +714,20 @@ mod tests {
         };
 
         DELEGATIONS
-            .save(deps.as_mut().storage, (&delegator1, &oper_addr), &delegation1, env.block.height)
+            .save(
+                deps.as_mut().storage,
+                (&delegator1, &oper_addr),
+                &delegation1,
+                env.block.height,
+            )
             .unwrap();
         DELEGATIONS
-            .save(deps.as_mut().storage, (&delegator2, &oper_addr), &delegation2, env.block.height)
+            .save(
+                deps.as_mut().storage,
+                (&delegator2, &oper_addr),
+                &delegation2,
+                env.block.height,
+            )
             .unwrap();
 
         let slashing_fraction = Decimal256::percent(10); // 10% slashing
@@ -637,7 +736,7 @@ mod tests {
         let proto_validator = CosmosValidator {
             operator_address: oper_addr.to_string(),
             consensus_pubkey: None,
-            status: 3, // Bonded status
+            status: 3,                 // Bonded status
             tokens: "900".to_string(), // 10% slashed, from 1000 → 900
             jailed: false,
             delegator_shares: "1000".to_string(), // Shares remain 1000
@@ -653,8 +752,14 @@ mod tests {
 
         // Mock delegation query results (no change in shares)
         deps.querier.with_delegations(HashMap::from([
-            ((delegator1.to_string(), oper_addr.to_string()), Uint128::new(400)),
-            ((delegator2.to_string(), oper_addr.to_string()), Uint128::new(600)),
+            (
+                (delegator1.to_string(), oper_addr.to_string()),
+                Uint128::new(400),
+            ),
+            (
+                (delegator2.to_string(), oper_addr.to_string()),
+                Uint128::new(600),
+            ),
         ]));
 
         // Call `before_validator_slashed`
@@ -704,13 +809,12 @@ mod tests {
                 ("action", "before_validator_slashed"),
                 ("valcons_address", cons_addr.to_string().as_str()),
                 ("valoper_address", oper_addr.to_string().as_str()),
-                ("total_tokens", "900"), // Slashed tokens
+                ("total_tokens", "900"),  // Slashed tokens
                 ("total_shares", "1000"), // Shares remain unchanged
                 ("slashing_fraction", slashing_fraction.to_string().as_str()),
             ]
         );
     }
-
 
     #[test]
     fn test_after_validator_created_with_mock_query() {
@@ -753,7 +857,10 @@ mod tests {
         let validator = VALIDATORS.load(deps.as_ref().storage, &cons_addr).unwrap();
         assert_eq!(validator.cons_address, cons_addr);
         assert_eq!(validator.oper_address, oper_addr);
-        assert!(!validator.bonded, "Validator should not be bonded initially");
+        assert!(
+            !validator.bonded,
+            "Validator should not be bonded initially"
+        );
         assert_eq!(
             validator.total_tokens,
             Uint128::new(1000),
@@ -767,7 +874,9 @@ mod tests {
         assert!(validator.active, "Validator should be active");
 
         // Validate that operator-to-consensus mapping is correctly saved
-        let stored_consensus = OPERATOR_TO_CONSENSUS.load(deps.as_ref().storage, &oper_addr).unwrap();
+        let stored_consensus = OPERATOR_TO_CONSENSUS
+            .load(deps.as_ref().storage, &oper_addr)
+            .unwrap();
         assert_eq!(
             stored_consensus, cons_addr,
             "Consensus address was not correctly mapped to the operator address"
@@ -780,13 +889,12 @@ mod tests {
             vec![
                 ("action", "validator_created"),
                 ("consensus_address", cons_addr.to_string().as_str()), // Update key
-                ("operator_address", oper_addr.to_string().as_str()), // Update key
+                ("operator_address", oper_addr.to_string().as_str()),  // Update key
                 ("total_tokens", "1000"),
                 ("total_shares", "1000"),
             ]
         );
     }
-
 
     #[test]
     fn test_before_delegation_removed() {
@@ -811,7 +919,14 @@ mod tests {
             total_shares: Uint128::new(1000),
             active: true,
         };
-        VALIDATORS.save(deps.as_mut().storage, &cons_addr, &validator, env.block.height).unwrap();
+        VALIDATORS
+            .save(
+                deps.as_mut().storage,
+                &cons_addr,
+                &validator,
+                env.block.height,
+            )
+            .unwrap();
 
         // Store delegation using `valoper`
         let delegator_addr = Addr::unchecked("delegator3");
@@ -820,18 +935,20 @@ mod tests {
             validator_address: oper_addr.clone(), // ✅ Uses valoper
             shares: Uint128::new(500),
         };
-        DELEGATIONS.save(
-            deps.as_mut().storage,
-            (&delegator_addr, &oper_addr), // ✅ Uses valoper
-            &delegation,
-            env.block.height,
-        ).unwrap();
+        DELEGATIONS
+            .save(
+                deps.as_mut().storage,
+                (&delegator_addr, &oper_addr), // ✅ Uses valoper
+                &delegation,
+                env.block.height,
+            )
+            .unwrap();
 
         // Mock validator query response
         let proto_validator = CosmosValidator {
             operator_address: oper_addr.to_string(),
             consensus_pubkey: None,
-            status: 3, // Bonded status
+            status: 3,                 // Bonded status
             tokens: "500".to_string(), // Updated total tokens after removal
             jailed: false,
             delegator_shares: "500".to_string(), // Updated shares after removal
@@ -868,11 +985,11 @@ mod tests {
         assert_eq!(updated_validator.total_shares, Uint128::new(500)); // Shares reduced
 
         // Check delegation state (should be rewritten as 0 shares)
-        let updated_delegation = DELEGATIONS.load(deps.as_ref().storage, (&delegator_addr, &oper_addr)).unwrap();
+        let updated_delegation = DELEGATIONS
+            .load(deps.as_ref().storage, (&delegator_addr, &oper_addr))
+            .unwrap();
         assert_eq!(updated_delegation.shares, Uint128::zero()); // Fully removed delegation
     }
-
-
 
     #[test]
     fn test_create_delegation_and_query_voting_power_direct_write() {
@@ -922,7 +1039,10 @@ mod tests {
         assert!(query_response.is_ok(), "Failed to query voting power");
 
         let query_res = query_response.unwrap();
-        assert_eq!(query_res, delegation.shares, "Delegator voting power mismatch");
+        assert_eq!(
+            query_res, delegation.shares,
+            "Delegator voting power mismatch"
+        );
         // assert_eq!(query_res.height, env.block.height, "Unexpected query height");
 
         // Query **total voting power** at current height
@@ -930,7 +1050,10 @@ mod tests {
         assert!(total_power_res.is_ok(), "Failed to query total power");
 
         let total_power_response = total_power_res.unwrap();
-        assert_eq!(total_power_response, validator.total_tokens, "Total voting power mismatch");
+        assert_eq!(
+            total_power_response, validator.total_tokens,
+            "Total voting power mismatch"
+        );
         // assert_eq!(total_power_response.height, env.block.height, "Unexpected query height");
 
         // Simulate passage of time (historical queries)
@@ -944,19 +1067,31 @@ mod tests {
             delegator_addr.to_string(),
             Some(historical_height),
         );
-        assert!(historical_vp_res.is_ok(), "Failed to query historical voting power");
+        assert!(
+            historical_vp_res.is_ok(),
+            "Failed to query historical voting power"
+        );
 
         let historical_vp = historical_vp_res.unwrap();
-        assert_eq!(historical_vp, delegation.shares, "Historical voting power mismatch");
+        assert_eq!(
+            historical_vp, delegation.shares,
+            "Historical voting power mismatch"
+        );
         // assert_eq!(historical_vp.height, historical_height, "Unexpected historical height");
 
         // 🔍 Query **historical** total power
         let historical_total_power_res =
             query_total_power_at_height(deps.as_ref(), env.clone(), Some(historical_height));
-        assert!(historical_total_power_res.is_ok(), "Failed to query historical total power");
+        assert!(
+            historical_total_power_res.is_ok(),
+            "Failed to query historical total power"
+        );
 
         let historical_total_power = historical_total_power_res.unwrap();
-        assert_eq!(historical_total_power, validator.total_tokens, "Historical total power mismatch");
+        assert_eq!(
+            historical_total_power, validator.total_tokens,
+            "Historical total power mismatch"
+        );
         // assert_eq!(historical_total_power.height, historical_height, "Unexpected historical height");
     }
 
@@ -985,14 +1120,19 @@ mod tests {
             active: true,
         };
         VALIDATORS
-            .save(deps.as_mut().storage, &cons_addr, &validator, env.block.height)
+            .save(
+                deps.as_mut().storage,
+                &cons_addr,
+                &validator,
+                env.block.height,
+            )
             .unwrap();
 
         // Store initial delegation to ensure it exists before calling `after_delegation_modified`
         let initial_delegation = Delegation {
             delegator_address: delegator_addr.clone(),
             validator_address: oper_addr.clone(), // Uses `valoper`
-            shares: Uint128::new(100), // Initial shares before modification
+            shares: Uint128::new(100),            // Initial shares before modification
         };
         DELEGATIONS
             .save(
@@ -1007,7 +1147,7 @@ mod tests {
         let proto_validator = CosmosValidator {
             operator_address: oper_addr.to_string(),
             consensus_pubkey: None,
-            status: 3, // Bonded status
+            status: 3,                  // Bonded status
             tokens: "1200".to_string(), // Updated tokens after delegation
             jailed: false,
             delegator_shares: "1200".to_string(), // Updated shares
@@ -1063,7 +1203,4 @@ mod tests {
             ]
         );
     }
-
-
-
 }

@@ -129,8 +129,8 @@ pub const DAO: Item<Addr> = Item::new("dao");
 mod tests {
     use super::{Config, OPERATOR_TO_CONSENSUS};
     use crate::error::ContractError;
-    use cosmwasm_std::{Addr, Storage};
     use cosmwasm_std::testing::mock_dependencies;
+    use cosmwasm_std::{Addr, Storage};
 
     /// Tests the validation logic for the `Config` struct.
     ///

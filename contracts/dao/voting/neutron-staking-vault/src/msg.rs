@@ -102,12 +102,14 @@ pub enum QueryMsg {
     IsAddressBlacklisted { address: String },
 
     #[returns(Uint128)]
-    VotingPowerAtHeight { address: String, height: Option<u64> },
+    VotingPowerAtHeight {
+        address: String,
+        height: Option<u64>,
+    },
 
     #[returns(Uint128)]
     TotalPowerAtHeight { height: Option<u64> },
 }
-
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct MigrateMsg {}

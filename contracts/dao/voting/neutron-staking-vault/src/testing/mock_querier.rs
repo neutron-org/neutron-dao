@@ -6,9 +6,9 @@ use cosmwasm_std::{
     QuerierResult, QueryRequest, SystemError, SystemResult, Uint128,
 };
 use neutron_std::types::cosmos::staking::v1beta1::{
-    QueryDelegationRequest, QueryDelegationResponse, QueryValidatorDelegationsRequest,
-    QueryValidatorDelegationsResponse, QueryValidatorRequest, QueryValidatorResponse,
-    QueryValidatorsRequest, QueryValidatorsResponse, Validator, DelegationResponse, Delegation,
+    Delegation, DelegationResponse, QueryDelegationRequest, QueryDelegationResponse,
+    QueryValidatorDelegationsRequest, QueryValidatorDelegationsResponse, QueryValidatorRequest,
+    QueryValidatorResponse, QueryValidatorsRequest, QueryValidatorsResponse, Validator,
 };
 use prost::Message;
 
@@ -82,7 +82,6 @@ impl WasmMockQuerier {
         }
     }
 
-
     fn handle_validator_query(&self, request: QueryValidatorRequest) -> QuerierResult {
         if let Some(validator) = self.validators.get(&request.validator_addr) {
             let response = QueryValidatorResponse {
@@ -105,7 +104,6 @@ impl WasmMockQuerier {
             })
         }
     }
-
 
     /// Handles a query for **all validators** (optionally filtered by status).
     fn handle_validators_query(&self, request: QueryValidatorsRequest) -> QuerierResult {
@@ -132,10 +130,16 @@ impl WasmMockQuerier {
         SystemResult::Ok(ContractResult::Ok(Binary::from(buf)))
     }
 
-
     fn handle_delegation_query(&self, request: QueryDelegationRequest) -> QuerierResult {
-        let key = (request.delegator_addr.clone(), request.validator_addr.clone());
-        let shares = self.delegations.get(&key).cloned().unwrap_or(Uint128::zero());
+        let key = (
+            request.delegator_addr.clone(),
+            request.validator_addr.clone(),
+        );
+        let shares = self
+            .delegations
+            .get(&key)
+            .cloned()
+            .unwrap_or(Uint128::zero());
 
         let response = QueryDelegationResponse {
             delegation_response: Some(DelegationResponse {
@@ -160,9 +164,10 @@ impl WasmMockQuerier {
         SystemResult::Ok(ContractResult::Ok(Binary::from(buf)))
     }
 
-
-
-    fn handle_validator_delegations_query(&self, request: QueryValidatorDelegationsRequest) -> QuerierResult {
+    fn handle_validator_delegations_query(
+        &self,
+        request: QueryValidatorDelegationsRequest,
+    ) -> QuerierResult {
         println!(
             "🔍 Mock Querier received delegation query for validator: {}",
             request.validator_addr
@@ -191,7 +196,10 @@ impl WasmMockQuerier {
             .collect();
 
         if delegations.is_empty() {
-            println!("❌ No delegations found for validator: {}", request.validator_addr);
+            println!(
+                "❌ No delegations found for validator: {}",
+                request.validator_addr
+            );
         }
 
         let response = QueryValidatorDelegationsResponse {
@@ -228,7 +236,8 @@ impl WasmMockQuerier {
                 "✅ Storing Delegation: Delegator: {}, Validator: {}, Shares: {}",
                 delegator_addr, validator_addr, shares
             );
-            self.delegations.insert((delegator_addr.clone(), validator_addr.clone()), *shares);
+            self.delegations
+                .insert((delegator_addr.clone(), validator_addr.clone()), *shares);
         }
     }
 
@@ -239,7 +248,8 @@ impl WasmMockQuerier {
         delegations: Vec<(String, Uint128)>,
     ) {
         for (delegator, shares) in delegations {
-            self.delegations.insert((delegator, validator_addr.to_string()), shares);
+            self.delegations
+                .insert((delegator, validator_addr.to_string()), shares);
         }
     }
 }

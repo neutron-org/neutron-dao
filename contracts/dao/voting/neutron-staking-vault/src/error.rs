@@ -77,7 +77,10 @@ pub enum ContractError {
     DelegationQueryFailed { validator: String },
 
     #[error("Failed to get delegation balance : {delegator} {validator}")]
-    DelegationBalanceNotFound { delegator: String, validator: String },
+    DelegationBalanceNotFound {
+        delegator: String,
+        validator: String,
+    },
 
     #[error("Invalid shares")]
     InvalidSharesFormat,
