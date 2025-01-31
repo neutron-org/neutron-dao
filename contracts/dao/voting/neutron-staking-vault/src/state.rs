@@ -75,10 +75,10 @@ pub struct Delegation {
     pub shares: Uint128,
 }
 
-/// Storage mapping for all validators, indexed by **consensus address (`valcons`)**.
+/// Storage mapping for all validators, indexed by **operator address (`valoper`)**.
 ///
-/// This stores validator information under their **consensus address**.
-/// - **Key:** `&Addr` → Validator's **consensus address** (`valcons`).
+/// This stores validator information under their **operator address**.
+/// - **Key:** `&Addr` → Validator's **operator address** (`valoper`).
 /// - **Value:** `Validator` struct containing all validator details.
 ///
 /// We use `SnapshotMap` to enable querying historical validator states at any height.
@@ -88,6 +88,7 @@ pub const VALIDATORS: SnapshotMap<&Addr, Validator> = SnapshotMap::new(
     "validators__changelog",
     Strategy::EveryBlock,
 );
+
 
 /// Storage mapping for delegations, indexed by **(delegator, validator operator address)**.
 ///
@@ -103,15 +104,6 @@ pub const DELEGATIONS: SnapshotMap<(&Addr, &Addr), Delegation> = SnapshotMap::ne
     Strategy::EveryBlock,
 );
 
-/// Maps operator addresses (`valoper`) to their consensus addresses (`valcons`).
-///
-/// This mapping allows quick retrieval of a validator's **consensus address** based on their **operator address**.
-/// - **Key:** `&Addr` → **Operator address** (`valoper`).
-/// - **Value:** `Addr` → **Consensus address** (`valcons`).
-pub const OPERATOR_TO_CONSENSUS: Map<&Addr, Addr> = Map::new("operator_to_consensus");
-
-/// Stores a list of **blacklisted addresses**, preventing them from influencing voting power.
-///
 /// If an address is blacklisted, its stake is **excluded** from governance and voting power calculations.
 /// - **Key:** `Addr` → The blacklisted wallet address.
 /// - **Value:** `bool` → `true` if blacklisted.
@@ -127,9 +119,8 @@ pub const DAO: Item<Addr> = Item::new("dao");
 
 #[cfg(test)]
 mod tests {
-    use super::{Config, OPERATOR_TO_CONSENSUS};
+    use super::Config;
     use crate::error::ContractError;
-    use cosmwasm_std::testing::mock_dependencies;
     use cosmwasm_std::{Addr, Storage};
 
     /// Tests the validation logic for the `Config` struct.
@@ -179,26 +170,4 @@ mod tests {
         );
     }
 
-    /// Tests that the `OPERATOR_TO_CONSENSUS` mapping correctly stores and retrieves addresses.
-    ///
-    /// - Saves a mapping from `valoper` → `valcons`.
-    /// - Loads the stored mapping and checks for correctness.
-    #[test]
-    fn test_operator_to_consensus_mapping() {
-        let mut deps = mock_dependencies();
-
-        let oper_addr = Addr::unchecked("neutronvaloper1xyz");
-        let cons_addr = Addr::unchecked("neutronvalcons1xyz");
-
-        // Store mapping in OPERATOR_TO_CONSENSUS
-        OPERATOR_TO_CONSENSUS
-            .save(deps.as_mut().storage, &oper_addr, &cons_addr)
-            .unwrap();
-
-        // Load and check the stored value
-        let stored_cons_addr = OPERATOR_TO_CONSENSUS
-            .load(deps.as_ref().storage, &oper_addr)
-            .unwrap();
-        assert_eq!(stored_cons_addr, cons_addr);
-    }
 }

@@ -179,7 +179,7 @@ impl WasmMockQuerier {
             .filter(|((_, validator_addr), _)| validator_addr == &request.validator_addr)
             .map(|((delegator, validator_addr), shares)| {
                 println!(
-                    "✅ Found delegation: Delegator: {}, Validator: {}, Shares: {}",
+                    " Found delegation: Delegator: {}, Validator: {}, Shares: {}",
                     delegator, validator_addr, shares
                 );
 
@@ -207,7 +207,7 @@ impl WasmMockQuerier {
             pagination: None, // Mock doesn't handle pagination
         };
 
-        // ✅ **Fix: Serialize the response using Protobuf instead of JSON**
+        //  **Fix: Serialize the response using Protobuf instead of JSON**
         let mut buf = Vec::new();
         if let Err(e) = response.encode(&mut buf) {
             println!("❌ Failed to serialize Protobuf response: {}", e);
@@ -217,7 +217,7 @@ impl WasmMockQuerier {
             });
         }
 
-        println!("✅ Returning properly encoded Protobuf validator delegations response");
+        println!(" Returning properly encoded Protobuf validator delegations response");
 
         SystemResult::Ok(ContractResult::Ok(Binary::from(buf)))
     }
@@ -233,7 +233,7 @@ impl WasmMockQuerier {
     pub fn with_delegations(&mut self, delegations: HashMap<(String, String), Uint128>) {
         for ((delegator_addr, validator_addr), shares) in delegations.iter() {
             println!(
-                "✅ Storing Delegation: Delegator: {}, Validator: {}, Shares: {}",
+                " Storing Delegation: Delegator: {}, Validator: {}, Shares: {}",
                 delegator_addr, validator_addr, shares
             );
             self.delegations
