@@ -816,9 +816,15 @@ pub fn calculate_voting_power(deps: Deps, address: Addr, height: u64) -> StdResu
                 // Use validator's **operator address** to fetch delegations
                 let val_oper_addr = validator.oper_address.clone();
 
+                let valcons_address = OPERATOR_TO_CONSENSUS
+                    .may_load(deps.storage, &val_oper_addr)?
+                    .unwrap_or_else(|| {
+                        Addr::unchecked(get_consensus_address(deps, val_oper_addr.to_string()).unwrap())
+                    });
+
                 if let Some(delegation) = DELEGATIONS.may_load_at_height(
                     deps.storage,
-                    (&address, &val_oper_addr),
+                    (&address, &valcons_address),
                     height,
                 )? {
                     let delegation_power = delegation
