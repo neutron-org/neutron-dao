@@ -1137,7 +1137,7 @@ mod tests {
         DELEGATIONS
             .save(
                 deps.as_mut().storage,
-                (&delegator_addr, &oper_addr),
+                (&delegator_addr, &cons_addr),
                 &initial_delegation,
                 env.block.height,
             )
@@ -1184,7 +1184,7 @@ mod tests {
 
         // Validate updated delegation state
         let updated_delegation = DELEGATIONS
-            .load(deps.as_ref().storage, (&delegator_addr, &oper_addr))
+            .load(deps.as_ref().storage, (&delegator_addr, &cons_addr))
             .unwrap();
         assert_eq!(updated_delegation.shares, Uint128::new(200)); // New delegation shares
 
@@ -1197,8 +1197,8 @@ mod tests {
                 ("delegator", delegator_addr.to_string().as_str()),
                 ("valcons_address", cons_addr.to_string().as_str()),
                 ("valoper_address", oper_addr.to_string().as_str()),
-                ("total_tokens", "1200"),
                 ("total_shares", "1200"),
+                ("total_tokens", "1200"),
                 ("delegation_shares", "200"),
             ]
         );

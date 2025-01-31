@@ -483,7 +483,7 @@ pub(crate) fn after_delegation_modified(
             Addr::unchecked(get_consensus_address(deps.as_ref(), valoper_address.clone()).unwrap())
         });
 
-    let validator_addr = Addr::unchecked(valcons_address);
+    let validator_addr = Addr::unchecked(valcons_address.clone());
 
     let querier = StakingQuerier::new(&deps.querier);
 
@@ -540,7 +540,8 @@ pub(crate) fn after_delegation_modified(
     Ok(Response::new()
         .add_attribute("action", "after_delegation_modified")
         .add_attribute("delegator", delegator.to_string())
-        .add_attribute("validator", validator_addr.to_string())
+        .add_attribute("valcons_address", valcons_address.to_string())
+        .add_attribute("valoper_address", valoper_address.to_string())
         .add_attribute("total_shares", validator.total_shares.to_string())
         .add_attribute("total_tokens", validator.total_tokens.to_string())
         .add_attribute("delegation_shares", actual_shares.to_string()))
