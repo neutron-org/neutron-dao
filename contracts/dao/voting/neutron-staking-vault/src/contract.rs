@@ -7,9 +7,6 @@ use crate::state::{
 
 use bech32::{Hrp, encode, Bech32};
 
-use cosmos_sdk_proto::cosmos::crypto::ed25519::PubKey as Ed25519PubKey;
-use cosmos_sdk_proto::traits::Message;
-
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -20,6 +17,7 @@ use cw2::set_contract_version;
 use cw_storage_plus::Bound;
 use neutron_std::types::cosmos::staking::v1beta1::{QueryValidatorResponse, StakingQuerier};
 use std::str::FromStr;
+use prost::Message;
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-voting-vault";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -789,7 +787,7 @@ pub fn get_consensus_address(deps: Deps, valoper_address: String) -> Result<Stri
         })?;
 
     // Decode consensus public key from Protobuf Any
-    let public_key = Ed25519PubKey::decode(consensus_pubkey_any.value.as_ref())
+    let public_key = neutron_std::types::cosmos::crypto::ed25519::PubKey::decode(consensus_pubkey_any.value.as_ref())
         .map_err(|_| ContractError::InvalidConsensusKey)?;
 
     let hrp = Hrp::parse("neutronvalcons").map_err(|_| ContractError::InvalidConsensusKey)?;

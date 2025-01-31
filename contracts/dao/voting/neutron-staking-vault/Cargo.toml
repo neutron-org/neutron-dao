@@ -20,7 +20,6 @@ library = []
 cosmwasm-schema = { version = "2.2.0" }
 cosmwasm-std = { version = "2.2.0" }
 bech32 = "0.11.0"
-cosmos-sdk-proto = { version = "0.26.1"}
 neutron-std = { git = "https://github.com/neutron-org/neutron-std", version = "5.0.1-rc0" }
 cw-storage-plus = "2.0.0"
 cw-utils = { version = "2.0.0" }
