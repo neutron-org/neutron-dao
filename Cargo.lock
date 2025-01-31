@@ -1557,9 +1557,9 @@ dependencies = [
 name = "cwd-interface"
 version = "0.2.0"
 dependencies = [
- "cosmwasm-schema 2.2.0",
- "cosmwasm-std 2.2.0",
- "cw2 2.0.0",
+ "cosmwasm-schema 1.5.9",
+ "cosmwasm-std 1.5.9",
+ "cw2 1.1.2",
  "cwd-macros",
  "schemars",
  "serde",
@@ -2949,8 +2949,6 @@ dependencies = [
  "cw-storage-plus 2.0.0",
  "cw-utils 2.0.0",
  "cw2 2.0.0",
- "cwd-interface",
- "cwd-macros",
  "neutron-std 5.0.1-rc0 (git+https://github.com/neutron-org/neutron-std)",
  "prost 0.12.6",
  "schemars",

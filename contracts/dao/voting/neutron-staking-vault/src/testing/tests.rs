@@ -3,7 +3,6 @@
 mod tests {
     use std::collections::HashMap;
     use cosmwasm_std::{from_json, testing::{mock_dependencies, mock_env, mock_info}, to_json_binary, Addr, Decimal256, GrpcQuery, QueryRequest, Uint128};
-    use cwd_interface::voting::TotalPowerAtHeightResponse;
     use crate::contract::{after_delegation_modified, after_validator_begin_unbonding, after_validator_bonded, after_validator_created, before_delegation_removed, before_validator_slashed, execute, instantiate, query, query_total_power_at_height, query_voting_power_at_height};
     use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
     use crate::state::{Config, Delegation, Validator, BLACKLISTED_ADDRESSES, CONFIG, DAO, DELEGATIONS, OPERATOR_TO_CONSENSUS, VALIDATORS};
@@ -320,11 +319,11 @@ mod tests {
         );
         assert!(initial_query_res.is_ok(), "Error querying total power before blacklisting: {:?}", initial_query_res.err());
 
-        let initial_total_power: TotalPowerAtHeightResponse = from_json(&initial_query_res.unwrap()).unwrap();
+        let initial_total_power: Uint128 = from_json(&initial_query_res.unwrap()).unwrap();
 
         // Expected power: sum of both validator tokens (1000 + 500 = 1500)
         assert_eq!(
-            initial_total_power.power,
+            initial_total_power,
             Uint128::new(1500),
             "Initial total power should be sum of both validators' tokens"
         );
@@ -366,11 +365,11 @@ mod tests {
         );
         assert!(query_res.is_ok(), "Error querying total power after blacklisting: {:?}", query_res.err());
 
-        let total_power: TotalPowerAtHeightResponse = from_json(&query_res.unwrap()).unwrap();
+        let total_power: Uint128 = from_json(&query_res.unwrap()).unwrap();
 
         // Only validator1's power should count (1000), validator2's delegation is blacklisted
         assert_eq!(
-            total_power.power,
+            total_power,
             Uint128::new(1000),
             "Total power should exclude blacklisted address"
         );
@@ -923,16 +922,16 @@ mod tests {
         assert!(query_response.is_ok(), "Failed to query voting power");
 
         let query_res = query_response.unwrap();
-        assert_eq!(query_res.power, delegation.shares, "Delegator voting power mismatch");
-        assert_eq!(query_res.height, env.block.height, "Unexpected query height");
+        assert_eq!(query_res, delegation.shares, "Delegator voting power mismatch");
+        // assert_eq!(query_res.height, env.block.height, "Unexpected query height");
 
         // Query **total voting power** at current height
         let total_power_res = query_total_power_at_height(deps.as_ref(), env.clone(), None);
         assert!(total_power_res.is_ok(), "Failed to query total power");
 
         let total_power_response = total_power_res.unwrap();
-        assert_eq!(total_power_response.power, validator.total_tokens, "Total voting power mismatch");
-        assert_eq!(total_power_response.height, env.block.height, "Unexpected query height");
+        assert_eq!(total_power_response, validator.total_tokens, "Total voting power mismatch");
+        // assert_eq!(total_power_response.height, env.block.height, "Unexpected query height");
 
         // Simulate passage of time (historical queries)
         let historical_height = 11;
@@ -948,8 +947,8 @@ mod tests {
         assert!(historical_vp_res.is_ok(), "Failed to query historical voting power");
 
         let historical_vp = historical_vp_res.unwrap();
-        assert_eq!(historical_vp.power, delegation.shares, "Historical voting power mismatch");
-        assert_eq!(historical_vp.height, historical_height, "Unexpected historical height");
+        assert_eq!(historical_vp, delegation.shares, "Historical voting power mismatch");
+        // assert_eq!(historical_vp.height, historical_height, "Unexpected historical height");
 
         // 🔍 Query **historical** total power
         let historical_total_power_res =
@@ -957,8 +956,8 @@ mod tests {
         assert!(historical_total_power_res.is_ok(), "Failed to query historical total power");
 
         let historical_total_power = historical_total_power_res.unwrap();
-        assert_eq!(historical_total_power.power, validator.total_tokens, "Historical total power mismatch");
-        assert_eq!(historical_total_power.height, historical_height, "Unexpected historical height");
+        assert_eq!(historical_total_power, validator.total_tokens, "Historical total power mismatch");
+        // assert_eq!(historical_total_power.height, historical_height, "Unexpected historical height");
     }
 
     #[test]

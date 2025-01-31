@@ -25,8 +25,6 @@ neutron-std = { git = "https://github.com/neutron-org/neutron-std", version = "5
 cw-storage-plus = "2.0.0"
 cw-utils = { version = "2.0.0" }
 cw2 = "2.0.0"
-cwd-interface = { path = "../../../../packages/cwd-interface" }
-cwd-macros = { path = "../../../../packages/cwd-macros" }
 schemars = "0.8.8"
 serde = { version = "1.0.175", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0" }

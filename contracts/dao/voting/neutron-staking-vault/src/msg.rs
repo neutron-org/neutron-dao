@@ -1,10 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Decimal256, Uint128, Uint64};
-use cwd_interface::voting::InfoResponse;
-use cwd_interface::voting::{
-    BondingStatusResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
-};
-use cwd_macros::{info_query, voting_query, voting_vault, voting_vault_query};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
@@ -19,7 +14,6 @@ pub struct InstantiateMsg {
     pub denom: String,
 }
 
-#[voting_vault]
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
@@ -92,11 +86,6 @@ pub enum SudoMsg {
     },
 }
 
-
-
-#[voting_query]
-#[voting_vault_query]
-#[info_query]
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum QueryMsg {
@@ -111,6 +100,12 @@ pub enum QueryMsg {
 
     #[returns(bool)]
     IsAddressBlacklisted { address: String },
+
+    #[returns(Uint128)]
+    VotingPowerAtHeight { address: String, height: Option<u64> },
+
+    #[returns(Uint128)]
+    TotalPowerAtHeight { height: Option<u64> },
 }
 
 

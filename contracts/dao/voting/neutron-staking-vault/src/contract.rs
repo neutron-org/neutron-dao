@@ -12,14 +12,12 @@ use cosmos_sdk_proto::traits::Message;
 
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::OverflowOperation::Add;
 use cosmwasm_std::{
     to_json_binary, Addr, Binary, Decimal256, Deps, DepsMut, Env, MessageInfo, Order, Response,
     StdError, StdResult, Uint128,
 };
 use cw2::set_contract_version;
 use cw_storage_plus::Bound;
-use cwd_interface::voting::{TotalPowerAtHeightResponse, VotingPowerAtHeightResponse};
 use neutron_std::types::cosmos::staking::v1beta1::{QueryValidatorResponse, StakingQuerier};
 use std::str::FromStr;
 
@@ -61,8 +59,6 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Bond {} => execute_bond(deps, env, info),
-        ExecuteMsg::Unbond { amount } => execute_unbond(deps, env, info, amount),
         ExecuteMsg::UpdateConfig {
             owner,
             name,
@@ -725,23 +721,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::TotalPowerAtHeight { height } => {
             to_json_binary(&query_total_power_at_height(deps, env, height)?)
         }
-        QueryMsg::Info {} => query_info(deps),
-        QueryMsg::Dao {} => query_dao(deps),
-        QueryMsg::Name {} => query_name(deps),
-        QueryMsg::Description {} => query_description(deps),
         QueryMsg::Config {} => to_json_binary(&CONFIG.load(deps.storage)?),
-        QueryMsg::ListBonders {
-            start_after: _,
-            limit: _,
-        } => {
-            todo!()
-        }
-        QueryMsg::BondingStatus {
-            address: _,
-            height: _,
-        } => {
-            todo!()
-        }
         QueryMsg::ListBlacklistedAddresses { start_after, limit } => {
             to_json_binary(&query_list_blacklisted_addresses(deps, start_after, limit)?)
         }
@@ -855,27 +835,24 @@ pub fn query_voting_power_at_height(
     env: Env,
     address: String,
     height: Option<u64>,
-) -> StdResult<VotingPowerAtHeightResponse> {
+) -> StdResult<Uint128> {
     let height = height.unwrap_or(env.block.height);
     let address = Addr::unchecked(&address);
 
     if let Some(true) = BLACKLISTED_ADDRESSES.may_load(deps.storage, address.clone())? {
-        return Ok(VotingPowerAtHeightResponse {
-            power: Uint128::zero(),
-            height,
-        });
+        return Ok(Uint128::zero());
     }
 
     let power = calculate_voting_power(deps, address, height)?;
 
-    Ok(VotingPowerAtHeightResponse { power, height })
+    Ok(power)
 }
 
 pub fn query_total_power_at_height(
     deps: Deps,
     env: Env,
     height: Option<u64>,
-) -> StdResult<TotalPowerAtHeightResponse> {
+) -> StdResult<Uint128> {
     let height = height.unwrap_or(env.block.height);
 
     // calc total vp as usual
@@ -899,15 +876,7 @@ pub fn query_total_power_at_height(
     // subtr blacklisted voting power
     let net_power = total_power.checked_sub(blacklisted_power)?;
 
-    Ok(TotalPowerAtHeightResponse {
-        power: net_power,
-        height,
-    })
-}
-
-pub fn query_info(deps: Deps) -> StdResult<Binary> {
-    let info = cw2::get_contract_version(deps.storage)?;
-    to_json_binary(&cwd_interface::voting::InfoResponse { info })
+    Ok(net_power)
 }
 
 pub fn query_dao(deps: Deps) -> StdResult<Binary> {
