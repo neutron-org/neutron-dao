@@ -94,7 +94,7 @@ pub enum QueryMsg {
 
     #[returns(Vec<Addr>)]
     ListBlacklistedAddresses {
-        start_after: Option<String>,
+        start_after: Option<Addr>,
         limit: Option<u32>,
     },
 
@@ -102,10 +102,7 @@ pub enum QueryMsg {
     IsAddressBlacklisted { address: String },
 
     #[returns(Uint128)]
-    VotingPowerAtHeight {
-        address: String,
-        height: Option<u64>,
-    },
+    VotingPowerAtHeight { address: Addr, height: Option<u64> },
 
     #[returns(Uint128)]
     TotalPowerAtHeight { height: Option<u64> },

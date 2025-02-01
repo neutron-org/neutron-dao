@@ -2,8 +2,8 @@ use std::collections::HashMap;
 
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage};
 use cosmwasm_std::{
-    from_json, to_json_binary, Binary, ContractResult, GrpcQuery, OwnedDeps, Querier,
-    QuerierResult, QueryRequest, SystemError, SystemResult, Uint128,
+    from_json, Binary, ContractResult, GrpcQuery, OwnedDeps, Querier, QuerierResult, QueryRequest,
+    SystemError, SystemResult, Uint128,
 };
 use neutron_std::types::cosmos::staking::v1beta1::{
     Delegation, DelegationResponse, QueryDelegationRequest, QueryDelegationResponse,
@@ -147,7 +147,6 @@ impl WasmMockQuerier {
                     delegator_address: request.delegator_addr,
                     validator_address: request.validator_addr,
                     shares: shares.to_string(),
-                    ..Default::default()
                 }),
                 balance: None,
             }),
@@ -188,7 +187,6 @@ impl WasmMockQuerier {
                         delegator_address: delegator.clone(),
                         validator_address: validator_addr.clone(),
                         shares: shares.to_string(),
-                        ..Default::default()
                     }),
                     balance: None,
                 }
@@ -238,18 +236,6 @@ impl WasmMockQuerier {
             );
             self.delegations
                 .insert((delegator_addr.clone(), validator_addr.clone()), *shares);
-        }
-    }
-
-    /// Allows adding **multiple delegations** for a specific validator.
-    pub fn with_validator_delegations(
-        &mut self,
-        validator_addr: &str,
-        delegations: Vec<(String, Uint128)>,
-    ) {
-        for (delegator, shares) in delegations {
-            self.delegations
-                .insert((delegator, validator_addr.to_string()), shares);
         }
     }
 }

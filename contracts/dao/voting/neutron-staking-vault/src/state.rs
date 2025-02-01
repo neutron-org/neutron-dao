@@ -62,6 +62,23 @@ pub struct Validator {
     pub active: bool,
 }
 
+impl Validator {
+    pub fn remove_del_shares(&mut self, shares: Uint128) -> Result<(), ContractError> {
+        let remaining_shares = self.total_shares.checked_sub(shares)?;
+
+        if remaining_shares.is_zero() {
+            self.total_tokens = Uint128::zero();
+        } else {
+            let undelegated_tokens = shares.multiply_ratio(self.total_tokens, self.total_shares);
+            self.total_tokens = self.total_tokens.checked_sub(undelegated_tokens)?;
+        }
+
+        self.total_shares = remaining_shares;
+
+        Ok(())
+    }
+}
+
 /// Represents a delegation made by a user to a validator.
 ///
 /// A delegation means that a **delegator** (user) has assigned their stake to a **validator**.
@@ -88,7 +105,6 @@ pub const VALIDATORS: SnapshotMap<&Addr, Validator> = SnapshotMap::new(
     "validators__changelog",
     Strategy::EveryBlock,
 );
-
 
 /// Storage mapping for delegations, indexed by **(delegator, validator operator address)**.
 ///
@@ -121,7 +137,7 @@ pub const DAO: Item<Addr> = Item::new("dao");
 mod tests {
     use super::Config;
     use crate::error::ContractError;
-    use cosmwasm_std::{Addr, Storage};
+    use cosmwasm_std::Addr;
 
     /// Tests the validation logic for the `Config` struct.
     ///
@@ -169,5 +185,4 @@ mod tests {
             Err(ContractError::DenomIsEmpty {})
         );
     }
-
 }
