@@ -6,6 +6,10 @@ use crate::state::{
 
 use bech32::{encode, Bech32, Hrp};
 
+// used for slashing calulations to get precise results
+pub(crate) const PREC_UINT: Uint128 = Uint128::new(1_000_000_000_000_000_000);
+
+
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -342,86 +346,49 @@ pub(crate) fn before_delegation_created(
     Ok(Response::new().add_attribute("action", "before_delegation_created"))
 }
 
+
 pub fn before_validator_slashed(
     deps: DepsMut,
     env: Env,
     valoper_address: String,
     slashing_fraction: Decimal256,
 ) -> Result<Response, ContractError> {
-    let valoper_addr = Addr::unchecked(valoper_address.clone());
-    let querier = StakingQuerier::new(&deps.querier);
+    let validator_addr = Addr::unchecked(&valoper_address);
 
-    // Load validator state using valoper_address as primary key
-    let mut validator = VALIDATORS.may_load(deps.storage, &valoper_addr)?.ok_or(
-        ContractError::ValidatorNotFound {
-            address: valoper_address.clone(),
-        },
-    )?;
+    // Load validator state
+    let mut validator = VALIDATORS.load(deps.storage, &validator_addr)?;
 
-    // Query latest delegations for this validator
-    let delegations_response = querier
-        .validator_delegations(valoper_address.clone(), None)
-        .map_err(|_| ContractError::DelegationQueryFailed {
-            validator: valoper_address.clone(),
+    let slashed_tokens: Uint128 = validator
+        .total_tokens
+        .checked_mul(Uint128::try_from(slashing_fraction.atomics()).map_err(|_| ContractError::MathError {
+            error: "Failed to convert slashing fraction to Uint128".to_string(),
+        })?)
+        .map_err(|_| ContractError::MathError {
+            error: "Failed to calculate slashed shares".to_string(),
+        })?
+        .checked_div(PREC_UINT)
+        .map_err(|_| ContractError::MathError {
+            error: "Failed to scale down slashed shares".to_string(),
         })?;
 
-    // Overwrite delegations with latest state from staking module
-    for delegation in delegations_response.delegation_responses.iter() {
-        if let Some(delegation_data) = &delegation.delegation {
-            let delegator_addr = Addr::unchecked(&delegation_data.delegator_address);
-            let updated_shares = Uint128::from_str(&delegation_data.shares).map_err(|_| {
-                ContractError::InvalidTokenData {
-                    address: delegator_addr.to_string(),
-                }
-            })?;
-
-            // Save the **new** delegation state (overwriting old one)
-            DELEGATIONS.save(
-                deps.storage,
-                (&delegator_addr, &valoper_addr),
-                &Delegation {
-                    delegator_address: delegator_addr.clone(),
-                    validator_address: valoper_addr.clone(),
-                    shares: updated_shares,
-                },
-                env.block.height,
-            )?;
-        }
-    }
-
-    // **Query validator data again** to get latest tokens & shares after slashing
-    let validator_data: QueryValidatorResponse = querier
-        .validator(valoper_address.clone())
-        .map_err(|_| ContractError::ValidatorQueryFailed {
-            address: valoper_address.clone(),
+    // Ensure tokens are reduced but not negative
+    validator.total_tokens = validator
+        .total_tokens
+        .checked_sub(slashed_tokens)
+        .map_err(|_| ContractError::MathError {
+            error: format!(
+                "Slashed tokens ({}) exceed total tokens ({})",
+                slashed_tokens, validator.total_tokens
+            ),
         })?;
 
-    let validator_info = validator_data
-        .validator
-        .ok_or(ContractError::ValidatorNotFound {
-            address: valoper_address.clone(),
-        })?;
-
-    validator.total_tokens =
-        Uint128::from_str(&validator_info.tokens).map_err(|_| ContractError::InvalidTokenData {
-            address: valoper_address.clone(),
-        })?;
-
-    validator.total_shares =
-        validator_info
-            .delegator_shares
-            .parse()
-            .map_err(|_| ContractError::InvalidTokenData {
-                address: valoper_address.clone(),
-            })?;
-
-    // Save updated validator
-    VALIDATORS.save(deps.storage, &valoper_addr, &validator, env.block.height)?;
+    // Save updated validator state
+    VALIDATORS.save(deps.storage, &validator_addr, &validator, env.block.height)?;
 
     Ok(Response::new()
         .add_attribute("action", "before_validator_slashed")
         .add_attribute("valoper_address", valoper_address)
-        .add_attribute("cons_address", validator.cons_address.to_string()) // Still stored inside
+        .add_attribute("cons_address", validator.cons_address.to_string())
         .add_attribute("total_tokens", validator.total_tokens.to_string())
         .add_attribute("total_shares", validator.total_shares.to_string())
         .add_attribute("slashing_fraction", slashing_fraction.to_string()))

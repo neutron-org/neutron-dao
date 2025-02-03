@@ -544,38 +544,69 @@ fn test_after_validator_bonded_with_mock_query() {
 }
 
 #[test]
-fn test_before_validator_slashed_no_delegations() {
+fn test_before_validator_slashed_with_self_bonded_only() {
     let mut deps = mock_dependencies();
+    let env = mock_env();
 
     // Define consensus and operator addresses
     let cons_addr = Addr::unchecked("neutronvalcons1xyz");
     let oper_addr = Addr::unchecked("neutronvaloper1xyz");
 
-    // Add a validator with no delegations, stored by consensus address
+    // Validator has self-bonded tokens but no external delegations
     let validator = Validator {
         cons_address: cons_addr.clone(),
         oper_address: oper_addr.clone(),
         bonded: true,
-        total_tokens: Uint128::new(1000),
-        total_shares: Uint128::new(1000),
+        total_tokens: Uint128::new(1000), // Self-bonded tokens
+        total_shares: Uint128::new(1000), // No external delegators
         active: true,
     };
+
+    // Store validator state by operator address
     VALIDATORS
-        .save(deps.as_mut().storage, &cons_addr, &validator, 0)
+        .save(deps.as_mut().storage, &oper_addr, &validator, 0)
         .unwrap();
 
     let slashing_fraction = Decimal256::percent(10); // 10% slashing
 
-    // Call `before_validator_slashed` with the validator's addresses
+    // Call `before_validator_slashed` with the validator’s address
     let res = before_validator_slashed(
         deps.as_mut(),
-        mock_env(),
+        env.clone(),
         oper_addr.to_string(),
         slashing_fraction,
     );
 
-    // Since there are no delegations, the function should return an error
-    assert!(res.is_err(), "Expected error but got: {:?}", res.ok());
+    assert!(
+        res.is_ok(),
+        "Expected successful execution but got error: {:?}",
+        res.err()
+    );
+
+    // Validate the updated validator state
+    let updated_validator = VALIDATORS.load(deps.as_ref().storage, &oper_addr).unwrap();
+    assert_eq!(updated_validator.total_tokens, Uint128::new(900)); // 10% slashed
+    assert_eq!(updated_validator.total_shares, Uint128::new(1000)); // Shares remain the same
+
+    // Validate response attributes
+    let response = res.unwrap();
+    let expected_attributes = vec![
+        ("action", "before_validator_slashed"),
+        ("valoper_address", "neutronvaloper1xyz"),
+        ("cons_address", "neutronvalcons1xyz"),
+        ("total_tokens", "900"), // 10% slashed from 1000 → 900
+        ("total_shares", "1000"), // Shares remain unchanged
+        ("slashing_fraction", "0.1"), // 10% slashing
+    ];
+
+    // Convert response attributes for assertion
+    let actual_attributes: Vec<(&str, &str)> = response
+        .attributes
+        .iter()
+        .map(|attr| (attr.key.as_str(), attr.value.as_str()))
+        .collect();
+
+    assert_eq!(actual_attributes, expected_attributes);
 }
 
 #[test]
@@ -691,7 +722,7 @@ fn test_before_validator_slashed() {
 }
 
 #[test]
-fn test_before_validator_slashed_with_multiple_delegations() {
+fn test_before_validator_slashed_voting_power_drops() {
     let mut deps = dependencies();
     let env = mock_env();
 
@@ -699,19 +730,21 @@ fn test_before_validator_slashed_with_multiple_delegations() {
     let oper_addr = Addr::unchecked("neutronvaloper1xyz");
     let cons_addr = Addr::unchecked("neutronvalcons1xyz");
 
-    // Store validator using operator address as the key
+    // Initial validator state
     let validator = Validator {
         cons_address: cons_addr.clone(),
         oper_address: oper_addr.clone(),
         bonded: true,
         total_tokens: Uint128::new(1000),
-        total_shares: Uint128::new(1000), // Shares remain constant
+        total_shares: Uint128::new(1000),
         active: true,
     };
+
+    // Store validator using operator address as the key
     VALIDATORS
         .save(
             deps.as_mut().storage,
-            &oper_addr, //  Now using `oper_addr` as primary key
+            &oper_addr,
             &validator,
             env.block.height,
         )
@@ -723,7 +756,7 @@ fn test_before_validator_slashed_with_multiple_delegations() {
 
     let delegation1 = Delegation {
         delegator_address: delegator1.clone(),
-        validator_address: oper_addr.clone(), // Uses operator address
+        validator_address: oper_addr.clone(),
         shares: Uint128::new(400),
     };
     let delegation2 = Delegation {
@@ -751,6 +784,10 @@ fn test_before_validator_slashed_with_multiple_delegations() {
 
     let slashing_fraction = Decimal256::percent(10); // 10% slashing
 
+    // Calculate voting power BEFORE slashing
+    let voting_power_before_1 = delegation1.shares * validator.total_tokens / validator.total_shares;
+    let voting_power_before_2 = delegation2.shares * validator.total_tokens / validator.total_shares;
+
     // Mock validator query to reflect slashed tokens
     let proto_validator = CosmosValidator {
         operator_address: oper_addr.to_string(),
@@ -758,7 +795,7 @@ fn test_before_validator_slashed_with_multiple_delegations() {
         status: 3,                 // Bonded status
         tokens: "900".to_string(), // 10% slashed, from 1000 → 900
         jailed: false,
-        delegator_shares: "1000".to_string(), // Shares remain 1000
+        delegator_shares: "1000".to_string(),
         description: None,
         unbonding_height: 0,
         unbonding_time: None,
@@ -781,7 +818,7 @@ fn test_before_validator_slashed_with_multiple_delegations() {
         ),
     ]));
 
-    // Call `before_validator_slashed`
+    // Call before_validator_slashed
     let res = before_validator_slashed(
         deps.as_mut(),
         env.clone(),
@@ -820,6 +857,20 @@ fn test_before_validator_slashed_with_multiple_delegations() {
         "Validator total tokens do not match expected value after slashing!"
     );
 
+    // Calculate voting power AFTER slashing
+    let voting_power_after_1 = updated_delegation1.shares * updated_validator.total_tokens / updated_validator.total_shares;
+    let voting_power_after_2 = updated_delegation2.shares * updated_validator.total_tokens / updated_validator.total_shares;
+
+    // Ensure delegators' voting power decreased
+    assert!(
+        voting_power_after_1 < voting_power_before_1,
+        "Delegator 1's voting power did not decrease!"
+    );
+    assert!(
+        voting_power_after_2 < voting_power_before_2,
+        "Delegator 2's voting power did not decrease!"
+    );
+
     // Validate response attributes
     let response = res.unwrap();
 
@@ -840,8 +891,6 @@ fn test_before_validator_slashed_with_multiple_delegations() {
         ("total_shares", "1000"),
         ("slashing_fraction", slashing_fraction_str.as_str()), // Use the stored string
     ];
-
-    assert_eq!(actual_attributes, expected_attributes);
 
     assert_eq!(actual_attributes, expected_attributes);
 }
