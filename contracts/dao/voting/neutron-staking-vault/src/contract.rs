@@ -357,19 +357,10 @@ pub fn before_validator_slashed(
 
     // Load validator state
     let mut validator = VALIDATORS.load(deps.storage, &validator_addr)?;
-
-    let slashed_tokens: Uint128 = validator
-        .total_tokens
-        .checked_mul(Uint128::try_from(slashing_fraction.atomics()).map_err(|_| ContractError::MathError {
-            error: "Failed to convert slashing fraction to Uint128".to_string(),
-        })?)
-        .map_err(|_| ContractError::MathError {
-            error: "Failed to calculate slashed shares".to_string(),
-        })?
-        .checked_div(PREC_UINT)
-        .map_err(|_| ContractError::MathError {
-            error: "Failed to scale down slashed shares".to_string(),
-        })?;
+    let converted_slashing_fraction  = Uint128::try_from(slashing_fraction.atomics())?;
+    let slashed_tokens: Uint128 = validator.total_tokens
+        .checked_mul(converted_slashing_fraction)?
+        .checked_div(PREC_UINT)?;
 
     // Ensure tokens are reduced but not negative
     validator.total_tokens = validator
@@ -447,10 +438,14 @@ pub(crate) fn after_delegation_modified(
     let actual_shares = delegation_info
         .delegation_response
         .and_then(|resp| resp.delegation)
-        .map(|del| Uint128::from_str(&del.shares))
-        .transpose()
-        .map_err(|_| ContractError::InvalidSharesFormat)?
+        .map(|del| {
+            Uint128::from_str(&del.shares).map_err(|_| ContractError::InvalidSharesFormat {
+                shares_str: del.shares.clone(),
+            })
+        })
+        .transpose()?
         .unwrap_or(Uint128::zero()); // Default to zero if delegation does not exist
+
 
     let previous_shares = DELEGATIONS
         .may_load(deps.storage, (&delegator, &valoper_addr))?
@@ -486,7 +481,7 @@ pub(crate) fn after_delegation_modified(
             })?;
 
         validator.total_shares = Uint128::from_str(&validator_data.delegator_shares)
-            .map_err(|_| ContractError::InvalidSharesFormat)?;
+            .map_err(|_| ContractError::InvalidSharesFormat { shares_str: validator_data.delegator_shares.clone() })?;
 
         validator.total_tokens = Uint128::from_str(&validator_data.tokens).map_err(|_| {
             ContractError::InvalidTokenData {

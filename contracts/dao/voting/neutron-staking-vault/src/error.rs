@@ -1,4 +1,4 @@
-use cosmwasm_std::{OverflowError, StdError};
+use cosmwasm_std::{ConversionOverflowError, DivideByZeroError, OverflowError, StdError};
 use cw_utils::PaymentError;
 use thiserror::Error;
 
@@ -12,6 +12,12 @@ pub enum ContractError {
 
     #[error("Math error occurred: {error}")]
     MathError { error: String },
+
+    #[error(transparent)]
+    DivideByZeroError(#[from] DivideByZeroError),
+
+    #[error(transparent)]
+    ConversionOverflowError(#[from] ConversionOverflowError),
 
     #[error("Configuration name cannot be empty.")]
     NameIsEmpty {},
@@ -82,6 +88,8 @@ pub enum ContractError {
         validator: String,
     },
 
-    #[error("Invalid shares")]
-    InvalidSharesFormat,
+    #[error("Invalid shares: {shares_str}")]
+    InvalidSharesFormat{
+        shares_str: String
+    },
 }
