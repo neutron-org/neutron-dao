@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::Coin;
+use cosmwasm_std::{Addr, Coin};
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -59,6 +59,5 @@ pub struct MigrateMsg {}
 /// If height is None, latest block stake info will be issued
 #[cw_serde]
 pub enum ProviderStakeQuery {
-    /// Returns user stake from provider in Vec<Coin>
-    UserStake { address: String, height: Option<u64> },
+    VotingPowerAtHeight { address: Addr, height: Option<u64> },
 }
