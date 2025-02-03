@@ -1,18 +1,22 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "VotingPowerAtHeightResponse",
+  "title": "BondingStatusResponse",
   "type": "object",
   "required": [
+    "bonding_enabled",
     "height",
-    "power"
+    "unbondable_abount"
   ],
   "properties": {
+    "bonding_enabled": {
+      "type": "boolean"
+    },
     "height": {
       "type": "integer",
       "format": "uint64",
       "minimum": 0.0
     },
-    "power": {
+    "unbondable_abount": {
       "$ref": "#/definitions/Uint128"
     }
   },

@@ -2616,7 +2616,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "neutron-staking-vault"
+name = "neutron-staking-tracker"
 version = "0.2.1"
 dependencies = [
  "bech32 0.11.0",
@@ -2631,6 +2631,24 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
+]
+
+[[package]]
+name = "neutron-staking-vault-proxy"
+version = "0.2.1"
+dependencies = [
+ "anyhow",
+ "cosmwasm-schema 1.5.9",
+ "cosmwasm-std 1.5.9",
+ "cw-multi-test",
+ "cw-storage-plus 1.2.0",
+ "cw2 1.1.2",
+ "cwd-interface",
+ "cwd-macros",
+ "schemars",
+ "serde",
+ "thiserror",
+ "vesting-base 1.1.0 (git+https://github.com/neutron-org/neutron-tge-contracts.git)",
 ]
 
 [[package]]

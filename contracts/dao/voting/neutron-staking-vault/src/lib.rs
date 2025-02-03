@@ -3,8 +3,7 @@ mod error;
 pub mod msg;
 pub mod state;
 
-#[allow(clippy::unwrap_used)]
 #[cfg(test)]
-mod testing;
+pub mod tests;
 
-pub use crate::error::ContractError;
+pub use crate::error::{ContractError, ContractResult};
