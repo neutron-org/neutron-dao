@@ -1,3 +1,4 @@
+use std::ops::Mul;
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, SudoMsg};
 use crate::state::{
@@ -6,16 +7,9 @@ use crate::state::{
 
 use bech32::{encode, Bech32, Hrp};
 
-// used for slashing calulations to get precise results
-pub(crate) const PREC_UINT: Uint128 = Uint128::new(1_000_000_000_000_000_000);
-
-
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{
-    to_json_binary, Addr, Binary, Decimal256, Deps, DepsMut, Env, MessageInfo, Order, Response,
-    StdError, StdResult, Uint128,
-};
+use cosmwasm_std::{to_json_binary, Addr, Binary, Decimal256, Deps, DepsMut, Env, MessageInfo, Order, Response, StdError, StdResult, Uint128, Uint256};
 use cw2::set_contract_version;
 use cw_storage_plus::Bound;
 use neutron_std::types::cosmos::staking::v1beta1::{QueryValidatorResponse, StakingQuerier};
@@ -357,19 +351,24 @@ pub fn before_validator_slashed(
 
     // Load validator state
     let mut validator = VALIDATORS.load(deps.storage, &validator_addr)?;
-    let converted_slashing_fraction  = Uint128::try_from(slashing_fraction.atomics())?;
-    let slashed_tokens: Uint128 = validator.total_tokens
-        .checked_mul(converted_slashing_fraction)?
-        .checked_div(PREC_UINT)?;
+
+    // Calculate slashed tokens using Decimal256 multiplication and ceiling conversion
+    let slashed_tokens: Uint256 = slashing_fraction
+        .mul(Decimal256::from_atomics(validator.total_tokens, 0)?)
+        .to_uint_ceil();
+
+    let slashed_tokens_uint128: Uint128 = slashed_tokens.try_into().map_err(|_| ContractError::MathError {
+        error: format!("Failed to convert slashed tokens ({}) to Uint128", slashed_tokens),
+    })?;
 
     // Ensure tokens are reduced but not negative
     validator.total_tokens = validator
         .total_tokens
-        .checked_sub(slashed_tokens)
+        .checked_sub(slashed_tokens_uint128)
         .map_err(|_| ContractError::MathError {
             error: format!(
                 "Slashed tokens ({}) exceed total tokens ({})",
-                slashed_tokens, validator.total_tokens
+                slashed_tokens_uint128, validator.total_tokens
             ),
         })?;
 
@@ -384,6 +383,7 @@ pub fn before_validator_slashed(
         .add_attribute("total_shares", validator.total_shares.to_string())
         .add_attribute("slashing_fraction", slashing_fraction.to_string()))
 }
+
 
 pub(crate) fn after_validator_begin_unbonding(
     deps: DepsMut,

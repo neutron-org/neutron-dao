@@ -1,4 +1,4 @@
-use cosmwasm_std::{ConversionOverflowError, DivideByZeroError, OverflowError, StdError};
+use cosmwasm_std::{ConversionOverflowError, Decimal256RangeExceeded, DivideByZeroError, OverflowError, StdError};
 use cw_utils::PaymentError;
 use thiserror::Error;
 
@@ -70,8 +70,8 @@ pub enum ContractError {
     #[error("Invalid token data for validator: {address}")]
     InvalidTokenData { address: String },
 
-    #[error("Generic overflow error occurred.")]
-    OverflowError(#[from] OverflowError),
+    #[error(transparent)]
+    Decimal256RangeExceeded(#[from] Decimal256RangeExceeded),
 
     #[error("Failed to query validator: {address}")]
     ValidatorQueryFailed { address: String },
@@ -87,6 +87,10 @@ pub enum ContractError {
         delegator: String,
         validator: String,
     },
+
+    #[error("Generic overflow error occurred.")]
+    OverflowError(#[from] OverflowError),
+
 
     #[error("Invalid shares: {shares_str}")]
     InvalidSharesFormat{

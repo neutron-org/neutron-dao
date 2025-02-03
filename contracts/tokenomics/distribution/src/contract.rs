@@ -183,7 +183,7 @@ pub fn execute_fund(deps: DepsMut, info: MessageInfo) -> Result<Response, Contra
             .may_load(deps.storage, addr.clone())?
             .unwrap_or(Uint128::zero());
         PENDING_DISTRIBUTION.save(deps.storage, addr.clone(), &(pending.checked_add(amount)?))?;
-        spent = spent.checked_add(amount)?;
+        spent = spent.checked_add(amount)?
         resp = resp
             .add_attribute("address", addr)
             .add_attribute("amount", amount);
