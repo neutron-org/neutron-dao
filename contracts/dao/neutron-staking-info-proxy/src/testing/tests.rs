@@ -217,19 +217,4 @@ fn test_query_stake_query() {
     let q3 = query(deps.as_ref(), env.clone(), query_msg.clone()).unwrap();
     let c3: Coin = from_json(q3).unwrap();
     assert_eq!(c3.amount, Uint128::new(300));
-
-    // Set providers with one that returns result in different denom
-    let set_msg = ExecuteMsg::UpdateProviders {
-        providers: vec![
-            PROVIDER1.to_string(),
-            PROVIDER2.to_string(),
-            PROVIDER4.to_string(),
-        ],
-    };
-    let res = execute(deps.as_mut(), env.clone(), info.clone(), set_msg.clone());
-    assert!(res.is_ok());
-
-    let q4 = query(deps.as_ref(), env.clone(), query_msg.clone()).unwrap();
-    let c4: Coin = from_json(q4).unwrap();
-    assert_eq!(c4.amount, Uint128::new(300));
 }

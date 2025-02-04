@@ -1,8 +1,8 @@
 use crate::msg::ProviderStakeQuery;
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage};
 use cosmwasm_std::{
-    from_json, to_json_binary, Binary, Coin, ContractResult, Empty, OwnedDeps, Querier,
-    QuerierResult, QueryRequest, StdResult, SystemError, SystemResult, Uint128, WasmQuery,
+    from_json, to_json_binary, Binary, ContractResult, Empty, OwnedDeps, Querier, QuerierResult,
+    QueryRequest, StdResult, SystemError, SystemResult, Uint128, WasmQuery,
 };
 use std::marker::PhantomData;
 
@@ -54,26 +54,20 @@ impl WasmMockQuerier {
                     PROVIDER1 => {
                         let q: ProviderStakeQuery = from_json(msg).unwrap();
                         let resp: StdResult<Binary> = match q {
-                            ProviderStakeQuery::UserStake {
+                            ProviderStakeQuery::VotingPowerAtHeight {
                                 address: _,
                                 height: _,
-                            } => to_json_binary(&Coin {
-                                denom: "untrn".to_string(),
-                                amount: Uint128::new(100),
-                            }),
+                            } => to_json_binary(&Uint128::new(100)),
                         };
                         SystemResult::Ok(ContractResult::from(resp))
                     }
                     PROVIDER2 => {
                         let q: ProviderStakeQuery = from_json(msg).unwrap();
                         let resp: StdResult<Binary> = match q {
-                            ProviderStakeQuery::UserStake {
+                            ProviderStakeQuery::VotingPowerAtHeight {
                                 address: _,
                                 height: _,
-                            } => to_json_binary(&Coin {
-                                denom: "untrn".to_string(),
-                                amount: Uint128::new(200),
-                            }),
+                            } => to_json_binary(&Uint128::new(200)),
                         };
                         SystemResult::Ok(ContractResult::from(resp))
                     }
@@ -83,13 +77,10 @@ impl WasmMockQuerier {
                     PROVIDER4 => {
                         let q: ProviderStakeQuery = from_json(msg).unwrap();
                         let resp: StdResult<Binary> = match q {
-                            ProviderStakeQuery::UserStake {
+                            ProviderStakeQuery::VotingPowerAtHeight {
                                 address: _,
                                 height: _,
-                            } => to_json_binary(&Coin {
-                                denom: "memecoin".to_string(),
-                                amount: Uint128::new(900),
-                            }),
+                            } => to_json_binary(&Uint128::new(900)),
                         };
                         SystemResult::Ok(ContractResult::from(resp))
                     }
