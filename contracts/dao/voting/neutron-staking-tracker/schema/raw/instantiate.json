@@ -3,23 +3,25 @@
   "title": "InstantiateMsg",
   "type": "object",
   "required": [
+    "denom",
     "description",
     "name",
-    "owner",
-    "vesting_contract_address"
+    "owner"
   ],
   "properties": {
+    "denom": {
+      "type": "string"
+    },
     "description": {
       "type": "string"
     },
     "name": {
+      "description": "Name contains the vault name which is used to ease the vault's recognition.",
       "type": "string"
     },
     "owner": {
       "type": "string"
-    },
-    "vesting_contract_address": {
-      "type": "string"
     }
-  }
+  },
+  "additionalProperties": false
 }

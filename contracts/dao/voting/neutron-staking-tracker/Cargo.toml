@@ -1,0 +1,31 @@
+[package]
+authors = [""]
+description = "A Neutron staking watcher created for tracking natively staked asssets"
+edition = "2021"
+name = "neutron-staking-tracker"
+license = "Apache-2.0"
+repository = "https://github.com/neutron/neutron-dao"
+version = "0.2.1"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+# for more explicit tests, cargo test --features=backtraces
+# backtraces = ["cosmwasm-std/backtraces"]
+# use library feature to disable all instantiate/execute/query exports
+library = []
+
+[dependencies]
+cosmwasm-schema = { version = "2.2.0" }
+cosmwasm-std = { version = "2.2.0" }
+bech32 = "0.11.0"
+neutron-std = { git = "https://github.com/neutron-org/neutron-std", version = "5.0.1-rc0" }
+cw-storage-plus = "2.0.0"
+cw-utils = { version = "2.0.0" }
+cw2 = "2.0.0"
+schemars = "0.8.8"
+serde = { version = "1.0.175", default-features = false, features = ["derive"] }
+thiserror = { version = "1.0" }
+prost = "0.12.4"
+serde_json = "1.0.135"

@@ -13,8 +13,7 @@
 // limitations under the License.
 
 use cosmwasm_schema::write_api;
-
-use neutron_staking_vault::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use neutron_staking_vault_proxy::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 
 fn main() {
     write_api! {
