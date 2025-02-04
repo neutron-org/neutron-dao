@@ -23,6 +23,9 @@ pub enum ExecuteMsg {
     /// Proxies stake updates from designated providers to the staking rewards contract.
     /// Must be called by one of the `PROVIDERS`.
     UpdateStake { user: String },
+    /// Proxies slashing evens from designated providers to the staking rewards contract.
+    /// Must be called by one of the `PROVIDERS`.
+    Slashing {},
 }
 
 #[cw_serde]

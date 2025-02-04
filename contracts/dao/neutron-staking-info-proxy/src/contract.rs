@@ -10,7 +10,9 @@ use cosmwasm_std::{
     StdError, StdResult, Uint128, WasmMsg,
 };
 use cw2::set_contract_version;
-use neutron_staking_rewards::msg::ExecuteMsg::UpdateStake as RewardsMsgUpdateStake;
+use neutron_staking_rewards::msg::ExecuteMsg::{
+    Slashing as RewardsMsgSlashing, UpdateStake as RewardsMsgUpdateStake,
+};
 
 const CONTRACT_NAME: &str = "crates.io:neutron-staking-info-proxy";
 const CONTRACT_VERSION: &str = "0.1.0";
@@ -60,6 +62,7 @@ pub fn execute(
         } => update_config(deps, env, info, owner, staking_rewards, staking_denom),
         ExecuteMsg::UpdateProviders { providers } => update_providers(deps, env, info, providers),
         ExecuteMsg::UpdateStake { user } => update_stake(deps, env, info, user),
+        ExecuteMsg::Slashing {} => slashing(deps, env, info),
     }
 }
 
@@ -163,10 +166,35 @@ fn update_stake(
 
     Ok(Response::new()
         // Add message without error handling because
-        // we can rollback tx here without any problems - no state saved anyways
+        // we can rollback tx here without any problems - no state saved anyway
         .add_message(msg)
         .add_attribute("action", "update_stake")
         .add_attribute("user", user))
+}
+
+/// Proxies slashing events from provider to the `config.staking_rewards` contract.
+/// Only allowed for contracts in `PROVIDERS` set.
+fn slashing(deps: DepsMut, _: Env, info: MessageInfo) -> Result<Response, ContractError> {
+    let config = CONFIG.load(deps.storage)?;
+
+    if !PROVIDERS.has(deps.storage, info.sender) {
+        return Err(Unauthorized {});
+    }
+
+    let msg = WasmMsg::Execute {
+        contract_addr: config
+            .staking_rewards
+            .ok_or(NoStakingRewardsContractSet {})?
+            .to_string(),
+        msg: to_json_binary(&RewardsMsgSlashing {})?,
+        funds: vec![],
+    };
+
+    Ok(Response::new()
+        // Add message without error handling because
+        // we can rollback tx here without any problems - no state saved anyway
+        .add_message(msg)
+        .add_attribute("action", "slashing"))
 }
 
 // ----------------------------------------
