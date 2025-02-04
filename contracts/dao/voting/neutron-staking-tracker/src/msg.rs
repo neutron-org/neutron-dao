@@ -6,21 +6,24 @@ use serde::{Deserialize, Serialize};
 pub struct InstantiateMsg {
     /// Name contains the vault name which is used to ease the vault's recognition.
     pub name: String,
-    // Description contains information that characterizes the vault.
+    /// Description contains information that characterizes the vault.
     pub description: String,
-    // Owner can update all configs including changing the owner. This will generally be a DAO.
+    /// Owner can update all configs including changing the owner. This will generally be a DAO.
     pub owner: String,
-    // Token denom e.g. untrn, or some ibc denom
+    /// Token denom e.g. untrn, or some ibc denom
     pub denom: String,
+    /// Contract to proxy staking updates to.
+    pub staking_proxy_info_contract_address: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     UpdateConfig {
-        name: String,
-        description: String,
-        owner: String,
+        name: Option<String>,
+        description: Option<String>,
+        owner: Option<String>,
+        staking_proxy_info_contract_address: Option<String>,
     },
     AddToBlacklist {
         addresses: Vec<String>,
@@ -110,3 +113,9 @@ pub enum QueryMsg {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct MigrateMsg {}
+
+#[cw_serde]
+pub enum ProxyInfoExecute {
+    UpdateStake { user: String },
+    Slashing {},
+}

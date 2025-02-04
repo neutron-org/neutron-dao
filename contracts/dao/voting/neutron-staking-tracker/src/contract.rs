@@ -1,5 +1,5 @@
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, SudoMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, ProxyInfoExecute, QueryMsg, SudoMsg};
 use crate::state::{
     Config, Delegation, Validator, BLACKLISTED_ADDRESSES, CONFIG, DAO, DELEGATIONS, VALIDATORS,
 };
@@ -10,8 +10,8 @@ use bech32::{encode, Bech32, Hrp};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, Addr, Binary, Decimal256, Deps, DepsMut, Env, MessageInfo, Order, Response,
-    StdError, StdResult, Uint128, Uint256,
+    to_json_binary, Addr, Binary, Decimal256, Deps, DepsMut, Env, MessageInfo, Order, Reply,
+    Response, StdError, StdResult, SubMsg, Uint128, Uint256, WasmMsg,
 };
 use cw2::set_contract_version;
 use cw_storage_plus::Bound;
@@ -21,6 +21,8 @@ use std::str::FromStr;
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-voting-vault";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
+
+const REPLY_ON_ERROR_STAKING_PROXY_ID: u64 = 1;
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
@@ -31,12 +33,17 @@ pub fn instantiate(
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     let owner = deps.api.addr_validate(&msg.owner)?;
+    let staking_proxy_info_contract_address = msg
+        .staking_proxy_info_contract_address
+        .map(|s| deps.api.addr_validate(&s))
+        .transpose()?;
 
     let config = Config {
         name: msg.name,
         description: msg.description,
         owner,
         denom: msg.denom,
+        staking_proxy_info_contract_address,
     };
     config.validate()?;
     CONFIG.save(deps.storage, &config)?;
@@ -46,7 +53,14 @@ pub fn instantiate(
         .add_attribute("action", "instantiate")
         .add_attribute("name", config.name)
         .add_attribute("description", config.description)
-        .add_attribute("owner", config.owner))
+        .add_attribute("owner", config.owner)
+        .add_attribute(
+            "staking_proxy_info_contract_address",
+            config
+                .staking_proxy_info_contract_address
+                .map(|a| a.to_string())
+                .unwrap_or_default(),
+        ))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -61,7 +75,15 @@ pub fn execute(
             owner,
             name,
             description,
-        } => execute_update_config(deps, info, owner, name, description),
+            staking_proxy_info_contract_address,
+        } => execute_update_config(
+            deps,
+            info,
+            owner,
+            name,
+            description,
+            staking_proxy_info_contract_address,
+        ),
         ExecuteMsg::AddToBlacklist { addresses } => execute_add_to_blacklist(deps, info, addresses),
         ExecuteMsg::RemoveFromBlacklist { addresses } => {
             execute_remove_from_blacklist(deps, info, addresses)
@@ -129,27 +151,45 @@ pub fn execute_unbond(
 pub fn execute_update_config(
     deps: DepsMut,
     info: MessageInfo,
-    new_owner: String,
-    new_name: String,
-    new_description: String,
+    owner: Option<String>,
+    name: Option<String>,
+    description: Option<String>,
+    staking_proxy_info_contract_address: Option<String>,
 ) -> Result<Response, ContractError> {
     let mut config: Config = CONFIG.load(deps.storage)?;
     if info.sender != config.owner {
         return Err(ContractError::Unauthorized {});
     }
 
-    let new_owner = deps.api.addr_validate(&new_owner)?;
-
-    config.owner = new_owner;
-    config.name = new_name;
-    config.description = new_description;
+    if let Some(owner) = owner {
+        config.owner = deps.api.addr_validate(&owner)?;
+    }
+    if let Some(name) = name {
+        config.name = name;
+    }
+    if let Some(description) = description {
+        config.description = description;
+    }
+    if let Some(staking_proxy_info_contract_address) = staking_proxy_info_contract_address {
+        config.staking_proxy_info_contract_address = Some(
+            deps.api
+                .addr_validate(&staking_proxy_info_contract_address)?,
+        );
+    }
     config.validate()?;
     CONFIG.save(deps.storage, &config)?;
 
     Ok(Response::new()
         .add_attribute("action", "update_config")
         .add_attribute("description", config.description)
-        .add_attribute("owner", config.owner))
+        .add_attribute("owner", config.owner)
+        .add_attribute(
+            "staking_proxy_info_contract_address",
+            config
+                .staking_proxy_info_contract_address
+                .map(|a| a.to_string())
+                .unwrap_or_default(),
+        ))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -383,7 +423,25 @@ pub fn before_validator_slashed(
     // Save updated validator state
     VALIDATORS.save(deps.storage, &validator_addr, &validator, env.block.height)?;
 
-    Ok(Response::new()
+    let config = CONFIG.load(deps.storage)?;
+    let mut resp = Response::new();
+
+    if let Some(staking_proxy_info_contract_address) = config.staking_proxy_info_contract_address {
+        let slashing_msg = WasmMsg::Execute {
+            contract_addr: staking_proxy_info_contract_address.to_string(),
+            msg: to_json_binary(&ProxyInfoExecute::Slashing {})?,
+            funds: vec![],
+        };
+
+        // Use submsg because we want to ignore possible errors here.
+        // This contract should be errorless no matter what.
+        resp = resp.add_submessage(SubMsg::reply_on_error(
+            slashing_msg,
+            REPLY_ON_ERROR_STAKING_PROXY_ID,
+        ));
+    }
+
+    Ok(resp
         .add_attribute("action", "before_validator_slashed")
         .add_attribute("valoper_address", valoper_address)
         .add_attribute("cons_address", validator.cons_address.to_string())
@@ -515,7 +573,28 @@ pub(crate) fn after_delegation_modified(
         env.block.height,
     )?;
 
-    Ok(Response::new()
+    // Call proxy info to notify about change of stake
+    let config = CONFIG.load(deps.storage)?;
+    let mut resp = Response::new();
+
+    if let Some(staking_proxy_info_contract_address) = config.staking_proxy_info_contract_address {
+        let update_stake_msg = WasmMsg::Execute {
+            contract_addr: staking_proxy_info_contract_address.to_string(),
+            msg: to_json_binary(&ProxyInfoExecute::UpdateStake {
+                user: delegator.to_string(),
+            })?,
+            funds: vec![],
+        };
+
+        // Use submsg because we want to ignore possible errors here.
+        // This contract should be errorless no matter what.
+        resp = resp.add_submessage(SubMsg::reply_on_error(
+            update_stake_msg,
+            REPLY_ON_ERROR_STAKING_PROXY_ID,
+        ));
+    }
+
+    Ok(resp
         .add_attribute("action", "after_delegation_modified")
         .add_attribute("delegator", delegator.to_string())
         .add_attribute("cons_address", validator.cons_address.to_string()) // Still stored inside Validator
@@ -828,4 +907,15 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
     // Set contract to version to latest
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     Ok(Response::default())
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn reply(_: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
+    match msg.id {
+        REPLY_ON_ERROR_STAKING_PROXY_ID => {
+            // ignore errors from proxy contract
+            Ok(Response::new())
+        }
+        _ => Ok(Response::new()),
+    }
 }
