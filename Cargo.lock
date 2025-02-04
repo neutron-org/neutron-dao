@@ -2634,7 +2634,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "neutron-staking-vault-proxy"
+name = "neutron-staking-vault"
 version = "0.2.1"
 dependencies = [
  "anyhow",
