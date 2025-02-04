@@ -75,7 +75,21 @@
       "additionalProperties": false
     },
     {
-      "description": "Called by a user to claim their accrued rewards.",
+      "description": "Called by the (authorized) Staking Info Proxy whenever a validator gets slashed.",
+      "type": "object",
+      "required": [
+        "slashing"
+      ],
+      "properties": {
+        "slashing": {
+          "type": "object",
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Called by a user to claim their accrued rewards. Allows to specify an optional address to which the rewards should be sent.",
       "type": "object",
       "required": [
         "claim_rewards"
@@ -83,6 +97,14 @@
       "properties": {
         "claim_rewards": {
           "type": "object",
+          "properties": {
+            "to_address": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
           "additionalProperties": false
         }
       },

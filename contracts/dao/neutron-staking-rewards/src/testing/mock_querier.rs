@@ -1,7 +1,7 @@
 use crate::msg::StakeQuery;
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage};
 use cosmwasm_std::{
-    from_json, to_json_binary, Binary, Coin, ContractResult, Empty, OwnedDeps, Querier,
+    coin, from_json, to_json_binary, Binary, Coin, ContractResult, Empty, OwnedDeps, Querier,
     QuerierResult, QueryRequest, StdResult, SystemError, SystemResult, WasmQuery,
 };
 use std::collections::HashMap;
@@ -21,7 +21,16 @@ pub fn mock_dependencies() -> OwnedDeps<MockStorage, MockApi, WasmMockQuerier> {
 
 pub struct WasmMockQuerier {
     base: MockQuerier,
-    pub user_balances: HashMap<String, Coin>,
+    pub user_balances: HashMap<String, Vec<(u64, Coin)>>,
+}
+
+impl WasmMockQuerier {
+    pub fn update_stake(&mut self, user: String, height: u64, amount: Coin) {
+        self.user_balances
+            .entry(user)
+            .or_default()
+            .push((height, amount));
+    }
 }
 
 impl Querier for WasmMockQuerier {
@@ -50,8 +59,16 @@ impl WasmMockQuerier {
                     STAKING_INFO_PROXY_CONTRACT => {
                         let q: StakeQuery = from_json(msg).unwrap();
                         let resp: StdResult<Binary> = match q {
-                            StakeQuery::User { address } => {
-                                to_json_binary(self.user_balances.get(&address).unwrap())
+                            StakeQuery::User { address, height } => {
+                                let balance_history = self.user_balances.get(&address).unwrap();
+                                let mut result = to_json_binary(&coin(0u128, "utrn"));
+                                for (historical_height, amount) in balance_history.iter().rev() {
+                                    if height >= *historical_height {
+                                        result = to_json_binary(amount);
+                                        break;
+                                    }
+                                }
+                                result
                             }
                         };
                         SystemResult::Ok(ContractResult::from(resp))

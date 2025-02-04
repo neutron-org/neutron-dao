@@ -32,14 +32,28 @@ impl Config {
 #[cw_serde]
 pub struct State {
     pub global_reward_index: Decimal,
-    pub last_global_update_block: u64,
+    pub global_update_height: u64,
+    pub slashing_events: Vec<u64>,
+}
+
+impl State {
+    pub(crate) fn load_slashing_event_heights(&self, from_height: u64) -> Vec<u64> {
+        let events = self
+            .slashing_events
+            .iter()
+            .skip_while(|&&event| event < from_height)
+            .cloned()
+            .collect();
+        events
+    }
 }
 
 /// Per-user info about stake, reward index, and accrued rewards.
 #[cw_serde]
 pub struct UserInfo {
-    pub user_reward_index: Decimal,
     pub stake: Coin,
+    pub user_reward_index: Decimal,
+    pub last_update_block: u64,
     pub pending_rewards: Coin,
 }
 

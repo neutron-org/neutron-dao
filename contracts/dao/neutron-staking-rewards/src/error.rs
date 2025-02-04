@@ -1,4 +1,4 @@
-use cosmwasm_std::StdError;
+use cosmwasm_std::{CheckedMultiplyFractionError, StdError};
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]
@@ -23,4 +23,7 @@ pub enum ContractError {
 
     #[error("Zero blocks per year provided")]
     ZeroBlocksPerYear {},
+
+    #[error("CheckedMultiplyRatioError error: {0}")]
+    CheckedMultiplyFractionError(#[from] CheckedMultiplyFractionError),
 }

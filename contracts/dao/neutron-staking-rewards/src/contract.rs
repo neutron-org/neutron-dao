@@ -46,7 +46,8 @@ pub fn instantiate(
     // last_global_update_block records the block at which the global index was updated
     let state = State {
         global_reward_index: Decimal::zero(),
-        last_global_update_block: env.block.height,
+        global_update_height: env.block.height,
+        slashing_events: vec![],
     };
     STATE.save(deps.storage, &state)?;
 
@@ -88,8 +89,10 @@ pub fn execute(
         ),
         // Updates the stake information for a particular user
         ExecuteMsg::UpdateStake { user } => update_stake(deps, env, info, user),
+        // Updates the stake information for a particular user
+        ExecuteMsg::Slashing {} => slashing(deps, env, info),
         // Claims any accrued rewards for the caller
-        ExecuteMsg::ClaimRewards {} => claim_rewards(deps, env, info),
+        ExecuteMsg::ClaimRewards { to_address } => claim_rewards(deps, env, info, to_address),
     }
 }
 
@@ -154,7 +157,7 @@ fn update_config(
 /// Called by the staking_info_proxy to update a user’s staked amount in this contract’s state.
 /// This keeps track of user-level reward data (pending rewards, reward index).
 fn update_stake(
-    mut deps: DepsMut,
+    deps: DepsMut,
     env: Env,
     info: MessageInfo,
     user: String,
@@ -171,72 +174,97 @@ fn update_stake(
         return Err(DaoStakeChangeNotTracked {});
     }
 
-    // Global index update
-    let new_global_index = update_global_index(deps.branch(), env, config.clone())?;
+    let (user_info, state) =
+        process_slashing_events(deps.as_ref(), config.clone(), user_addr.clone())?;
 
-    // Load the user’s current info, or create a default if not present
-    let mut user_info = load_user_or_default(
-        deps.as_ref(),
+    let updated_state = get_updated_state(&config, state, env.block.height)?;
+    let mut updated_user_info = get_updated_user_info(
+        user_info,
+        updated_state.global_reward_index,
+        env.block.height,
+        config.staking_denom.clone(),
+    )?;
+
+    // Set the user stake to current value
+    updated_user_info.stake = safe_query_user_stake(
+        &deps.as_ref(),
         user_addr.clone(),
+        config.staking_info_proxy.clone(),
         config.staking_denom.clone(),
+        env.block.height,
     )?;
 
-    // Calculate and accumulate any pending rewards
-    let pending_rewards = get_user_pending_rewards(
-        user_info.clone(),
-        new_global_index,
-        config.staking_denom.clone(),
-    )?;
-    user_info.pending_rewards = pending_rewards;
-    user_info.user_reward_index = new_global_index;
-
-    // Query the user’s new staked amount from the staking_info_proxy
-    user_info.stake = safe_query_user_stake(
-        deps.as_ref(),
-        user_addr.clone(),
-        config.staking_info_proxy,
-        config.staking_denom.clone(),
-    )?;
-    USERS.save(deps.storage, &user_addr.clone(), &user_info)?;
+    STATE.save(deps.storage, &updated_state)?;
+    USERS.save(deps.storage, &user_addr.clone(), &updated_user_info)?;
 
     Ok(Response::new()
         .add_attribute("action", "update_stake")
         .add_attribute("user", user_addr.clone()))
 }
 
+/// Called by the staking_info_proxy when a slashing event happens. The staking_info_proxy should
+/// only send a single Slashing message for a single height, i.e., if multiple validators were
+/// slashed on height X, only one Slashing message must be sent.
+fn slashing(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
+    let config = CONFIG.load(deps.storage)?;
+
+    if info.sender != config.staking_info_proxy {
+        return Err(Unauthorized {});
+    }
+
+    let mut state = STATE.load(deps.storage)?;
+
+    if state.slashing_events.ends_with(&[env.block.height]) {
+        return Ok(Response::new()
+            .add_attribute("action", "slashing")
+            .add_attribute("result", "ignored"));
+    }
+
+    state.slashing_events.push(env.block.height);
+    STATE.save(deps.storage, &state)?;
+
+    Ok(Response::new()
+        .add_attribute("action", "slashing")
+        .add_attribute("result", "acknowledged")
+        .add_attribute("block_height", format!("{}", env.block.height)))
+}
+
 /// Allows a user to claim any pending rewards accrued for their stake.
 fn claim_rewards(
-    mut deps: DepsMut,
+    deps: DepsMut,
     env: Env,
     info: MessageInfo,
+    to_address: Option<String>,
 ) -> Result<Response, ContractError> {
     let config = CONFIG.load(deps.storage)?;
 
-    // Update global index to the latest state
-    let new_global_index = update_global_index(deps.branch(), env, config.clone())?;
+    let (user_info, state) =
+        process_slashing_events(deps.as_ref(), config.clone(), info.sender.clone())?;
 
-    // Load the user’s current info
-    let mut user_info = load_user_or_default(
-        deps.as_ref(),
-        info.sender.clone(),
+    let updated_state = get_updated_state(&config, state, env.block.height)?;
+    let mut updated_user_info = get_updated_user_info(
+        user_info,
+        updated_state.global_reward_index,
+        env.block.height,
         config.staking_denom.clone(),
     )?;
+    let pending_rewards = updated_user_info.pending_rewards;
+    updated_user_info.pending_rewards = coin(0u128, config.staking_denom);
 
-    // Calculate pending rewards to pay the user, then immediately set to 0
-    let pending_rewards = get_user_pending_rewards(
-        user_info.clone(),
-        new_global_index,
-        config.staking_denom.clone(),
-    )?;
-    user_info.pending_rewards = coin(0u128, config.staking_denom);
-
-    user_info.user_reward_index = new_global_index;
-    USERS.save(deps.storage, &info.sender, &user_info)?;
+    STATE.save(deps.storage, &updated_state)?;
+    USERS.save(deps.storage, &info.sender, &updated_user_info)?;
 
     let resp = Response::new();
     let resp = if !pending_rewards.amount.is_zero() {
+        let recipient: String;
+        if let Some(to_address) = to_address {
+            recipient = to_address
+        } else {
+            recipient = info.sender.to_string()
+        }
+
         resp.add_message(BankMsg::Send {
-            to_address: info.sender.to_string(),
+            to_address: recipient,
             amount: vec![pending_rewards.clone()],
         })
     } else {
@@ -279,7 +307,7 @@ fn query_state(deps: Deps) -> StdResult<StateResponse> {
     let state = STATE.load(deps.storage)?;
     Ok(StateResponse {
         global_reward_index: state.global_reward_index.to_string(),
-        last_global_update_block: state.last_global_update_block,
+        last_global_update_block: state.global_update_height,
     })
 }
 
@@ -287,27 +315,21 @@ fn query_state(deps: Deps) -> StdResult<StateResponse> {
 /// the current block.
 fn query_rewards(deps: Deps, env: Env, user: String) -> Result<RewardsResponse, ContractError> {
     let config = CONFIG.load(deps.storage)?;
-    let state = STATE.load(deps.storage)?;
     let user_addr = deps.api.addr_validate(&user)?;
 
-    // simulate a global index update
-    let new_global_index = get_updated_global_index(
-        &env,
-        config.clone(),
-        state.global_reward_index,
-        state.last_global_update_block,
-    )?;
+    let (user_info, state) = process_slashing_events(deps, config.clone(), user_addr)?;
 
-    // simulate a user update
-    // User update
-    let user_info = load_user_or_default(deps, user_addr.clone(), config.staking_denom.clone())?;
-    let pending_rewards = get_user_pending_rewards(
-        user_info.clone(),
-        new_global_index,
+    let updated_state = get_updated_state(&config, state, env.block.height)?;
+    let updated_user_info = get_updated_user_info(
+        user_info,
+        updated_state.global_reward_index,
+        env.block.height,
         config.staking_denom.clone(),
     )?;
 
-    Ok(RewardsResponse { pending_rewards })
+    Ok(RewardsResponse {
+        pending_rewards: updated_user_info.pending_rewards,
+    })
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -317,23 +339,91 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
     Ok(Response::default())
 }
 
-// ----------------------------------------
+// ----------------------------------------------------------------------------
 //  Internal Logic
-// ----------------------------------------
+// ----------------------------------------------------------------------------
+
+fn get_updated_state(
+    config: &Config,
+    state: State,
+    new_height: u64,
+) -> Result<State, ContractError> {
+    let mut state = state.clone();
+
+    let new_global_index = get_updated_global_index(
+        config.clone(),
+        new_height,
+        state.global_reward_index,
+        state.global_update_height,
+    )?;
+    state.global_reward_index = new_global_index;
+    state.global_update_height = new_height;
+
+    Ok(state)
+}
+
+fn get_updated_user_info(
+    user_info: UserInfo,
+    global_index: Decimal,
+    new_height: u64,
+    staking_denom: String,
+) -> Result<UserInfo, ContractError> {
+    let mut user_info = user_info.clone();
+
+    // Calculate and accumulate any pending rewards
+    let pending_rewards = get_user_pending_rewards(user_info.clone(), global_index, staking_denom)?;
+    user_info.pending_rewards = pending_rewards;
+    user_info.user_reward_index = global_index;
+    user_info.last_update_block = new_height;
+
+    Ok(user_info)
+}
+
+fn process_slashing_events(
+    deps: Deps,
+    config: Config,
+    user_addr: Addr,
+) -> Result<(UserInfo, State), ContractError> {
+    let mut state = STATE.load(deps.storage)?;
+    // Load the user’s current info, or create a default if not present
+    let mut user_info =
+        load_user_or_default(deps, user_addr.clone(), config.staking_denom.clone())?;
+
+    let slashing_events = state.load_slashing_event_heights(user_info.last_update_block);
+    for slashing_event_height in slashing_events.iter() {
+        state = get_updated_state(&config, state.clone(), *slashing_event_height)?;
+        user_info = get_updated_user_info(
+            user_info.clone(),
+            state.global_reward_index,
+            *slashing_event_height,
+            config.staking_denom.clone(),
+        )?;
+
+        // Set the user stake to the value after the slashing event
+        user_info.stake = safe_query_user_stake(
+            &deps,
+            user_addr.clone(),
+            config.staking_info_proxy.clone(),
+            config.staking_denom.clone(),
+            *slashing_event_height,
+        )?;
+    }
+
+    Ok((user_info, state))
+}
 
 /// Updates the global reward index in state based on how many blocks have passed since last update.
 fn update_global_index(deps: DepsMut, env: Env, config: Config) -> Result<Decimal, ContractError> {
     let mut state = STATE.load(deps.storage)?;
 
-    // Do a Global index update so that any new config changes apply afterward
     let new_global_index = get_updated_global_index(
-        &env,
         config.clone(),
+        env.block.height,
         state.global_reward_index,
-        state.last_global_update_block,
+        state.global_update_height,
     )?;
     state.global_reward_index = new_global_index;
-    state.last_global_update_block = env.block.height;
+    state.global_update_height = env.block.height;
     STATE.save(deps.storage, &state)?;
 
     Ok(new_global_index)
@@ -342,12 +432,11 @@ fn update_global_index(deps: DepsMut, env: Env, config: Config) -> Result<Decima
 /// Computes what the global reward index should be, given the elapsed time and the configured
 /// reward rate.
 fn get_updated_global_index(
-    env: &Env,
     config: Config,
+    current_block: u64,
     old_global_index: Decimal,
     last_global_update_block: u64,
 ) -> Result<Decimal, ContractError> {
-    let current_block = env.block.height;
     if current_block <= last_global_update_block {
         return Ok(old_global_index);
     }
@@ -380,6 +469,7 @@ fn load_user_or_default(
         .unwrap_or_else(|| UserInfo {
             user_reward_index: Decimal::zero(),
             stake: coin(0u128, staking_denom.clone()),
+            last_update_block: 0u64,
             pending_rewards: coin(0u128, staking_denom.clone()),
         });
 
@@ -396,7 +486,11 @@ fn get_user_pending_rewards(
     let delta_index = global_reward_index - user_info.user_reward_index;
     if !delta_index.is_zero() && !user_info.stake.amount.is_zero() {
         let newly_accrued = coin(
-            user_info.stake.amount.mul_floor(delta_index).u128(),
+            user_info
+                .stake
+                .amount
+                .checked_mul_floor(delta_index)?
+                .u128(),
             staking_denom.clone(),
         );
         return Ok(coin(
@@ -411,15 +505,17 @@ fn get_user_pending_rewards(
 /// Safely queries the user’s staked amount from the external staking_info_proxy,
 /// ensuring that the returned denom matches this contract’s expected staking_denom.
 fn safe_query_user_stake(
-    deps: Deps,
+    deps: &Deps,
     user_addr: Addr,
     staking_info_proxy: Addr,
     staking_denom: String,
+    height: u64,
 ) -> Result<Coin, ContractError> {
     let user_stake: Coin = deps.querier.query_wasm_smart(
         staking_info_proxy,
         &StakeQuery::User {
             address: user_addr.to_string(),
+            height,
         },
     )?;
     if user_stake.denom != staking_denom {

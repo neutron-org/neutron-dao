@@ -23,8 +23,11 @@ pub enum ExecuteMsg {
     },
     /// Called by the (authorized) Staking Info Proxy whenever a user’s stake changes.
     UpdateStake { user: String },
-    /// Called by a user to claim their accrued rewards.
-    ClaimRewards {},
+    /// Called by the (authorized) Staking Info Proxy whenever a validator gets slashed.
+    Slashing {},
+    /// Called by a user to claim their accrued rewards. Allows to specify an optional
+    /// address to which the rewards should be sent.
+    ClaimRewards { to_address: Option<String> },
 }
 
 #[cw_serde]
@@ -45,7 +48,7 @@ pub enum QueryMsg {
 
 #[cw_serde]
 pub enum StakeQuery {
-    User { address: String },
+    User { address: String, height: u64 },
 }
 
 /// Response for `QueryMsg::Config`
