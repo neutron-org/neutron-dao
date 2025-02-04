@@ -29,7 +29,7 @@
                 "null"
               ]
             },
-            "vesting_contract_address": {
+            "staking_tracker_contract_address": {
               "type": [
                 "string",
                 "null"

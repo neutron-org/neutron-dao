@@ -10,9 +10,11 @@
   ],
   "properties": {
     "denom": {
+      "description": "Token denom e.g. untrn, or some ibc denom",
       "type": "string"
     },
     "description": {
+      "description": "Description contains information that characterizes the vault.",
       "type": "string"
     },
     "name": {
@@ -20,7 +22,15 @@
       "type": "string"
     },
     "owner": {
+      "description": "Owner can update all configs including changing the owner. This will generally be a DAO.",
       "type": "string"
+    },
+    "staking_proxy_info_contract_address": {
+      "description": "Contract to proxy staking updates to.",
+      "type": [
+        "string",
+        "null"
+      ]
     }
   },
   "additionalProperties": false
