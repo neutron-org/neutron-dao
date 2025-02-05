@@ -1,5 +1,5 @@
 use crate::error::ContractError;
-use cosmwasm_std::{Addr, Uint128};
+use cosmwasm_std::{Addr, Decimal, StdError, Uint128};
 use cw_storage_plus::{Item, Map, SnapshotMap, Strategy};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -58,23 +58,30 @@ pub struct Validator {
     pub oper_address: Addr,
     pub bonded: bool,
     pub total_tokens: Uint128,
-    pub total_shares: Uint128,
+    pub total_shares: Decimal,
     pub active: bool,
 }
 
 impl Validator {
-    pub fn remove_del_shares(&mut self, shares: Uint128) -> Result<(), ContractError> {
+    pub fn remove_del_shares(&mut self, shares: Decimal) -> Result<(), ContractError> {
         let remaining_shares = self.total_shares.checked_sub(shares)?;
 
         if remaining_shares.is_zero() {
             self.total_tokens = Uint128::zero();
         } else {
-            let undelegated_tokens = shares.multiply_ratio(self.total_tokens, self.total_shares);
-            self.total_tokens = self.total_tokens.checked_sub(undelegated_tokens)?;
+            // Convert total_tokens to Decimal for accurate calculations
+            let total_tokens_dec = Decimal::from_atomics(self.total_tokens, 0)?;
+            // Compute the undelegated tokens using Decimal multiplication
+            let undelegated_tokens = shares
+                .checked_mul(total_tokens_dec)?
+                .checked_div(self.total_shares)?;
+            // Convert back to Uint128 safely (accounting for Decimal scaling)
+            let undelegated_tokens_uint = undelegated_tokens.to_uint_floor();
+            // Perform safe subtraction
+            self.total_tokens = self.total_tokens.checked_sub(undelegated_tokens_uint)?;
         }
 
         self.total_shares = remaining_shares;
-
         Ok(())
     }
 }
@@ -89,7 +96,7 @@ impl Validator {
 pub struct Delegation {
     pub delegator_address: Addr,
     pub validator_address: Addr,
-    pub shares: Uint128,
+    pub shares: Decimal,
 }
 
 /// Storage mapping for all validators, indexed by **operator address (`valoper`)**.

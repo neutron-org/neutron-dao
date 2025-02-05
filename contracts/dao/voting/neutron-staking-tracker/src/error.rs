@@ -1,5 +1,6 @@
 use cosmwasm_std::{
-    ConversionOverflowError, Decimal256RangeExceeded, DivideByZeroError, OverflowError, StdError,
+    CheckedFromRatioError, ConversionOverflowError, Decimal256RangeExceeded, DecimalRangeExceeded,
+    DivideByZeroError, OverflowError, StdError,
 };
 use cw_utils::PaymentError;
 use thiserror::Error;
@@ -74,6 +75,12 @@ pub enum ContractError {
 
     #[error(transparent)]
     Decimal256RangeExceeded(#[from] Decimal256RangeExceeded),
+
+    #[error(transparent)]
+    CheckedFromRatioError(#[from] CheckedFromRatioError),
+
+    #[error(transparent)]
+    DecimalRangeExceeded(#[from] DecimalRangeExceeded),
 
     #[error("Failed to query validator: {address}")]
     ValidatorQueryFailed { address: String },
