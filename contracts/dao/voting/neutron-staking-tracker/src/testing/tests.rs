@@ -1316,3 +1316,171 @@ fn test_after_delegation_modified() {
         query_voting_power_at_height(deps.as_ref(), env.clone(), delegator_addr, None).unwrap();
     assert_eq!(voting_power, Uint128::new(100));
 }
+
+
+#[test]
+fn test_after_delegation_modified_large_scaled_shares() {
+    let mut deps = dependencies();
+    deps.api = deps.api.with_prefix("neutron");
+
+    let delegator1 = deps.api.addr_make("delegator1");
+
+    let mut env = mock_env();
+
+    // Define operator (valoper) and consensus (valcons) addresses
+    let oper_addr = Addr::unchecked("neutronvaloper1xdlvhs2l2wq0cc3eskyxphstns3348el5l4qan");
+    let cons_addr = Addr::unchecked("neutronvalcons1xyz");
+    let delegator_addr = delegator1;
+
+    // Store validator in the state using valoper as the primary key
+    let validator = Validator {
+        cons_address: cons_addr.clone(),
+        oper_address: oper_addr.clone(),
+        bonded: true,
+        total_tokens: Uint128::new(166666667666), // Tokens remain as original values
+        total_shares: Uint128::new(166666667666000000000000000000), // Shares scaled up
+        active: true,
+    };
+    VALIDATORS
+        .save(
+            deps.as_mut().storage,
+            &oper_addr,
+            &validator,
+            env.block.height,
+        )
+        .unwrap();
+
+    // Store initial delegation to ensure it exists before calling `after_delegation_modified`
+    let initial_delegation = Delegation {
+        delegator_address: delegator_addr.clone(),
+        validator_address: oper_addr.clone(),
+        shares: Uint128::new(166666667666000000000000000000), // Initial shares before modification
+    };
+    DELEGATIONS
+        .save(
+            deps.as_mut().storage,
+            (&delegator_addr, &oper_addr),
+            &initial_delegation,
+            env.block.height,
+        )
+        .unwrap();
+
+    // Mock validator query response
+    let proto_validator = CosmosValidator {
+        operator_address: oper_addr.to_string(),
+        consensus_pubkey: None,
+        status: 3,                  // Bonded status
+        tokens: "166666667667".to_string(), // Tokens remain unchanged
+        jailed: false,
+        delegator_shares: "166666667667000000000000000000".to_string(), // Shares scaled up
+        description: None,
+        unbonding_height: 0,
+        unbonding_time: None,
+        commission: None,
+        min_self_delegation: "1".to_string(),
+        unbonding_on_hold_ref_count: 0,
+        unbonding_ids: vec![],
+    };
+    deps.querier.with_validators(vec![proto_validator]);
+
+    // **Mock delegation query response with updated shares**
+    deps.querier.with_delegations(HashMap::from([(
+        (delegator_addr.to_string(), oper_addr.to_string()),
+        Uint128::new(166666667667000000000000000000), // Updated delegation amount
+    )]));
+
+    // Call `after_delegation_modified`
+    let res = after_delegation_modified(
+        deps.as_mut(),
+        env.clone(),
+        delegator_addr.to_string(),
+        oper_addr.to_string(),
+    );
+
+    assert!(res.is_ok(), "Error: {:?}", res.err());
+
+    // Validate updated validator state
+    let updated_validator = VALIDATORS.load(deps.as_ref().storage, &oper_addr).unwrap();
+    assert_eq!(updated_validator.total_tokens, Uint128::new(166666667667)); // Tokens remain unchanged
+    assert_eq!(updated_validator.total_shares, Uint128::new(166666667667000000000000000000)); // Shares updated
+
+    // Validate updated delegation state
+    let updated_delegation = DELEGATIONS
+        .load(deps.as_ref().storage, (&delegator_addr, &oper_addr))
+        .unwrap();
+    assert_eq!(updated_delegation.shares, Uint128::new(166666667667000000000000000000)); // New delegation shares
+
+    // Validate response attributes
+    let response = res.unwrap();
+    assert_eq!(
+        response.attributes,
+        vec![
+            ("action", "after_delegation_modified"),
+            ("delegator", delegator_addr.to_string().as_str()),
+            ("cons_address", cons_addr.to_string().as_str()),
+            ("valoper_address", oper_addr.to_string().as_str()),
+            ("total_shares", "166666667667000000000000000000"),
+            ("total_tokens", "166666667667"),
+            ("delegation_shares", "166666667667000000000000000000"),
+        ]
+    );
+
+    env.block.height += 5;
+
+    let total_voting_power = query_total_power_at_height(deps.as_ref(), env.clone(), None).unwrap();
+    assert_eq!(total_voting_power, Uint128::new(166666667667));
+    let voting_power =
+        query_voting_power_at_height(deps.as_ref(), env.clone(), delegator_addr.clone(), None)
+            .unwrap();
+    assert_eq!(voting_power, Uint128::new(166666667667));
+
+    env.block.height += 5;
+
+    //-----------------------------------------------------------------
+    // **Mock delegation query response with updated shares**
+    deps.querier.with_delegations(HashMap::from([(
+        (delegator_addr.to_string(), oper_addr.to_string()),
+        Uint128::new(166666667666000000000000000000), // New delegation amount
+    )]));
+
+    // Call `after_delegation_modified`
+    let res = after_delegation_modified(
+        deps.as_mut(),
+        env.clone(),
+        delegator_addr.to_string(),
+        oper_addr.to_string(),
+    );
+
+    let proto_validator = CosmosValidator {
+        operator_address: oper_addr.to_string(),
+        consensus_pubkey: None,
+        status: 3,                  // Bonded status
+        tokens: "166666667666".to_string(), // Tokens remain unchanged
+        jailed: false,
+        delegator_shares: "166666667666000000000000000000".to_string(), // Shares scaled up
+        description: None,
+        unbonding_height: 0,
+        unbonding_time: None,
+        commission: None,
+        min_self_delegation: "1".to_string(),
+        unbonding_on_hold_ref_count: 0,
+        unbonding_ids: vec![],
+    };
+    deps.querier.with_validators(vec![proto_validator]);
+
+    assert!(res.is_ok(), "Error: {:?}", res.err());
+
+    // Validate updated delegation state
+    let updated_delegation = DELEGATIONS
+        .load(deps.as_ref().storage, (&delegator_addr, &oper_addr))
+        .unwrap();
+    assert_eq!(updated_delegation.shares, Uint128::new(166666667666000000000000000000)); // New delegation shares
+
+    env.block.height += 5;
+
+    let total_voting_power = query_total_power_at_height(deps.as_ref(), env.clone(), None).unwrap();
+    assert_eq!(total_voting_power, Uint128::new(166666667666));
+    let voting_power =
+        query_voting_power_at_height(deps.as_ref(), env.clone(), delegator_addr, None).unwrap();
+    assert_eq!(voting_power, Uint128::new(166666667666));
+}

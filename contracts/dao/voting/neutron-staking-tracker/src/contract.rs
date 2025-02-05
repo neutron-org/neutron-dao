@@ -727,29 +727,37 @@ pub fn get_consensus_address(deps: Deps, valoper_address: String) -> Result<Stri
 }
 
 pub fn calculate_voting_power(deps: Deps, address: Addr, height: u64) -> StdResult<Uint128> {
-    let mut power = Uint128::zero();
+    let mut power = Uint256::zero(); // Use Uint256 to avoid overflow
+
     for val_oper_address in VALIDATORS.keys(deps.storage, None, None, Order::Ascending) {
         if let Some(validator) =
             VALIDATORS.may_load_at_height(deps.storage, &val_oper_address?, height)?
         {
             if validator.bonded {
-                // Check delegations using correct address
                 if let Some(delegation) = DELEGATIONS.may_load_at_height(
                     deps.storage,
                     (&address, &validator.oper_address),
                     height,
                 )? {
-                    let delegation_power = delegation
-                        .shares
-                        .checked_mul(validator.total_tokens)?
-                        .checked_div(validator.total_shares)?;
-                    power = power.checked_add(delegation_power)?;
+                    let shares_256 = Uint256::from(delegation.shares);
+                    let total_tokens_256 = Uint256::from(validator.total_tokens);
+                    let total_shares_256 = Uint256::from(validator.total_shares);
+
+                    let delegation_power_256 = shares_256
+                        .checked_mul(total_tokens_256)?
+                        .checked_div(total_shares_256)?;
+
+                    power = power.checked_add(delegation_power_256)?;
                 }
             }
         }
     }
 
-    Ok(power)
+    // Convert back to Uint128 safely
+    let power_128 = Uint128::try_from(power)
+        .map_err(|_| StdError::generic_err("Overflow: Uint256 to Uint128 conversion failed"))?;
+
+    Ok(power_128)
 }
 
 pub fn query_voting_power_at_height(
