@@ -15,7 +15,7 @@ use crate::state::{Config, State, UserInfo, CONFIG, STATE, USERS};
 const CONTRACT_NAME: &str = "crates.io:neutron-staking-rewards";
 const CONTRACT_VERSION: &str = "0.1.0";
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
     env: Env,
@@ -63,7 +63,7 @@ pub fn instantiate(
         .add_attribute("blocks_per_year", config.blocks_per_year.to_string()))
 }
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     deps: DepsMut,
     env: Env,
