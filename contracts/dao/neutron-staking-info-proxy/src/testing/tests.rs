@@ -3,7 +3,7 @@ use crate::error::ContractError::Unauthorized;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::{CONFIG, PROVIDERS};
 use crate::testing::mock_querier::{
-    mock_dependencies, PROVIDER1, PROVIDER2, PROVIDER3, PROVIDER4, STAKING_REWARDS_CONTRACT,
+    mock_dependencies, PROVIDER1, PROVIDER2, PROVIDER3, STAKING_REWARDS_CONTRACT,
 };
 use cosmwasm_std::testing::MockApi;
 use cosmwasm_std::{
