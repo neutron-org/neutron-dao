@@ -174,9 +174,6 @@ pub fn sudo(deps: DepsMut, env: Env, msg: SudoMsg) -> Result<Response, ContractE
         SudoMsg::BeforeDelegationCreated { del_addr, val_addr } => {
             before_delegation_created(deps, env, del_addr, val_addr)
         }
-        SudoMsg::BeforeDelegationSharesModified { del_addr, val_addr } => {
-            before_delegation_shares_modified(deps, env, del_addr, val_addr)
-        }
         SudoMsg::BeforeDelegationRemoved { del_addr, val_addr } => {
             before_delegation_removed(deps, env, del_addr, val_addr)
         }
@@ -186,30 +183,8 @@ pub fn sudo(deps: DepsMut, env: Env, msg: SudoMsg) -> Result<Response, ContractE
         SudoMsg::BeforeValidatorSlashed { val_addr, fraction } => {
             before_validator_slashed(deps, env, val_addr, fraction)
         }
-        SudoMsg::AfterUnbondingInitiated { id } => {
-            after_unbonding_initiated(deps, env, u64::from(id))
-        }
     }
 }
-
-pub(crate) fn before_delegation_shares_modified(
-    _deps: DepsMut,
-    _env: Env,
-    _delegator_address: String,
-    _valoper_address: String,
-) -> Result<Response, ContractError> {
-    // No action required as AfterDelegationSharesModified covers delegation creation and modification
-    Ok(Response::new().add_attribute("action", "before_delegation_shares_modified"))
-}
-
-pub(crate) fn after_unbonding_initiated(
-    _deps: DepsMut,
-    _env: Env,
-    _id: u64,
-) -> Result<Response, ContractError> {
-    Ok(Response::new().add_attribute("action", "after_unbonding_initiated"))
-}
-
 pub(crate) fn after_validator_bonded(
     deps: DepsMut,
     env: Env,

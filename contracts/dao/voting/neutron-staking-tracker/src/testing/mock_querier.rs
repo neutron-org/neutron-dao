@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage};
 use cosmwasm_std::{
     from_json, Binary, ContractResult, Decimal, GrpcQuery, OwnedDeps, Querier, QuerierResult,
-    QueryRequest, SystemError, SystemResult, Uint128,
+    QueryRequest, SystemError, SystemResult,
 };
 use neutron_std::types::cosmos::staking::v1beta1::{
     Delegation, DelegationResponse, QueryDelegationRequest, QueryDelegationResponse,
