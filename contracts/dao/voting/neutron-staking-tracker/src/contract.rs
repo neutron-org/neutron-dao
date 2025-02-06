@@ -19,7 +19,7 @@ use neutron_std::types::cosmos::staking::v1beta1::{QueryValidatorResponse, Staki
 use prost::Message;
 use std::str::FromStr;
 
-pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-voting-vault";
+pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-voting-tracker";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
