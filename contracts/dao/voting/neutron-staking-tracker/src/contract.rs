@@ -413,20 +413,18 @@ pub(crate) fn after_delegation_modified(
 
     let querier = StakingQuerier::new(&deps.querier);
 
-    // Query **current delegation state** from the chain
-    let delegation_info = querier.delegation(delegator_address.clone(), valoper_address.clone())?;
+    // Query **current delegation state** from the chain (fallback to zero if query fails)
+    let delegation_info = querier
+        .delegation(delegator_address.clone(), valoper_address.clone())
+        .ok(); // If it fails, we use zero shares due the delegation is removed
 
-    // Extract the actual delegation shares
+    // Extract the actual delegation shares, defaulting to 0 if delegation doesn't exist
     let actual_shares = delegation_info
-        .delegation_response
+        .as_ref()
+        .and_then(|info| info.delegation_response.clone())
         .and_then(|resp| resp.delegation)
-        .map(|del| {
-            Decimal::from_str(&del.shares).map_err(|_| ContractError::InvalidSharesFormat {
-                shares_str: del.shares.clone(),
-            })
-        })
-        .transpose()?
-        .unwrap_or(Decimal::zero()); // Default to zero if delegation does not exist
+        .map(|del| Decimal::from_str(&del.shares).unwrap_or(Decimal::zero()))
+        .unwrap_or(Decimal::zero());
 
     let previous_shares = DELEGATIONS
         .may_load(deps.storage, (&delegator, &valoper_addr))?
@@ -502,44 +500,11 @@ pub(crate) fn before_delegation_removed(
     delegator_address: String,
     valoper_address: String,
 ) -> Result<Response, ContractError> {
-    let delegator = deps.api.addr_validate(&delegator_address)?;
-    let valoper_addr = Addr::unchecked(valoper_address);
-
-    // Load shares amount we have for the delegation in the contract's state
-    let mut delegation = DELEGATIONS
-        .may_load(deps.storage, (&delegator, &valoper_addr))?
-        .unwrap_or(Delegation {
-            delegator_address: delegator.clone(),
-            validator_address: valoper_addr.clone(),
-            shares: Decimal::zero(),
-        });
-
-    let previous_shares = delegation.shares;
-
-    // Load validator by `valoper_address`
-    let mut validator = VALIDATORS.load(deps.storage, &valoper_addr)?;
-
-    // Since it's `before_delegation_removed`, we can safely remove all shares from validator
-    validator.remove_del_shares(previous_shares)?;
-
-    // Save the updated validator state
-    VALIDATORS.save(deps.storage, &valoper_addr, &validator, env.block.height)?;
-
-    // Instead of removing, set shares to zero and update the delegation record
-    // TODO: probably we don't need to update delegations at all
-    // as soon as they modified in after_delegation_modified
-    delegation.shares = Decimal::zero();
-    DELEGATIONS.save(
-        deps.storage,
-        (&delegator, &valoper_addr),
-        &delegation,
-        env.block.height,
-    )?;
 
     Ok(Response::new()
         .add_attribute("action", "before_delegation_removed")
-        .add_attribute("delegator", delegator.to_string())
-        .add_attribute("valoper_address", valoper_addr.to_string()))
+        .add_attribute("delegator", delegator_address.to_string())
+        .add_attribute("valoper_address", valoper_address.to_string()))
 }
 
 pub(crate) fn after_validator_removed(
