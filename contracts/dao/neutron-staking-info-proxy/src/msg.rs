@@ -39,7 +39,7 @@ pub enum QueryMsg {
     Providers {},
     /// Retrieves the user's stake summed across all providers, filtered by `config.staking_denom`.
     #[returns(Coin)]
-    StakeQuery { user: String, height: Option<u64> },
+    UserStake { address: String, height: u64 },
 }
 
 /// Response for `QueryMsg::Config`

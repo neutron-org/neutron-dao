@@ -181,9 +181,9 @@ fn test_query_stake_query() {
     let res = instantiate(deps.as_mut(), env.clone(), info.clone(), msg).unwrap();
     assert_eq!(res.messages.len(), 0);
 
-    let query_msg = QueryMsg::StakeQuery {
-        user: deps.api.addr_make("user").to_string(),
-        height: None,
+    let query_msg = QueryMsg::UserStake {
+        address: deps.api.addr_make("user").to_string(),
+        height: env.block.height,
     };
 
     // No providers returns zero in any case

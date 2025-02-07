@@ -205,8 +205,8 @@ pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> Result<cosmwasm_std::Binary, 
     match msg {
         QueryMsg::Config {} => Ok(to_json_binary(&query_config(deps)?)?),
         QueryMsg::Providers {} => Ok(to_json_binary(&query_providers(deps)?)?),
-        QueryMsg::StakeQuery { user, height } => {
-            Ok(to_json_binary(&query_stake_query(deps, user, height)?)?)
+        QueryMsg::UserStake { address, height } => {
+            Ok(to_json_binary(&query_user_stake(deps, address, height)?)?)
         }
     }
 }
@@ -229,10 +229,10 @@ fn query_providers(deps: Deps) -> StdResult<ProvidersResponse> {
     Ok(ProvidersResponse { providers })
 }
 
-/// Returns sum of stake of each provider filtered by `config.staking_denom`.
-/// Ignores PROVIDERS that returned Err from query
-fn query_stake_query(deps: Deps, user: String, height: Option<u64>) -> StdResult<Coin> {
-    let user_addr = deps.api.addr_validate(&user)?;
+/// Returns sum of stake of each provider.
+/// Ignores PROVIDERS that returned Err from query.
+fn query_user_stake(deps: Deps, address: String, height: u64) -> StdResult<Coin> {
+    let user_addr = deps.api.addr_validate(&address)?;
     let config = CONFIG.load(deps.storage)?;
     let stake = PROVIDERS
         .keys(deps.storage, None, None, Order::Ascending)
@@ -267,11 +267,14 @@ fn query_voting_power(
     deps: Deps,
     address: Addr,
     provider: &Addr,
-    height: Option<u64>,
+    height: u64,
 ) -> Result<Uint128, ContractError> {
     let user_stake: Uint128 = deps.querier.query_wasm_smart(
         provider,
-        &ProviderStakeQuery::VotingPowerAtHeight { address, height },
+        &ProviderStakeQuery::VotingPowerAtHeight {
+            address,
+            height: Some(height),
+        },
     )?;
     Ok(user_stake)
 }
