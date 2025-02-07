@@ -1,14 +1,14 @@
 use cosmwasm_std::{
     coin, entry_point, to_json_binary, Addr, BankMsg, Coin, Decimal, Deps, DepsMut, Env,
-    MessageInfo, Response, StdResult,
+    MessageInfo, Response, StdError, StdResult,
 };
 use cw2::set_contract_version;
 
 use crate::error::ContractError;
 use crate::error::ContractError::{DaoStakeChangeNotTracked, InvalidStakeDenom, Unauthorized};
 use crate::msg::{
-    ConfigResponse, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, RewardsResponse, StakeQuery,
-    StateResponse,
+    ConfigResponse, ExecuteMsg, InfoProxyQuery, InstantiateMsg, MigrateMsg, QueryMsg,
+    RewardsResponse, StateResponse,
 };
 use crate::state::{Config, State, UserInfo, CONFIG, STATE, USERS};
 
@@ -505,16 +505,31 @@ fn safe_query_user_stake(
     staking_denom: String,
     height: u64,
 ) -> Result<Coin, ContractError> {
-    let user_stake: Coin = deps.querier.query_wasm_smart(
+    deps.api.debug(">>>> before querying StakeQuery::User");
+    let res: StdResult<Coin> = deps.querier.query_wasm_smart(
         staking_info_proxy,
-        &StakeQuery::User {
+        &InfoProxyQuery::UserStake {
             address: user_addr.to_string(),
             height,
         },
-    )?;
-    if user_stake.denom != staking_denom {
-        return Err(InvalidStakeDenom {});
-    }
+    );
 
-    Ok(user_stake)
+    match res {
+        Err(err) => {
+            let err_str = err.to_string();
+            deps.api.debug(format!(">>>> err: {}", err_str).as_ref());
+            Err(ContractError::Std(StdError::generic_err(err_str)))
+        }
+        Ok(user_stake) => {
+            deps.api.debug(">>>> after querying StakeQuery::User");
+            deps.api
+                .debug(format!(">>>> coin: {:?}", user_stake.clone()).as_ref());
+
+            if user_stake.denom != staking_denom {
+                return Err(InvalidStakeDenom {});
+            }
+
+            Ok(user_stake)
+        }
+    }
 }
