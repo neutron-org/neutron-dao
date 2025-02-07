@@ -254,17 +254,11 @@ fn claim_rewards(
     STATE.save(deps.storage, &updated_state)?;
     USERS.save(deps.storage, &info.sender, &updated_user_info)?;
 
+    let recipient = to_address.unwrap_or(info.sender.to_string());
     let resp = Response::new();
     let resp = if !pending_rewards.amount.is_zero() {
-        let recipient: String;
-        if let Some(to_address) = to_address {
-            recipient = to_address
-        } else {
-            recipient = info.sender.to_string()
-        }
-
         resp.add_message(BankMsg::Send {
-            to_address: recipient,
+            to_address: recipient.clone(),
             amount: vec![pending_rewards.clone()],
         })
     } else {
@@ -273,7 +267,7 @@ fn claim_rewards(
 
     Ok(resp
         .add_attribute("action", "claim_rewards")
-        .add_attribute("recipient", info.sender.to_string())
+        .add_attribute("recipient", recipient)
         .add_attribute("amount", pending_rewards.to_string()))
 }
 
