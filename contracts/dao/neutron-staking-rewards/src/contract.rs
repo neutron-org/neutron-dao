@@ -547,20 +547,27 @@ fn safe_query_user_stake(
         staking_info_proxy,
         &InfoProxyQuery::UserStake {
             address: user_addr.to_string(),
-            height,
+            // increment height because staking_tracker contract returns (n-1) data on
+            // query_voting_power_at_height(n) and query_total_power_at_height(n)
+            height: height + 1,
         },
     );
 
     match res {
         Err(err) => {
             let err_str = err.to_string();
-            deps.api.debug(format!(">>>> err: {}", err_str).as_ref());
+            deps.api.debug(format!(">>>> ERROR: {}", err_str).as_ref());
             Err(ContractError::Std(StdError::generic_err(err_str)))
         }
         Ok(user_stake) => {
             deps.api.debug(">>>> after querying StakeQuery::User");
-            deps.api
-                .debug(format!(">>>> coin: {:?}", user_stake.clone()).as_ref());
+            deps.api.debug(
+                format!(
+                    ">>>> response to StakeQueryUser:: coin: {:?}",
+                    user_stake.clone()
+                )
+                .as_ref(),
+            );
 
             if user_stake.denom != staking_denom {
                 return Err(InvalidStakeDenom {});
