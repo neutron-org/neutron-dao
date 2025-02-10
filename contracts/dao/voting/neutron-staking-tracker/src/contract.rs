@@ -22,7 +22,8 @@ use std::str::FromStr;
 pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-voting-tracker";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-const REPLY_ON_ERROR_STAKING_PROXY_ID: u64 = 1;
+const REPLY_ON_DELEGATION_MODIFIED_ERROR_STAKING_PROXY_ID: u64 = 1;
+const REPLY_ON_VALIDATOR_SLASHED_ERROR_STAKING_PROXY_ID: u64 = 2;
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
@@ -412,7 +413,7 @@ pub fn before_validator_slashed(
         // This contract should be errorless no matter what.
         resp = resp.add_submessage(SubMsg::reply_on_error(
             slashing_msg,
-            REPLY_ON_ERROR_STAKING_PROXY_ID,
+            REPLY_ON_VALIDATOR_SLASHED_ERROR_STAKING_PROXY_ID,
         ));
     }
 
@@ -561,7 +562,7 @@ pub(crate) fn after_delegation_modified(
         // This contract should be errorless no matter what.
         resp = resp.add_submessage(SubMsg::reply_on_error(
             update_stake_msg,
-            REPLY_ON_ERROR_STAKING_PROXY_ID,
+            REPLY_ON_DELEGATION_MODIFIED_ERROR_STAKING_PROXY_ID,
         ));
     }
 
@@ -905,9 +906,29 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(_: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
     match msg.id {
-        REPLY_ON_ERROR_STAKING_PROXY_ID => {
+        REPLY_ON_DELEGATION_MODIFIED_ERROR_STAKING_PROXY_ID => {
+            // Error is reduced before cosmwasm reply and is expected in form of "codespace=? code=?"
+            let error = msg
+                .result
+                .into_result()
+                .err()
+                .unwrap_or("Must always be an error in the reply on error".to_string());
             // ignore errors from proxy contract
-            Ok(Response::new())
+            Ok(Response::new()
+                .add_attribute("reply_from", "after_delegation_modified")
+                .add_attribute("error", error))
+        }
+        REPLY_ON_VALIDATOR_SLASHED_ERROR_STAKING_PROXY_ID => {
+            // Error is reduced before cosmwasm reply and is expected in form of "codespace=? code=?"
+            let error = msg
+                .result
+                .into_result()
+                .err()
+                .unwrap_or("Must always be an error in the reply on error".to_string());
+            // ignore errors from proxy contract
+            Ok(Response::new()
+                .add_attribute("reply_from", "before_validator_slashed")
+                .add_attribute("error", error))
         }
         _ => Ok(Response::new()),
     }
