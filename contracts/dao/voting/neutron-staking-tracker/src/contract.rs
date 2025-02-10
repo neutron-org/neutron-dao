@@ -10,8 +10,8 @@ use bech32::{encode, Bech32, Hrp};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, Addr, Binary, Decimal, Decimal256, Deps, DepsMut, Env, MessageInfo, Order,
-    Reply, Response, StdError, StdResult, SubMsg, Uint128, Uint256, WasmMsg,
+    to_json_binary, Addr, Binary, Decimal256, Deps, DepsMut, Env, MessageInfo, Order, Reply,
+    Response, StdError, StdResult, SubMsg, Uint128, Uint256, WasmMsg,
 };
 use cw2::set_contract_version;
 use cw_storage_plus::Bound;
@@ -19,7 +19,7 @@ use neutron_std::types::cosmos::staking::v1beta1::{QueryValidatorResponse, Staki
 use prost::Message;
 use std::str::FromStr;
 
-pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-voting-tracker";
+pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-staking-tracker";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 const REPLY_ON_DELEGATION_MODIFIED_ERROR_STAKING_PROXY_ID: u64 = 1;
@@ -215,9 +215,6 @@ pub fn sudo(deps: DepsMut, env: Env, msg: SudoMsg) -> Result<Response, ContractE
         SudoMsg::BeforeDelegationCreated { del_addr, val_addr } => {
             before_delegation_created(deps, env, del_addr, val_addr)
         }
-        SudoMsg::BeforeDelegationRemoved { del_addr, val_addr } => {
-            before_delegation_removed(deps, env, del_addr, val_addr)
-        }
         SudoMsg::AfterDelegationModified { del_addr, val_addr } => {
             after_delegation_modified(deps, env, del_addr, val_addr)
         }
@@ -226,6 +223,7 @@ pub fn sudo(deps: DepsMut, env: Env, msg: SudoMsg) -> Result<Response, ContractE
         }
     }
 }
+
 pub(crate) fn after_validator_bonded(
     deps: DepsMut,
     env: Env,
@@ -271,7 +269,7 @@ pub(crate) fn after_validator_bonded(
             oper_address: valoper_addr.clone(),
             bonded: false,
             total_tokens: Uint128::zero(),
-            total_shares: Decimal::zero(),
+            total_shares: Uint128::zero(),
             active: true,
         });
 
@@ -472,34 +470,40 @@ pub(crate) fn after_delegation_modified(
 
     let querier = StakingQuerier::new(&deps.querier);
 
-    // Query **current delegation state** from the chain
-    let delegation_info = querier.delegation(delegator_address.clone(), valoper_address.clone())?;
-
-    // Extract the actual delegation shares
-    let actual_shares = delegation_info
-        .delegation_response
-        .and_then(|resp| resp.delegation)
-        .map(|del| {
-            Decimal::from_str(&del.shares).map_err(|_| ContractError::InvalidSharesFormat {
-                shares_str: del.shares.clone(),
-            })
+    // Query **current delegation state** from the chain (fallback to zero if query fails)
+    let actual_shares = querier
+        .delegation(delegator_address.clone(), valoper_address.clone())
+        .ok() // If query fails, treat as no delegation
+        .and_then(|delegation_info| {
+            delegation_info
+                .delegation_response
+                .and_then(|resp| resp.delegation)
+                .map(|del| {
+                    Uint128::from_str(&del.shares).map_err(|_| ContractError::InvalidSharesFormat {
+                        shares_str: del.shares.clone(),
+                    })
+                })
         })
         .transpose()?
-        .unwrap_or(Decimal::zero()); // Default to zero if delegation does not exist
+        .unwrap_or(Uint128::zero()); // Default to zero if delegation does not exist
 
     let previous_shares = DELEGATIONS
         .may_load(deps.storage, (&delegator, &valoper_addr))?
         .unwrap_or(Delegation {
             delegator_address: delegator.clone(),
             validator_address: valoper_addr.clone(),
-            shares: Decimal::zero(),
+            shares: Uint128::zero(),
         })
         .shares;
 
     // Load validator by `valoper_address`
     let mut validator = VALIDATORS.load(deps.storage, &valoper_addr)?;
 
-    // If undelegation happened, we manually compute the updated validator state
+    // this means undelegation happened, we can't query a validator from the state because it's not updated yet
+    // we need to do calculations of new tokens and shares in a validator manually
+
+    // https://github.com/neutron-org/cosmos-sdk/blob/83295e7c1380071cb9a0f405442d06acf387228c/x/staking/keeper/delegation.go#L1048
+    // https://github.com/neutron-org/cosmos-sdk/blob/83295e7c1380071cb9a0f405442d06acf387228c/x/staking/keeper/validator.go#L148
     if actual_shares < previous_shares {
         let undelegated_shares = previous_shares - actual_shares;
 
@@ -517,7 +521,7 @@ pub(crate) fn after_delegation_modified(
             })?;
 
         validator.total_shares =
-            Decimal::from_str(&validator_data.delegator_shares).map_err(|_| {
+            Uint128::from_str(&validator_data.delegator_shares).map_err(|_| {
                 ContractError::InvalidSharesFormat {
                     shares_str: validator_data.delegator_shares.clone(),
                 }
@@ -576,52 +580,6 @@ pub(crate) fn after_delegation_modified(
         .add_attribute("delegation_shares", actual_shares.to_string()))
 }
 
-pub(crate) fn before_delegation_removed(
-    deps: DepsMut,
-    env: Env,
-    delegator_address: String,
-    valoper_address: String,
-) -> Result<Response, ContractError> {
-    let delegator = deps.api.addr_validate(&delegator_address)?;
-    let valoper_addr = Addr::unchecked(valoper_address);
-
-    // Load shares amount we have for the delegation in the contract's state
-    let mut delegation = DELEGATIONS
-        .may_load(deps.storage, (&delegator, &valoper_addr))?
-        .unwrap_or(Delegation {
-            delegator_address: delegator.clone(),
-            validator_address: valoper_addr.clone(),
-            shares: Decimal::zero(),
-        });
-
-    let previous_shares = delegation.shares;
-
-    // Load validator by `valoper_address`
-    let mut validator = VALIDATORS.load(deps.storage, &valoper_addr)?;
-
-    // Since it's `before_delegation_removed`, we can safely remove all shares from validator
-    validator.remove_del_shares(previous_shares)?;
-
-    // Save the updated validator state
-    VALIDATORS.save(deps.storage, &valoper_addr, &validator, env.block.height)?;
-
-    // Instead of removing, set shares to zero and update the delegation record
-    // TODO: probably we don't need to update delegations at all
-    // as soon as they modified in after_delegation_modified
-    delegation.shares = Decimal::zero();
-    DELEGATIONS.save(
-        deps.storage,
-        (&delegator, &valoper_addr),
-        &delegation,
-        env.block.height,
-    )?;
-
-    Ok(Response::new()
-        .add_attribute("action", "before_delegation_removed")
-        .add_attribute("delegator", delegator.to_string())
-        .add_attribute("valoper_address", valoper_addr.to_string()))
-}
-
 pub(crate) fn after_validator_removed(
     deps: DepsMut,
     env: Env,
@@ -654,11 +612,13 @@ pub(crate) fn after_validator_removed(
         .add_attribute("valoper_address", valoper_address)
         .add_attribute("valcons_address", valcons_address))
 }
+
 pub(crate) fn after_validator_created(
     deps: DepsMut,
     env: Env,
     valoper_address: String,
 ) -> Result<Response, ContractError> {
+    // Retrieve the consensus address using a helper function
     let valoper_addr = Addr::unchecked(&valoper_address);
 
     let querier = StakingQuerier::new(&deps.querier);
@@ -677,14 +637,14 @@ pub(crate) fn after_validator_created(
             address: valoper_address.clone(),
         })?;
 
-    let total_shares = Decimal::from_str(&validator_data.delegator_shares).map_err(|_| {
-        ContractError::InvalidSharesFormat {
-            shares_str: validator_data.delegator_shares.clone(),
+    let total_shares = Uint128::from_str(&validator_data.delegator_shares).map_err(|_| {
+        ContractError::InvalidTokenData {
+            address: valoper_address.clone(),
         }
     })?;
 
     let new_validator = Validator {
-        cons_address: Addr::unchecked(""), // Consensus address will be set later
+        cons_address: Addr::unchecked(""),
         oper_address: valoper_addr.clone(),
         bonded: false,
         total_tokens,
@@ -692,10 +652,10 @@ pub(crate) fn after_validator_created(
         active: true,
     };
 
-    // Store validator with `valoper_address` as the primary key
+    // Use `valoper_address` as the primary key for storage
     VALIDATORS.save(
         deps.storage,
-        &valoper_addr,
+        &valoper_addr, // Primary key is now `valoper`
         &new_validator,
         env.block.height,
     )?;
@@ -785,10 +745,14 @@ pub fn get_consensus_address(deps: Deps, valoper_address: String) -> Result<Stri
         .to_string();
     Ok(encoded)
 }
+
+/// Calculates the voting power of a delegator at a specific block height.
+///
+/// Uses `Uint256` for intermediate calculations to avoid precision loss and overflow,
+/// then converts the final result back to `Uint128`.
+///
 pub fn calculate_voting_power(deps: Deps, address: Addr, height: u64) -> StdResult<Uint128> {
-    // Use Uint256 to avoid overflow and maintain precision
-    // As soon as using Decimal256 gives non-precise results eg 199 instead of 200
-    let mut power = Uint256::zero();
+    let mut power = Uint256::zero(); // Use Uint256 to avoid overflow
 
     for val_oper_address in VALIDATORS.keys(deps.storage, None, None, Order::Ascending) {
         if let Some(validator) =
@@ -800,14 +764,10 @@ pub fn calculate_voting_power(deps: Deps, address: Addr, height: u64) -> StdResu
                     (&address, &validator.oper_address),
                     height,
                 )? {
-                    // Convert shares to Uint256 (multiplying by 10^18 to preserve precision)
-                    let shares_256 = Uint256::from(delegation.shares.atomics());
-
-                    // Convert total_tokens and total_shares to Uint256 for high precision calculations
+                    let shares_256 = Uint256::from(delegation.shares);
                     let total_tokens_256 = Uint256::from(validator.total_tokens);
-                    let total_shares_256 = Uint256::from(validator.total_shares.atomics());
+                    let total_shares_256 = Uint256::from(validator.total_shares);
 
-                    // Perform calculation: (shares * total_tokens) / total_shares
                     let delegation_power_256 = shares_256
                         .checked_mul(total_tokens_256)?
                         .checked_div(total_shares_256)?;
