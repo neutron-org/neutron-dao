@@ -47,8 +47,8 @@ pub enum QueryMsg {
 }
 
 #[cw_serde]
-pub enum StakeQuery {
-    User { address: String, height: u64 },
+pub enum InfoProxyQuery {
+    UserStake { address: String, height: u64 },
 }
 
 /// Response for `QueryMsg::Config`
