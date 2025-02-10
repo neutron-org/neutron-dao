@@ -1,21 +1,21 @@
 use cosmwasm_std::{
     coin, entry_point, to_json_binary, Addr, BankMsg, Coin, Decimal, Deps, DepsMut, Env,
-    MessageInfo, Response, StdResult,
+    MessageInfo, Response, StdError, StdResult,
 };
 use cw2::set_contract_version;
 
 use crate::error::ContractError;
 use crate::error::ContractError::{DaoStakeChangeNotTracked, InvalidStakeDenom, Unauthorized};
 use crate::msg::{
-    ConfigResponse, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, RewardsResponse, StakeQuery,
-    StateResponse,
+    ConfigResponse, ExecuteMsg, InfoProxyQuery, InstantiateMsg, MigrateMsg, QueryMsg,
+    RewardsResponse, StateResponse,
 };
 use crate::state::{Config, State, UserInfo, CONFIG, STATE, USERS};
 
 const CONTRACT_NAME: &str = "crates.io:neutron-staking-rewards";
 const CONTRACT_VERSION: &str = "0.1.0";
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
     env: Env,
@@ -63,7 +63,7 @@ pub fn instantiate(
         .add_attribute("blocks_per_year", config.blocks_per_year.to_string()))
 }
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     deps: DepsMut,
     env: Env,
@@ -193,7 +193,6 @@ fn update_stake(
         config.staking_denom.clone(),
         env.block.height,
     )?;
-
     STATE.save(deps.storage, &updated_state)?;
     USERS.save(deps.storage, &user_addr.clone(), &updated_user_info)?;
 
@@ -254,17 +253,11 @@ fn claim_rewards(
     STATE.save(deps.storage, &updated_state)?;
     USERS.save(deps.storage, &info.sender, &updated_user_info)?;
 
+    let recipient = to_address.unwrap_or(info.sender.to_string());
     let resp = Response::new();
     let resp = if !pending_rewards.amount.is_zero() {
-        let recipient: String;
-        if let Some(to_address) = to_address {
-            recipient = to_address
-        } else {
-            recipient = info.sender.to_string()
-        }
-
         resp.add_message(BankMsg::Send {
-            to_address: recipient,
+            to_address: recipient.clone(),
             amount: vec![pending_rewards.clone()],
         })
     } else {
@@ -273,7 +266,7 @@ fn claim_rewards(
 
     Ok(resp
         .add_attribute("action", "claim_rewards")
-        .add_attribute("recipient", info.sender.to_string())
+        .add_attribute("recipient", recipient)
         .add_attribute("amount", pending_rewards.to_string()))
 }
 
@@ -511,16 +504,27 @@ fn safe_query_user_stake(
     staking_denom: String,
     height: u64,
 ) -> Result<Coin, ContractError> {
-    let user_stake: Coin = deps.querier.query_wasm_smart(
+    let res: StdResult<Coin> = deps.querier.query_wasm_smart(
         staking_info_proxy,
-        &StakeQuery::User {
+        &InfoProxyQuery::UserStake {
             address: user_addr.to_string(),
-            height,
+            // increment height because staking_tracker contract returns (n-1) data on
+            // query_voting_power_at_height(n) and query_total_power_at_height(n)
+            height: height + 1,
         },
-    )?;
-    if user_stake.denom != staking_denom {
-        return Err(InvalidStakeDenom {});
-    }
+    );
 
-    Ok(user_stake)
+    match res {
+        Err(err) => {
+            let err_str = err.to_string();
+            Err(ContractError::Std(StdError::generic_err(err_str)))
+        }
+        Ok(user_stake) => {
+            if user_stake.denom != staking_denom {
+                return Err(InvalidStakeDenom {});
+            }
+
+            Ok(user_stake)
+        }
+    }
 }

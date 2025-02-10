@@ -1,4 +1,4 @@
-use crate::msg::StakeQuery;
+use crate::msg::InfoProxyQuery;
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage};
 use cosmwasm_std::{
     coin, from_json, to_json_binary, Binary, Coin, ContractResult, Empty, OwnedDeps, Querier,
@@ -57,9 +57,9 @@ impl WasmMockQuerier {
             QueryRequest::Wasm(WasmQuery::Smart { contract_addr, msg }) => {
                 match contract_addr.as_str() {
                     STAKING_INFO_PROXY_CONTRACT => {
-                        let q: StakeQuery = from_json(msg).unwrap();
+                        let q: InfoProxyQuery = from_json(msg).unwrap();
                         let resp: StdResult<Binary> = match q {
-                            StakeQuery::User { address, height } => {
+                            InfoProxyQuery::UserStake { address, height } => {
                                 let balance_history = self.user_balances.get(&address).unwrap();
                                 let mut result = to_json_binary(&coin(0u128, "utrn"));
                                 for (historical_height, amount) in balance_history.iter().rev() {
