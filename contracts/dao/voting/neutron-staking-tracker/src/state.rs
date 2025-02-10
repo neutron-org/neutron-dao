@@ -1,5 +1,5 @@
 use crate::error::ContractError;
-use cosmwasm_std::{Addr, Decimal, StdError, Uint128};
+use cosmwasm_std::{Addr, Uint128};
 use cw_storage_plus::{Item, Map, SnapshotMap, Strategy};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -57,31 +57,44 @@ pub struct Validator {
     pub cons_address: Addr,
     pub oper_address: Addr,
     pub bonded: bool,
+    /// The total amount of delegator shares for this validator.
+    ///
+    /// Stored as a `Uint128` to maintain compatibility with Cosmos SDK’s `sdk.Dec`, which is serialized
+    /// as an integer without a decimal point (scaled by `10^18`).
+    ///
+    /// ### Why `Uint128`?
+    /// - **Preserves Precision**: The Cosmos SDK already scales `sdk.Dec` values by `10^18`,
+    ///   so `Uint128` naturally maintains precision.
+    /// - **Avoids Unnecessary Transformations**: Using `Decimal` would require multiple conversions
+    ///   between string representations and numeric types, adding complexity and inefficiency.
+    /// - **Prevents Overflow Issues**: `Decimal` in CosmWasm has limits on large numbers
+    ///   (e.g., `10M shares * 10^18` would overflow).
+    ///
+    /// ### Example:
+    /// In Cosmos SDK:
+    /// - `1.000000000000000000` (1 with 18 decimal places) is stored as `"1000000000000000000"`.
+    /// - `10.500000000000000000` (10.5 with 18 decimal places) is stored as `"10500000000000000000"`.
+    ///
+    /// Since Cosmos SDK stores `sdk.Dec` values as large integers, using `Uint128` prevents
+    /// unnecessary conversions.
     pub total_tokens: Uint128,
-    pub total_shares: Decimal,
+    pub total_shares: Uint128,
     pub active: bool,
 }
 
 impl Validator {
-    pub fn remove_del_shares(&mut self, shares: Decimal) -> Result<(), ContractError> {
+    pub fn remove_del_shares(&mut self, shares: Uint128) -> Result<(), ContractError> {
         let remaining_shares = self.total_shares.checked_sub(shares)?;
 
         if remaining_shares.is_zero() {
             self.total_tokens = Uint128::zero();
         } else {
-            // Convert total_tokens to Decimal for accurate calculations
-            let total_tokens_dec = Decimal::from_atomics(self.total_tokens, 0)?;
-            // Compute the undelegated tokens using Decimal multiplication
-            let undelegated_tokens = shares
-                .checked_mul(total_tokens_dec)?
-                .checked_div(self.total_shares)?;
-            // Convert back to Uint128 safely (accounting for Decimal scaling)
-            let undelegated_tokens_uint = undelegated_tokens.to_uint_floor();
-            // Perform safe subtraction
-            self.total_tokens = self.total_tokens.checked_sub(undelegated_tokens_uint)?;
+            let undelegated_tokens = shares.multiply_ratio(self.total_tokens, self.total_shares);
+            self.total_tokens = self.total_tokens.checked_sub(undelegated_tokens)?;
         }
 
         self.total_shares = remaining_shares;
+
         Ok(())
     }
 }
@@ -96,7 +109,21 @@ impl Validator {
 pub struct Delegation {
     pub delegator_address: Addr,
     pub validator_address: Addr,
-    pub shares: Decimal,
+    /// The amount of shares this delegator has in the validator.
+    ///
+    /// Stored as a `Uint128` for the same reasons as `Validator::total_shares`:
+    /// - **Cosmos SDK Compatibility**: Delegator shares are serialized as large integers (scaled by `10^18`).
+    /// - **Efficiency**: Avoids the need for complex conversions and floating-point arithmetic.
+    /// - **Overflow Prevention**: Using `Decimal` would cause issues when working with large numbers
+    ///   due to its internal scaling mechanism.
+    ///
+    /// ### Example:
+    /// - `5.000000000000000000` shares in Cosmos SDK are stored as `"5000000000000000000"`.
+    /// - `2.123456789000000000` shares are stored as `"2123456789000000000"`.
+    ///
+    /// Using `Uint128` directly eliminates unnecessary conversion steps while ensuring compatibility.
+
+    pub shares: Uint128,
 }
 
 /// Storage mapping for all validators, indexed by **operator address (`valoper`)**.
