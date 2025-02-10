@@ -2,8 +2,8 @@ use std::collections::HashMap;
 
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage};
 use cosmwasm_std::{
-    from_json, Binary, ContractResult, GrpcQuery, OwnedDeps, Querier, QuerierResult, QueryRequest,
-    SystemError, SystemResult, Uint128,
+    from_json, Binary, ContractResult, Decimal, GrpcQuery, OwnedDeps, Querier, QuerierResult,
+    QueryRequest, SystemError, SystemResult,
 };
 use neutron_std::types::cosmos::staking::v1beta1::{
     Delegation, DelegationResponse, QueryDelegationRequest, QueryDelegationResponse,
@@ -26,7 +26,7 @@ pub fn mock_dependencies() -> OwnedDeps<MockStorage, MockApi, WasmMockQuerier> {
 pub struct WasmMockQuerier {
     base: MockQuerier,
     validators: HashMap<String, Validator>,
-    pub delegations: HashMap<(String, String), Uint128>, // (delegator, validator) -> shares
+    pub delegations: HashMap<(String, String), Decimal>, // (delegator, validator) -> shares
 }
 
 impl Querier for WasmMockQuerier {
@@ -139,7 +139,7 @@ impl WasmMockQuerier {
             .delegations
             .get(&key)
             .cloned()
-            .unwrap_or(Uint128::zero());
+            .unwrap_or(Decimal::zero());
 
         let response = QueryDelegationResponse {
             delegation_response: Some(DelegationResponse {
@@ -228,7 +228,7 @@ impl WasmMockQuerier {
     }
 
     /// Allows setting **mock delegations** for testing.
-    pub fn with_delegations(&mut self, delegations: HashMap<(String, String), Uint128>) {
+    pub fn with_delegations(&mut self, delegations: HashMap<(String, String), Decimal>) {
         for ((delegator_addr, validator_addr), shares) in delegations.iter() {
             println!(
                 " Storing Delegation: Delegator: {}, Validator: {}, Shares: {}",

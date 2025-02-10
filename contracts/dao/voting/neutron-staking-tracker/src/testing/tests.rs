@@ -13,12 +13,13 @@ use cosmwasm_std::testing::message_info;
 use cosmwasm_std::{
     from_json,
     testing::{mock_dependencies, mock_env},
-    to_json_binary, Addr, Decimal256, Uint128,
+    to_json_binary, Addr, Decimal, Decimal256, Uint128,
 };
 use neutron_std::types::cosmos::staking::v1beta1::{
     QueryValidatorResponse, Validator as CosmosValidator,
 };
 use std::collections::HashMap;
+use std::str::FromStr;
 
 #[test]
 fn test_query_validator_response_serialization() {
@@ -339,19 +340,19 @@ fn test_total_vp_excludes_blacklisted_addresses() {
     let cons_addr2 = Addr::unchecked("neutronvalcons2xyz");
     let oper_addr2 = Addr::unchecked("neutronvaloper2xyz");
 
-    // Add validators using consensus address as the key
+    // Add validators using operator address as the key
     let validator1 = Validator {
         cons_address: cons_addr1.clone(),
         oper_address: oper_addr1.clone(),
         bonded: true,
         total_tokens: Uint128::new(1000),
-        total_shares: Uint128::new(1000),
+        total_shares: Decimal::from_str("1000.000000000000000000").unwrap(),
         active: true,
     };
     VALIDATORS
         .save(
             deps.as_mut().storage,
-            &cons_addr1,
+            &oper_addr1,
             &validator1,
             env.block.height,
         )
@@ -362,13 +363,13 @@ fn test_total_vp_excludes_blacklisted_addresses() {
         oper_address: oper_addr2.clone(),
         bonded: true,
         total_tokens: Uint128::new(500),
-        total_shares: Uint128::new(500),
+        total_shares: Decimal::from_str("500.000000000000000000").unwrap(),
         active: true,
     };
     VALIDATORS
         .save(
             deps.as_mut().storage,
-            &cons_addr2,
+            &oper_addr2,
             &validator2,
             env.block.height,
         )
@@ -376,8 +377,8 @@ fn test_total_vp_excludes_blacklisted_addresses() {
 
     let delegation1 = Delegation {
         delegator_address: delegator1.clone(),
-        validator_address: oper_addr1.clone(), // Uses operator address
-        shares: Uint128::new(500),
+        validator_address: oper_addr1.clone(),
+        shares: Decimal::from_str("500.000000000000000000").unwrap(),
     };
     DELEGATIONS
         .save(
@@ -390,8 +391,8 @@ fn test_total_vp_excludes_blacklisted_addresses() {
 
     let delegation2 = Delegation {
         delegator_address: delegator2.clone(),
-        validator_address: oper_addr2.clone(), // Uses operator address
-        shares: Uint128::new(500),
+        validator_address: oper_addr2.clone(),
+        shares: Decimal::from_str("500.000000000000000000").unwrap(),
     };
     DELEGATIONS
         .save(
@@ -425,7 +426,7 @@ fn test_total_vp_excludes_blacklisted_addresses() {
         "Initial total power should be sum of both validators' tokens"
     );
 
-    // Blacklist address "addr2"
+    // Blacklist delegator2
     let res = execute(
         deps.as_mut(),
         env.clone(),
@@ -437,7 +438,7 @@ fn test_total_vp_excludes_blacklisted_addresses() {
     assert!(res.is_ok(), "Error adding to blacklist: {:?}", res.err());
 
     // Ensure validator1 still exists and has tokens
-    let validator1_state = VALIDATORS.load(deps.as_ref().storage, &cons_addr1).unwrap();
+    let validator1_state = VALIDATORS.load(deps.as_ref().storage, &oper_addr1).unwrap();
     assert_eq!(
         validator1_state.total_tokens,
         Uint128::new(1000),
@@ -445,7 +446,7 @@ fn test_total_vp_excludes_blacklisted_addresses() {
     );
 
     // Ensure validator2 still exists
-    let validator2_state = VALIDATORS.load(deps.as_ref().storage, &cons_addr2).unwrap();
+    let validator2_state = VALIDATORS.load(deps.as_ref().storage, &oper_addr2).unwrap();
     assert_eq!(
         validator2_state.total_tokens,
         Uint128::new(500),
@@ -458,7 +459,7 @@ fn test_total_vp_excludes_blacklisted_addresses() {
         .unwrap();
     assert_eq!(
         delegation1_state.shares,
-        Uint128::new(500),
+        Decimal::from_str("500.000000000000000000").unwrap(),
         "Delegation1 shares incorrect"
     );
 
@@ -511,7 +512,7 @@ fn test_after_validator_bonded_with_mock_query() {
                 oper_address: oper_addr.clone(),
                 bonded: false,
                 total_tokens: Uint128::zero(),
-                total_shares: Uint128::zero(),
+                total_shares: Decimal::zero(), // Updated to Decimal
                 active: true,
             },
             env.block.height,
@@ -525,7 +526,7 @@ fn test_after_validator_bonded_with_mock_query() {
         status: 3, // Bonded status
         tokens: "1000".to_string(),
         jailed: false,
-        delegator_shares: "1000".to_string(),
+        delegator_shares: "1000.000000000000000000".to_string(), // Updated for Decimal precision
         description: None,
         unbonding_height: 0,
         unbonding_time: None,
@@ -550,7 +551,10 @@ fn test_after_validator_bonded_with_mock_query() {
     assert!(updated_validator.bonded, "Validator should be bonded");
     assert!(updated_validator.active, "Validator should remain active");
     assert_eq!(updated_validator.total_tokens, Uint128::new(1000));
-    assert_eq!(updated_validator.total_shares, Uint128::new(1000));
+    assert_eq!(
+        updated_validator.total_shares,
+        Decimal::from_atomics(Uint128::new(1000), 0).unwrap()
+    ); // Ensure Decimal conversion
 
     // Ensure response attributes match expected values
     let response = res.unwrap();
@@ -561,7 +565,7 @@ fn test_after_validator_bonded_with_mock_query() {
             ("valcons_address", &*cons_addr.to_string()), // Match contract's attribute key
             ("valoper_address", &*oper_addr.to_string()), // Match contract's attribute key
             ("total_tokens", "1000"),
-            ("total_shares", "1000"),
+            ("total_shares", "1000"), // Match Decimal formatting
         ]
     );
 }
@@ -593,7 +597,7 @@ fn test_before_validator_slashed_with_self_bonded_only() {
         oper_address: oper_addr.clone(),
         bonded: true,
         total_tokens: Uint128::new(1000), // Self-bonded tokens
-        total_shares: Uint128::new(1000), // No external delegators
+        total_shares: Decimal::from_atomics(Uint128::new(1000), 0).unwrap(), // Proper Decimal conversion (scale = 0)
         active: true,
     };
 
@@ -621,7 +625,10 @@ fn test_before_validator_slashed_with_self_bonded_only() {
     // Validate the updated validator state
     let updated_validator = VALIDATORS.load(deps.as_ref().storage, &oper_addr).unwrap();
     assert_eq!(updated_validator.total_tokens, Uint128::new(900)); // 10% slashed
-    assert_eq!(updated_validator.total_shares, Uint128::new(1000)); // Shares remain the same
+    assert_eq!(
+        updated_validator.total_shares,
+        Decimal::from_atomics(Uint128::new(1000), 0).unwrap()
+    ); // Shares remain the same (scale = 0)
 
     // Validate response attributes
     let response = res.unwrap();
@@ -671,7 +678,7 @@ fn test_before_validator_slashed() {
         oper_address: oper_addr.clone(),
         bonded: true,
         total_tokens: Uint128::new(500),
-        total_shares: Uint128::new(500), // Shares remain constant after slashing
+        total_shares: Decimal::from_atomics(Uint128::new(500), 0).unwrap(), // Use Decimal with scale = 0
         active: true,
     };
     VALIDATORS
@@ -688,7 +695,7 @@ fn test_before_validator_slashed() {
     let delegation = Delegation {
         delegator_address: delegator_addr.clone(),
         validator_address: oper_addr.clone(), // Uses `valoper_address`
-        shares: Uint128::new(500),            // Shares do not change after slashing
+        shares: Decimal::from_atomics(Uint128::new(500), 0).unwrap(), // Use Decimal
     };
     DELEGATIONS
         .save(
@@ -708,7 +715,7 @@ fn test_before_validator_slashed() {
         status: 3,                 // Bonded status
         tokens: "450".to_string(), // 10% slashed, from 500 → 450
         jailed: false,
-        delegator_shares: "500".to_string(), // Shares remain 500
+        delegator_shares: "500.000000000000000000".to_string(), // Proper Decimal format
         description: None,
         unbonding_height: 0,
         unbonding_time: None,
@@ -723,7 +730,7 @@ fn test_before_validator_slashed() {
     // Mock delegation query result
     deps.querier.with_delegations(HashMap::from([(
         (delegator_addr.to_string(), oper_addr.to_string()),
-        Uint128::new(500), // Ensure delegation data is available
+        Decimal::from_atomics(Uint128::new(500), 0).unwrap(), // Ensure delegation data is available
     )]));
 
     // Call `before_validator_slashed`
@@ -738,13 +745,19 @@ fn test_before_validator_slashed() {
     // Validate the updated validator state (using `valoper_address` as the key)
     let updated_validator = VALIDATORS.load(deps.as_ref().storage, &oper_addr).unwrap();
     assert_eq!(updated_validator.total_tokens, Uint128::new(450)); // Tokens reduced
-    assert_eq!(updated_validator.total_shares, Uint128::new(500)); // Shares remain the same
+    assert_eq!(
+        updated_validator.total_shares,
+        Decimal::from_atomics(Uint128::new(500), 0).unwrap()
+    ); // Shares remain the same
 
     // Validate the updated delegation state
     let updated_delegation = DELEGATIONS
         .load(deps.as_ref().storage, (&delegator_addr, &oper_addr))
         .unwrap();
-    assert_eq!(updated_delegation.shares, Uint128::new(500)); // Shares remain unchanged
+    assert_eq!(
+        updated_delegation.shares,
+        Decimal::from_atomics(Uint128::new(500), 0).unwrap()
+    ); // Shares remain unchanged
 
     // Validate the response attributes
     let response = res.unwrap();
@@ -753,7 +766,7 @@ fn test_before_validator_slashed() {
         ("valoper_address", "neutronvaloper1xyz"),
         ("cons_address", "neutronvalcons1xyz"),
         ("total_tokens", "450"),
-        ("total_shares", "500"),
+        ("total_shares", "500"), // Ensure decimal formatting
         ("slashing_fraction", "0.1"),
     ];
 
@@ -789,13 +802,13 @@ fn test_before_validator_slashed_voting_power_drops() {
     let oper_addr = Addr::unchecked("neutronvaloper1xyz");
     let cons_addr = Addr::unchecked("neutronvalcons1xyz");
 
-    // Initial validator state
+    // Initial validator state with Decimal for total_shares
     let validator = Validator {
         cons_address: cons_addr.clone(),
         oper_address: oper_addr.clone(),
         bonded: true,
         total_tokens: Uint128::new(1000),
-        total_shares: Uint128::new(1000),
+        total_shares: Decimal::from_atomics(Uint128::new(1000), 0).unwrap(), // Use Decimal with scale = 0
         active: true,
     };
 
@@ -816,12 +829,12 @@ fn test_before_validator_slashed_voting_power_drops() {
     let delegation1 = Delegation {
         delegator_address: delegator1.clone(),
         validator_address: oper_addr.clone(),
-        shares: Uint128::new(400),
+        shares: Decimal::from_str("400.000000000000000000").unwrap(),
     };
     let delegation2 = Delegation {
         delegator_address: delegator2.clone(),
         validator_address: oper_addr.clone(),
-        shares: Uint128::new(600),
+        shares: Decimal::from_str("600.000000000000000000").unwrap(),
     };
 
     DELEGATIONS
@@ -844,10 +857,20 @@ fn test_before_validator_slashed_voting_power_drops() {
     let slashing_fraction = Decimal256::percent(10); // 10% slashing
 
     // Calculate voting power BEFORE slashing
-    let voting_power_before_1 =
-        delegation1.shares * validator.total_tokens / validator.total_shares;
-    let voting_power_before_2 =
-        delegation2.shares * validator.total_tokens / validator.total_shares;
+    let voting_power_before_1 = delegation1
+        .shares
+        .checked_mul(Decimal::from_atomics(validator.total_tokens, 0).unwrap())
+        .unwrap()
+        .checked_div(validator.total_shares)
+        .unwrap()
+        .to_uint_floor();
+    let voting_power_before_2 = delegation2
+        .shares
+        .checked_mul(Decimal::from_atomics(validator.total_tokens, 0).unwrap())
+        .unwrap()
+        .checked_div(validator.total_shares)
+        .unwrap()
+        .to_uint_floor();
 
     // Mock validator query to reflect slashed tokens
     let proto_validator = CosmosValidator {
@@ -856,7 +879,7 @@ fn test_before_validator_slashed_voting_power_drops() {
         status: 3,                 // Bonded status
         tokens: "900".to_string(), // 10% slashed, from 1000 → 900
         jailed: false,
-        delegator_shares: "1000".to_string(),
+        delegator_shares: "1000.000000000000000000".to_string(), // Proper Decimal format
         description: None,
         unbonding_height: 0,
         unbonding_time: None,
@@ -871,11 +894,11 @@ fn test_before_validator_slashed_voting_power_drops() {
     deps.querier.with_delegations(HashMap::from([
         (
             (delegator1.to_string(), oper_addr.to_string()),
-            Uint128::new(400),
+            Decimal::from_str("600.000000000000000000").unwrap(),
         ),
         (
             (delegator2.to_string(), oper_addr.to_string()),
-            Uint128::new(600),
+            Decimal::from_str("600.000000000000000000").unwrap(),
         ),
     ]));
 
@@ -891,21 +914,33 @@ fn test_before_validator_slashed_voting_power_drops() {
     // Validate updated validator state
     let updated_validator = VALIDATORS.load(deps.as_ref().storage, &oper_addr).unwrap();
     assert_eq!(updated_validator.total_tokens, Uint128::new(900)); // Tokens reduced
-    assert_eq!(updated_validator.total_shares, Uint128::new(1000)); // Shares remain the same
+    assert_eq!(
+        updated_validator.total_shares,
+        Decimal::from_atomics(Uint128::new(1000), 0).unwrap()
+    ); // Shares remain the same
 
     // Validate updated delegation states
     let updated_delegation1 = DELEGATIONS
         .load(deps.as_ref().storage, (&delegator1, &oper_addr))
         .unwrap();
-    assert_eq!(updated_delegation1.shares, Uint128::new(400)); // Shares remain unchanged
+    assert_eq!(
+        updated_delegation1.shares,
+        Decimal::from_atomics(Uint128::new(400), 0).unwrap()
+    ); // Shares remain unchanged
 
     let updated_delegation2 = DELEGATIONS
         .load(deps.as_ref().storage, (&delegator2, &oper_addr))
         .unwrap();
-    assert_eq!(updated_delegation2.shares, Uint128::new(600)); // Shares remain unchanged
+    assert_eq!(
+        updated_delegation2.shares,
+        Decimal::from_atomics(Uint128::new(600), 0).unwrap()
+    ); // Shares remain unchanged
 
     // Ensure validator total shares match the sum of all delegations
-    let total_delegation_shares = updated_delegation1.shares + updated_delegation2.shares;
+    let total_delegation_shares = updated_delegation1
+        .shares
+        .checked_add(updated_delegation2.shares)
+        .unwrap();
     assert_eq!(
         updated_validator.total_shares, total_delegation_shares,
         "Validator total shares do not match the sum of all delegations!"
@@ -919,10 +954,20 @@ fn test_before_validator_slashed_voting_power_drops() {
     );
 
     // Calculate voting power AFTER slashing
-    let voting_power_after_1 = updated_delegation1.shares * updated_validator.total_tokens
-        / updated_validator.total_shares;
-    let voting_power_after_2 = updated_delegation2.shares * updated_validator.total_tokens
-        / updated_validator.total_shares;
+    let voting_power_after_1 = updated_delegation1
+        .shares
+        .checked_mul(Decimal::from_atomics(updated_validator.total_tokens, 0).unwrap())
+        .unwrap()
+        .checked_div(updated_validator.total_shares)
+        .unwrap()
+        .to_uint_floor();
+    let voting_power_after_2 = updated_delegation2
+        .shares
+        .checked_mul(Decimal::from_atomics(updated_validator.total_tokens, 0).unwrap())
+        .unwrap()
+        .checked_div(updated_validator.total_shares)
+        .unwrap()
+        .to_uint_floor();
 
     // Ensure delegators' voting power decreased
     assert!(
@@ -951,7 +996,7 @@ fn test_before_validator_slashed_voting_power_drops() {
         ("valoper_address", oper_addr.as_str()),
         ("cons_address", cons_addr.as_str()),
         ("total_tokens", "900"),
-        ("total_shares", "1000"),
+        ("total_shares", "1000"), // Ensure decimal formatting
         ("slashing_fraction", slashing_fraction_str.as_str()), // Use the stored string
     ];
 
@@ -974,7 +1019,7 @@ fn test_after_validator_created_with_mock_query() {
         jailed: false,
         status: 2, // Unbonded status
         tokens: "1000".to_string(),
-        delegator_shares: "1000".to_string(),
+        delegator_shares: "1000.000000000000000000".to_string(), // Ensure proper decimal format
         description: None,
         unbonding_height: 0,
         unbonding_time: None,
@@ -1006,7 +1051,7 @@ fn test_after_validator_created_with_mock_query() {
     );
     assert_eq!(
         validator.total_shares,
-        Uint128::new(1000),
+        Decimal::from_atomics(Uint128::new(1000), 0).unwrap(),
         "Total shares do not match the mocked data"
     );
     assert!(validator.active, "Validator should be active");
@@ -1031,7 +1076,7 @@ fn test_before_delegation_removed() {
         oper_address: oper_addr.clone(),
         bonded: true,
         total_tokens: Uint128::new(1000),
-        total_shares: Uint128::new(1000),
+        total_shares: Decimal::from_str("1000.000000000000000000").unwrap(), // Use Decimal
         active: true,
     };
     VALIDATORS
@@ -1047,41 +1092,22 @@ fn test_before_delegation_removed() {
     let delegator_addr = delegator3;
     let delegation = Delegation {
         delegator_address: delegator_addr.clone(),
-        validator_address: oper_addr.clone(), //  Uses valoper
-        shares: Uint128::new(500),
+        validator_address: oper_addr.clone(), // Uses valoper
+        shares: Decimal::from_str("500.000000000000000000").unwrap(), // Use Decimal
     };
     DELEGATIONS
         .save(
             deps.as_mut().storage,
-            (&delegator_addr, &oper_addr), //  Uses valoper
+            (&delegator_addr, &oper_addr), // Uses valoper
             &delegation,
             env.block.height,
         )
         .unwrap();
 
-    // Mock validator query response (reflecting updated token state after removal)
-    let proto_validator = CosmosValidator {
-        operator_address: oper_addr.to_string(),
-        consensus_pubkey: None,
-        status: 3,                 // Bonded status
-        tokens: "500".to_string(), // 50% slashed (from 1000 to 500)
-        jailed: false,
-        delegator_shares: "500".to_string(), // Updated shares after removal
-        description: None,
-        unbonding_height: 0,
-        unbonding_time: None,
-        commission: None,
-        min_self_delegation: "1".to_string(),
-        unbonding_on_hold_ref_count: 0,
-        unbonding_ids: vec![],
-    };
-
-    deps.querier.with_validators(vec![proto_validator]);
-
     // Mock delegation query response
     deps.querier.with_delegations(HashMap::from([(
         (delegator_addr.to_string(), oper_addr.to_string()),
-        Uint128::zero(), // Indicating delegation has been removed
+        Decimal::zero(), // Indicating delegation has been removed
     )]));
 
     // Call `before_delegation_removed`
@@ -1092,10 +1118,10 @@ fn test_before_delegation_removed() {
         oper_addr.to_string(),
     );
 
-    //  Check if execution was successful
+    // Check if execution was successful
     assert!(res.is_ok(), "Error: {:?}", res.err());
 
-    //  Validate updated validator state
+    // Validate updated validator state
     let updated_validator = VALIDATORS.load(deps.as_ref().storage, &oper_addr).unwrap();
     assert_eq!(
         updated_validator.total_tokens,
@@ -1104,7 +1130,7 @@ fn test_before_delegation_removed() {
     );
     assert_eq!(
         updated_validator.total_shares,
-        Uint128::new(500),
+        Decimal::from_atomics(Uint128::new(500), 0).unwrap(),
         "Validator total shares should be reduced to 500"
     );
 }
@@ -1119,24 +1145,24 @@ fn test_create_delegation_and_query_voting_power_direct_write() {
     let oper_addr = Addr::unchecked("neutronvaloper1xyz");
     let delegator_addr = Addr::unchecked("delegator1");
 
-    // Store validator directly in state (Using consensus address as key)
+    // Store validator directly in state
     let validator = Validator {
         cons_address: cons_addr.clone(), // `valcons`
         oper_address: oper_addr.clone(), // `valoper`
         bonded: true,
         total_tokens: Uint128::new(1000),
-        total_shares: Uint128::new(1000),
+        total_shares: Decimal::from_atomics(Uint128::new(1000), 0).unwrap(), // Use Decimal
         active: true,
     };
     VALIDATORS
-        .save(deps.as_mut().storage, &cons_addr, &validator, 10) // Store by consensus address
+        .save(deps.as_mut().storage, &oper_addr, &validator, 10) // Store by `valoper`
         .unwrap();
 
     // Store delegation directly in state (Using operator address)
     let delegation = Delegation {
         delegator_address: delegator_addr.clone(),
         validator_address: oper_addr.clone(), // Uses `valoper`
-        shares: Uint128::new(500),
+        shares: Decimal::from_atomics(Uint128::new(500), 0).unwrap(), // Use Decimal
     };
     DELEGATIONS
         .save(
@@ -1158,10 +1184,10 @@ fn test_create_delegation_and_query_voting_power_direct_write() {
 
     let query_res = query_response.unwrap();
     assert_eq!(
-        query_res, delegation.shares,
+        query_res,
+        delegation.shares.to_uint_floor(),
         "Delegator voting power mismatch"
     );
-    // assert_eq!(query_res.height, env.block.height, "Unexpected query height");
 
     // Query **total voting power** at current height
     let total_power_res = query_total_power_at_height(deps.as_ref(), env.clone(), None);
@@ -1172,7 +1198,6 @@ fn test_create_delegation_and_query_voting_power_direct_write() {
         total_power_response, validator.total_tokens,
         "Total voting power mismatch"
     );
-    // assert_eq!(total_power_response.height, env.block.height, "Unexpected query height");
 
     // Simulate passage of time (historical queries)
     let historical_height = 11;
@@ -1192,10 +1217,10 @@ fn test_create_delegation_and_query_voting_power_direct_write() {
 
     let historical_vp = historical_vp_res.unwrap();
     assert_eq!(
-        historical_vp, delegation.shares,
+        historical_vp,
+        delegation.shares.to_uint_floor(),
         "Historical voting power mismatch"
     );
-    // assert_eq!(historical_vp.height, historical_height, "Unexpected historical height");
 
     // 🔍 Query **historical** total power
     let historical_total_power_res =
@@ -1210,7 +1235,6 @@ fn test_create_delegation_and_query_voting_power_direct_write() {
         historical_total_power, validator.total_tokens,
         "Historical total power mismatch"
     );
-    // assert_eq!(historical_total_power.height, historical_height, "Unexpected historical height");
 }
 
 #[test]
@@ -1245,7 +1269,7 @@ fn test_after_delegation_modified() {
         oper_address: oper_addr.clone(),
         bonded: true,
         total_tokens: Uint128::new(1000),
-        total_shares: Uint128::new(1000),
+        total_shares: Decimal::from_atomics(Uint128::new(1000), 0).unwrap(), // Use Decimal
         active: true,
     };
     VALIDATORS
@@ -1261,7 +1285,7 @@ fn test_after_delegation_modified() {
     let initial_delegation = Delegation {
         delegator_address: delegator_addr.clone(),
         validator_address: oper_addr.clone(),
-        shares: Uint128::new(100), // Initial shares before modification
+        shares: Decimal::from_atomics(Uint128::new(100), 0).unwrap(), // Use Decimal
     };
     DELEGATIONS
         .save(
@@ -1279,7 +1303,7 @@ fn test_after_delegation_modified() {
         status: 3,                  // Bonded status
         tokens: "1200".to_string(), // Updated tokens after delegation
         jailed: false,
-        delegator_shares: "1200".to_string(), // Updated shares
+        delegator_shares: "1200.000000000000000000".to_string(), // Updated shares as Decimal string
         description: None,
         unbonding_height: 0,
         unbonding_time: None,
@@ -1293,7 +1317,7 @@ fn test_after_delegation_modified() {
     // **Mock delegation query response with updated shares**
     deps.querier.with_delegations(HashMap::from([(
         (delegator_addr.to_string(), oper_addr.to_string()),
-        Uint128::new(200), // New delegation amount
+        Decimal::from_atomics(Uint128::new(200), 0).unwrap(), // Updated delegation shares as Decimal
     )]));
 
     // Call `after_delegation_modified`
@@ -1309,13 +1333,19 @@ fn test_after_delegation_modified() {
     // Validate updated validator state
     let updated_validator = VALIDATORS.load(deps.as_ref().storage, &oper_addr).unwrap();
     assert_eq!(updated_validator.total_tokens, Uint128::new(1200)); // Tokens updated
-    assert_eq!(updated_validator.total_shares, Uint128::new(1200)); // Shares updated
+    assert_eq!(
+        updated_validator.total_shares,
+        Decimal::from_atomics(Uint128::new(1200), 0).unwrap()
+    ); // Shares updated
 
     // Validate updated delegation state
     let updated_delegation = DELEGATIONS
         .load(deps.as_ref().storage, (&delegator_addr, &oper_addr))
         .unwrap();
-    assert_eq!(updated_delegation.shares, Uint128::new(200)); // New delegation shares
+    assert_eq!(
+        updated_delegation.shares,
+        Decimal::from_atomics(Uint128::new(200), 0).unwrap()
+    ); // New delegation shares
 
     // Validate response attributes
     let response = res.unwrap();
@@ -1347,7 +1377,7 @@ fn test_after_delegation_modified() {
     // **Mock delegation query response with updated shares**
     deps.querier.with_delegations(HashMap::from([(
         (delegator_addr.to_string(), oper_addr.to_string()),
-        Uint128::new(100), // New delegation amount
+        Decimal::from_atomics(Uint128::new(100), 0).unwrap(), // New delegation amount as Decimal
     )]));
 
     // Call `after_delegation_modified`
@@ -1364,7 +1394,7 @@ fn test_after_delegation_modified() {
         status: 3,                  // Bonded status
         tokens: "1100".to_string(), // Updated tokens after delegation
         jailed: false,
-        delegator_shares: "1100".to_string(), // Updated shares
+        delegator_shares: "1100.000000000000000000".to_string(), // Updated shares as Decimal string
         description: None,
         unbonding_height: 0,
         unbonding_time: None,
@@ -1381,7 +1411,10 @@ fn test_after_delegation_modified() {
     let updated_delegation = DELEGATIONS
         .load(deps.as_ref().storage, (&delegator_addr, &oper_addr))
         .unwrap();
-    assert_eq!(updated_delegation.shares, Uint128::new(100)); // New delegation shares
+    assert_eq!(
+        updated_delegation.shares,
+        Decimal::from_atomics(Uint128::new(100), 0).unwrap()
+    ); // New delegation shares
 
     env.block.height += 5;
 
@@ -1390,4 +1423,192 @@ fn test_after_delegation_modified() {
     let voting_power =
         query_voting_power_at_height(deps.as_ref(), env.clone(), delegator_addr, None).unwrap();
     assert_eq!(voting_power, Uint128::new(100));
+}
+
+#[test]
+fn test_after_delegation_modified_large_scaled_shares() {
+    let mut deps = dependencies();
+    deps.api = deps.api.with_prefix("neutron");
+
+    // store CONFIG
+    let config = Config {
+        name: "Test Vault".to_string(),
+        description: "Testing vault functionality".to_string(),
+        owner: deps.api.addr_make("admin"),
+        denom: "token".to_string(),
+        staking_proxy_info_contract_address: Some(
+            deps.api.addr_make("staking_proxy_info_contract_address"),
+        ),
+    };
+    CONFIG.save(deps.as_mut().storage, &config).unwrap();
+
+    let delegator1 = deps.api.addr_make("delegator1");
+
+    let mut env = mock_env();
+
+    // Define operator (valoper) and consensus (valcons) addresses
+    let oper_addr = Addr::unchecked("neutronvaloper1xdlvhs2l2wq0cc3eskyxphstns3348el5l4qan");
+    let cons_addr = Addr::unchecked("neutronvalcons1xyz");
+    let delegator_addr = delegator1;
+
+    // Store validator in the state using valoper as the primary key
+    let validator = Validator {
+        cons_address: cons_addr.clone(),
+        oper_address: oper_addr.clone(),
+        bonded: true,
+        total_tokens: Uint128::new(166666667666), // Tokens remain as original values
+        total_shares: Decimal::from_atomics(Uint128::new(166666667666), 18).unwrap(), // Use Decimal with precision
+        active: true,
+    };
+    VALIDATORS
+        .save(
+            deps.as_mut().storage,
+            &oper_addr,
+            &validator,
+            env.block.height,
+        )
+        .unwrap();
+
+    // Store initial delegation to ensure it exists before calling `after_delegation_modified`
+    let initial_delegation = Delegation {
+        delegator_address: delegator_addr.clone(),
+        validator_address: oper_addr.clone(),
+        shares: Decimal::from_atomics(Uint128::new(166666667666), 18).unwrap(), // Initial shares before modification
+    };
+    DELEGATIONS
+        .save(
+            deps.as_mut().storage,
+            (&delegator_addr, &oper_addr),
+            &initial_delegation,
+            env.block.height,
+        )
+        .unwrap();
+
+    // Mock validator query response
+    let proto_validator = CosmosValidator {
+        operator_address: oper_addr.to_string(),
+        consensus_pubkey: None,
+        status: 3,                          // Bonded status
+        tokens: "166666667667".to_string(), // Tokens remain unchanged
+        jailed: false,
+        delegator_shares: "166666667667.000000000000000000".to_string(), // Shares formatted as Decimal
+        description: None,
+        unbonding_height: 0,
+        unbonding_time: None,
+        commission: None,
+        min_self_delegation: "1".to_string(),
+        unbonding_on_hold_ref_count: 0,
+        unbonding_ids: vec![],
+    };
+    deps.querier.with_validators(vec![proto_validator]);
+
+    // **Mock delegation query response with updated shares**
+    deps.querier.with_delegations(HashMap::from([(
+        (delegator_addr.to_string(), oper_addr.to_string()),
+        Decimal::from_str("166666667667.000000000000000000").unwrap(), // Updated delegation amount
+    )]));
+
+    // Call `after_delegation_modified`
+    let res = after_delegation_modified(
+        deps.as_mut(),
+        env.clone(),
+        delegator_addr.to_string(),
+        oper_addr.to_string(),
+    );
+
+    assert!(res.is_ok(), "Error: {:?}", res.err());
+
+    // Validate updated validator state
+    let updated_validator = VALIDATORS.load(deps.as_ref().storage, &oper_addr).unwrap();
+    assert_eq!(updated_validator.total_tokens, Uint128::new(166666667667)); // Tokens remain unchanged
+    assert_eq!(
+        updated_validator.total_shares,
+        Decimal::from_str("166666667667.000000000000000000").unwrap()
+    ); // Shares updated
+
+    // Validate updated delegation state
+    let updated_delegation = DELEGATIONS
+        .load(deps.as_ref().storage, (&delegator_addr, &oper_addr))
+        .unwrap();
+    assert_eq!(
+        updated_delegation.shares,
+        Decimal::from_str("166666667667.000000000000000000").unwrap()
+    ); // New delegation shares
+
+    // Validate response attributes
+    let response = res.unwrap();
+    assert_eq!(
+        response.attributes,
+        vec![
+            ("action", "after_delegation_modified"),
+            ("delegator", delegator_addr.to_string().as_str()),
+            ("cons_address", cons_addr.to_string().as_str()),
+            ("valoper_address", oper_addr.to_string().as_str()),
+            ("total_shares", "166666667667"),
+            ("total_tokens", "166666667667"),
+            ("delegation_shares", "166666667667"),
+        ]
+    );
+
+    env.block.height += 5;
+
+    let total_voting_power = query_total_power_at_height(deps.as_ref(), env.clone(), None).unwrap();
+    assert_eq!(total_voting_power, Uint128::new(166666667667));
+    let voting_power =
+        query_voting_power_at_height(deps.as_ref(), env.clone(), delegator_addr.clone(), None)
+            .unwrap();
+    assert_eq!(voting_power, Uint128::new(166666667667));
+
+    env.block.height += 5;
+
+    //-----------------------------------------------------------------
+    // **Mock delegation query response with updated shares**
+    deps.querier.with_delegations(HashMap::from([(
+        (delegator_addr.to_string(), oper_addr.to_string()),
+        Decimal::from_atomics(Uint128::new(166666667666), 0).unwrap(), // New delegation amount
+    )]));
+
+    // Call `after_delegation_modified`
+    let res = after_delegation_modified(
+        deps.as_mut(),
+        env.clone(),
+        delegator_addr.to_string(),
+        oper_addr.to_string(),
+    );
+
+    let proto_validator = CosmosValidator {
+        operator_address: oper_addr.to_string(),
+        consensus_pubkey: None,
+        status: 3,                          // Bonded status
+        tokens: "166666667666".to_string(), // Tokens remain unchanged
+        jailed: false,
+        delegator_shares: "166666667666.000000000000000000".to_string(), // Shares formatted as Decimal
+        description: None,
+        unbonding_height: 0,
+        unbonding_time: None,
+        commission: None,
+        min_self_delegation: "1".to_string(),
+        unbonding_on_hold_ref_count: 0,
+        unbonding_ids: vec![],
+    };
+    deps.querier.with_validators(vec![proto_validator]);
+
+    assert!(res.is_ok(), "Error: {:?}", res.err());
+
+    // Validate updated delegation state
+    let updated_delegation = DELEGATIONS
+        .load(deps.as_ref().storage, (&delegator_addr, &oper_addr))
+        .unwrap();
+    assert_eq!(
+        updated_delegation.shares,
+        Decimal::from_str("166666667666.000000000000000000").unwrap()
+    ); // New delegation shares
+
+    env.block.height += 5;
+
+    let total_voting_power = query_total_power_at_height(deps.as_ref(), env.clone(), None).unwrap();
+    assert_eq!(total_voting_power, Uint128::new(166666667666));
+    let voting_power =
+        query_voting_power_at_height(deps.as_ref(), env.clone(), delegator_addr, None).unwrap();
+    assert_eq!(voting_power, Uint128::new(166666667666));
 }

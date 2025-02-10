@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Decimal256, Uint128, Uint64};
+use cosmwasm_std::{Addr, Decimal256, Uint128};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
@@ -64,11 +64,6 @@ pub enum SudoMsg {
         val_addr: String,
     },
 
-    BeforeDelegationSharesModified {
-        del_addr: String,
-        val_addr: String,
-    },
-
     BeforeDelegationRemoved {
         del_addr: String,
         val_addr: String,
@@ -82,10 +77,6 @@ pub enum SudoMsg {
     BeforeValidatorSlashed {
         val_addr: String,
         fraction: Decimal256,
-    },
-
-    AfterUnbondingInitiated {
-        id: Uint64,
     },
 }
 
