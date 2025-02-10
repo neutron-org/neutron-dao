@@ -10,20 +10,30 @@
       "properties": {
         "update_config": {
           "type": "object",
-          "required": [
-            "description",
-            "name",
-            "owner"
-          ],
           "properties": {
             "description": {
-              "type": "string"
+              "type": [
+                "string",
+                "null"
+              ]
             },
             "name": {
-              "type": "string"
+              "type": [
+                "string",
+                "null"
+              ]
             },
             "owner": {
-              "type": "string"
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "staking_proxy_info_contract_address": {
+              "type": [
+                "string",
+                "null"
+              ]
             }
           },
           "additionalProperties": false

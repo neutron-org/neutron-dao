@@ -6,7 +6,7 @@
     "description",
     "name",
     "owner",
-    "vesting_contract_address"
+    "staking_tracker_contract_address"
   ],
   "properties": {
     "description": {
@@ -18,7 +18,7 @@
     "owner": {
       "$ref": "#/definitions/Addr"
     },
-    "vesting_contract_address": {
+    "staking_tracker_contract_address": {
       "$ref": "#/definitions/Addr"
     }
   },

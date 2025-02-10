@@ -61,6 +61,7 @@ fn test_instantiate() {
         description: "A test DAO contract".to_string(),
         owner: valid_neutron_address.to_string(), //  Use valid address
         denom: "denom".to_string(),
+        staking_proxy_info_contract_address: None,
     };
 
     let info = message_info(&valid_neutron_address, &[]); //  Use the same address
@@ -97,16 +98,23 @@ fn test_execute_update_config() {
         description: "A test contract".to_string(),
         owner: owner.to_string(),
         denom: "denom".to_string(),
+        staking_proxy_info_contract_address: None,
     };
     let info = message_info(creator, &[]);
     instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
 
     let new_owner = deps.api.addr_make("new_owner");
+    let new_staking_proxy_info_contract_address = deps
+        .api
+        .addr_make("new_staking_proxy_info_contract_address");
     // Update config with correct owner
     let update_msg = ExecuteMsg::UpdateConfig {
-        owner: new_owner.to_string(),
-        name: "Updated DAO".to_string(),
-        description: "Updated description".to_string(),
+        owner: Some(new_owner.to_string()),
+        name: Some("Updated DAO".to_string()),
+        description: Some("Updated description".to_string()),
+        staking_proxy_info_contract_address: Some(
+            new_staking_proxy_info_contract_address.to_string(),
+        ),
     };
     let info = message_info(owner, &[]);
     let res = execute(deps.as_mut(), mock_env(), info, update_msg);
@@ -117,6 +125,10 @@ fn test_execute_update_config() {
     assert_eq!(config.name, "Updated DAO");
     assert_eq!(config.description, "Updated description");
     assert_eq!(config.owner, new_owner);
+    assert_eq!(
+        config.staking_proxy_info_contract_address,
+        Some(new_staking_proxy_info_contract_address)
+    );
 }
 
 #[test]
@@ -125,6 +137,9 @@ fn test_update_config_unauthorized() {
     deps.api = deps.api.with_prefix("neutron");
 
     let owner = &deps.api.addr_make("owner");
+    let new_staking_proxy_info_contract_address = deps
+        .api
+        .addr_make("new_staking_proxy_info_contract_address");
     let new_owner = &deps.api.addr_make("new_owner");
     let creator = &deps.api.addr_make("creator");
     let unauthorized = &deps.api.addr_make("unauthorized");
@@ -135,15 +150,19 @@ fn test_update_config_unauthorized() {
         description: "A test DAO contract".to_string(),
         owner: owner.to_string(),
         denom: "denom".to_string(),
+        staking_proxy_info_contract_address: None,
     };
     let info = message_info(creator, &[]);
     instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
 
     // Try to update config with wrong owner
     let update_msg = ExecuteMsg::UpdateConfig {
-        owner: new_owner.to_string(),
-        name: "Updated DAO".to_string(),
-        description: "Updated description".to_string(),
+        owner: Some(new_owner.to_string()),
+        name: Some("Updated DAO".to_string()),
+        description: Some("Updated description".to_string()),
+        staking_proxy_info_contract_address: Some(
+            new_staking_proxy_info_contract_address.to_string(),
+        ),
     };
     let info = message_info(unauthorized, &[]);
     let res = execute(deps.as_mut(), mock_env(), info, update_msg);
@@ -154,6 +173,7 @@ fn test_update_config_unauthorized() {
     assert_eq!(config.name, "Test DAO");
     assert_eq!(config.description, "A test DAO contract");
     assert_eq!(config.owner, owner);
+    assert_eq!(config.staking_proxy_info_contract_address, None);
 }
 
 #[test]
@@ -171,6 +191,7 @@ fn test_add_and_remove_from_blacklist() {
         description: String::from("Testing blacklist functionality"),
         owner: admin.clone(),
         denom: String::from("testdenom"),
+        staking_proxy_info_contract_address: None,
     };
     CONFIG.save(deps.as_mut().storage, &config).unwrap();
 
@@ -242,6 +263,7 @@ fn test_check_if_address_is_blacklisted() {
         description: String::from("Testing blacklist functionality"),
         owner: admin.clone(),
         denom: String::from("testdenom"),
+        staking_proxy_info_contract_address: None,
     };
     CONFIG.save(deps.as_mut().storage, &config).unwrap();
 
@@ -307,6 +329,7 @@ fn test_total_vp_excludes_blacklisted_addresses() {
         description: "Testing vault functionality".to_string(),
         owner: admin.clone(),
         denom: "token".to_string(),
+        staking_proxy_info_contract_address: None,
     };
     CONFIG.save(deps.as_mut().storage, &config).unwrap();
 
@@ -548,6 +571,18 @@ fn test_before_validator_slashed_with_self_bonded_only() {
     let mut deps = mock_dependencies();
     let env = mock_env();
 
+    // store CONFIG
+    let config = Config {
+        name: "Test Vault".to_string(),
+        description: "Testing vault functionality".to_string(),
+        owner: deps.api.addr_make("admin"),
+        denom: "token".to_string(),
+        staking_proxy_info_contract_address: Some(
+            deps.api.addr_make("staking_proxy_info_contract_address"),
+        ),
+    };
+    CONFIG.save(deps.as_mut().storage, &config).unwrap();
+
     // Define consensus and operator addresses
     let cons_addr = Addr::unchecked("neutronvalcons1xyz");
     let oper_addr = Addr::unchecked("neutronvaloper1xyz");
@@ -613,6 +648,18 @@ fn test_before_validator_slashed_with_self_bonded_only() {
 fn test_before_validator_slashed() {
     let mut deps = dependencies();
     let env = mock_env();
+
+    // store CONFIG
+    let config = Config {
+        name: "Test Vault".to_string(),
+        description: "Testing vault functionality".to_string(),
+        owner: deps.api.addr_make("admin"),
+        denom: "token".to_string(),
+        staking_proxy_info_contract_address: Some(
+            deps.api.addr_make("staking_proxy_info_contract_address"),
+        ),
+    };
+    CONFIG.save(deps.as_mut().storage, &config).unwrap();
 
     // Define operator and consensus addresses
     let oper_addr = Addr::unchecked("neutronvaloper1xyz");
@@ -725,6 +772,18 @@ fn test_before_validator_slashed() {
 fn test_before_validator_slashed_voting_power_drops() {
     let mut deps = dependencies();
     let env = mock_env();
+
+    // store CONFIG
+    let config = Config {
+        name: "Test Vault".to_string(),
+        description: "Testing vault functionality".to_string(),
+        owner: deps.api.addr_make("admin"),
+        denom: "token".to_string(),
+        staking_proxy_info_contract_address: Some(
+            deps.api.addr_make("staking_proxy_info_contract_address"),
+        ),
+    };
+    CONFIG.save(deps.as_mut().storage, &config).unwrap();
 
     // Define operator address (primary key for validators now)
     let oper_addr = Addr::unchecked("neutronvaloper1xyz");
@@ -1066,6 +1125,18 @@ fn test_after_delegation_modified() {
 
     let mut env = mock_env();
 
+    // store CONFIG
+    let config = Config {
+        name: "Test Vault".to_string(),
+        description: "Testing vault functionality".to_string(),
+        owner: deps.api.addr_make("admin"),
+        denom: "token".to_string(),
+        staking_proxy_info_contract_address: Some(
+            deps.api.addr_make("staking_proxy_info_contract_address"),
+        ),
+    };
+    CONFIG.save(deps.as_mut().storage, &config).unwrap();
+
     // Define operator (valoper) and consensus (valcons) addresses
     let oper_addr = Addr::unchecked("neutronvaloper1xyz");
     let cons_addr = Addr::unchecked("neutronvalcons1xyz");
@@ -1228,6 +1299,18 @@ fn test_after_delegation_modified() {
 fn test_after_delegation_modified_large_scaled_shares() {
     let mut deps = dependencies();
     deps.api = deps.api.with_prefix("neutron");
+
+    // store CONFIG
+    let config = Config {
+        name: "Test Vault".to_string(),
+        description: "Testing vault functionality".to_string(),
+        owner: deps.api.addr_make("admin"),
+        denom: "token".to_string(),
+        staking_proxy_info_contract_address: Some(
+            deps.api.addr_make("staking_proxy_info_contract_address"),
+        ),
+    };
+    CONFIG.save(deps.as_mut().storage, &config).unwrap();
 
     let delegator1 = deps.api.addr_make("delegator1");
 

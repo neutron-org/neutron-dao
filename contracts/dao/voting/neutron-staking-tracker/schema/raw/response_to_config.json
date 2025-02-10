@@ -21,6 +21,16 @@
     },
     "owner": {
       "$ref": "#/definitions/Addr"
+    },
+    "staking_proxy_info_contract_address": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/Addr"
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   },
   "additionalProperties": false,

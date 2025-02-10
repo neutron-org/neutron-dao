@@ -1,5 +1,5 @@
 {
-  "contract_name": "investors-vesting-vault",
+  "contract_name": "neutron-staking-vault",
   "contract_version": "0.2.1",
   "idl_version": "1.0.0",
   "instantiate": {
@@ -10,7 +10,7 @@
       "description",
       "name",
       "owner",
-      "vesting_contract_address"
+      "staking_tracker_contract_address"
     ],
     "properties": {
       "description": {
@@ -22,7 +22,7 @@
       "owner": {
         "type": "string"
       },
-      "vesting_contract_address": {
+      "staking_tracker_contract_address": {
         "type": "string"
       }
     }
@@ -58,7 +58,7 @@
                   "null"
                 ]
               },
-              "vesting_contract_address": {
+              "staking_tracker_contract_address": {
                 "type": [
                   "string",
                   "null"
@@ -330,7 +330,7 @@
         "description",
         "name",
         "owner",
-        "vesting_contract_address"
+        "staking_tracker_contract_address"
       ],
       "properties": {
         "description": {
@@ -342,7 +342,7 @@
         "owner": {
           "$ref": "#/definitions/Addr"
         },
-        "vesting_contract_address": {
+        "staking_tracker_contract_address": {
           "$ref": "#/definitions/Addr"
         }
       },
