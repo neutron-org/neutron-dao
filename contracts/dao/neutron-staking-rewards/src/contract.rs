@@ -162,15 +162,11 @@ fn update_stake(
     info: MessageInfo,
     user: String,
 ) -> Result<Response, ContractError> {
-    deps.api.debug(">>>> update_stake");
-
     let config = CONFIG.load(deps.storage)?;
 
     if info.sender != config.staking_info_proxy {
         return Err(Unauthorized {});
     }
-
-    deps.api.debug(">>>> update_stake authorized");
 
     // This contract does not track DAO’s stake changes. If the DAO address is involved, revert.
     let user_addr = deps.api.addr_validate(&user)?;
@@ -178,12 +174,8 @@ fn update_stake(
         return Err(DaoStakeChangeNotTracked {});
     }
 
-    deps.api.debug(">>>> update_stake authorized 2");
-
     let (user_info, state) =
         process_slashing_events(deps.as_ref(), config.clone(), user_addr.clone())?;
-
-    deps.api.debug(">>>> after process_slashing_events");
 
     let updated_state = get_updated_state(&config, state, env.block.height)?;
     let mut updated_user_info = get_updated_user_info(
@@ -192,8 +184,6 @@ fn update_stake(
         env.block.height,
         config.staking_denom.clone(),
     )?;
-    deps.api
-        .debug(">>>> got updated_user_info and updated_stake");
 
     // Set the user stake to current value
     updated_user_info.stake = safe_query_user_stake(
@@ -203,18 +193,8 @@ fn update_stake(
         config.staking_denom.clone(),
         env.block.height,
     )?;
-
-    deps.api.debug(">>>> safe_query_user_stake passed");
-
-    deps.api
-        .debug(format!(">>>> updated_state: {:?}", updated_state).as_ref());
-    deps.api
-        .debug(format!(">>>> updated_user_info: {:?}", updated_user_info).as_ref());
-
     STATE.save(deps.storage, &updated_state)?;
     USERS.save(deps.storage, &user_addr.clone(), &updated_user_info)?;
-
-    deps.api.debug(">>>> STATE.save ok");
 
     Ok(Response::new()
         .add_attribute("action", "update_stake")
@@ -227,30 +207,20 @@ fn update_stake(
 fn slashing(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
     let config = CONFIG.load(deps.storage)?;
 
-    deps.api.debug(">>>> slashing");
-
     if info.sender != config.staking_info_proxy {
         return Err(Unauthorized {});
     }
 
-    deps.api.debug(">>>> slashing authorized");
-
     let mut state = STATE.load(deps.storage)?;
 
     if state.slashing_events.ends_with(&[env.block.height]) {
-        deps.api
-            .debug(">>>> slashing same block height slashing - ignore");
         return Ok(Response::new()
             .add_attribute("action", "slashing")
             .add_attribute("result", "ignored"));
     }
 
-    deps.api.debug(">>>> slashing after block height check");
-
     state.slashing_events.push(env.block.height);
     STATE.save(deps.storage, &state)?;
-
-    deps.api.debug(">>>> slashing state.save ok");
 
     Ok(Response::new()
         .add_attribute("action", "slashing")
@@ -534,15 +504,6 @@ fn safe_query_user_stake(
     staking_denom: String,
     height: u64,
 ) -> Result<Coin, ContractError> {
-    deps.api.debug(">>>> before querying StakeQuery::User");
-    deps.api.debug(
-        format!(
-            ">>>> user_addr: {:?}   height: {:?}",
-            user_addr.to_string(),
-            height
-        )
-        .as_str(),
-    );
     let res: StdResult<Coin> = deps.querier.query_wasm_smart(
         staking_info_proxy,
         &InfoProxyQuery::UserStake {
@@ -556,19 +517,9 @@ fn safe_query_user_stake(
     match res {
         Err(err) => {
             let err_str = err.to_string();
-            deps.api.debug(format!(">>>> ERROR: {}", err_str).as_ref());
             Err(ContractError::Std(StdError::generic_err(err_str)))
         }
         Ok(user_stake) => {
-            deps.api.debug(">>>> after querying StakeQuery::User");
-            deps.api.debug(
-                format!(
-                    ">>>> response to StakeQueryUser:: coin: {:?}",
-                    user_stake.clone()
-                )
-                .as_ref(),
-            );
-
             if user_stake.denom != staking_denom {
                 return Err(InvalidStakeDenom {});
             }
