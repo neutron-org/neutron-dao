@@ -122,7 +122,6 @@ pub struct Delegation {
     /// - `2.123456789000000000` shares are stored as `"2123456789000000000"`.
     ///
     /// Using `Uint128` directly eliminates unnecessary conversion steps while ensuring compatibility.
-
     pub shares: Uint128,
 }
 

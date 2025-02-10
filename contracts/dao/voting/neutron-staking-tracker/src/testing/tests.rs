@@ -1,8 +1,8 @@
 #[cfg(test)]
 use crate::contract::{
     after_delegation_modified, after_validator_bonded, after_validator_created,
-    before_validator_slashed, execute, instantiate, query,
-    query_total_power_at_height, query_voting_power_at_height,
+    before_validator_slashed, execute, instantiate, query, query_total_power_at_height,
+    query_voting_power_at_height,
 };
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::{
@@ -594,8 +594,8 @@ fn test_before_validator_slashed_with_self_bonded_only() {
         ("action", "before_validator_slashed"),
         ("valoper_address", "neutronvaloper1xyz"),
         ("cons_address", "neutronvalcons1xyz"),
-        ("total_tokens", "900"), // 10% slashed from 1000 → 900
-        ("total_shares", "1000"), // Shares remain unchanged
+        ("total_tokens", "900"),      // 10% slashed from 1000 → 900
+        ("total_shares", "1000"),     // Shares remain unchanged
         ("slashing_fraction", "0.1"), // 10% slashing
     ];
 
@@ -785,8 +785,10 @@ fn test_before_validator_slashed_voting_power_drops() {
     let slashing_fraction = Decimal256::percent(10); // 10% slashing
 
     // Calculate voting power BEFORE slashing
-    let voting_power_before_1 = delegation1.shares * validator.total_tokens / validator.total_shares;
-    let voting_power_before_2 = delegation2.shares * validator.total_tokens / validator.total_shares;
+    let voting_power_before_1 =
+        delegation1.shares * validator.total_tokens / validator.total_shares;
+    let voting_power_before_2 =
+        delegation2.shares * validator.total_tokens / validator.total_shares;
 
     // Mock validator query to reflect slashed tokens
     let proto_validator = CosmosValidator {
@@ -858,8 +860,10 @@ fn test_before_validator_slashed_voting_power_drops() {
     );
 
     // Calculate voting power AFTER slashing
-    let voting_power_after_1 = updated_delegation1.shares * updated_validator.total_tokens / updated_validator.total_shares;
-    let voting_power_after_2 = updated_delegation2.shares * updated_validator.total_tokens / updated_validator.total_shares;
+    let voting_power_after_1 = updated_delegation1.shares * updated_validator.total_tokens
+        / updated_validator.total_shares;
+    let voting_power_after_2 = updated_delegation2.shares * updated_validator.total_tokens
+        / updated_validator.total_shares;
 
     // Ensure delegators' voting power decreased
     assert!(
@@ -1220,7 +1224,6 @@ fn test_after_delegation_modified() {
     assert_eq!(voting_power, Uint128::new(100));
 }
 
-
 #[test]
 fn test_after_delegation_modified_large_scaled_shares() {
     let mut deps = dependencies();
@@ -1272,7 +1275,7 @@ fn test_after_delegation_modified_large_scaled_shares() {
     let proto_validator = CosmosValidator {
         operator_address: oper_addr.to_string(),
         consensus_pubkey: None,
-        status: 3,                  // Bonded status
+        status: 3,                          // Bonded status
         tokens: "166666667667".to_string(), // Tokens remain unchanged
         jailed: false,
         delegator_shares: "166666667667000000000000000000".to_string(), // Shares scaled up
@@ -1305,13 +1308,19 @@ fn test_after_delegation_modified_large_scaled_shares() {
     // Validate updated validator state
     let updated_validator = VALIDATORS.load(deps.as_ref().storage, &oper_addr).unwrap();
     assert_eq!(updated_validator.total_tokens, Uint128::new(166666667667)); // Tokens remain unchanged
-    assert_eq!(updated_validator.total_shares, Uint128::new(166666667667000000000000000000)); // Shares updated
+    assert_eq!(
+        updated_validator.total_shares,
+        Uint128::new(166666667667000000000000000000)
+    ); // Shares updated
 
     // Validate updated delegation state
     let updated_delegation = DELEGATIONS
         .load(deps.as_ref().storage, (&delegator_addr, &oper_addr))
         .unwrap();
-    assert_eq!(updated_delegation.shares, Uint128::new(166666667667000000000000000000)); // New delegation shares
+    assert_eq!(
+        updated_delegation.shares,
+        Uint128::new(166666667667000000000000000000)
+    ); // New delegation shares
 
     // Validate response attributes
     let response = res.unwrap();
@@ -1357,7 +1366,7 @@ fn test_after_delegation_modified_large_scaled_shares() {
     let proto_validator = CosmosValidator {
         operator_address: oper_addr.to_string(),
         consensus_pubkey: None,
-        status: 3,                  // Bonded status
+        status: 3,                          // Bonded status
         tokens: "166666667666".to_string(), // Tokens remain unchanged
         jailed: false,
         delegator_shares: "166666667666000000000000000000".to_string(), // Shares scaled up
@@ -1377,7 +1386,10 @@ fn test_after_delegation_modified_large_scaled_shares() {
     let updated_delegation = DELEGATIONS
         .load(deps.as_ref().storage, (&delegator_addr, &oper_addr))
         .unwrap();
-    assert_eq!(updated_delegation.shares, Uint128::new(166666667666000000000000000000)); // New delegation shares
+    assert_eq!(
+        updated_delegation.shares,
+        Uint128::new(166666667666000000000000000000)
+    ); // New delegation shares
 
     env.block.height += 5;
 

@@ -428,7 +428,6 @@ pub(crate) fn after_delegation_modified(
         .transpose()?
         .unwrap_or(Uint128::zero()); // Default to zero if delegation does not exist
 
-
     let previous_shares = DELEGATIONS
         .may_load(deps.storage, (&delegator, &valoper_addr))?
         .unwrap_or(Delegation {
@@ -657,7 +656,7 @@ pub fn get_consensus_address(deps: Deps, valoper_address: String) -> Result<Stri
     let public_key = neutron_std::types::cosmos::crypto::ed25519::PubKey::decode(
         consensus_pubkey_any.value.as_ref(),
     )
-        .map_err(|_| ContractError::InvalidConsensusKey)?;
+    .map_err(|_| ContractError::InvalidConsensusKey)?;
 
     let hrp = Hrp::parse("neutronvalcons").map_err(|_| ContractError::InvalidConsensusKey)?;
     let key_bytes: &[u8] = &public_key.key;
@@ -666,7 +665,6 @@ pub fn get_consensus_address(deps: Deps, valoper_address: String) -> Result<Stri
         .to_string();
     Ok(encoded)
 }
-
 
 /// Calculates the voting power of a delegator at a specific block height.
 ///
