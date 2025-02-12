@@ -214,7 +214,6 @@ fn test_query_stake_query() {
     let res = execute(deps.as_mut(), env.clone(), info.clone(), set_msg.clone());
     assert!(res.is_ok());
 
-    let q3 = query(deps.as_ref(), env.clone(), query_msg.clone()).unwrap();
-    let c3: Coin = from_json(q3).unwrap();
-    assert_eq!(c3.amount, Uint128::new(300));
+    let q3_res = query(deps.as_ref(), env.clone(), query_msg.clone());
+    assert!(q3_res.is_err());
 }

@@ -230,19 +230,27 @@ fn query_providers(deps: Deps) -> StdResult<ProvidersResponse> {
 }
 
 /// Returns sum of stake of each provider.
-/// Ignores PROVIDERS that returned Err from query.
-fn query_user_stake(deps: Deps, address: String, height: u64) -> StdResult<Coin> {
+/// Returns Err if any of PROVIDER queries returned Err.
+fn query_user_stake(deps: Deps, address: String, height: u64) -> Result<Coin, ContractError> {
     let user_addr = deps.api.addr_validate(&address)?;
     let config = CONFIG.load(deps.storage)?;
-    let stake = PROVIDERS
+    let providers = PROVIDERS
         .keys(deps.storage, None, None, Order::Ascending)
-        .collect::<Result<Vec<Addr>, StdError>>()?
-        .iter()
-        .flat_map(|provider| query_voting_power(deps, user_addr.clone(), provider, height))
-        .sum();
+        .collect::<Result<Vec<Addr>, StdError>>()?;
+    let query_results = providers
+        .into_iter()
+        .map(|provider| query_voting_power(deps, user_addr.clone(), &provider, height));
+
+    let mut stake_total = Uint128::zero();
+    for result in query_results {
+        match result {
+            Ok(v) => stake_total += v,
+            Err(err) => return Err(err),
+        }
+    }
 
     Ok(Coin {
-        amount: stake,
+        amount: stake_total,
         denom: config.staking_denom,
     })
 }
