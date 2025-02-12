@@ -59,11 +59,6 @@ pub enum SudoMsg {
         val_addr: String,
     },
 
-    BeforeDelegationCreated {
-        del_addr: String,
-        val_addr: String,
-    },
-
     AfterDelegationModified {
         del_addr: String,
         val_addr: String,

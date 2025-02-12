@@ -24,6 +24,11 @@ pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 const REPLY_ON_DELEGATION_MODIFIED_ERROR_STAKING_PROXY_ID: u64 = 1;
 const REPLY_ON_VALIDATOR_SLASHED_ERROR_STAKING_PROXY_ID: u64 = 2;
+
+const REPLY_ON_VALIDATOR_BEGIN_UNBONDING_ERROR_STAKING_PROXY_ID: u64 = 3;
+
+const REPLY_ON_VALIDATOR_BONDED_ERROR_STAKING_PROXY_ID: u64 = 4;
+
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
@@ -110,12 +115,14 @@ pub fn execute_add_to_blacklist(
         return Err(ContractError::Unauthorized {});
     }
 
+    let mut resp = Response::new();
     for address in &addresses {
         let addr = deps.api.addr_validate(address)?;
+        resp = with_update_stake_msg(resp, deps.as_ref(), &addr)?;
         BLACKLISTED_ADDRESSES.save(deps.storage, addr, &true)?;
     }
 
-    Ok(Response::new()
+    Ok(resp
         .add_attribute("action", "add_to_blacklist")
         .add_attribute("added_addresses", format!("{:?}", addresses)))
 }
@@ -130,12 +137,14 @@ pub fn execute_remove_from_blacklist(
         return Err(ContractError::Unauthorized {});
     }
 
+    let mut resp = Response::new();
     for address in &addresses {
         let addr = deps.api.addr_validate(address)?;
+        resp = with_update_stake_msg(resp, deps.as_ref(), &addr)?;
         BLACKLISTED_ADDRESSES.remove(deps.storage, addr);
     }
 
-    Ok(Response::new()
+    Ok(resp
         .add_attribute("action", "remove_from_blacklist")
         .add_attribute("removed_addresses", format!("{:?}", addresses)))
 }
@@ -212,9 +221,6 @@ pub fn sudo(deps: DepsMut, env: Env, msg: SudoMsg) -> Result<Response, ContractE
         SudoMsg::BeforeValidatorModified { val_addr } => {
             before_validator_modified(deps, env, val_addr)
         }
-        SudoMsg::BeforeDelegationCreated { del_addr, val_addr } => {
-            before_delegation_created(deps, env, del_addr, val_addr)
-        }
         SudoMsg::AfterDelegationModified { del_addr, val_addr } => {
             after_delegation_modified(deps, env, del_addr, val_addr)
         }
@@ -281,7 +287,14 @@ pub(crate) fn after_validator_bonded(
     // Save updated validator using valoper as the key
     VALIDATORS.save(deps.storage, &valoper_addr, &validator, env.block.height)?;
 
-    Ok(Response::new()
+    // Call proxy info to notify about change of stake
+    let resp = with_slashing_event(
+        Response::new(),
+        deps.as_ref(),
+        REPLY_ON_VALIDATOR_BONDED_ERROR_STAKING_PROXY_ID,
+    )?;
+
+    Ok(resp
         .add_attribute("action", "validator_bonded")
         .add_attribute("valcons_address", valcons_address)
         .add_attribute("valoper_address", valoper_address)
@@ -347,16 +360,6 @@ pub(crate) fn before_validator_modified(
         .add_attribute("total_shares", validator.total_shares.to_string()))
 }
 
-pub(crate) fn before_delegation_created(
-    _deps: DepsMut,
-    _env: Env,
-    _delegator_address: String,
-    _valoper_address: String,
-) -> Result<Response, ContractError> {
-    // No action required as AfterDelegationModified covers delegation creation and modification
-    Ok(Response::new().add_attribute("action", "before_delegation_created"))
-}
-
 pub fn before_validator_slashed(
     deps: DepsMut,
     env: Env,
@@ -397,23 +400,11 @@ pub fn before_validator_slashed(
     // Save updated validator state
     VALIDATORS.save(deps.storage, &validator_addr, &validator, env.block.height)?;
 
-    let config = CONFIG.load(deps.storage)?;
-    let mut resp = Response::new();
-
-    if let Some(staking_proxy_info_contract_address) = config.staking_proxy_info_contract_address {
-        let slashing_msg = WasmMsg::Execute {
-            contract_addr: staking_proxy_info_contract_address.to_string(),
-            msg: to_json_binary(&ProxyInfoExecute::Slashing {})?,
-            funds: vec![],
-        };
-
-        // Use submsg because we want to ignore possible errors here.
-        // This contract should be errorless no matter what.
-        resp = resp.add_submessage(SubMsg::reply_on_error(
-            slashing_msg,
-            REPLY_ON_VALIDATOR_SLASHED_ERROR_STAKING_PROXY_ID,
-        ));
-    }
+    let resp = with_slashing_event(
+        Response::new(),
+        deps.as_ref(),
+        REPLY_ON_VALIDATOR_SLASHED_ERROR_STAKING_PROXY_ID,
+    )?;
 
     Ok(resp
         .add_attribute("action", "before_validator_slashed")
@@ -452,13 +443,19 @@ pub(crate) fn after_validator_begin_unbonding(
     // Save updated validator state
     VALIDATORS.save(deps.storage, &valoper_addr, &validator, env.block.height)?;
 
-    Ok(Response::new()
+    // Call proxy info to notify about change of stake
+    let resp = with_slashing_event(
+        Response::new(),
+        deps.as_ref(),
+        REPLY_ON_VALIDATOR_BEGIN_UNBONDING_ERROR_STAKING_PROXY_ID,
+    )?;
+
+    Ok(resp
         .add_attribute("action", "after_validator_begin_unbonding")
         .add_attribute("valoper_address", valoper_address)
         .add_attribute("cons_address", validator.cons_address.to_string()) // Still stored inside
         .add_attribute("unbonding_start_height", env.block.height.to_string()))
 }
-
 pub(crate) fn after_delegation_modified(
     deps: DepsMut,
     env: Env,
@@ -549,26 +546,7 @@ pub(crate) fn after_delegation_modified(
         env.block.height,
     )?;
 
-    // Call proxy info to notify about change of stake
-    let config = CONFIG.load(deps.storage)?;
-    let mut resp = Response::new();
-
-    if let Some(staking_proxy_info_contract_address) = config.staking_proxy_info_contract_address {
-        let update_stake_msg = WasmMsg::Execute {
-            contract_addr: staking_proxy_info_contract_address.to_string(),
-            msg: to_json_binary(&ProxyInfoExecute::UpdateStake {
-                user: delegator.to_string(),
-            })?,
-            funds: vec![],
-        };
-
-        // Use submsg because we want to ignore possible errors here.
-        // This contract should be errorless no matter what.
-        resp = resp.add_submessage(SubMsg::reply_on_error(
-            update_stake_msg,
-            REPLY_ON_DELEGATION_MODIFIED_ERROR_STAKING_PROXY_ID,
-        ));
-    }
+    let resp = with_update_stake_msg(Response::new(), deps.as_ref(), &delegator)?;
 
     Ok(resp
         .add_attribute("action", "after_delegation_modified")
@@ -890,6 +868,78 @@ pub fn reply(_: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractErro
                 .add_attribute("reply_from", "before_validator_slashed")
                 .add_attribute("error", error))
         }
+        REPLY_ON_VALIDATOR_BEGIN_UNBONDING_ERROR_STAKING_PROXY_ID => {
+            // Error is reduced before cosmwasm reply and is expected in form of "codespace=? code=?"
+            let error = msg
+                .result
+                .into_result()
+                .err()
+                .unwrap_or("Must always be an error in the reply on error".to_string());
+            // ignore errors from proxy contract
+            Ok(Response::new()
+                .add_attribute("reply_from", "after_validator_begin_unbonding")
+                .add_attribute("error", error))
+        }
+        REPLY_ON_VALIDATOR_BONDED_ERROR_STAKING_PROXY_ID => {
+            // Error is reduced before cosmwasm reply and is expected in form of "codespace=? code=?"
+            let error = msg
+                .result
+                .into_result()
+                .err()
+                .unwrap_or("Must always be an error in the reply on error".to_string());
+            // ignore errors from proxy contract
+            Ok(Response::new()
+                .add_attribute("reply_from", "after_validator_bonded")
+                .add_attribute("error", error))
+        }
         _ => Ok(Response::new()),
     }
+}
+
+fn with_update_stake_msg(
+    resp: Response,
+    deps: Deps,
+    user: &Addr,
+) -> Result<Response, ContractError> {
+    // Call proxy info to notify about change of stake
+    let config = CONFIG.load(deps.storage)?;
+    if let Some(staking_proxy_info_contract_address) = config.staking_proxy_info_contract_address {
+        let update_stake_msg = WasmMsg::Execute {
+            contract_addr: staking_proxy_info_contract_address.to_string(),
+            msg: to_json_binary(&ProxyInfoExecute::UpdateStake {
+                user: user.to_string(),
+            })?,
+            funds: vec![],
+        };
+
+        // Use submsg because we want to ignore possible errors here.
+        // This contract should be errorless no matter what.
+        Ok(resp.add_submessage(SubMsg::reply_on_error(
+            update_stake_msg,
+            REPLY_ON_DELEGATION_MODIFIED_ERROR_STAKING_PROXY_ID,
+        )))
+    } else {
+        Ok(resp)
+    }
+}
+
+fn with_slashing_event(resp: Response, deps: Deps, reason: u64) -> Result<Response, ContractError> {
+    let config = CONFIG.load(deps.storage)?;
+    Ok(
+        if let Some(staking_proxy_info_contract_address) =
+            config.staking_proxy_info_contract_address
+        {
+            let slashing_msg = WasmMsg::Execute {
+                contract_addr: staking_proxy_info_contract_address.to_string(),
+                msg: to_json_binary(&ProxyInfoExecute::Slashing {})?,
+                funds: vec![],
+            };
+
+            // Use submsg because we want to ignore possible errors here.
+            // This contract should be errorless no matter what.
+            resp.add_submessage(SubMsg::reply_on_error(slashing_msg, reason))
+        } else {
+            resp
+        },
+    )
 }

@@ -497,6 +497,18 @@ fn test_after_validator_bonded_with_mock_query() {
     let mut deps = dependencies(); // Using the mock_dependencies function
     let env = mock_env(); // Creating a mock environment
 
+    // store CONFIG
+    let config = Config {
+        name: "Test Vault".to_string(),
+        description: "Testing vault functionality".to_string(),
+        owner: deps.api.addr_make("admin"),
+        denom: "token".to_string(),
+        staking_proxy_info_contract_address: Some(
+            deps.api.addr_make("staking_proxy_info_contract_address"),
+        ),
+    };
+    CONFIG.save(deps.as_mut().storage, &config).unwrap();
+
     // Define operator (valoper) and consensus (valcons) addresses
     let oper_addr = Addr::unchecked("neutronvaloper1xyz");
     let cons_addr = Addr::unchecked("neutronvalcons1xyz");
