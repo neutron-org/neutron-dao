@@ -4,14 +4,27 @@
   "type": "object",
   "required": [
     "owner",
-    "staking_vault"
+    "providers",
+    "staking_denom"
   ],
   "properties": {
     "owner": {
       "type": "string"
     },
-    "staking_vault": {
+    "providers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "staking_denom": {
       "type": "string"
+    },
+    "staking_rewards": {
+      "type": [
+        "string",
+        "null"
+      ]
     }
   },
   "additionalProperties": false

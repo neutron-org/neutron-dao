@@ -4,15 +4,17 @@
   "description": "Response for `QueryMsg::Config`",
   "type": "object",
   "required": [
-    "owner",
-    "staking_vault"
+    "owner"
   ],
   "properties": {
     "owner": {
       "type": "string"
     },
-    "staking_vault": {
-      "type": "string"
+    "staking_rewards": {
+      "type": [
+        "string",
+        "null"
+      ]
     }
   },
   "additionalProperties": false
