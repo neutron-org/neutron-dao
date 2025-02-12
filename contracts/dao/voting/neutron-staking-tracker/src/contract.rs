@@ -48,7 +48,6 @@ pub fn instantiate(
         name: msg.name,
         description: msg.description,
         owner,
-        denom: msg.denom,
         staking_proxy_info_contract_address,
     };
     config.validate()?;
@@ -255,9 +254,8 @@ pub(crate) fn after_validator_bonded(
         Uint128::from_str(&validator_info.tokens)?;
 
     let total_shares =
-        validator_info
-            .delegator_shares
-            .parse()?;
+        Uint128::from_str(&validator_info
+            .delegator_shares)?;
 
     // Load validator or initialize if missing
     let mut validator = VALIDATORS

@@ -16,7 +16,6 @@ pub struct Config {
     pub name: String,
     pub description: String,
     pub owner: Addr,
-    pub denom: String,
     pub staking_proxy_info_contract_address: Option<Addr>,
 }
 
@@ -35,9 +34,6 @@ impl Config {
         };
         if self.description.is_empty() {
             return Err(ContractError::DescriptionIsEmpty {});
-        };
-        if self.denom.is_empty() {
-            return Err(ContractError::DenomIsEmpty {});
         };
         Ok(())
     }
@@ -182,7 +178,6 @@ mod tests {
             name: String::from("name"),
             description: String::from("description"),
             owner: Addr::unchecked("owner"),
-            denom: String::from("denom"),
             staking_proxy_info_contract_address: None,
         };
         assert_eq!(cfg_ok.validate(), Ok(()));
@@ -191,7 +186,6 @@ mod tests {
             name: String::from(""),
             description: String::from("description"),
             owner: Addr::unchecked("owner"),
-            denom: String::from("denom"),
             staking_proxy_info_contract_address: None,
         };
         assert_eq!(
@@ -203,7 +197,6 @@ mod tests {
             name: String::from("name"),
             description: String::from(""),
             owner: Addr::unchecked("owner"),
-            denom: String::from("denom"),
             staking_proxy_info_contract_address: None,
         };
         assert_eq!(
@@ -211,16 +204,5 @@ mod tests {
             Err(ContractError::DescriptionIsEmpty {})
         );
 
-        let cfg_empty_denom = Config {
-            name: String::from("name"),
-            description: String::from("description"),
-            owner: Addr::unchecked("owner"),
-            denom: String::from(""),
-            staking_proxy_info_contract_address: None,
-        };
-        assert_eq!(
-            cfg_empty_denom.validate(),
-            Err(ContractError::DenomIsEmpty {})
-        );
     }
 }

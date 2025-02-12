@@ -60,7 +60,6 @@ fn test_instantiate() {
         name: "Test DAO".to_string(),
         description: "A test DAO contract".to_string(),
         owner: valid_neutron_address.to_string(), //  Use valid address
-        denom: "denom".to_string(),
         staking_proxy_info_contract_address: None,
     };
 
@@ -77,7 +76,6 @@ fn test_instantiate() {
     assert_eq!(config.name, "Test DAO");
     assert_eq!(config.description, "A test DAO contract");
     assert_eq!(config.owner, valid_neutron_address); //  Fix assertion
-    assert_eq!(config.denom, "denom");
 
     // Validate DAO storage
     let dao = DAO.load(&deps.storage).unwrap();
@@ -97,7 +95,6 @@ fn test_execute_update_config() {
         name: "Test".to_string(),
         description: "A test contract".to_string(),
         owner: owner.to_string(),
-        denom: "denom".to_string(),
         staking_proxy_info_contract_address: None,
     };
     let info = message_info(creator, &[]);
@@ -149,7 +146,6 @@ fn test_update_config_unauthorized() {
         name: "Test DAO".to_string(),
         description: "A test DAO contract".to_string(),
         owner: owner.to_string(),
-        denom: "denom".to_string(),
         staking_proxy_info_contract_address: None,
     };
     let info = message_info(creator, &[]);
@@ -190,7 +186,6 @@ fn test_add_and_remove_from_blacklist() {
         name: String::from("Test Config"),
         description: String::from("Testing blacklist functionality"),
         owner: admin.clone(),
-        denom: String::from("testdenom"),
         staking_proxy_info_contract_address: None,
     };
     CONFIG.save(deps.as_mut().storage, &config).unwrap();
@@ -262,7 +257,6 @@ fn test_check_if_address_is_blacklisted() {
         name: String::from("Test Config"),
         description: String::from("Testing blacklist functionality"),
         owner: admin.clone(),
-        denom: String::from("testdenom"),
         staking_proxy_info_contract_address: None,
     };
     CONFIG.save(deps.as_mut().storage, &config).unwrap();
@@ -328,7 +322,6 @@ fn test_total_vp_excludes_blacklisted_addresses() {
         name: "Test Vault".to_string(),
         description: "Testing vault functionality".to_string(),
         owner: admin.clone(),
-        denom: "token".to_string(),
         staking_proxy_info_contract_address: None,
     };
     CONFIG.save(deps.as_mut().storage, &config).unwrap();
@@ -502,7 +495,6 @@ fn test_after_validator_bonded_with_mock_query() {
         name: "Test Vault".to_string(),
         description: "Testing vault functionality".to_string(),
         owner: deps.api.addr_make("admin"),
-        denom: "token".to_string(),
         staking_proxy_info_contract_address: Some(
             deps.api.addr_make("staking_proxy_info_contract_address"),
         ),
@@ -588,7 +580,6 @@ fn test_before_validator_slashed_with_self_bonded_only() {
         name: "Test Vault".to_string(),
         description: "Testing vault functionality".to_string(),
         owner: deps.api.addr_make("admin"),
-        denom: "token".to_string(),
         staking_proxy_info_contract_address: Some(
             deps.api.addr_make("staking_proxy_info_contract_address"),
         ),
@@ -666,7 +657,6 @@ fn test_before_validator_slashed() {
         name: "Test Vault".to_string(),
         description: "Testing vault functionality".to_string(),
         owner: deps.api.addr_make("admin"),
-        denom: "token".to_string(),
         staking_proxy_info_contract_address: Some(
             deps.api.addr_make("staking_proxy_info_contract_address"),
         ),
@@ -790,7 +780,6 @@ fn test_before_validator_slashed_voting_power_drops() {
         name: "Test Vault".to_string(),
         description: "Testing vault functionality".to_string(),
         owner: deps.api.addr_make("admin"),
-        denom: "token".to_string(),
         staking_proxy_info_contract_address: Some(
             deps.api.addr_make("staking_proxy_info_contract_address"),
         ),
@@ -1142,7 +1131,6 @@ fn test_after_delegation_modified() {
         name: "Test Vault".to_string(),
         description: "Testing vault functionality".to_string(),
         owner: deps.api.addr_make("admin"),
-        denom: "token".to_string(),
         staking_proxy_info_contract_address: Some(
             deps.api.addr_make("staking_proxy_info_contract_address"),
         ),
@@ -1317,7 +1305,6 @@ fn test_after_delegation_modified_large_scaled_shares() {
         name: "Test Vault".to_string(),
         description: "Testing vault functionality".to_string(),
         owner: deps.api.addr_make("admin"),
-        denom: "token".to_string(),
         staking_proxy_info_contract_address: Some(
             deps.api.addr_make("staking_proxy_info_contract_address"),
         ),

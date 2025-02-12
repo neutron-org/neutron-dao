@@ -10,8 +10,6 @@ pub struct InstantiateMsg {
     pub description: String,
     /// Owner can update all configs including changing the owner. This will generally be a DAO.
     pub owner: String,
-    /// Token denom e.g. untrn, or some ibc denom
-    pub denom: String,
     /// Contract to proxy staking updates to.
     pub staking_proxy_info_contract_address: Option<String>,
 }
