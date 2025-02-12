@@ -15,7 +15,7 @@ use neutron_staking_rewards::msg::ExecuteMsg::{
 };
 
 const CONTRACT_NAME: &str = "crates.io:neutron-staking-info-proxy";
-const CONTRACT_VERSION: &str = "0.1.0";
+const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[entry_point]
 pub fn instantiate(
