@@ -243,10 +243,7 @@ pub(crate) fn after_validator_bonded(
 
     // Query the latest validator state from the chain
     let validator_data: QueryValidatorResponse = querier
-        .validator(valoper_address.clone())
-        .map_err(|_| ContractError::ValidatorQueryFailed {
-            address: valoper_address.clone(),
-        })?;
+        .validator(valoper_address.clone())?;
 
     let validator_info = validator_data
         .validator
@@ -255,17 +252,12 @@ pub(crate) fn after_validator_bonded(
         })?;
 
     let total_tokens =
-        Uint128::from_str(&validator_info.tokens).map_err(|_| ContractError::InvalidTokenData {
-            address: valoper_address.clone(),
-        })?;
+        Uint128::from_str(&validator_info.tokens)?;
 
     let total_shares =
         validator_info
             .delegator_shares
-            .parse()
-            .map_err(|_| ContractError::InvalidTokenData {
-                address: valoper_address.clone(),
-            })?;
+            .parse()?;
 
     // Load validator or initialize if missing
     let mut validator = VALIDATORS
@@ -312,10 +304,7 @@ pub(crate) fn before_validator_modified(
     let querier = StakingQuerier::new(&deps.querier);
 
     let validator_data: QueryValidatorResponse = querier
-        .validator(valoper_address.clone())
-        .map_err(|_| ContractError::ValidatorQueryFailed {
-            address: valoper_address.clone(),
-        })?;
+        .validator(valoper_address.clone())?;
 
     let validator_info = validator_data
         .validator
@@ -324,17 +313,12 @@ pub(crate) fn before_validator_modified(
         })?;
 
     let total_tokens =
-        Uint128::from_str(&validator_info.tokens).map_err(|_| ContractError::InvalidTokenData {
-            address: valoper_address.clone(),
-        })?;
+        Uint128::from_str(&validator_info.tokens)?;
 
     let total_shares =
         validator_info
             .delegator_shares
-            .parse()
-            .map_err(|_| ContractError::InvalidTokenData {
-                address: valoper_address.clone(),
-            })?;
+            .parse()?;
 
     let mut validator = match VALIDATORS.may_load(deps.storage, &valoper_addr)? {
         Some(existing_validator) => existing_validator,
@@ -378,24 +362,12 @@ pub fn before_validator_slashed(
 
     let slashed_tokens_uint128: Uint128 =
         slashed_tokens
-            .try_into()
-            .map_err(|_| ContractError::MathError {
-                error: format!(
-                    "Failed to convert slashed tokens ({}) to Uint128",
-                    slashed_tokens
-                ),
-            })?;
+            .try_into()?;
 
     // Ensure tokens are reduced but not negative
     validator.total_tokens = validator
         .total_tokens
-        .checked_sub(slashed_tokens_uint128)
-        .map_err(|_| ContractError::MathError {
-            error: format!(
-                "Slashed tokens ({}) exceed total tokens ({})",
-                slashed_tokens_uint128, validator.total_tokens
-            ),
-        })?;
+        .checked_sub(slashed_tokens_uint128)?;
 
     // Save updated validator state
     VALIDATORS.save(deps.storage, &validator_addr, &validator, env.block.height)?;
@@ -474,7 +446,7 @@ pub(crate) fn after_delegation_modified(
         .and_then(|delegation_info| {
             delegation_info
                 .delegation_response
-                .and_then(|resp| resp.delegation)
+                .and_then(|resp| resp.delegation)?
                 .map(|del| {
                     Uint128::from_str(&del.shares).map_err(|_| ContractError::InvalidSharesFormat {
                         shares_str: del.shares.clone(),
@@ -520,27 +492,16 @@ pub(crate) fn after_delegation_modified(
     } else {
         // Query validator data to get the latest **total tokens & shares**
         let validator_data = querier
-            .validator(valoper_address.clone())
-            .map_err(|_| ContractError::ValidatorQueryFailed {
-                address: valoper_address.clone(),
-            })?
+            .validator(valoper_address.clone())?
             .validator
             .ok_or_else(|| ContractError::ValidatorNotFound {
                 address: valoper_address.clone(),
             })?;
 
         validator.total_shares =
-            Uint128::from_str(&validator_data.delegator_shares).map_err(|_| {
-                ContractError::InvalidSharesFormat {
-                    shares_str: validator_data.delegator_shares.clone(),
-                }
-            })?;
+            Uint128::from_str(&validator_data.delegator_shares)?;
 
-        validator.total_tokens = Uint128::from_str(&validator_data.tokens).map_err(|_| {
-            ContractError::InvalidTokenData {
-                address: valoper_address.clone(),
-            }
-        })?;
+        validator.total_tokens = Uint128::from_str(&validator_data.tokens)?;
     }
 
     // Save updated validator state
@@ -613,25 +574,16 @@ pub(crate) fn after_validator_created(
 
     let querier = StakingQuerier::new(&deps.querier);
     let validator_data = querier
-        .validator(valoper_address.clone())
-        .map_err(|_| ContractError::ValidatorQueryFailed {
-            address: valoper_address.clone(),
-        })?
+        .validator(valoper_address.clone())?
         .validator
         .ok_or_else(|| ContractError::ValidatorNotFound {
             address: valoper_address.clone(),
         })?;
 
     let total_tokens =
-        Uint128::from_str(&validator_data.tokens).map_err(|_| ContractError::InvalidTokenData {
-            address: valoper_address.clone(),
-        })?;
+        Uint128::from_str(&validator_data.tokens)?;
 
-    let total_shares = Uint128::from_str(&validator_data.delegator_shares).map_err(|_| {
-        ContractError::InvalidTokenData {
-            address: valoper_address.clone(),
-        }
-    })?;
+    let total_shares = Uint128::from_str(&validator_data.delegator_shares)?;
 
     let new_validator = Validator {
         cons_address: Addr::unchecked(""),
@@ -701,41 +653,6 @@ pub fn query_is_address_blacklisted(deps: Deps, address: String) -> StdResult<bo
     Ok(is_blacklisted)
 }
 
-/// Converts a `valoper` address into a `valcons` address
-pub fn get_consensus_address(deps: Deps, valoper_address: String) -> Result<String, ContractError> {
-    let querier = StakingQuerier::new(&deps.querier);
-
-    // Query validator details from the chain
-    let validator_data = querier.validator(valoper_address.clone()).map_err(|_| {
-        ContractError::ValidatorQueryFailed {
-            address: valoper_address.clone(),
-        }
-    })?;
-
-    let consensus_pubkey_any = validator_data
-        .validator
-        .ok_or(ContractError::ValidatorNotFound {
-            address: valoper_address.clone(),
-        })?
-        .consensus_pubkey
-        .ok_or(ContractError::NoPubKey {
-            address: valoper_address.clone(),
-        })?;
-
-    // Decode consensus public key from Protobuf Any
-    let public_key = neutron_std::types::cosmos::crypto::ed25519::PubKey::decode(
-        consensus_pubkey_any.value.as_ref(),
-    )
-    .map_err(|_| ContractError::InvalidConsensusKey)?;
-
-    let hrp = Hrp::parse("neutronvalcons").map_err(|_| ContractError::InvalidConsensusKey)?;
-    let key_bytes: &[u8] = &public_key.key;
-    let encoded = encode::<Bech32>(hrp, key_bytes)
-        .map_err(|_| ContractError::InvalidConsensusKey)?
-        .to_string();
-    Ok(encoded)
-}
-
 /// Calculates the voting power of a delegator at a specific block height.
 ///
 /// Uses `Uint256` for intermediate calculations to avoid precision loss and overflow,
@@ -769,8 +686,7 @@ pub fn calculate_voting_power(deps: Deps, address: Addr, height: u64) -> StdResu
     }
 
     // Convert back to Uint128 safely
-    let power_128 = Uint128::try_from(power)
-        .map_err(|_| StdError::generic_err("Overflow: Uint256 to Uint128 conversion failed"))?;
+    let power_128 = Uint128::try_from(power)?;
 
     Ok(power_128)
 }
