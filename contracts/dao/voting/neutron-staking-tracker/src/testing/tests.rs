@@ -1,8 +1,8 @@
 #[cfg(test)]
 use crate::contract::{
-    after_delegation_modified, after_validator_bonded, after_validator_created,
-    before_validator_slashed, execute, instantiate, query, query_total_power_at_height,
-    query_voting_power_at_height,
+    after_delegation_modified, after_validator_begin_unbonding, after_validator_bonded,
+    after_validator_created, before_validator_slashed, execute, instantiate, query,
+    query_total_power_at_height, query_voting_power_at_height,
 };
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::{
@@ -1493,4 +1493,93 @@ fn test_after_delegation_modified_large_scaled_shares() {
     let voting_power =
         query_voting_power_at_height(deps.as_ref(), env.clone(), delegator_addr, None).unwrap();
     assert_eq!(voting_power, Uint128::new(166666667666));
+}
+
+#[test]
+fn test_after_validator_begin_unbonding() {
+    let mut deps = dependencies(); // Initialize dependencies
+    let env = mock_env(); // Mock environment
+
+    // Define operator (valoper) and consensus (valcons) addresses
+    let oper_addr = Addr::unchecked("neutronvaloper1xyz");
+    let cons_addr = Addr::unchecked("neutronvalcons1xyz");
+
+    // Store an initial validator state with `bonded = true`
+    VALIDATORS
+        .save(
+            deps.as_mut().storage,
+            &oper_addr,
+            &Validator {
+                cons_address: cons_addr.clone(),
+                oper_address: oper_addr.clone(),
+                bonded: true,
+                total_tokens: Uint128::new(1000),
+                total_shares: Uint128::new(1000),
+                active: true,
+            },
+            env.block.height,
+        )
+        .unwrap();
+
+    let unboding_height = env.block.height;
+
+    // Mock the validator query response (now in unbonding state)
+    let proto_validator = CosmosValidator {
+        operator_address: oper_addr.to_string(),
+        consensus_pubkey: None,
+        status: 2,                  // Unbonding status
+        tokens: "1000".to_string(), // Total tokens remain the same
+        jailed: false,
+        delegator_shares: "1000".to_string(),
+        description: None,
+        unbonding_height: (env.block.height + 1) as i64,
+        unbonding_time: None,
+        commission: None,
+        min_self_delegation: "1".to_string(),
+        unbonding_on_hold_ref_count: 0,
+        unbonding_ids: vec![],
+    };
+    deps.querier.with_validators(vec![proto_validator]);
+
+    // Call `after_validator_begin_unbonding`
+    let res = after_validator_begin_unbonding(
+        deps.as_mut(),
+        env.clone(),
+        cons_addr.to_string(),
+        oper_addr.to_string(),
+    );
+    assert!(res.is_ok(), "Error: {:?}", res.err());
+
+    // Load updated validator state
+    let updated_validator = VALIDATORS.load(deps.as_ref().storage, &oper_addr).unwrap();
+    assert!(
+        !updated_validator.bonded,
+        "Validator should not be bonded after unbonding begins"
+    );
+    assert!(
+        updated_validator.active,
+        "Validator should remain active during unbonding"
+    );
+    assert_eq!(
+        updated_validator.total_tokens,
+        Uint128::new(1000),
+        "Total tokens should remain unchanged"
+    );
+    assert_eq!(
+        updated_validator.total_shares,
+        Uint128::new(1000),
+        "Total shares should remain unchanged"
+    );
+
+    // Ensure response attributes match expected values
+    let response = res.unwrap();
+    assert_eq!(
+        response.attributes,
+        vec![
+            ("action", "after_validator_begin_unbonding"),
+            ("valoper_address", &*oper_addr.to_string()), // Match contract's attribute key
+            ("cons_address", &*cons_addr.to_string()),
+            ("unbonding_start_height", &*unboding_height.to_string()),
+        ]
+    );
 }
