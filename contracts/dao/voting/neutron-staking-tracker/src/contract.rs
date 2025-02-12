@@ -446,7 +446,7 @@ pub(crate) fn after_delegation_modified(
         .and_then(|delegation_info| {
             delegation_info
                 .delegation_response
-                .and_then(|resp| resp.delegation)?
+                .and_then(|resp| resp.delegation)
                 .map(|del| {
                     Uint128::from_str(&del.shares).map_err(|_| ContractError::InvalidSharesFormat {
                         shares_str: del.shares.clone(),
