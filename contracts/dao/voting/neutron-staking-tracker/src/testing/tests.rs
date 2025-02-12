@@ -1487,9 +1487,18 @@ fn test_after_validator_begin_unbonding() {
     let mut deps = dependencies(); // Initialize dependencies
     let env = mock_env(); // Mock environment
 
+    let admin = deps.api.addr_make("admin");
     // Define operator (valoper) and consensus (valcons) addresses
     let oper_addr = Addr::unchecked("neutronvaloper1xyz");
     let cons_addr = Addr::unchecked("neutronvalcons1xyz");
+
+    let config = Config {
+        name: String::from("Test Config"),
+        description: String::from("Testing validator unbonding handler"),
+        owner: admin.clone(),
+        staking_proxy_info_contract_address: None,
+    };
+    CONFIG.save(deps.as_mut().storage, &config).unwrap();
 
     // Store an initial validator state with `bonded = true`
     VALIDATORS
