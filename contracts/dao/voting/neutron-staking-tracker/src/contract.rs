@@ -583,7 +583,11 @@ pub(crate) fn after_validator_created(
     let total_tokens =
         Uint128::from_str(&validator_data.tokens)?;
 
-    let total_shares = Uint128::from_str(&validator_data.delegator_shares)?;
+    let total_shares = Uint128::from_str(&validator_data.delegator_shares).map_err(|_| {
+        ContractError::InvalidTokenData {
+            address: valoper_address.clone(),
+        }
+    })?;
 
     let new_validator = Validator {
         cons_address: Addr::unchecked(""),
