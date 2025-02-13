@@ -223,6 +223,9 @@ pub fn sudo(deps: DepsMut, env: Env, msg: SudoMsg) -> Result<Response, ContractE
         SudoMsg::AfterDelegationModified { del_addr, val_addr } => {
             after_delegation_modified(deps, env, del_addr, val_addr)
         }
+        SudoMsg::BeforeDelegationRemoved { del_addr, val_addr } => {
+            before_delegation_removed(deps, env,del_addr, val_addr)
+        }
         SudoMsg::BeforeValidatorSlashed { val_addr, fraction } => {
             before_validator_slashed(deps, env, val_addr, fraction)
         }
@@ -527,6 +530,49 @@ pub(crate) fn after_delegation_modified(
         .add_attribute("total_shares", validator.total_shares.to_string())
         .add_attribute("total_tokens", validator.total_tokens.to_string())
         .add_attribute("delegation_shares", actual_shares.to_string()))
+}
+
+pub(crate) fn before_delegation_removed(
+    deps: DepsMut,
+    env: Env,
+    delegator_address: String,
+    valoper_address: String,
+) -> Result<Response, ContractError> {
+    let delegator = deps.api.addr_validate(&delegator_address)?;
+    let valoper_addr = Addr::unchecked(valoper_address);
+
+    // Load shares amount we have for the delegation in the contract's state
+    let mut delegation = DELEGATIONS
+        .may_load(deps.storage, (&delegator, &valoper_addr))?
+        .unwrap_or(Delegation {
+            delegator_address: delegator.clone(),
+            validator_address: valoper_addr.clone(),
+            shares: Uint128::zero(),
+        });
+
+    let previous_shares = delegation.shares;
+
+    // Load validator by `valoper_address`
+    let mut validator = VALIDATORS.load(deps.storage, &valoper_addr)?;
+
+    // Since it's `before_delegation_removed`, we can safely remove all shares from validator
+    validator.remove_del_shares(previous_shares)?;
+
+    // Save the updated validator state
+    VALIDATORS.save(deps.storage, &valoper_addr, &validator, env.block.height)?;
+
+    delegation.shares = Uint128::zero();
+    DELEGATIONS.save(
+        deps.storage,
+        (&delegator, &valoper_addr),
+        &delegation,
+        env.block.height,
+    )?;
+
+    Ok(Response::new()
+        .add_attribute("action", "before_delegation_removed")
+        .add_attribute("delegator", delegator.to_string())
+        .add_attribute("valoper_address", valoper_addr.to_string()))
 }
 
 pub(crate) fn after_validator_removed(
