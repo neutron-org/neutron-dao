@@ -5,8 +5,6 @@ use crate::state::{
 };
 use std::ops::Mul;
 
-use bech32::{encode, Bech32, Hrp};
-
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -16,7 +14,6 @@ use cosmwasm_std::{
 use cw2::set_contract_version;
 use cw_storage_plus::Bound;
 use neutron_std::types::cosmos::staking::v1beta1::{QueryValidatorResponse, StakingQuerier};
-use prost::Message;
 use std::str::FromStr;
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-staking-tracker";
@@ -224,7 +221,7 @@ pub fn sudo(deps: DepsMut, env: Env, msg: SudoMsg) -> Result<Response, ContractE
             after_delegation_modified(deps, env, del_addr, val_addr)
         }
         SudoMsg::BeforeDelegationRemoved { del_addr, val_addr } => {
-            before_delegation_removed(deps, env,del_addr, val_addr)
+            before_delegation_removed(deps, env, del_addr, val_addr)
         }
         SudoMsg::BeforeValidatorSlashed { val_addr, fraction } => {
             before_validator_slashed(deps, env, val_addr, fraction)
@@ -244,8 +241,7 @@ pub(crate) fn after_validator_bonded(
     let querier = StakingQuerier::new(&deps.querier);
 
     // Query the latest validator state from the chain
-    let validator_data: QueryValidatorResponse = querier
-        .validator(valoper_address.clone())?;
+    let validator_data: QueryValidatorResponse = querier.validator(valoper_address.clone())?;
 
     let validator_info = validator_data
         .validator
@@ -253,12 +249,9 @@ pub(crate) fn after_validator_bonded(
             address: valoper_address.clone(),
         })?;
 
-    let total_tokens =
-        Uint128::from_str(&validator_info.tokens)?;
+    let total_tokens = Uint128::from_str(&validator_info.tokens)?;
 
-    let total_shares =
-        Uint128::from_str(&validator_info
-            .delegator_shares)?;
+    let total_shares = Uint128::from_str(&validator_info.delegator_shares)?;
 
     // Load validator or initialize if missing
     let mut validator = VALIDATORS
@@ -304,8 +297,7 @@ pub(crate) fn before_validator_modified(
 
     let querier = StakingQuerier::new(&deps.querier);
 
-    let validator_data: QueryValidatorResponse = querier
-        .validator(valoper_address.clone())?;
+    let validator_data: QueryValidatorResponse = querier.validator(valoper_address.clone())?;
 
     let validator_info = validator_data
         .validator
@@ -313,13 +305,9 @@ pub(crate) fn before_validator_modified(
             address: valoper_address.clone(),
         })?;
 
-    let total_tokens =
-        Uint128::from_str(&validator_info.tokens)?;
+    let total_tokens = Uint128::from_str(&validator_info.tokens)?;
 
-    let total_shares =
-        validator_info
-            .delegator_shares
-            .parse()?;
+    let total_shares = validator_info.delegator_shares.parse()?;
 
     let mut validator = match VALIDATORS.may_load(deps.storage, &valoper_addr)? {
         Some(existing_validator) => existing_validator,
@@ -361,14 +349,10 @@ pub fn before_validator_slashed(
         .mul(Decimal256::from_atomics(validator.total_tokens, 0)?)
         .to_uint_ceil();
 
-    let slashed_tokens_uint128: Uint128 =
-        slashed_tokens
-            .try_into()?;
+    let slashed_tokens_uint128: Uint128 = slashed_tokens.try_into()?;
 
     // Ensure tokens are reduced but not negative
-    validator.total_tokens = validator
-        .total_tokens
-        .checked_sub(slashed_tokens_uint128)?;
+    validator.total_tokens = validator.total_tokens.checked_sub(slashed_tokens_uint128)?;
 
     // Save updated validator state
     VALIDATORS.save(deps.storage, &validator_addr, &validator, env.block.height)?;
@@ -499,8 +483,7 @@ pub(crate) fn after_delegation_modified(
                 address: valoper_address.clone(),
             })?;
 
-        validator.total_shares =
-            Uint128::from_str(&validator_data.delegator_shares)?;
+        validator.total_shares = Uint128::from_str(&validator_data.delegator_shares)?;
 
         validator.total_tokens = Uint128::from_str(&validator_data.tokens)?;
     }
@@ -624,8 +607,7 @@ pub(crate) fn after_validator_created(
             address: valoper_address.clone(),
         })?;
 
-    let total_tokens =
-        Uint128::from_str(&validator_data.tokens)?;
+    let total_tokens = Uint128::from_str(&validator_data.tokens)?;
 
     let total_shares = Uint128::from_str(&validator_data.delegator_shares).map_err(|_| {
         ContractError::InvalidTokenData {

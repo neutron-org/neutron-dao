@@ -203,6 +203,5 @@ mod tests {
             cfg_empty_description.validate(),
             Err(ContractError::DescriptionIsEmpty {})
         );
-
     }
 }
