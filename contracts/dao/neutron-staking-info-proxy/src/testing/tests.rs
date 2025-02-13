@@ -11,7 +11,9 @@ use cosmwasm_std::{
     testing::{message_info, mock_env},
     to_json_binary, Addr, Coin, Order, SubMsg, Uint128, WasmMsg,
 };
-use neutron_staking_rewards::msg::ExecuteMsg::UpdateStake as RewardsMsgUpdateStake;
+use neutron_staking_rewards::msg::ExecuteMsg::{
+    Slashing as RewardsMsgSlashing, UpdateStake as RewardsMsgUpdateStake,
+};
 
 // Helper to create a default instantiate message
 fn default_init_msg(api: MockApi) -> InstantiateMsg {
@@ -24,7 +26,7 @@ fn default_init_msg(api: MockApi) -> InstantiateMsg {
 }
 
 /// Tests the following scenario:
-///     1.  A non-authorized address tries to update the user's stake (error)
+///     1.  A non-authorized address tries to update config's staking_rewards contract (error)
 ///     2.  An authorized address tries to update config's staking_rewards contract
 #[test]
 fn test_update_config() {
@@ -155,6 +157,51 @@ fn test_update_stake() {
             user: deps.api.addr_make("user1").to_string(),
         })
         .unwrap(),
+        funds: vec![],
+    };
+    assert_eq!(resp.messages, vec![SubMsg::reply_never(expected)])
+}
+
+/// Tests the following scenario:
+///     1.  A non-authorized address tries to proxy slashing event (error)
+///     2.  An authorized address tries to proxy slashing event (check correct Slashing msg is created)
+#[test]
+fn test_slashing() {
+    let mut deps = mock_dependencies();
+
+    // Instantiate
+    let env = mock_env();
+    let info = message_info(&deps.api.addr_make("owner"), &[]);
+    let msg = InstantiateMsg {
+        owner: deps.api.addr_make("owner").into(),
+        staking_rewards: Some(STAKING_REWARDS_CONTRACT.to_string()),
+        staking_denom: "untrn".to_string(),
+        providers: vec![
+            deps.api.addr_make("provider1").to_string(),
+            deps.api.addr_make("provider2").to_string(),
+        ],
+    };
+    let res = instantiate(deps.as_mut(), env.clone(), info.clone(), msg).unwrap();
+    assert_eq!(res.messages.len(), 0);
+
+    let stranger_provider_info = message_info(&deps.api.addr_make("stranger"), &[]);
+    let msg = ExecuteMsg::Slashing {};
+    let res = execute(
+        deps.as_mut(),
+        env.clone(),
+        stranger_provider_info,
+        msg.clone(),
+    );
+    assert_eq!(res.err().unwrap(), Unauthorized {});
+
+    let provider_info = message_info(&deps.api.addr_make("provider1"), &[]);
+    let res = execute(deps.as_mut(), env.clone(), provider_info, msg.clone());
+    assert!(res.is_ok());
+    let resp = res.unwrap();
+
+    let expected = WasmMsg::Execute {
+        contract_addr: STAKING_REWARDS_CONTRACT.to_string(),
+        msg: to_json_binary(&RewardsMsgSlashing {}).unwrap(),
         funds: vec![],
     };
     assert_eq!(resp.messages, vec![SubMsg::reply_never(expected)])

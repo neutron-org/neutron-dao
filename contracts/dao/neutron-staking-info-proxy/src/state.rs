@@ -15,6 +15,7 @@ pub struct Config {
 }
 
 /// List of providers for querying staking information.
+/// A provider is a contract that supplies stake information updates.
 pub const PROVIDERS: Map<Addr, ()> = Map::new("providers");
 
 impl Config {

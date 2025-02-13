@@ -7,7 +7,7 @@ use crate::msg::{
 use crate::state::{Config, CONFIG, PROVIDERS};
 use cosmwasm_std::{
     entry_point, to_json_binary, Addr, Coin, Deps, DepsMut, Env, MessageInfo, Order, Response,
-    StdError, StdResult, Uint128, WasmMsg,
+    StdResult, Uint128, WasmMsg,
 };
 use cw2::set_contract_version;
 use neutron_staking_rewards::msg::ExecuteMsg::{
@@ -165,8 +165,6 @@ fn update_stake(
     };
 
     Ok(Response::new()
-        // Add message without error handling because
-        // we can rollback tx here without any problems - no state saved anyway
         .add_message(msg)
         .add_attribute("action", "update_stake")
         .add_attribute("user", user))
@@ -191,8 +189,6 @@ fn slashing(deps: DepsMut, _: Env, info: MessageInfo) -> Result<Response, Contra
     };
 
     Ok(Response::new()
-        // Add message without error handling because
-        // we can rollback tx here without any problems - no state saved anyway
         .add_message(msg)
         .add_attribute("action", "slashing"))
 }
@@ -234,23 +230,17 @@ fn query_providers(deps: Deps) -> StdResult<ProvidersResponse> {
 fn query_user_stake(deps: Deps, address: String, height: u64) -> Result<Coin, ContractError> {
     let user_addr = deps.api.addr_validate(&address)?;
     let config = CONFIG.load(deps.storage)?;
-    let providers = PROVIDERS
+    let providers: Vec<Addr> = PROVIDERS
         .keys(deps.storage, None, None, Order::Ascending)
-        .collect::<Result<Vec<Addr>, StdError>>()?;
-    let query_results = providers
+        .collect::<Result<_, _>>()?;
+    let amount = providers
         .into_iter()
-        .map(|provider| query_voting_power(deps, user_addr.clone(), &provider, height));
-
-    let mut stake_total = Uint128::zero();
-    for result in query_results {
-        match result {
-            Ok(v) => stake_total += v,
-            Err(err) => return Err(err),
-        }
-    }
-
+        .map(|provider| query_voting_power(deps, user_addr.clone(), &provider, height))
+        .collect::<Result<Vec<_>, _>>()? // error caught here immediately
+        .into_iter()
+        .sum::<Uint128>();
     Ok(Coin {
-        amount: stake_total,
+        amount,
         denom: config.staking_denom,
     })
 }
