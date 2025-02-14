@@ -4,11 +4,7 @@ use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, RewardsResponse};
 use crate::state::CONFIG;
 use crate::testing::mock_querier::mock_dependencies;
 use cosmwasm_std::testing::MockApi;
-use cosmwasm_std::{
-    coin,
-    testing::{message_info, mock_env},
-    Uint128,
-};
+use cosmwasm_std::{coin, testing::{message_info, mock_env}, BankMsg, CosmosMsg, Response, Uint128};
 
 // Helper to create a default instantiate message
 fn default_init_msg(api: MockApi) -> InstantiateMsg {
@@ -1150,4 +1146,103 @@ fn test_update_and_slash_same_block() {
     let bin = query(deps.as_ref(), env.clone(), query_msg).unwrap();
     let rewards_after: RewardsResponse = cosmwasm_std::from_json(bin).unwrap();
     assert_eq!(rewards_after.pending_rewards.amount, Uint128::zero());
+}
+
+// Test scenario where user1 accrues funds.
+// user1 gets slashed.
+// [OPTIONAL] Then config changes, so global_index rate changes.
+// user2 claims funds later.
+// Then user1 claims later. This should
+#[test]
+fn test_two_users_with_slashing() {
+    let mut deps = mock_dependencies();
+    let mut env = mock_env();
+
+    let owner = deps.api.addr_make("owner");
+    let proxy = deps.api.addr_make("proxy");
+    let dao = deps.api.addr_make("dao");
+    let user1 = deps.api.addr_make("user1");
+    let user2 = deps.api.addr_make("user2");
+
+    let user1_info = message_info(&user1, &[]);
+    let user2_info = message_info(&user2, &[]);
+    let proxy_info = message_info(&proxy, &[]);
+
+    // Instantiate the contract.
+    let instantiate_info = message_info(&owner, &[]);
+    let instantiate_msg = InstantiateMsg {
+        owner: owner.to_string(),
+        dao_address: dao.to_string(),
+        staking_info_proxy: proxy.to_string(),
+        annual_reward_rate_bps: 1000, // 10%
+        blocks_per_year: 100,
+        staking_denom: "untrn".to_string(),
+    };
+    let _ = instantiate(
+        deps.as_mut(),
+        env.clone(),
+        instantiate_info,
+        instantiate_msg,
+    )
+    .unwrap();
+
+    // initialize user1 and user2 with 500_000_000 stake
+    deps.querier.update_stake(
+        user1.to_string(),
+        env.block.height,
+        coin(500_000_000u128, "untrn"),
+    );
+    deps.querier.update_stake(
+        user2.to_string(),
+        env.block.height,
+        coin(500_000_000u128, "untrn"),
+    );
+
+    // pass a year
+    env.block.height = 100;
+
+    // simulate slashing user2
+    let slashing_msg = ExecuteMsg::Slashing {};
+    let _ = execute(deps.as_mut(), env.clone(), proxy_info.clone(), slashing_msg).unwrap();
+    // slashed 50% of user1's stake
+    deps.querier.update_stake(
+        user2.to_string(),
+        env.block.height,
+        coin(250_000_000u128, "untrn"),
+    );
+
+    // pass a year
+    env.block.height += 100;
+
+    // claim for user1 (or we can call update stake TODO)
+    let claim_user1_msg = ExecuteMsg::ClaimRewards { to_address: None };
+    let update_user1_res = execute(deps.as_mut(), env.clone(), user1_info.clone(), claim_user1_msg).unwrap();
+    let user1_claimed = unwrap_send_amount_from_update_stake(update_user1_res);
+
+    // claim for user2
+    let claim_user2_msg = ExecuteMsg::ClaimRewards { to_address: None };
+    let update_user2_res =  execute(deps.as_mut(), env.clone(), user2_info.clone(), claim_user2_msg).unwrap();
+    let user2_claimed = unwrap_send_amount_from_update_stake(update_user2_res);
+
+    // amount of claimed user1 should be less since the slashing
+    assert_eq!(user1_claimed, user2_claimed); // SHOULD FAIL
+}
+
+
+// # TODO: test with slashing AND config change
+
+// helpers
+fn unwrap_send_amount_from_update_stake(res: Response) -> Uint128 {
+    if res.messages.is_empty() {
+        println!("\n\n\nEMPTY LENEEENENEN")
+    }
+    res.messages.into_iter().find_map(|m| {
+        match m.msg {
+            CosmosMsg::Bank(BankMsg::Send { to_address: _, amount }) => return Some(amount.first().unwrap().amount),
+            r => {
+                println!("Msg: {:?}", &r);
+                None
+            }
+        }
+    }).unwrap()
 }
