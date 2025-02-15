@@ -1255,23 +1255,24 @@ fn test_two_users_with_slashing() {
     let user2_claimed = unwrap_send_amount_from_update_stake(update_user2_res);
 
     // for user 2 slashing amount should be:
+    let expected_user1_claimed = user_stake_before_slashing as f64 * 0.2;
     // (user2_stake_before_slashing * year_rewards) + (user_2_stake_after_slashing * year_rewards)
-    let expected = user_stake_before_slashing as f64 * 0.1 + user_stake_after_slashing as f64 * 0.1;
+    let expected_user2_claimed =
+        user_stake_before_slashing as f64 * 0.1 + user_stake_after_slashing as f64 * 0.1;
     println!(
         "Expected to claim: {:?}, got: {:?}",
-        expected, user2_claimed
+        expected_user2_claimed, user2_claimed
     );
 
     // in case of incorrect calculation, should've been:
     // 0.2 is incorrect but latest reward index
-    let expected_incorrect_before_fix =
-        user_stake_before_slashing as f64 * 0.1 + user_stake_after_slashing as f64 * 0.2;
-    println!("Incorrect expected: {:?}", expected_incorrect_before_fix);
-
-    println!("end block height: {:?}", env.block.height);
+    // let expected_incorrect_before_fix =
+    //     user_stake_before_slashing as f64 * 0.1 + user_stake_after_slashing as f64 * 0.2;
+    // println!("Incorrect expected: {:?}", expected_incorrect_before_fix);
 
     // amount of claimed user1 should be less since the slashing
-    assert_eq!(user1_claimed, user2_claimed); // SHOULD FAIL
+    assert_eq!(user1_claimed.u128() as f64, expected_user1_claimed);
+    assert_eq!(user2_claimed.u128() as f64, expected_user2_claimed);
 }
 
 // # TODO: test with slashing AND config change

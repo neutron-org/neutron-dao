@@ -397,17 +397,16 @@ fn process_slashing_events(
     config: Config,
     user_addr: Addr,
 ) -> Result<(UserInfo, State), ContractError> {
-    let mut state = STATE.load(deps.storage)?; // CHEHEHEHEHEHEHEHHE????????
+    let state = STATE.load(deps.storage)?;
                                                // Load the user’s current info, or create a default if not present
     let mut user_info =
         load_user_or_default(deps, user_addr.clone(), config.staking_denom.clone())?;
 
     let slashing_events = state.load_unprocessed_slashing_events(user_info.last_update_block);
-    for (_slashing_event_global_index, slashing_event_height) in slashing_events.into_iter() {
-        state = get_updated_state(&config, &state, slashing_event_height)?;
+    for (slashing_event_global_index, slashing_event_height) in slashing_events.into_iter() {
         user_info = get_updated_user_info(
             user_info.clone(),
-            state.global_reward_index, // TODO: use _slashing_event_global_index
+            slashing_event_global_index,
             slashing_event_height,
             config.staking_denom.clone(),
         )?;
