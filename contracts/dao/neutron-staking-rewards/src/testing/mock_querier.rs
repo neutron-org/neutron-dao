@@ -61,7 +61,7 @@ impl WasmMockQuerier {
                         let resp: StdResult<Binary> = match q {
                             InfoProxyQuery::UserStake { address, height } => {
                                 let balance_history = self.user_balances.get(&address).unwrap();
-                                let mut result = to_json_binary(&coin(0u128, "utrn"));
+                                let mut result = to_json_binary(&coin(0u128, "untrn"));
                                 for (historical_height, amount) in balance_history.iter().rev() {
                                     if height >= *historical_height {
                                         result = to_json_binary(amount);
