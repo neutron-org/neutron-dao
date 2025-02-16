@@ -1232,7 +1232,7 @@ fn test_two_users_with_slashing() {
     // pass a year
     env.block.height += 100;
 
-    // claim for user1 (or we can call update stake TODO)
+    // claim for user1
     let claim_user1_msg = ExecuteMsg::ClaimRewards { to_address: None };
     let update_user1_res = execute(
         deps.as_mut(),
@@ -1259,29 +1259,113 @@ fn test_two_users_with_slashing() {
     // (user2_stake_before_slashing * year_rewards) + (user_2_stake_after_slashing * year_rewards)
     let expected_user2_claimed =
         user_stake_before_slashing as f64 * 0.1 + user_stake_after_slashing as f64 * 0.1;
-    println!(
-        "Expected to claim: {:?}, got: {:?}",
-        expected_user2_claimed, user2_claimed
-    );
-
-    // in case of incorrect calculation, should've been:
-    // 0.2 is incorrect but latest reward index
-    // let expected_incorrect_before_fix =
-    //     user_stake_before_slashing as f64 * 0.1 + user_stake_after_slashing as f64 * 0.2;
-    // println!("Incorrect expected: {:?}", expected_incorrect_before_fix);
 
     // amount of claimed user1 should be less since the slashing
     assert_eq!(user1_claimed.u128() as f64, expected_user1_claimed);
     assert_eq!(user2_claimed.u128() as f64, expected_user2_claimed);
 }
 
-// # TODO: test with slashing AND config change
+// - stake with user 500ntrn
+// - slash event (not this user, just slash) year later
+// - update config year later and do not even slash the user (lets imagine other users get slashed)
+// - rewards should correctly accrue in regard to new config values
+#[test]
+fn test_user_with_slashing_and_config_change() {
+    let mut deps = mock_dependencies();
+    let mut env = mock_env();
+    env.block.height = 0;
+
+    let owner = deps.api.addr_make("owner");
+    let proxy = deps.api.addr_make("proxy");
+    let dao = deps.api.addr_make("dao");
+    let user = deps.api.addr_make("user");
+
+    let owner_info = message_info(&owner, &[]);
+    let user_info = message_info(&user, &[]);
+    let proxy_info = message_info(&proxy, &[]);
+
+    let user_stake = 500_000_000u128;
+
+    // Instantiate the contract.
+    let instantiate_info = message_info(&owner, &[]);
+    let instantiate_msg = InstantiateMsg {
+        owner: owner.to_string(),
+        dao_address: dao.to_string(),
+        staking_info_proxy: proxy.to_string(),
+        annual_reward_rate_bps: 1000, // 10%
+        blocks_per_year: 100,
+        staking_denom: "untrn".to_string(),
+    };
+    let _ = instantiate(
+        deps.as_mut(),
+        env.clone(),
+        instantiate_info,
+        instantiate_msg,
+    )
+    .unwrap();
+
+    // initialize user1 and user2 with 500_000_000 stake
+    deps.querier.update_stake(
+        user.to_string(),
+        env.block.height,
+        coin(user_stake, "untrn"),
+    );
+    let update_msg_1 = UpdateStake {
+        user: user.to_string(),
+    };
+    let _ = execute(deps.as_mut(), env.clone(), proxy_info.clone(), update_msg_1).unwrap();
+
+    // pass a year
+    env.block.height += 100;
+
+    // simulate slashing user2
+    let slashing_msg = ExecuteMsg::Slashing {};
+    let _ = execute(deps.as_mut(), env.clone(), proxy_info.clone(), slashing_msg).unwrap();
+
+    // pass a year
+    env.block.height += 100;
+
+    let update_config_msg = ExecuteMsg::UpdateConfig {
+        owner: None,
+        annual_reward_rate_bps: Some(5000), // 50%
+        blocks_per_year: None,
+        staking_info_proxy: None,
+        staking_denom: None,
+    };
+    let _ = execute(
+        deps.as_mut(),
+        env.clone(),
+        owner_info.clone(),
+        update_config_msg,
+    )
+    .unwrap();
+
+    // pass a year
+    env.block.height += 100;
+
+    // claim for user1
+    let claim_user1_msg = ExecuteMsg::ClaimRewards { to_address: None };
+    let update_user_res = execute(
+        deps.as_mut(),
+        env.clone(),
+        user_info.clone(),
+        claim_user1_msg,
+    )
+    .unwrap();
+    let actual_user_claimed = unwrap_send_amount_from_update_stake(update_user_res);
+
+    // 3 years passed from them
+    // - 2 years with 10% annual rewards
+    // - 1 year with 50% annual rewards
+    // total rewards should be 70% of stake
+    let expected_user_claimed = 0.2 * user_stake as f64 + 0.5 * user_stake as f64;
+
+    // amount of claimed user1 should be less since the slashing
+    assert_eq!(actual_user_claimed.u128() as f64, expected_user_claimed);
+}
 
 // helpers
 fn unwrap_send_amount_from_update_stake(res: Response) -> Uint128 {
-    if res.messages.is_empty() {
-        println!("EMPTY LENEEENENEN")
-    }
     res.messages
         .into_iter()
         .find_map(|m| match m.msg {
@@ -1289,10 +1373,7 @@ fn unwrap_send_amount_from_update_stake(res: Response) -> Uint128 {
                 to_address: _,
                 amount,
             }) => return Some(amount.first().unwrap().amount),
-            r => {
-                println!("Msg: {:?}", &r);
-                None
-            }
+            _ => None,
         })
         .unwrap()
 }
