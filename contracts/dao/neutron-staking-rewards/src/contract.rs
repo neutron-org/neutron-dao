@@ -210,8 +210,7 @@ fn slashing(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
         return Err(Unauthorized {});
     }
 
-    let mut state = STATE.load(deps.storage)?;
-
+    let state = STATE.load(deps.storage)?;
     if let Some((_, last_event_height)) = state.slashing_events.last() {
         if *last_event_height >= env.block.height {
             return Ok(Response::new()
@@ -220,14 +219,12 @@ fn slashing(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
         }
     }
 
-    let updated_state = get_updated_state(&config, &state, env.block.height)?;
-
-    // push to non-updated state, we just need to get new global_reward_index for slashing_events here
-    state.slashing_events.push((
+    let mut updated_state = get_updated_state(&config, &state, env.block.height)?;
+    updated_state.slashing_events.push((
         updated_state.global_reward_index,
         updated_state.global_update_height,
     ));
-    STATE.save(deps.storage, &state)?;
+    STATE.save(deps.storage, &updated_state)?;
 
     Ok(Response::new()
         .add_attribute("action", "slashing")
