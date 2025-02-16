@@ -178,7 +178,6 @@ fn update_stake(
         process_slashing_events(deps.as_ref(), config.clone(), user_addr.clone())?;
 
     let updated_state = get_updated_state(&config, &state, env.block.height)?;
-    println!("updated state: {:?}", updated_state);
     let mut updated_user_info = get_updated_user_info(
         user_info,
         updated_state.global_reward_index,
@@ -195,10 +194,6 @@ fn update_stake(
     )?;
     STATE.save(deps.storage, &updated_state)?;
     USERS.save(deps.storage, &user_addr.clone(), &updated_user_info)?;
-    println!(
-        "claim rewards state: {:?}, user_info: {:?}",
-        updated_state, updated_user_info
-    );
 
     Ok(Response::new()
         .add_attribute("action", "update_stake")
@@ -233,7 +228,6 @@ fn slashing(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
         updated_state.global_update_height,
     ));
     STATE.save(deps.storage, &state)?;
-    println!("slashing state: {:?}", state);
 
     Ok(Response::new()
         .add_attribute("action", "slashing")
@@ -248,16 +242,11 @@ fn claim_rewards(
     info: MessageInfo,
     to_address: Option<String>,
 ) -> Result<Response, ContractError> {
-    println!("claim_rewards");
     let config = CONFIG.load(deps.storage)?;
 
     let (user_info, state) =
         process_slashing_events(deps.as_ref(), config.clone(), info.sender.clone())?;
     let updated_state = get_updated_state(&config, &state, env.block.height)?;
-    println!(
-        "claim_rewards state for heigth={:?}: {:?}",
-        env.block.height, updated_state
-    );
     let mut updated_user_info = get_updated_user_info(
         user_info,
         updated_state.global_reward_index,
@@ -267,10 +256,6 @@ fn claim_rewards(
     let pending_rewards = updated_user_info.pending_rewards;
     updated_user_info.pending_rewards = coin(0u128, config.staking_denom);
     STATE.save(deps.storage, &updated_state)?;
-    println!(
-        "claim rewards state: {:?}, user_info: {:?}",
-        updated_state, updated_user_info
-    );
     USERS.save(deps.storage, &info.sender, &updated_user_info)?;
 
     let recipient = to_address.unwrap_or(info.sender.to_string());
@@ -398,7 +383,7 @@ fn process_slashing_events(
     user_addr: Addr,
 ) -> Result<(UserInfo, State), ContractError> {
     let state = STATE.load(deps.storage)?;
-                                               // Load the user’s current info, or create a default if not present
+    // Load the user’s current info, or create a default if not present
     let mut user_info =
         load_user_or_default(deps, user_addr.clone(), config.staking_denom.clone())?;
 
@@ -550,7 +535,6 @@ fn safe_query_user_stake(
                     denom: user_stake.denom,
                 });
             }
-            println!("safe_query_user_stake: {:?}", user_stake.amount);
 
             Ok(user_stake)
         }
