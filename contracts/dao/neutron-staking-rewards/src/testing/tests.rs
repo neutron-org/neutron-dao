@@ -1153,11 +1153,11 @@ fn test_update_and_slash_same_block() {
     assert_eq!(rewards_after.pending_rewards.amount, Uint128::zero());
 }
 
-// Test scenario where user1 accrues funds.
-// user1 gets slashed.
-// [OPTIONAL] Then config changes, so global_index rate changes.
-// user2 claims funds later.
-// Then user1 claims later. This should
+// Test scenario where user1 and user2 accrues funds.
+// - user1 gets slashed.
+// - user2 claims funds later.
+// - then user1 claims later. user1 claim amount should account slashing correctly
+//      and do not break when global index change after user2 claim
 #[test]
 fn test_two_users_with_slashing() {
     let mut deps = mock_dependencies();

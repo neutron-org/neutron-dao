@@ -453,7 +453,7 @@ fn get_updated_global_index(
     // Convert blocks_per_year to a Decimal
     let blocks_per_year = Decimal::from_atomics(config.blocks_per_year, 0).unwrap_or_default();
     // Reward rate per block = (annual_rate / blocks_per_year)
-    let rate_per_block = annual_rate / blocks_per_year; // percent rate per block!
+    let rate_per_block = annual_rate / blocks_per_year;
 
     // Increase in index over the time delta
     let delta_index = rate_per_block * Decimal::from_atomics(delta_t, 0).unwrap();
@@ -461,7 +461,6 @@ fn get_updated_global_index(
     // The new global index is the old index plus any delta over the elapsed blocks
     Ok(delta_index + old_global_index)
 }
-// i.e global_index = percent for all blocks so far
 
 /// Loads user info from state, or returns a default if the user has no entry yet.
 fn load_user_or_default(
