@@ -27,8 +27,8 @@ pub enum ContractError {
     #[error("CheckedMultiplyRatioError error: {0}")]
     CheckedMultiplyFractionError(#[from] CheckedMultiplyFractionError),
 
-    #[error("IncorrectGlobalIndexHeightToUpdate error: current height {current_block} height to update {last_global_update_block}")]
-    IncorrectGlobalIndexHeightToUpdate {
+    #[error("TriedGetGlobalIndexInThePast error: current height {current_block} height to update {last_global_update_block}")]
+    TriedGetGlobalIndexInThePast {
         current_block: u64,
         last_global_update_block: u64,
     },

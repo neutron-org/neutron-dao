@@ -71,7 +71,7 @@ fn test_claim_rewards_no_pending() {
     let user = deps.api.addr_make("user1");
 
     // At block 100, set the stake.
-    env.block.height = 100;
+    env.block.height += 100;
     deps.querier.update_stake(
         user.to_string(),
         env.block.height,
@@ -130,13 +130,13 @@ fn test_update_global_index_same_block() {
     let user = deps.api.addr_make("user1");
 
     // At block 100, set the stake.
-    env.block.height = 100;
+    env.block.height += 100;
     deps.querier.update_stake(
         user.to_string(),
         env.block.height,
         coin(1_000_000_000u128, "untrn"),
     );
-    let update_msg = ExecuteMsg::UpdateStake {
+    let update_msg = UpdateStake {
         user: user.to_string(),
     };
     let proxy_info = message_info(&proxy, &[]);
@@ -760,7 +760,7 @@ fn test_slashing_no_effect() {
 
     // ---- STEP 1: Set an initial stake for user1.
     // At block 100, simulate that user1 has staked 1_000_000_000 units.
-    env.block.height = 100;
+    env.block.height += 100;
     deps.querier.update_stake(
         user1.to_string(),
         env.block.height,
@@ -774,7 +774,7 @@ fn test_slashing_no_effect() {
 
     // ---- STEP 2: Process a slashing event that does NOT change the user’s stake.
     // Advance to block 150.
-    env.block.height = 150;
+    env.block.height += 50;
     // In this scenario the querier still returns the original stake.
     deps.querier.update_stake(
         user1.to_string(),
@@ -794,7 +794,7 @@ fn test_slashing_no_effect() {
 
     // ---- STEP 3: Advance time and check rewards.
     // Advance to block 250.
-    env.block.height = 250;
+    env.block.height += 100;
     // When no stake change occurred, rewards accumulate continuously.
     // Calculation:
     //   - From block 100 to 150: 50 blocks with stake 1_000_000_000 → 50 * (1_000_000_000 * 0.1/10_000)
@@ -987,7 +987,7 @@ fn test_multiple_slashing_events() {
     .unwrap();
 
     // ---- STEP 1: Set initial stake at block 100.
-    env.block.height = 100;
+    env.block.height += 100;
     deps.querier.update_stake(
         user1.to_string(),
         env.block.height,
@@ -1001,7 +1001,7 @@ fn test_multiple_slashing_events() {
 
     // ---- STEP 2: First slashing event at block 150.
     // For this event, simulate a 50% cut: stake goes from 1_000_000_000 → 500_000_000.
-    env.block.height = 150;
+    env.block.height += 50;
     deps.querier.update_stake(
         user1.to_string(),
         env.block.height,
@@ -1012,7 +1012,7 @@ fn test_multiple_slashing_events() {
 
     // ---- STEP 3: Second slashing event at block 200.
     // Now simulate another 50% cut: stake goes from 500_000_000 → 250_000_000.
-    env.block.height = 200;
+    env.block.height += 50;
     deps.querier.update_stake(
         user1.to_string(),
         env.block.height,
@@ -1023,7 +1023,7 @@ fn test_multiple_slashing_events() {
 
     // ---- STEP 4: Advance time and check rewards.
     // Advance to block 250.
-    env.block.height = 250;
+    env.block.height += 50;
     // Expected rewards breakdown:
     //   - From block 100 to 150 (50 blocks) with stake 1_000_000_000:
     //         50 * (1_000_000_000 * 0.1/10_000) = 50 * 10,000 = 500,000.
@@ -1086,7 +1086,7 @@ fn test_update_and_slash_same_block() {
 
     // ---- STEP 1: Set an initial stake for user1 in an earlier block.
     // Let’s say at block 200, the user’s stake is 500_000_000.
-    env.block.height = 200;
+    env.block.height += 200;
     deps.querier.update_stake(
         user1.to_string(),
         env.block.height,
@@ -1100,7 +1100,7 @@ fn test_update_and_slash_same_block() {
 
     // ---- STEP 2: At block 300 the user delegates an additional 500_000_000 tokens.
     // So the staking_info_proxy should return 1_000_000_000 at first.
-    env.block.height = 300;
+    env.block.height += 100;
     deps.querier.update_stake(
         user1.to_string(),
         env.block.height,
@@ -1126,7 +1126,7 @@ fn test_update_and_slash_same_block() {
 
     // ---- STEP 3: Advance time so that rewards accrue after block 300.
     // From block 300 to block 350, the stake used for rewards should be the slashed stake: 500_000_000.
-    env.block.height = 350;
+    env.block.height += 50;
     // Expected rewards for 50 blocks:
     //   50 * (500_000_000 * (0.1/10_000)) = 50 * (500_000_000 * 0.00001) = 50 * 5,000 = 250,000.
     // Combined with the still pending 500_000 rewards from blocks 200 to 300, total pending rewards

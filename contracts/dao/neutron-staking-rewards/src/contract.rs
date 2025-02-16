@@ -434,13 +434,15 @@ fn get_updated_global_index(
     old_global_index: Decimal,
     last_global_update_block: u64,
 ) -> Result<Decimal, ContractError> {
-    if current_block <= last_global_update_block {
+    if current_block < last_global_update_block {
+        return Err(ContractError::TriedGetGlobalIndexInThePast {
+            current_block,
+            last_global_update_block,
+        });
+    }
+
+    if current_block == last_global_update_block {
         return Ok(old_global_index);
-        // TODO: return Err
-        // return Err(ContractError::IncorrectGlobalIndexHeightToUpdate {
-        //     current_block,
-        //     last_global_update_block,
-        // });
     }
 
     // Calculate number of blocks since last global index update
