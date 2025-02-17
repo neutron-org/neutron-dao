@@ -13,7 +13,7 @@ use crate::msg::{
 use crate::state::{Config, State, UserInfo, CONFIG, STATE, USERS};
 
 const CONTRACT_NAME: &str = "crates.io:neutron-staking-rewards";
-const CONTRACT_VERSION: &str = "0.1.0";
+const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
