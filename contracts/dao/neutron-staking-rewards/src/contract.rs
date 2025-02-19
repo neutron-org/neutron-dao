@@ -119,7 +119,7 @@ fn update_config(
 
     // First, update the global index before changing any reward-related parameters
     // to ensure consistent reward distribution.
-    update_global_index(deps.branch(), env, config.clone())?;
+    update_global_index(deps.branch(), &env, config.clone())?;
 
     // Update fields
     if let Some(new_owner) = owner {
@@ -177,14 +177,13 @@ fn update_stake(
     let (user_info, state) =
         process_slashing_events(deps.as_ref(), config.clone(), user_addr.clone())?;
 
-    let updated_state = get_updated_state(&config, state, env.block.height)?;
+    let updated_state = get_updated_state(&config, &state, env.block.height)?;
     let mut updated_user_info = get_updated_user_info(
         user_info,
         updated_state.global_reward_index,
         env.block.height,
         config.staking_denom.clone(),
     )?;
-
     // Set the user stake to current value
     updated_user_info.stake = safe_query_user_stake(
         &deps.as_ref(),
@@ -211,16 +210,21 @@ fn slashing(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
         return Err(Unauthorized {});
     }
 
-    let mut state = STATE.load(deps.storage)?;
-
-    if state.slashing_events.ends_with(&[env.block.height]) {
-        return Ok(Response::new()
-            .add_attribute("action", "slashing")
-            .add_attribute("result", "ignored"));
+    let state = STATE.load(deps.storage)?;
+    if let Some((_, last_event_height)) = state.slashing_events.last() {
+        if *last_event_height >= env.block.height {
+            return Ok(Response::new()
+                .add_attribute("action", "slashing")
+                .add_attribute("result", "ignored"));
+        }
     }
 
-    state.slashing_events.push(env.block.height);
-    STATE.save(deps.storage, &state)?;
+    let mut updated_state = get_updated_state(&config, &state, env.block.height)?;
+    updated_state.slashing_events.push((
+        updated_state.global_reward_index,
+        updated_state.global_update_height,
+    ));
+    STATE.save(deps.storage, &updated_state)?;
 
     Ok(Response::new()
         .add_attribute("action", "slashing")
@@ -239,8 +243,7 @@ fn claim_rewards(
 
     let (user_info, state) =
         process_slashing_events(deps.as_ref(), config.clone(), info.sender.clone())?;
-
-    let updated_state = get_updated_state(&config, state, env.block.height)?;
+    let updated_state = get_updated_state(&config, &state, env.block.height)?;
     let mut updated_user_info = get_updated_user_info(
         user_info,
         updated_state.global_reward_index,
@@ -249,7 +252,6 @@ fn claim_rewards(
     )?;
     let pending_rewards = updated_user_info.pending_rewards;
     updated_user_info.pending_rewards = coin(0u128, config.staking_denom);
-
     STATE.save(deps.storage, &updated_state)?;
     USERS.save(deps.storage, &info.sender, &updated_user_info)?;
 
@@ -312,7 +314,7 @@ fn query_rewards(deps: Deps, env: Env, user: String) -> Result<RewardsResponse, 
 
     let (user_info, state) = process_slashing_events(deps, config.clone(), user_addr)?;
 
-    let updated_state = get_updated_state(&config, state, env.block.height)?;
+    let updated_state = get_updated_state(&config, &state, env.block.height)?;
     let updated_user_info = get_updated_user_info(
         user_info,
         updated_state.global_reward_index,
@@ -338,7 +340,7 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
 
 fn get_updated_state(
     config: &Config,
-    state: State,
+    state: &State,
     new_height: u64,
 ) -> Result<State, ContractError> {
     let mut state = state.clone();
@@ -377,18 +379,17 @@ fn process_slashing_events(
     config: Config,
     user_addr: Addr,
 ) -> Result<(UserInfo, State), ContractError> {
-    let mut state = STATE.load(deps.storage)?;
+    let state = STATE.load(deps.storage)?;
     // Load the user’s current info, or create a default if not present
     let mut user_info =
         load_user_or_default(deps, user_addr.clone(), config.staking_denom.clone())?;
 
-    let slashing_events = state.load_slashing_event_heights(user_info.last_update_block);
-    for slashing_event_height in slashing_events.iter() {
-        state = get_updated_state(&config, state.clone(), *slashing_event_height)?;
+    let slashing_events = state.load_unprocessed_slashing_events(user_info.last_update_block);
+    for (slashing_event_global_index, slashing_event_height) in slashing_events.into_iter() {
         user_info = get_updated_user_info(
             user_info.clone(),
-            state.global_reward_index,
-            *slashing_event_height,
+            slashing_event_global_index,
+            slashing_event_height,
             config.staking_denom.clone(),
         )?;
 
@@ -398,7 +399,7 @@ fn process_slashing_events(
             user_addr.clone(),
             config.staking_info_proxy.clone(),
             config.staking_denom.clone(),
-            *slashing_event_height,
+            slashing_event_height,
         )?;
     }
 
@@ -406,7 +407,7 @@ fn process_slashing_events(
 }
 
 /// Updates the global reward index in state based on how many blocks have passed since last update.
-fn update_global_index(deps: DepsMut, env: Env, config: Config) -> Result<Decimal, ContractError> {
+fn update_global_index(deps: DepsMut, env: &Env, config: Config) -> Result<Decimal, ContractError> {
     let mut state = STATE.load(deps.storage)?;
 
     let new_global_index = get_updated_global_index(
@@ -430,7 +431,14 @@ fn get_updated_global_index(
     old_global_index: Decimal,
     last_global_update_block: u64,
 ) -> Result<Decimal, ContractError> {
-    if current_block <= last_global_update_block {
+    if current_block < last_global_update_block {
+        return Err(ContractError::TriedGetGlobalIndexInThePast {
+            current_block,
+            last_global_update_block,
+        });
+    }
+
+    if current_block == last_global_update_block {
         return Ok(old_global_index);
     }
 
@@ -521,7 +529,9 @@ fn safe_query_user_stake(
         }
         Ok(user_stake) => {
             if user_stake.denom != staking_denom {
-                return Err(InvalidStakeDenom {});
+                return Err(InvalidStakeDenom {
+                    denom: user_stake.denom,
+                });
             }
 
             Ok(user_stake)

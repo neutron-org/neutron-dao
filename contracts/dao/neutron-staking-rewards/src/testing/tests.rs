@@ -1,5 +1,6 @@
 use crate::contract::{execute, instantiate, query};
 use crate::error::ContractError;
+use crate::msg::ExecuteMsg::UpdateStake;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, RewardsResponse};
 use crate::state::CONFIG;
 use crate::testing::mock_querier::mock_dependencies;
@@ -7,7 +8,7 @@ use cosmwasm_std::testing::MockApi;
 use cosmwasm_std::{
     coin,
     testing::{message_info, mock_env},
-    Uint128,
+    BankMsg, CosmosMsg, Response, Uint128,
 };
 
 // Helper to create a default instantiate message
@@ -70,7 +71,7 @@ fn test_claim_rewards_no_pending() {
     let user = deps.api.addr_make("user1");
 
     // At block 100, set the stake.
-    env.block.height = 100;
+    env.block.height += 100;
     deps.querier.update_stake(
         user.to_string(),
         env.block.height,
@@ -129,13 +130,13 @@ fn test_update_global_index_same_block() {
     let user = deps.api.addr_make("user1");
 
     // At block 100, set the stake.
-    env.block.height = 100;
+    env.block.height += 100;
     deps.querier.update_stake(
         user.to_string(),
         env.block.height,
         coin(1_000_000_000u128, "untrn"),
     );
-    let update_msg = ExecuteMsg::UpdateStake {
+    let update_msg = UpdateStake {
         user: user.to_string(),
     };
     let proxy_info = message_info(&proxy, &[]);
@@ -759,7 +760,7 @@ fn test_slashing_no_effect() {
 
     // ---- STEP 1: Set an initial stake for user1.
     // At block 100, simulate that user1 has staked 1_000_000_000 units.
-    env.block.height = 100;
+    env.block.height += 100;
     deps.querier.update_stake(
         user1.to_string(),
         env.block.height,
@@ -773,7 +774,7 @@ fn test_slashing_no_effect() {
 
     // ---- STEP 2: Process a slashing event that does NOT change the user’s stake.
     // Advance to block 150.
-    env.block.height = 150;
+    env.block.height += 50;
     // In this scenario the querier still returns the original stake.
     deps.querier.update_stake(
         user1.to_string(),
@@ -793,7 +794,7 @@ fn test_slashing_no_effect() {
 
     // ---- STEP 3: Advance time and check rewards.
     // Advance to block 250.
-    env.block.height = 250;
+    env.block.height += 100;
     // When no stake change occurred, rewards accumulate continuously.
     // Calculation:
     //   - From block 100 to 150: 50 blocks with stake 1_000_000_000 → 50 * (1_000_000_000 * 0.1/10_000)
@@ -986,7 +987,7 @@ fn test_multiple_slashing_events() {
     .unwrap();
 
     // ---- STEP 1: Set initial stake at block 100.
-    env.block.height = 100;
+    env.block.height += 100;
     deps.querier.update_stake(
         user1.to_string(),
         env.block.height,
@@ -1000,7 +1001,7 @@ fn test_multiple_slashing_events() {
 
     // ---- STEP 2: First slashing event at block 150.
     // For this event, simulate a 50% cut: stake goes from 1_000_000_000 → 500_000_000.
-    env.block.height = 150;
+    env.block.height += 50;
     deps.querier.update_stake(
         user1.to_string(),
         env.block.height,
@@ -1011,7 +1012,7 @@ fn test_multiple_slashing_events() {
 
     // ---- STEP 3: Second slashing event at block 200.
     // Now simulate another 50% cut: stake goes from 500_000_000 → 250_000_000.
-    env.block.height = 200;
+    env.block.height += 50;
     deps.querier.update_stake(
         user1.to_string(),
         env.block.height,
@@ -1022,7 +1023,7 @@ fn test_multiple_slashing_events() {
 
     // ---- STEP 4: Advance time and check rewards.
     // Advance to block 250.
-    env.block.height = 250;
+    env.block.height += 50;
     // Expected rewards breakdown:
     //   - From block 100 to 150 (50 blocks) with stake 1_000_000_000:
     //         50 * (1_000_000_000 * 0.1/10_000) = 50 * 10,000 = 500,000.
@@ -1085,7 +1086,7 @@ fn test_update_and_slash_same_block() {
 
     // ---- STEP 1: Set an initial stake for user1 in an earlier block.
     // Let’s say at block 200, the user’s stake is 500_000_000.
-    env.block.height = 200;
+    env.block.height += 200;
     deps.querier.update_stake(
         user1.to_string(),
         env.block.height,
@@ -1099,7 +1100,7 @@ fn test_update_and_slash_same_block() {
 
     // ---- STEP 2: At block 300 the user delegates an additional 500_000_000 tokens.
     // So the staking_info_proxy should return 1_000_000_000 at first.
-    env.block.height = 300;
+    env.block.height += 100;
     deps.querier.update_stake(
         user1.to_string(),
         env.block.height,
@@ -1125,7 +1126,7 @@ fn test_update_and_slash_same_block() {
 
     // ---- STEP 3: Advance time so that rewards accrue after block 300.
     // From block 300 to block 350, the stake used for rewards should be the slashed stake: 500_000_000.
-    env.block.height = 350;
+    env.block.height += 50;
     // Expected rewards for 50 blocks:
     //   50 * (500_000_000 * (0.1/10_000)) = 50 * (500_000_000 * 0.00001) = 50 * 5,000 = 250,000.
     // Combined with the still pending 500_000 rewards from blocks 200 to 300, total pending rewards
@@ -1150,4 +1151,229 @@ fn test_update_and_slash_same_block() {
     let bin = query(deps.as_ref(), env.clone(), query_msg).unwrap();
     let rewards_after: RewardsResponse = cosmwasm_std::from_json(bin).unwrap();
     assert_eq!(rewards_after.pending_rewards.amount, Uint128::zero());
+}
+
+// Test scenario where user1 and user2 accrues funds.
+// - user1 gets slashed.
+// - user2 claims funds later.
+// - then user1 claims later. user1 claim amount should account slashing correctly
+//      and do not break when global index change after user2 claim
+#[test]
+fn test_two_users_with_slashing() {
+    let mut deps = mock_dependencies();
+    let mut env = mock_env();
+    env.block.height = 0;
+
+    let owner = deps.api.addr_make("owner");
+    let proxy = deps.api.addr_make("proxy");
+    let dao = deps.api.addr_make("dao");
+    let user1 = deps.api.addr_make("user1");
+    let user2 = deps.api.addr_make("user2");
+
+    let user1_info = message_info(&user1, &[]);
+    let user2_info = message_info(&user2, &[]);
+    let proxy_info = message_info(&proxy, &[]);
+
+    let user_stake_before_slashing = 500_000_000u128;
+    let user_stake_after_slashing = 250_000_000u128;
+
+    // Instantiate the contract.
+    let instantiate_info = message_info(&owner, &[]);
+    let instantiate_msg = InstantiateMsg {
+        owner: owner.to_string(),
+        dao_address: dao.to_string(),
+        staking_info_proxy: proxy.to_string(),
+        annual_reward_rate_bps: 1000, // 10%
+        blocks_per_year: 100,
+        staking_denom: "untrn".to_string(),
+    };
+    let _ = instantiate(
+        deps.as_mut(),
+        env.clone(),
+        instantiate_info,
+        instantiate_msg,
+    )
+    .unwrap();
+
+    // initialize user1 and user2 with 500_000_000 stake
+    deps.querier.update_stake(
+        user1.to_string(),
+        env.block.height,
+        coin(user_stake_before_slashing, "untrn"),
+    );
+    let update_msg_1 = UpdateStake {
+        user: user1.to_string(),
+    };
+    let _ = execute(deps.as_mut(), env.clone(), proxy_info.clone(), update_msg_1).unwrap();
+
+    deps.querier.update_stake(
+        user2.to_string(),
+        env.block.height,
+        coin(user_stake_before_slashing, "untrn"),
+    );
+    let update_msg_2 = UpdateStake {
+        user: user2.to_string(),
+    };
+    let _ = execute(deps.as_mut(), env.clone(), proxy_info.clone(), update_msg_2).unwrap();
+
+    // pass a year
+    env.block.height += 100;
+
+    // simulate slashing user2
+    let slashing_msg = ExecuteMsg::Slashing {};
+    let _ = execute(deps.as_mut(), env.clone(), proxy_info.clone(), slashing_msg).unwrap();
+    // slashed 50% of user1's stake
+    deps.querier.update_stake(
+        user2.to_string(),
+        env.block.height,
+        coin(user_stake_after_slashing, "untrn"),
+    );
+
+    // pass a year
+    env.block.height += 100;
+
+    // claim for user1
+    let claim_user1_msg = ExecuteMsg::ClaimRewards { to_address: None };
+    let update_user1_res = execute(
+        deps.as_mut(),
+        env.clone(),
+        user1_info.clone(),
+        claim_user1_msg,
+    )
+    .unwrap();
+    let user1_claimed = unwrap_send_amount_from_update_stake(update_user1_res);
+
+    // claim for user2
+    let claim_user2_msg = ExecuteMsg::ClaimRewards { to_address: None };
+    let update_user2_res = execute(
+        deps.as_mut(),
+        env.clone(),
+        user2_info.clone(),
+        claim_user2_msg,
+    )
+    .unwrap();
+    let user2_claimed = unwrap_send_amount_from_update_stake(update_user2_res);
+
+    // for user 2 slashing amount should be:
+    let expected_user1_claimed = user_stake_before_slashing as f64 * 0.2;
+    // (user2_stake_before_slashing * year_rewards) + (user_2_stake_after_slashing * year_rewards)
+    let expected_user2_claimed =
+        user_stake_before_slashing as f64 * 0.1 + user_stake_after_slashing as f64 * 0.1;
+
+    // amount of claimed user1 should be less since the slashing
+    assert_eq!(user1_claimed.u128() as f64, expected_user1_claimed);
+    assert_eq!(user2_claimed.u128() as f64, expected_user2_claimed);
+}
+
+// - stake with user 500ntrn
+// - slash event (not this user, just slash) year later
+// - update config year later and do not even slash the user (lets imagine other users get slashed)
+// - rewards should correctly accrue in regard to new config values
+#[test]
+fn test_user_with_slashing_and_config_change() {
+    let mut deps = mock_dependencies();
+    let mut env = mock_env();
+    env.block.height = 0;
+
+    let owner = deps.api.addr_make("owner");
+    let proxy = deps.api.addr_make("proxy");
+    let dao = deps.api.addr_make("dao");
+    let user = deps.api.addr_make("user");
+
+    let owner_info = message_info(&owner, &[]);
+    let user_info = message_info(&user, &[]);
+    let proxy_info = message_info(&proxy, &[]);
+
+    let user_stake = 500_000_000u128;
+
+    // Instantiate the contract.
+    let instantiate_info = message_info(&owner, &[]);
+    let instantiate_msg = InstantiateMsg {
+        owner: owner.to_string(),
+        dao_address: dao.to_string(),
+        staking_info_proxy: proxy.to_string(),
+        annual_reward_rate_bps: 1000, // 10%
+        blocks_per_year: 100,
+        staking_denom: "untrn".to_string(),
+    };
+    let _ = instantiate(
+        deps.as_mut(),
+        env.clone(),
+        instantiate_info,
+        instantiate_msg,
+    )
+    .unwrap();
+
+    // initialize user1 and user2 with 500_000_000 stake
+    deps.querier.update_stake(
+        user.to_string(),
+        env.block.height,
+        coin(user_stake, "untrn"),
+    );
+    let update_msg_1 = UpdateStake {
+        user: user.to_string(),
+    };
+    let _ = execute(deps.as_mut(), env.clone(), proxy_info.clone(), update_msg_1).unwrap();
+
+    // pass a year
+    env.block.height += 100;
+
+    // simulate slashing user2
+    let slashing_msg = ExecuteMsg::Slashing {};
+    let _ = execute(deps.as_mut(), env.clone(), proxy_info.clone(), slashing_msg).unwrap();
+
+    // pass a year
+    env.block.height += 100;
+
+    let update_config_msg = ExecuteMsg::UpdateConfig {
+        owner: None,
+        annual_reward_rate_bps: Some(5000), // 50%
+        blocks_per_year: None,
+        staking_info_proxy: None,
+        staking_denom: None,
+    };
+    let _ = execute(
+        deps.as_mut(),
+        env.clone(),
+        owner_info.clone(),
+        update_config_msg,
+    )
+    .unwrap();
+
+    // pass a year
+    env.block.height += 100;
+
+    // claim for user1
+    let claim_user1_msg = ExecuteMsg::ClaimRewards { to_address: None };
+    let update_user_res = execute(
+        deps.as_mut(),
+        env.clone(),
+        user_info.clone(),
+        claim_user1_msg,
+    )
+    .unwrap();
+    let actual_user_claimed = unwrap_send_amount_from_update_stake(update_user_res);
+
+    // 3 years passed from them
+    // - 2 years with 10% annual rewards
+    // - 1 year with 50% annual rewards
+    // total rewards should be 70% of stake
+    let expected_user_claimed = 0.2 * user_stake as f64 + 0.5 * user_stake as f64;
+
+    // amount of claimed user1 should be less since the slashing
+    assert_eq!(actual_user_claimed.u128() as f64, expected_user_claimed);
+}
+
+// helpers
+fn unwrap_send_amount_from_update_stake(res: Response) -> Uint128 {
+    res.messages
+        .into_iter()
+        .find_map(|m| match m.msg {
+            CosmosMsg::Bank(BankMsg::Send {
+                to_address: _,
+                amount,
+            }) => return Some(amount.first().unwrap().amount),
+            _ => None,
+        })
+        .unwrap()
 }

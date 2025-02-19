@@ -28,20 +28,23 @@ impl Config {
     }
 }
 
+type SlashingEvent = (GlobalRewardIndex, u64);
+type GlobalRewardIndex = Decimal;
+
 /// Frequently updated reward-related data.
 #[cw_serde]
 pub struct State {
-    pub global_reward_index: Decimal,
+    pub global_reward_index: GlobalRewardIndex,
     pub global_update_height: u64,
-    pub slashing_events: Vec<u64>,
+    pub slashing_events: Vec<SlashingEvent>,
 }
 
 impl State {
-    pub(crate) fn load_slashing_event_heights(&self, from_height: u64) -> Vec<u64> {
+    pub(crate) fn load_unprocessed_slashing_events(&self, from_height: u64) -> Vec<SlashingEvent> {
         let events = self
             .slashing_events
             .iter()
-            .skip_while(|&&event| event < from_height)
+            .skip_while(|&&(_, event_height)| event_height < from_height)
             .cloned()
             .collect();
         events
