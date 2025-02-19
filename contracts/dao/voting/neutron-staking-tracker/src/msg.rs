@@ -62,6 +62,11 @@ pub enum SudoMsg {
         val_addr: String,
     },
 
+    BeforeDelegationRemoved {
+        del_addr: String,
+        val_addr: String,
+    },
+
     BeforeValidatorSlashed {
         val_addr: String,
         fraction: Decimal256,
