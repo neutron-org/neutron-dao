@@ -48,15 +48,13 @@ impl Config {
 /// - `bonded`: Whether the validator is bonded (actively participating in consensus).
 /// - `total_tokens`: Total staked tokens delegated to this validator.
 /// - `total_shares`: Total delegation shares representing ownership over the staked tokens.
-/// - `active`: Whether the validator is active in the network.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 pub struct Validator {
     pub cons_address: Addr,
     pub oper_address: Addr,
     pub bonded: bool,
-    /// The total amount of delegator shares for this validator.
-    ///
-    /// Stored as a `Uint128` to maintain compatibility with Cosmos SDK’s `sdk.Dec`, which is serialized
+    /// Both `total_shares` and `total_tokens` are stored as a `Uint128` to
+    /// maintain compatibility with Cosmos SDK’s `sdk.Dec`, which is serialized
     /// as an integer without a decimal point (scaled by `10^18`).
     ///
     /// ### Why `Uint128`?
@@ -75,8 +73,8 @@ pub struct Validator {
     /// Since Cosmos SDK stores `sdk.Dec` values as large integers, using `Uint128` prevents
     /// unnecessary conversions.
     pub total_tokens: Uint128,
+    /// The total amount of delegator shares for this validator.
     pub total_shares: Uint128,
-    pub active: bool,
 }
 
 impl Validator {
@@ -159,9 +157,6 @@ pub const BLACKLISTED_ADDRESSES: Map<Addr, bool> = Map::new("blacklisted_address
 ///
 /// Contains metadata such as the contract's **name, description, owner, and token denom**.
 pub const CONFIG: Item<Config> = Item::new("config");
-
-/// Stores the **DAO address** responsible for managing governance decisions.
-pub const DAO: Item<Addr> = Item::new("dao");
 
 #[cfg(test)]
 mod tests {
