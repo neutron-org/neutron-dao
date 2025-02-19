@@ -3,16 +3,11 @@
   "title": "InstantiateMsg",
   "type": "object",
   "required": [
-    "denom",
     "description",
     "name",
     "owner"
   ],
   "properties": {
-    "denom": {
-      "description": "Token denom e.g. untrn, or some ibc denom",
-      "type": "string"
-    },
     "description": {
       "description": "Description contains information that characterizes the vault.",
       "type": "string"

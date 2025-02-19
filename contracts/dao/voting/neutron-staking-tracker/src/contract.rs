@@ -9,7 +9,7 @@ use std::ops::Mul;
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_json_binary, Addr, Binary, Decimal256, Deps, DepsMut, Env, MessageInfo, Order, Reply,
-    Response, StdError, StdResult, SubMsg, Uint128, Uint256, WasmMsg,
+    Response, StdResult, SubMsg, Uint128, Uint256, WasmMsg,
 };
 use cw2::set_contract_version;
 use cw_storage_plus::Bound;
@@ -93,14 +93,6 @@ pub fn execute(
     }
 }
 
-pub fn execute_bond(
-    _deps: DepsMut,
-    _env: Env,
-    _info: MessageInfo,
-) -> Result<Response, ContractError> {
-    Err(ContractError::BondingDisabled {})
-}
-
 pub fn execute_add_to_blacklist(
     deps: DepsMut,
     info: MessageInfo,
@@ -153,15 +145,6 @@ pub fn execute_remove_from_blacklist(
     Ok(resp
         .add_attribute("action", "remove_from_blacklist")
         .add_attribute("removed_addresses", format!("{:?}", addresses)))
-}
-
-pub fn execute_unbond(
-    _: DepsMut,
-    _: Env,
-    _: MessageInfo,
-    _: Uint128,
-) -> Result<Response, ContractError> {
-    Err(ContractError::DirectUnbondingDisabled {})
 }
 
 pub fn execute_update_config(
@@ -390,8 +373,9 @@ pub(crate) fn after_delegation_modified(
                 .delegation_response
                 .and_then(|resp| resp.delegation)
                 .map(|del| {
-                    Uint128::from_str(&del.shares).map_err(|_| ContractError::InvalidSharesFormat {
+                    Uint128::from_str(&del.shares).map_err(|e| ContractError::InvalidSharesFormat {
                         shares_str: del.shares.clone(),
+                        err: e.to_string(),
                     })
                 })
         })
@@ -696,24 +680,6 @@ pub fn query_total_power_at_height(
     let net_power = total_power.checked_sub(blacklisted_power)?;
 
     Ok(net_power)
-}
-
-pub fn query_name(deps: Deps) -> StdResult<Binary> {
-    let config = CONFIG.load(deps.storage)?;
-    to_json_binary(&config.name)
-}
-
-pub fn query_description(deps: Deps) -> StdResult<Binary> {
-    let config = CONFIG.load(deps.storage)?;
-    to_json_binary(&config.description)
-}
-
-pub fn query_list_bonders(
-    _deps: Deps,
-    _start_after: Option<String>,
-    _limit: Option<u32>,
-) -> StdResult<Binary> {
-    Err(StdError::generic_err("Bonding is disabled"))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

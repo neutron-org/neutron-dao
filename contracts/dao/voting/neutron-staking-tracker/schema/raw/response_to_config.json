@@ -4,15 +4,11 @@
   "description": "Configuration settings for the smart contract.\n\nThis struct holds key details about the vault, including: - `name`: The name of the vault. - `description`: A short text description of the vault. - `owner`: The address of the vault owner/admin. - `denom`: The token denomination used for delegations and governance.",
   "type": "object",
   "required": [
-    "denom",
     "description",
     "name",
     "owner"
   ],
   "properties": {
-    "denom": {
-      "type": "string"
-    },
     "description": {
       "type": "string"
     },
