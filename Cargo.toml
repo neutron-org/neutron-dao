@@ -13,6 +13,7 @@ members = [
     "contracts/subdaos/cwd-subdao-timelock-single",
     "contracts/tokenomics/reserve",
     "contracts/tokenomics/distribution",
+    "contracts/dao/voting/neutron-staking-tracker",
     "packages/*",
 ]
 

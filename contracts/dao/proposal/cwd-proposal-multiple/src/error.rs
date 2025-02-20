@@ -1,5 +1,3 @@
-use std::u64;
-
 use cosmwasm_std::StdError;
 use cw_utils::ParseReplyError;
 use cwd_hooks::HookError;
