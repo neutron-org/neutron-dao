@@ -9,7 +9,7 @@ use std::ops::Mul;
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_json_binary, Addr, Binary, Decimal256, Deps, DepsMut, Env, MessageInfo, Order, Reply,
-    Response, StdError, StdResult, SubMsg, Uint128, Uint256, WasmMsg,
+    Response, StdResult, SubMsg, Uint128, Uint256, WasmMsg,
 };
 use cw2::set_contract_version;
 use cw_storage_plus::Bound;
@@ -26,6 +26,9 @@ const REPLY_ON_AFTER_VALIDATOR_BONDED_ERROR_STAKING_PROXY_ID: u64 = 4;
 const REPLY_ON_ADD_TO_BLACKLIST_ERROR_STAKING_PROXY_ID: u64 = 5;
 const REPLY_ON_REMOVE_FROM_BLACKLIST_ERROR_STAKING_PROXY_ID: u64 = 6;
 const REPLY_ON_BEFORE_DELEGATION_REMOVED_ERROR_STAKING_PROXY_ID: u64 = 7;
+
+// Default limit for pagination if unspecified in the queries
+const DEFAULT_LIMIT: u32 = 100;
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -678,24 +681,34 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::IsAddressBlacklisted { address } => {
             to_json_binary(&query_is_address_blacklisted(deps, address)?)
         }
+        QueryMsg::ListDelegations { start_after, limit } => {
+            to_json_binary(&query_list_delegations(deps, start_after, limit)?)
+        }
+        QueryMsg::ListValidators { start_after, limit } => {
+            to_json_binary(&query_list_validators(deps, start_after, limit)?)
+        }
     }
 }
 
-pub fn query_list_blacklisted_addresses(
+fn query_list_delegations(
     deps: Deps,
-    start_after: Option<Addr>,
+    start_after: Option<(Addr, Addr)>,
     limit: Option<u32>,
-) -> StdResult<Vec<Addr>> {
-    let start = start_after.map(Bound::exclusive); // Convert to exclusive Bound
-
-    let limit = limit.unwrap_or(10) as usize;
-
-    let blacklisted: Vec<Addr> = BLACKLISTED_ADDRESSES
-        .keys(deps.storage, start, None, Order::Ascending)
+) -> StdResult<Vec<Delegation>> {
+    let limit = limit.unwrap_or(DEFAULT_LIMIT) as usize;
+    let range_min = start_after
+        .as_ref()
+        .map(|(k1, k2)| Bound::exclusive((k1, k2)));
+    let range_max = None;
+    let res = DELEGATIONS.range(deps.storage, range_min, range_max, Order::Ascending);
+    let list: Vec<Delegation> = res
         .take(limit)
-        .collect::<StdResult<Vec<_>>>()?;
-
-    Ok(blacklisted)
+        .map(|r| match r {
+            Ok((_, v)) => Ok(v),
+            Err(e) => Err(e),
+        })
+        .collect::<StdResult<_>>()?;
+    Ok(list)
 }
 
 pub fn query_is_address_blacklisted(deps: Deps, address: String) -> StdResult<bool> {
@@ -706,12 +719,113 @@ pub fn query_is_address_blacklisted(deps: Deps, address: String) -> StdResult<bo
     Ok(is_blacklisted)
 }
 
+pub fn query_voting_power_at_height(
+    deps: Deps,
+    env: Env,
+    address: Addr,
+    height: Option<u64>,
+) -> StdResult<Uint128> {
+    let height = height.unwrap_or(env.block.height);
+
+    if let Some(true) = BLACKLISTED_ADDRESSES.may_load(deps.storage, address.clone())? {
+        return Ok(Uint128::zero());
+    }
+
+    let power = calculate_voting_power_at_height(deps, address, height)?;
+
+    Ok(power)
+}
+
+pub fn query_total_power_at_height(
+    deps: Deps,
+    env: Env,
+    height: Option<u64>,
+) -> StdResult<Uint128> {
+    let height = height.unwrap_or(env.block.height);
+
+    // calc total vp as usual
+    let mut total_power = Uint128::zero();
+    for k in VALIDATORS.keys(deps.storage, None, None, Order::Ascending) {
+        if let Some(val) = VALIDATORS.may_load_at_height(deps.storage, &k?, height)? {
+            if val.bonded {
+                total_power = total_power.checked_add(val.total_tokens)?;
+            }
+        }
+    }
+
+    // sum voting power of blacklisted addresses
+    let mut blacklisted_power = Uint128::zero();
+    for blacklisted_addr in BLACKLISTED_ADDRESSES.keys(deps.storage, None, None, Order::Ascending) {
+        let addr = blacklisted_addr?;
+        blacklisted_power =
+            blacklisted_power.checked_add(calculate_voting_power_at_height(deps, addr, height)?)?;
+    }
+
+    // subtract blacklisted voting power
+    let net_power = total_power.checked_sub(blacklisted_power)?;
+
+    Ok(net_power)
+}
+
+fn query_list_validators(
+    deps: Deps,
+    start_after: Option<Addr>,
+    limit: Option<u32>,
+) -> StdResult<Vec<Validator>> {
+    let limit = limit.unwrap_or(DEFAULT_LIMIT) as usize;
+    let range_min = start_after.as_ref().map(Bound::exclusive);
+    let range_max = None;
+    let list = VALIDATORS
+        .range(deps.storage, range_min, range_max, Order::Ascending)
+        .take(limit)
+        .map(|r| match r {
+            Ok((_, v)) => Ok(v),
+            Err(e) => Err(e),
+        })
+        .collect::<StdResult<_>>()?;
+    Ok(list)
+}
+
+pub fn query_list_blacklisted_addresses(
+    deps: Deps,
+    start_after: Option<Addr>,
+    limit: Option<u32>,
+) -> StdResult<Vec<Addr>> {
+    let start = start_after.map(Bound::exclusive); // Convert to exclusive Bound
+    let limit = limit.unwrap_or(DEFAULT_LIMIT) as usize;
+
+    let blacklisted: Vec<Addr> = BLACKLISTED_ADDRESSES
+        .keys(deps.storage, start, None, Order::Ascending)
+        .take(limit)
+        .collect::<StdResult<Vec<_>>>()?;
+
+    Ok(blacklisted)
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    // Set contract to version to latest
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    Ok(Response::default())
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn reply(_: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
+    if let Err(err) = msg.result.into_result() {
+        Ok(Response::new()
+            .add_attribute("reply_id", msg.id.to_string())
+            .add_attribute("error", err))
+    } else {
+        Ok(Response::new().add_attribute("reply_id", msg.id.to_string()))
+    }
+}
+
 /// Calculates the voting power of a delegator at a specific block height.
 ///
 /// Uses `Uint256` for intermediate calculations to avoid precision loss and overflow,
 /// then converts the final result back to `Uint128`.
 ///
-pub fn calculate_voting_power(deps: Deps, address: Addr, height: u64) -> StdResult<Uint128> {
+fn calculate_voting_power_at_height(deps: Deps, address: Addr, height: u64) -> StdResult<Uint128> {
     let mut power = Uint256::zero(); // Use Uint256 to avoid overflow
 
     for val_oper_address in VALIDATORS.keys(deps.storage, None, None, Order::Ascending) {
@@ -742,95 +856,6 @@ pub fn calculate_voting_power(deps: Deps, address: Addr, height: u64) -> StdResu
     let power_128 = Uint128::try_from(power)?;
 
     Ok(power_128)
-}
-
-pub fn query_voting_power_at_height(
-    deps: Deps,
-    env: Env,
-    address: Addr,
-    height: Option<u64>,
-) -> StdResult<Uint128> {
-    let height = height.unwrap_or(env.block.height);
-
-    if let Some(true) = BLACKLISTED_ADDRESSES.may_load(deps.storage, address.clone())? {
-        return Ok(Uint128::zero());
-    }
-
-    let power = calculate_voting_power(deps, address, height)?;
-
-    Ok(power)
-}
-
-pub fn query_total_power_at_height(
-    deps: Deps,
-    env: Env,
-    height: Option<u64>,
-) -> StdResult<Uint128> {
-    let height = height.unwrap_or(env.block.height);
-
-    // calc total vp as usual
-    let mut total_power = Uint128::zero();
-    for k in VALIDATORS.keys(deps.storage, None, None, Order::Ascending) {
-        if let Some(val) = VALIDATORS.may_load_at_height(deps.storage, &k?, height)? {
-            if val.bonded {
-                total_power = total_power.checked_add(val.total_tokens)?;
-            }
-        }
-    }
-
-    // sum voting power of blacklisted addresses
-    let mut blacklisted_power = Uint128::zero();
-    for blacklisted_addr in BLACKLISTED_ADDRESSES.keys(deps.storage, None, None, Order::Ascending) {
-        let addr = blacklisted_addr?;
-        blacklisted_power =
-            blacklisted_power.checked_add(calculate_voting_power(deps, addr, height)?)?;
-    }
-
-    // subtr blacklisted voting power
-    let net_power = total_power.checked_sub(blacklisted_power)?;
-
-    Ok(net_power)
-}
-
-pub fn query_dao(deps: Deps) -> StdResult<Binary> {
-    let dao = DAO.load(deps.storage)?;
-    to_json_binary(&dao)
-}
-
-pub fn query_name(deps: Deps) -> StdResult<Binary> {
-    let config = CONFIG.load(deps.storage)?;
-    to_json_binary(&config.name)
-}
-
-pub fn query_description(deps: Deps) -> StdResult<Binary> {
-    let config = CONFIG.load(deps.storage)?;
-    to_json_binary(&config.description)
-}
-
-pub fn query_list_bonders(
-    _deps: Deps,
-    _start_after: Option<String>,
-    _limit: Option<u32>,
-) -> StdResult<Binary> {
-    Err(StdError::generic_err("Bonding is disabled"))
-}
-
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
-    // Set contract to version to latest
-    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-    Ok(Response::default())
-}
-
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn reply(_: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
-    if let Err(err) = msg.result.into_result() {
-        Ok(Response::new()
-            .add_attribute("reply_id", msg.id.to_string())
-            .add_attribute("error", err))
-    } else {
-        Ok(Response::new().add_attribute("reply_id", msg.id.to_string()))
-    }
 }
 
 fn with_update_stake_msg(

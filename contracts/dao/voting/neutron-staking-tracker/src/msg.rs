@@ -1,7 +1,9 @@
+use crate::state::{Delegation, Validator};
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Decimal256, Uint128};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 pub struct InstantiateMsg {
     /// Name contains the vault name which is used to ease the vault's recognition.
@@ -93,6 +95,18 @@ pub enum QueryMsg {
 
     #[returns(Uint128)]
     TotalPowerAtHeight { height: Option<u64> },
+
+    #[returns(Vec<Vec<((Addr, Addr), Delegation)>>)]
+    ListDelegations {
+        start_after: Option<(Addr, Addr)>,
+        limit: Option<u32>,
+    },
+
+    #[returns(Vec<Validator>)]
+    ListValidators {
+        start_after: Option<Addr>,
+        limit: Option<u32>,
+    },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
