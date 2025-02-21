@@ -1,17 +1,14 @@
 #[cfg(test)]
 use crate::contract::{
     after_delegation_modified, after_validator_begin_unbonding, after_validator_bonded,
-    after_validator_created, before_validator_slashed, execute, instantiate, query,
-    query_stake_at_height, query_total_stake_at_height,
+    after_validator_created, before_validator_slashed, execute, instantiate, query_stake_at_height,
+    query_total_stake_at_height,
 };
-use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::state::{
-    Config, Delegation, Validator, CONFIG, DAO, DELEGATIONS, VALIDATORS,
-};
+use crate::msg::{ExecuteMsg, InstantiateMsg};
+use crate::state::{Config, Delegation, Validator, CONFIG, DAO, DELEGATIONS, VALIDATORS};
 use crate::testing::mock_querier::mock_dependencies as dependencies;
 use cosmwasm_std::testing::message_info;
 use cosmwasm_std::{
-    from_json,
     testing::{mock_dependencies, mock_env},
     to_json_binary, Addr, Decimal256, Uint128,
 };
@@ -171,7 +168,6 @@ fn test_update_config_unauthorized() {
     assert_eq!(config.owner, owner);
     assert_eq!(config.staking_proxy_info_contract_address, None);
 }
-
 
 #[test]
 fn test_after_validator_bonded_with_mock_query() {
@@ -928,7 +924,8 @@ fn test_after_delegation_modified() {
     let total_voting_power = query_total_stake_at_height(deps.as_ref(), env.clone(), None).unwrap();
     assert_eq!(total_voting_power, Uint128::new(1200));
     let voting_power =
-        query_stake_at_height(deps.as_ref(), env.clone(), delegator_addr.to_string(), None).unwrap();
+        query_stake_at_height(deps.as_ref(), env.clone(), delegator_addr.to_string(), None)
+            .unwrap();
     assert_eq!(voting_power, Uint128::new(200));
 
     env.block.height += 5;
@@ -978,7 +975,8 @@ fn test_after_delegation_modified() {
     let total_voting_power = query_total_stake_at_height(deps.as_ref(), env.clone(), None).unwrap();
     assert_eq!(total_voting_power, Uint128::new(1100));
     let voting_power =
-        query_stake_at_height(deps.as_ref(), env.clone(), delegator_addr.to_string(), None).unwrap();
+        query_stake_at_height(deps.as_ref(), env.clone(), delegator_addr.to_string(), None)
+            .unwrap();
     assert_eq!(voting_power, Uint128::new(100));
 }
 
@@ -1111,7 +1109,8 @@ fn test_after_delegation_modified_large_scaled_shares() {
     let total_voting_power = query_total_stake_at_height(deps.as_ref(), env.clone(), None).unwrap();
     assert_eq!(total_voting_power, Uint128::new(166666667667));
     let voting_power =
-        query_stake_at_height(deps.as_ref(), env.clone(), delegator_addr.to_string(), None).unwrap();
+        query_stake_at_height(deps.as_ref(), env.clone(), delegator_addr.to_string(), None)
+            .unwrap();
     assert_eq!(voting_power, Uint128::new(166666667667));
 
     env.block.height += 5;
@@ -1164,7 +1163,8 @@ fn test_after_delegation_modified_large_scaled_shares() {
     let total_voting_power = query_total_stake_at_height(deps.as_ref(), env.clone(), None).unwrap();
     assert_eq!(total_voting_power, Uint128::new(166666667666));
     let voting_power =
-        query_stake_at_height(deps.as_ref(), env.clone(), delegator_addr.to_string(), None).unwrap();
+        query_stake_at_height(deps.as_ref(), env.clone(), delegator_addr.to_string(), None)
+            .unwrap();
     assert_eq!(voting_power, Uint128::new(166666667666));
 }
 

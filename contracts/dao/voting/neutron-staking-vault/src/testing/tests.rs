@@ -1,16 +1,23 @@
+use crate::contract::{execute, query};
 use crate::contract::{migrate, CONTRACT_NAME, CONTRACT_VERSION};
+use crate::msg::ExecuteMsg::{AddToBlacklist, RemoveFromBlacklist};
+use crate::msg::QueryMsg::{IsAddressBlacklisted, TotalPowerAtHeight};
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::state::{Config, BLACKLISTED_ADDRESSES, CONFIG};
+use crate::testing::mock_querier;
+use crate::testing::mock_querier::{mock_dependencies_staking, MOCK_STAKING_TRACKER};
 use crate::ContractError;
 use cosmwasm_std::testing::{mock_dependencies, mock_env};
-use cosmwasm_std::{to_json_binary, Addr, Binary, Deps, Empty, Env, Response, StdResult, Uint128};
+use cosmwasm_std::{
+    from_json, to_json_binary, Addr, Binary, Coin, Deps, Empty, Env, MessageInfo, Response,
+    StdResult, Uint128,
+};
 use cw_multi_test::{custom_app, App, AppResponse, Contract, ContractWrapper, Executor};
 use cwd_interface::voting::{
     InfoResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use neutron_staking_tracker::contract::{execute, query};
 
 const DAO_ADDR: &str = "dao";
 const DESCRIPTION: &str = "description";
@@ -27,13 +34,17 @@ fn vault_contract() -> Box<dyn Contract<Empty>> {
     Box::new(contract)
 }
 
-fn staking_tracker_query(_deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+fn staking_tracker_query(
+    _deps: Deps,
+    _env: Env,
+    msg: neutron_staking_tracker::msg::QueryMsg,
+) -> StdResult<Binary> {
     match msg {
-        QueryMsg::VotingPowerAtHeight { .. } => {
+        neutron_staking_tracker::msg::QueryMsg::StakeAtHeight { .. } => {
             let response = Uint128::from(10000u64);
             to_json_binary(&response)
         }
-        QueryMsg::TotalPowerAtHeight { .. } => {
+        neutron_staking_tracker::msg::QueryMsg::TotalStakeAtHeight { .. } => {
             let response = Uint128::from(10000u64);
             to_json_binary(&response)
         }
@@ -49,7 +60,7 @@ fn staking_tracker_contract() -> Box<dyn Contract<Empty>> {
     let contract: ContractWrapper<
         EmptyMsg,
         EmptyMsg,
-        QueryMsg,
+        neutron_staking_tracker::msg::QueryMsg,
         ContractError,
         ContractError,
         cosmwasm_std::StdError,
@@ -61,7 +72,7 @@ fn staking_tracker_contract() -> Box<dyn Contract<Empty>> {
     Box::new(contract)
 }
 
-fn instantiate_vesting_contract(app: &mut App) -> Addr {
+fn instantiate_tracker_contract(app: &mut App) -> Addr {
     let contract_id = app.store_code(staking_tracker_contract());
     app.instantiate_contract(
         contract_id,
@@ -137,7 +148,7 @@ fn get_config(app: &mut App, contract_addr: Addr) -> Config {
 #[test]
 fn test_instantiate() {
     let mut app = mock_app();
-    let vesting_contract = instantiate_vesting_contract(&mut app);
+    let vesting_contract = instantiate_tracker_contract(&mut app);
 
     let vault_id = app.store_code(vault_contract());
     let _addr = instantiate_vault(
@@ -156,7 +167,7 @@ fn test_instantiate() {
 #[should_panic(expected = "Unauthorized")]
 fn test_update_config_unauthorized() {
     let mut app = mock_app();
-    let vesting_contract = instantiate_vesting_contract(&mut app);
+    let vesting_contract = instantiate_tracker_contract(&mut app);
 
     let vault_id = app.store_code(vault_contract());
     let addr = instantiate_vault(
@@ -185,7 +196,7 @@ fn test_update_config_unauthorized() {
 #[test]
 fn test_update_config_as_owner() {
     let mut app = mock_app();
-    let vesting_contract = instantiate_vesting_contract(&mut app);
+    let vesting_contract = instantiate_tracker_contract(&mut app);
 
     let vault_id = app.store_code(vault_contract());
     let addr = instantiate_vault(
@@ -226,7 +237,7 @@ fn test_update_config_as_owner() {
 #[should_panic(expected = "config description cannot be empty.")]
 fn test_update_config_invalid_description() {
     let mut app = mock_app();
-    let vesting_contract = instantiate_vesting_contract(&mut app);
+    let vesting_contract = instantiate_tracker_contract(&mut app);
 
     let vault_id = app.store_code(vault_contract());
     let addr = instantiate_vault(
@@ -255,7 +266,7 @@ fn test_update_config_invalid_description() {
 #[test]
 fn test_query_dao() {
     let mut app = mock_app();
-    let vesting_contract = instantiate_vesting_contract(&mut app);
+    let vesting_contract = instantiate_tracker_contract(&mut app);
 
     let vault_id = app.store_code(vault_contract());
     let addr = instantiate_vault(
@@ -277,7 +288,7 @@ fn test_query_dao() {
 #[test]
 fn test_query_info() {
     let mut app = mock_app();
-    let vesting_contract = instantiate_vesting_contract(&mut app);
+    let vesting_contract = instantiate_tracker_contract(&mut app);
 
     let vault_id = app.store_code(vault_contract());
     let addr = instantiate_vault(
@@ -302,7 +313,7 @@ fn test_query_info() {
 #[test]
 fn test_query_get_config() {
     let mut app = mock_app();
-    let vesting_contract = instantiate_vesting_contract(&mut app);
+    let vesting_contract = instantiate_tracker_contract(&mut app);
 
     let vault_id = app.store_code(vault_contract());
     let addr = instantiate_vault(
@@ -331,7 +342,7 @@ fn test_query_get_config() {
 #[test]
 fn test_voting_power_queries() {
     let mut app = mock_app();
-    let vesting_contract = instantiate_vesting_contract(&mut app);
+    let vesting_contract = instantiate_tracker_contract(&mut app);
 
     let vault_id = app.store_code(vault_contract());
     let addr = instantiate_vault(
@@ -385,19 +396,15 @@ fn test_add_and_remove_from_blacklist() {
         deps.as_mut(),
         mock_env(),
         message_info(&admin, &[]),
-        neutron_staking_tracker::msg::ExecuteMsg::AddToBlacklist {
+        AddToBlacklist {
             addresses: vec![String::from(addr1.clone()), String::from(addr2.clone())],
         },
     );
     assert!(res.is_ok(), "Error adding to blacklist: {:?}", res.err());
 
     // Verify that addresses are blacklisted
-    let is_addr1_blacklisted = BLACKLISTED_ADDRESSES
-        .load(deps.as_ref().storage, addr1.clone())
-        .unwrap_or(false);
-    let is_addr2_blacklisted = BLACKLISTED_ADDRESSES
-        .load(deps.as_ref().storage, addr2.clone())
-        .unwrap_or(false);
+    let is_addr1_blacklisted = BLACKLISTED_ADDRESSES.has(deps.as_ref().storage, addr1.clone());
+    let is_addr2_blacklisted = BLACKLISTED_ADDRESSES.has(deps.as_ref().storage, addr2.clone());
     assert!(is_addr1_blacklisted, "Address addr1 is not blacklisted");
     assert!(is_addr2_blacklisted, "Address addr2 is not blacklisted");
 
@@ -406,7 +413,7 @@ fn test_add_and_remove_from_blacklist() {
         deps.as_mut(),
         mock_env(),
         message_info(&admin, &[]),
-        neutron_staking_tracker::msg::ExecuteMsg::RemoveFromBlacklist {
+        RemoveFromBlacklist {
             addresses: vec![String::from(addr1.clone()), String::from(addr2.clone())],
         },
     );
@@ -433,31 +440,47 @@ fn test_add_and_remove_from_blacklist() {
     );
 }
 
-
 #[test]
 fn test_check_if_address_is_blacklisted() {
-    let mut deps = dependencies();
+    let mut deps = mock_dependencies_staking();
     deps.api = deps.api.with_prefix("neutron");
+    let env = mock_env();
 
     let admin = deps.api.addr_make("admin");
     let addr1 = deps.api.addr_make("addr1");
     let addr2 = deps.api.addr_make("addr2");
 
+    deps.querier
+        .stake
+        .insert(addr1.to_string(), Uint128::new(1000));
+
     // Initialize config with owner
-    let config = neutron_staking_tracker::state::Config {
+    let config = Config {
         name: String::from("Test Config"),
         description: String::from("Testing blacklist functionality"),
+        staking_tracker_contract_address: Addr::unchecked(MOCK_STAKING_TRACKER),
         owner: admin.clone(),
-        staking_proxy_info_contract_address: None,
     };
     CONFIG.save(deps.as_mut().storage, &config).unwrap();
+
+    // Before blacklist should return as usual
+    let initial_query_res = query(
+        deps.as_ref(),
+        env.clone(),
+        QueryMsg::VotingPowerAtHeight {
+            address: addr1.to_string(),
+            height: Some(env.block.height + 1),
+        },
+    );
+    let initial_vp: TotalPowerAtHeightResponse = from_json(initial_query_res.unwrap()).unwrap();
+    assert_eq!(initial_vp.power, Uint128::new(1000));
 
     // Add an address to the blacklist
     let res = execute(
         deps.as_mut(),
         mock_env(),
         message_info(&admin, &[]),
-        neutron_staking_tracker::msg::ExecuteMsg::AddToBlacklist {
+        AddToBlacklist {
             addresses: vec![addr1.to_string()],
         },
     );
@@ -467,7 +490,7 @@ fn test_check_if_address_is_blacklisted() {
     let query_res = query(
         deps.as_ref(),
         mock_env(),
-        neutron_staking_tracker::msg::QueryMsg::IsAddressBlacklisted {
+        IsAddressBlacklisted {
             address: addr1.to_string(),
         },
     );
@@ -480,11 +503,24 @@ fn test_check_if_address_is_blacklisted() {
     let is_blacklisted: bool = from_json(query_res.unwrap()).unwrap();
     assert!(is_blacklisted, "Address addr1 should be blacklisted");
 
+    // after blacklist should return 0
+    let after_blacklist_query = query(
+        deps.as_ref(),
+        env.clone(),
+        QueryMsg::VotingPowerAtHeight {
+            address: addr1.to_string(),
+            height: Some(env.block.height + 1),
+        },
+    );
+    let vp_after_blacklist: TotalPowerAtHeightResponse =
+        from_json(after_blacklist_query.unwrap()).unwrap();
+    assert_eq!(vp_after_blacklist.power, Uint128::new(0));
+
     // Query an address that is not blacklisted
     let query_res = query(
         deps.as_ref(),
         mock_env(),
-        neutron_staking_tracker::msg::QueryMsg::IsAddressBlacklisted {
+        IsAddressBlacklisted {
             address: addr2.to_string(),
         },
     );
@@ -498,100 +534,34 @@ fn test_check_if_address_is_blacklisted() {
     assert!(!is_blacklisted, "Address addr2 should not be blacklisted");
 }
 
-
 #[test]
 fn test_total_vp_excludes_blacklisted_addresses() {
-    let mut deps = dependencies();
+    let mut deps = mock_querier::mock_dependencies_staking();
     deps.api = deps.api.with_prefix("neutron");
 
     let admin = deps.api.addr_make("admin");
-    let delegator1 = deps.api.addr_make("delegator1");
-    let delegator2 = deps.api.addr_make("delegator2");
+    let user1 = deps.api.addr_make("delegator1");
+    let user2 = deps.api.addr_make("delegator2");
 
     let env = mock_env();
 
-    let config = neutron_staking_tracker::state::Config {
+    let config = Config {
         name: "Test Vault".to_string(),
         description: "Testing vault functionality".to_string(),
+        staking_tracker_contract_address: Addr::unchecked(MOCK_STAKING_TRACKER),
         owner: admin.clone(),
-        staking_proxy_info_contract_address: None,
     };
     CONFIG.save(deps.as_mut().storage, &config).unwrap();
 
-    // Define consensus and operator addresses
-    let cons_addr1 = Addr::unchecked("neutronvalcons1xyz");
-    let oper_addr1 = Addr::unchecked("neutronvaloper1xyz");
-    let cons_addr2 = Addr::unchecked("neutronvalcons2xyz");
-    let oper_addr2 = Addr::unchecked("neutronvaloper2xyz");
-
-    // Add validators using consensus address as the key
-    let validator1 = Validator {
-        cons_address: cons_addr1.clone(),
-        oper_address: oper_addr1.clone(),
-        bonded: true,
-        total_tokens: Uint128::new(1000),
-        total_shares: Uint128::new(1000),
-        active: true,
-    };
-    VALIDATORS
-        .save(
-            deps.as_mut().storage,
-            &cons_addr1,
-            &validator1,
-            env.block.height,
-        )
-        .unwrap();
-
-    let validator2 = Validator {
-        cons_address: cons_addr2.clone(),
-        oper_address: oper_addr2.clone(),
-        bonded: true,
-        total_tokens: Uint128::new(500),
-        total_shares: Uint128::new(500),
-        active: true,
-    };
-    VALIDATORS
-        .save(
-            deps.as_mut().storage,
-            &cons_addr2,
-            &validator2,
-            env.block.height,
-        )
-        .unwrap();
-
-    let delegation1 = Delegation {
-        delegator_address: delegator1.clone(),
-        validator_address: oper_addr1.clone(), // Uses operator address
-        shares: Uint128::new(500),
-    };
-    DELEGATIONS
-        .save(
-            deps.as_mut().storage,
-            (&delegator1, &oper_addr1),
-            &delegation1,
-            env.block.height,
-        )
-        .unwrap();
-
-    let delegation2 = Delegation {
-        delegator_address: delegator2.clone(),
-        validator_address: oper_addr2.clone(), // Uses operator address
-        shares: Uint128::new(500),
-    };
-    DELEGATIONS
-        .save(
-            deps.as_mut().storage,
-            (&delegator2, &oper_addr2),
-            &delegation2,
-            env.block.height,
-        )
-        .unwrap();
+    // Write initial stake
+    deps.querier.with_stake(&user1, Uint128::new(1000));
+    deps.querier.with_stake(&user2, Uint128::new(500));
 
     // Query total voting power **before** blacklisting anything
     let initial_query_res = query(
         deps.as_ref(),
         env.clone(),
-        neutron_staking_tracker::msg::QueryMsg::TotalStakeAtHeight {
+        TotalPowerAtHeight {
             height: Some(env.block.height + 1),
         },
     );
@@ -601,11 +571,12 @@ fn test_total_vp_excludes_blacklisted_addresses() {
         initial_query_res.err()
     );
 
-    let initial_total_power: Uint128 = from_json(initial_query_res.unwrap()).unwrap();
+    let res = from_json(initial_query_res.unwrap());
+    let initial_total_power: TotalPowerAtHeightResponse = res.unwrap();
 
-    // Expected power: sum of both validator tokens (1000 + 500 = 1500)
+    // Expected power: sum of both user stakes (1000 + 500)
     assert_eq!(
-        initial_total_power,
+        initial_total_power.power,
         Uint128::new(1500),
         "Initial total power should be sum of both validators' tokens"
     );
@@ -615,49 +586,21 @@ fn test_total_vp_excludes_blacklisted_addresses() {
         deps.as_mut(),
         env.clone(),
         message_info(&admin, &[]),
-        neutron_staking_tracker::msg::ExecuteMsg::AddToBlacklist {
-            addresses: vec![delegator2.to_string()],
+        AddToBlacklist {
+            addresses: vec![user2.to_string()],
         },
     );
     assert!(res.is_ok(), "Error adding to blacklist: {:?}", res.err());
 
-    // Ensure validator1 still exists and has tokens
-    let validator1_state = VALIDATORS.load(deps.as_ref().storage, &cons_addr1).unwrap();
-    assert_eq!(
-        validator1_state.total_tokens,
-        Uint128::new(1000),
-        "Validator1's tokens are incorrect"
-    );
-
-    // Ensure validator2 still exists
-    let validator2_state = VALIDATORS.load(deps.as_ref().storage, &cons_addr2).unwrap();
-    assert_eq!(
-        validator2_state.total_tokens,
-        Uint128::new(500),
-        "Validator2's tokens are incorrect"
-    );
-
-    // Ensure delegation1 is still present
-    let delegation1_state = DELEGATIONS
-        .load(deps.as_ref().storage, (&delegator1, &oper_addr1))
-        .unwrap();
-    assert_eq!(
-        delegation1_state.shares,
-        Uint128::new(500),
-        "Delegation1 shares incorrect"
-    );
-
     // Ensure delegation2 is blacklisted correctly
-    let is_blacklisted = BLACKLISTED_ADDRESSES
-        .load(deps.as_ref().storage, delegator2.clone())
-        .unwrap_or(false);
+    let is_blacklisted = BLACKLISTED_ADDRESSES.has(deps.as_ref().storage, user2);
     assert!(is_blacklisted, "Delegator2 should be blacklisted");
 
     // Query total voting power **after** blacklisting
     let query_res = query(
         deps.as_ref(),
         env.clone(),
-        neutron_staking_tracker::msg::QueryMsg::TotalStakeAtHeight {
+        TotalPowerAtHeight {
             height: Some(env.block.height + 1),
         },
     );
@@ -667,12 +610,19 @@ fn test_total_vp_excludes_blacklisted_addresses() {
         query_res.err()
     );
 
-    let total_power: Uint128 = from_json(query_res.unwrap()).unwrap();
+    let total_power: TotalPowerAtHeightResponse = from_json(query_res.unwrap()).unwrap();
 
     // Only validator1's power should count (1000), validator2's delegation is blacklisted
     assert_eq!(
-        total_power,
+        total_power.power,
         Uint128::new(1000),
         "Total power should exclude blacklisted address"
     );
+}
+
+pub fn message_info(sender: &Addr, funds: &[Coin]) -> MessageInfo {
+    MessageInfo {
+        sender: sender.clone(),
+        funds: funds.to_vec(),
+    }
 }
