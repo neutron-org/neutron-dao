@@ -16,22 +16,11 @@ library = []
 [dependencies]
 cosmwasm-schema = { version = "2.1.4" }
 cosmwasm-std = { version = "2.0.4" }
-cosmwasm-storage = { version = "1.5.2" }
-cw-controllers = "1.1.0"
-cw-paginate = { path = "../../../packages/cw-paginate" }
 cw-storage-plus = "2.0.0"
-cw-utils = { version = "2.0.0" }
 cw2 = "2.0.0"
-cwd-interface = { path = "../../../packages/cwd-interface" }
-cwd-macros = { path = "../../../packages/cwd-macros" }
 schemars = "0.8.8"
 serde = { version = "1.0.175", default-features = false, features = ["derive"] }
-serde_with = { version = "3.7.0", features = ["json"] }
 thiserror = { version = "1.0" }
-neutron-std = { git = "https://github.com/neutron-org/neutron-std.git", branch =  "feat/add-interchain-security-protobuf" }
-neutron-sdk = { git = "https://github.com/neutron-org/neutron-sdk.git", branch =  "main" }
-serde-json-wasm = "1.0.1"
-prost = "0.9.0"
 
 [dev-dependencies]
 anyhow = "1.0.57"

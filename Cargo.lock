@@ -2466,7 +2466,7 @@ dependencies = [
  "cw2 2.0.0",
  "cwd-interface",
  "cwd-macros",
- "neutron-sdk 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "neutron-sdk 0.11.0",
  "neutron-std 5.1.2 (git+https://github.com/neutron-org/neutron-std.git?branch=main)",
  "prost 0.9.0",
  "schemars",
@@ -2602,30 +2602,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "neutron-sdk"
-version = "0.11.0"
-source = "git+https://github.com/neutron-org/neutron-sdk.git?branch=main#3c831143e4eb7998433322e85f167c88166d087f"
-dependencies = [
- "bech32 0.9.1",
- "chrono",
- "cosmos-sdk-proto",
- "cosmwasm-schema 2.2.1",
- "cosmwasm-std 2.2.1",
- "neutron-std 5.1.2 (git+https://github.com/neutron-org/neutron-std.git?branch=main)",
- "prost 0.12.6",
- "prost-types",
- "protobuf 3.3.0",
- "schemars",
- "serde",
- "serde-cw-value",
- "serde-json-wasm 1.0.1",
- "serde_json",
- "speedate",
- "tendermint-proto",
- "thiserror",
-]
-
-[[package]]
 name = "neutron-security-subdao-pre-propose"
 version = "0.1.0"
 dependencies = [
@@ -2646,23 +2622,12 @@ dependencies = [
  "anyhow",
  "cosmwasm-schema 2.2.1",
  "cosmwasm-std 2.2.1",
- "cosmwasm-storage",
- "cw-controllers",
  "cw-multi-test",
- "cw-paginate 0.2.0",
  "cw-storage-plus 2.0.0",
- "cw-utils 2.0.0",
  "cw2 2.0.0",
- "cwd-interface",
- "cwd-macros",
- "neutron-sdk 0.11.0 (git+https://github.com/neutron-org/neutron-sdk.git?branch=main)",
  "neutron-staking-rewards",
- "neutron-std 5.0.0",
- "prost 0.9.0",
  "schemars",
  "serde",
- "serde-json-wasm 1.0.1",
- "serde_with",
  "thiserror",
 ]
 
@@ -2673,22 +2638,11 @@ dependencies = [
  "anyhow",
  "cosmwasm-schema 2.2.1",
  "cosmwasm-std 2.2.1",
- "cosmwasm-storage",
- "cw-controllers",
  "cw-multi-test",
- "cw-paginate 0.2.0",
  "cw-storage-plus 2.0.0",
- "cw-utils 2.0.0",
  "cw2 2.0.0",
- "cwd-interface",
- "cwd-macros",
- "neutron-sdk 0.11.0 (git+https://github.com/neutron-org/neutron-sdk.git?branch=main)",
- "neutron-std 5.0.0",
- "prost 0.9.0",
  "schemars",
  "serde",
- "serde-json-wasm 1.0.1",
- "serde_with",
  "thiserror",
 ]
 
@@ -2726,30 +2680,6 @@ dependencies = [
  "serde",
  "thiserror",
  "vesting-base 1.1.0 (git+https://github.com/neutron-org/neutron-tge-contracts.git)",
-]
-
-[[package]]
-name = "neutron-std"
-version = "5.0.0"
-source = "git+https://github.com/neutron-org/neutron-std.git?branch=feat/add-interchain-security-protobuf#4a390c6702d504270522b5286dc07d680b02c45e"
-dependencies = [
- "bech32 0.9.1",
- "chrono",
- "cosmos-sdk-proto",
- "cosmwasm-schema 2.2.1",
- "cosmwasm-std 2.2.1",
- "neutron-std-derive 0.20.1 (git+https://github.com/neutron-org/neutron-std.git?branch=feat/add-interchain-security-protobuf)",
- "prost 0.12.6",
- "prost-types",
- "protobuf 3.3.0",
- "schemars",
- "serde",
- "serde-cw-value",
- "serde-json-wasm 1.0.1",
- "serde_json",
- "speedate",
- "tendermint-proto",
- "thiserror",
 ]
 
 [[package]]
@@ -2798,18 +2728,6 @@ dependencies = [
  "speedate",
  "tendermint-proto",
  "thiserror",
-]
-
-[[package]]
-name = "neutron-std-derive"
-version = "0.20.1"
-source = "git+https://github.com/neutron-org/neutron-std.git?branch=feat/add-interchain-security-protobuf#4a390c6702d504270522b5286dc07d680b02c45e"
-dependencies = [
- "itertools 0.10.5",
- "proc-macro2",
- "prost-types",
- "quote",
- "syn 1.0.109",
 ]
 
 [[package]]
