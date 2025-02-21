@@ -2,11 +2,11 @@
 use crate::contract::{
     after_delegation_modified, after_validator_begin_unbonding, after_validator_bonded,
     after_validator_created, before_validator_slashed, execute, instantiate, query,
-    query_total_power_at_height, query_voting_power_at_height,
+    query_stake_at_height, query_total_stake_at_height,
 };
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::{
-    Config, Delegation, Validator, BLACKLISTED_ADDRESSES, CONFIG, DAO, DELEGATIONS, VALIDATORS,
+    Config, Delegation, Validator, CONFIG, DAO, DELEGATIONS, VALIDATORS,
 };
 use crate::testing::mock_querier::mock_dependencies as dependencies;
 use cosmwasm_std::testing::message_info;
@@ -172,318 +172,6 @@ fn test_update_config_unauthorized() {
     assert_eq!(config.staking_proxy_info_contract_address, None);
 }
 
-#[test]
-fn test_add_and_remove_from_blacklist() {
-    let mut deps = mock_dependencies();
-    deps.api = deps.api.with_prefix("neutron");
-
-    let admin = deps.api.addr_make("admin");
-    let addr1 = deps.api.addr_make("addr1");
-    let addr2 = deps.api.addr_make("addr2");
-
-    // Initialize config with owner
-    let config = Config {
-        name: String::from("Test Config"),
-        description: String::from("Testing blacklist functionality"),
-        owner: admin.clone(),
-        staking_proxy_info_contract_address: None,
-    };
-    CONFIG.save(deps.as_mut().storage, &config).unwrap();
-
-    // Add addresses to the blacklist
-    let res = execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&admin, &[]),
-        ExecuteMsg::AddToBlacklist {
-            addresses: vec![String::from(addr1.clone()), String::from(addr2.clone())],
-        },
-    );
-    assert!(res.is_ok(), "Error adding to blacklist: {:?}", res.err());
-
-    // Verify that addresses are blacklisted
-    let is_addr1_blacklisted = BLACKLISTED_ADDRESSES
-        .load(deps.as_ref().storage, addr1.clone())
-        .unwrap_or(false);
-    let is_addr2_blacklisted = BLACKLISTED_ADDRESSES
-        .load(deps.as_ref().storage, addr2.clone())
-        .unwrap_or(false);
-    assert!(is_addr1_blacklisted, "Address addr1 is not blacklisted");
-    assert!(is_addr2_blacklisted, "Address addr2 is not blacklisted");
-
-    // Remove addresses from the blacklist
-    let res = execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&admin, &[]),
-        ExecuteMsg::RemoveFromBlacklist {
-            addresses: vec![String::from(addr1.clone()), String::from(addr2.clone())],
-        },
-    );
-    assert!(
-        res.is_ok(),
-        "Error removing from blacklist: {:?}",
-        res.err()
-    );
-
-    // Verify that addresses are no longer blacklisted
-    let is_addr1_blacklisted = BLACKLISTED_ADDRESSES
-        .may_load(deps.as_ref().storage, addr1)
-        .unwrap();
-    let is_addr2_blacklisted = BLACKLISTED_ADDRESSES
-        .may_load(deps.as_ref().storage, addr2)
-        .unwrap();
-    assert!(
-        is_addr1_blacklisted.is_none(),
-        "Address addr1 is still blacklisted"
-    );
-    assert!(
-        is_addr2_blacklisted.is_none(),
-        "Address addr2 is still blacklisted"
-    );
-}
-
-#[test]
-fn test_check_if_address_is_blacklisted() {
-    let mut deps = dependencies();
-    deps.api = deps.api.with_prefix("neutron");
-
-    let admin = deps.api.addr_make("admin");
-    let addr1 = deps.api.addr_make("addr1");
-    let addr2 = deps.api.addr_make("addr2");
-
-    // Initialize config with owner
-    let config = Config {
-        name: String::from("Test Config"),
-        description: String::from("Testing blacklist functionality"),
-        owner: admin.clone(),
-        staking_proxy_info_contract_address: None,
-    };
-    CONFIG.save(deps.as_mut().storage, &config).unwrap();
-
-    // Add an address to the blacklist
-    let res = execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&admin, &[]),
-        ExecuteMsg::AddToBlacklist {
-            addresses: vec![addr1.to_string()],
-        },
-    );
-    assert!(res.is_ok(), "Error adding to blacklist: {:?}", res.err());
-
-    // Query if the address is blacklisted
-    let query_res = query(
-        deps.as_ref(),
-        mock_env(),
-        QueryMsg::IsAddressBlacklisted {
-            address: addr1.to_string(),
-        },
-    );
-    assert!(
-        query_res.is_ok(),
-        "Error querying blacklist status: {:?}",
-        query_res.err()
-    );
-
-    let is_blacklisted: bool = from_json(query_res.unwrap()).unwrap();
-    assert!(is_blacklisted, "Address addr1 should be blacklisted");
-
-    // Query an address that is not blacklisted
-    let query_res = query(
-        deps.as_ref(),
-        mock_env(),
-        QueryMsg::IsAddressBlacklisted {
-            address: addr2.to_string(),
-        },
-    );
-    assert!(
-        query_res.is_ok(),
-        "Error querying blacklist status: {:?}",
-        query_res.err()
-    );
-
-    let is_blacklisted: bool = from_json(query_res.unwrap()).unwrap();
-    assert!(!is_blacklisted, "Address addr2 should not be blacklisted");
-}
-
-#[test]
-fn test_total_vp_excludes_blacklisted_addresses() {
-    let mut deps = dependencies();
-    deps.api = deps.api.with_prefix("neutron");
-
-    let admin = deps.api.addr_make("admin");
-    let delegator1 = deps.api.addr_make("delegator1");
-    let delegator2 = deps.api.addr_make("delegator2");
-
-    let env = mock_env();
-
-    let config = Config {
-        name: "Test Vault".to_string(),
-        description: "Testing vault functionality".to_string(),
-        owner: admin.clone(),
-        staking_proxy_info_contract_address: None,
-    };
-    CONFIG.save(deps.as_mut().storage, &config).unwrap();
-
-    // Define consensus and operator addresses
-    let cons_addr1 = Addr::unchecked("neutronvalcons1xyz");
-    let oper_addr1 = Addr::unchecked("neutronvaloper1xyz");
-    let cons_addr2 = Addr::unchecked("neutronvalcons2xyz");
-    let oper_addr2 = Addr::unchecked("neutronvaloper2xyz");
-
-    // Add validators using consensus address as the key
-    let validator1 = Validator {
-        cons_address: cons_addr1.clone(),
-        oper_address: oper_addr1.clone(),
-        bonded: true,
-        total_tokens: Uint128::new(1000),
-        total_shares: Uint128::new(1000),
-        active: true,
-    };
-    VALIDATORS
-        .save(
-            deps.as_mut().storage,
-            &cons_addr1,
-            &validator1,
-            env.block.height,
-        )
-        .unwrap();
-
-    let validator2 = Validator {
-        cons_address: cons_addr2.clone(),
-        oper_address: oper_addr2.clone(),
-        bonded: true,
-        total_tokens: Uint128::new(500),
-        total_shares: Uint128::new(500),
-        active: true,
-    };
-    VALIDATORS
-        .save(
-            deps.as_mut().storage,
-            &cons_addr2,
-            &validator2,
-            env.block.height,
-        )
-        .unwrap();
-
-    let delegation1 = Delegation {
-        delegator_address: delegator1.clone(),
-        validator_address: oper_addr1.clone(), // Uses operator address
-        shares: Uint128::new(500),
-    };
-    DELEGATIONS
-        .save(
-            deps.as_mut().storage,
-            (&delegator1, &oper_addr1),
-            &delegation1,
-            env.block.height,
-        )
-        .unwrap();
-
-    let delegation2 = Delegation {
-        delegator_address: delegator2.clone(),
-        validator_address: oper_addr2.clone(), // Uses operator address
-        shares: Uint128::new(500),
-    };
-    DELEGATIONS
-        .save(
-            deps.as_mut().storage,
-            (&delegator2, &oper_addr2),
-            &delegation2,
-            env.block.height,
-        )
-        .unwrap();
-
-    // Query total voting power **before** blacklisting anything
-    let initial_query_res = query(
-        deps.as_ref(),
-        env.clone(),
-        QueryMsg::TotalPowerAtHeight {
-            height: Some(env.block.height + 1),
-        },
-    );
-    assert!(
-        initial_query_res.is_ok(),
-        "Error querying total power before blacklisting: {:?}",
-        initial_query_res.err()
-    );
-
-    let initial_total_power: Uint128 = from_json(initial_query_res.unwrap()).unwrap();
-
-    // Expected power: sum of both validator tokens (1000 + 500 = 1500)
-    assert_eq!(
-        initial_total_power,
-        Uint128::new(1500),
-        "Initial total power should be sum of both validators' tokens"
-    );
-
-    // Blacklist address "addr2"
-    let res = execute(
-        deps.as_mut(),
-        env.clone(),
-        message_info(&admin, &[]),
-        ExecuteMsg::AddToBlacklist {
-            addresses: vec![delegator2.to_string()],
-        },
-    );
-    assert!(res.is_ok(), "Error adding to blacklist: {:?}", res.err());
-
-    // Ensure validator1 still exists and has tokens
-    let validator1_state = VALIDATORS.load(deps.as_ref().storage, &cons_addr1).unwrap();
-    assert_eq!(
-        validator1_state.total_tokens,
-        Uint128::new(1000),
-        "Validator1's tokens are incorrect"
-    );
-
-    // Ensure validator2 still exists
-    let validator2_state = VALIDATORS.load(deps.as_ref().storage, &cons_addr2).unwrap();
-    assert_eq!(
-        validator2_state.total_tokens,
-        Uint128::new(500),
-        "Validator2's tokens are incorrect"
-    );
-
-    // Ensure delegation1 is still present
-    let delegation1_state = DELEGATIONS
-        .load(deps.as_ref().storage, (&delegator1, &oper_addr1))
-        .unwrap();
-    assert_eq!(
-        delegation1_state.shares,
-        Uint128::new(500),
-        "Delegation1 shares incorrect"
-    );
-
-    // Ensure delegation2 is blacklisted correctly
-    let is_blacklisted = BLACKLISTED_ADDRESSES
-        .load(deps.as_ref().storage, delegator2.clone())
-        .unwrap_or(false);
-    assert!(is_blacklisted, "Delegator2 should be blacklisted");
-
-    // Query total voting power **after** blacklisting
-    let query_res = query(
-        deps.as_ref(),
-        env.clone(),
-        QueryMsg::TotalPowerAtHeight {
-            height: Some(env.block.height + 1),
-        },
-    );
-    assert!(
-        query_res.is_ok(),
-        "Error querying total power after blacklisting: {:?}",
-        query_res.err()
-    );
-
-    let total_power: Uint128 = from_json(query_res.unwrap()).unwrap();
-
-    // Only validator1's power should count (1000), validator2's delegation is blacklisted
-    assert_eq!(
-        total_power,
-        Uint128::new(1000),
-        "Total power should exclude blacklisted address"
-    );
-}
 
 #[test]
 fn test_after_validator_bonded_with_mock_query() {
@@ -1052,10 +740,10 @@ fn test_create_delegation_and_query_voting_power_direct_write() {
         .unwrap();
 
     // 🔍 Query **current** voting power
-    let query_response = query_voting_power_at_height(
+    let query_response = query_stake_at_height(
         deps.as_ref(),
         env.clone(),
-        delegator_addr.clone(),
+        delegator_addr.to_string(),
         Some(env.block.height + 1), // Latest height
     );
     assert!(query_response.is_ok(), "Failed to query voting power");
@@ -1068,7 +756,7 @@ fn test_create_delegation_and_query_voting_power_direct_write() {
     // assert_eq!(query_res.height, env.block.height, "Unexpected query height");
 
     // Query **total voting power** at current height
-    let total_power_res = query_total_power_at_height(deps.as_ref(), env.clone(), None);
+    let total_power_res = query_total_stake_at_height(deps.as_ref(), env.clone(), None);
     assert!(total_power_res.is_ok(), "Failed to query total power");
 
     let total_power_response = total_power_res.unwrap();
@@ -1083,10 +771,10 @@ fn test_create_delegation_and_query_voting_power_direct_write() {
     env.block.height = historical_height;
 
     // Query **historical** voting power
-    let historical_vp_res = query_voting_power_at_height(
+    let historical_vp_res = query_stake_at_height(
         deps.as_ref(),
         env.clone(),
-        delegator_addr.clone(),
+        delegator_addr.to_string(),
         Some(historical_height),
     );
     assert!(
@@ -1103,7 +791,7 @@ fn test_create_delegation_and_query_voting_power_direct_write() {
 
     // 🔍 Query **historical** total power
     let historical_total_power_res =
-        query_total_power_at_height(deps.as_ref(), env.clone(), Some(historical_height));
+        query_total_stake_at_height(deps.as_ref(), env.clone(), Some(historical_height));
     assert!(
         historical_total_power_res.is_ok(),
         "Failed to query historical total power"
@@ -1237,11 +925,10 @@ fn test_after_delegation_modified() {
 
     env.block.height += 5;
 
-    let total_voting_power = query_total_power_at_height(deps.as_ref(), env.clone(), None).unwrap();
+    let total_voting_power = query_total_stake_at_height(deps.as_ref(), env.clone(), None).unwrap();
     assert_eq!(total_voting_power, Uint128::new(1200));
     let voting_power =
-        query_voting_power_at_height(deps.as_ref(), env.clone(), delegator_addr.clone(), None)
-            .unwrap();
+        query_stake_at_height(deps.as_ref(), env.clone(), delegator_addr.to_string(), None).unwrap();
     assert_eq!(voting_power, Uint128::new(200));
 
     env.block.height += 5;
@@ -1288,10 +975,10 @@ fn test_after_delegation_modified() {
 
     env.block.height += 5;
 
-    let total_voting_power = query_total_power_at_height(deps.as_ref(), env.clone(), None).unwrap();
+    let total_voting_power = query_total_stake_at_height(deps.as_ref(), env.clone(), None).unwrap();
     assert_eq!(total_voting_power, Uint128::new(1100));
     let voting_power =
-        query_voting_power_at_height(deps.as_ref(), env.clone(), delegator_addr, None).unwrap();
+        query_stake_at_height(deps.as_ref(), env.clone(), delegator_addr.to_string(), None).unwrap();
     assert_eq!(voting_power, Uint128::new(100));
 }
 
@@ -1421,11 +1108,10 @@ fn test_after_delegation_modified_large_scaled_shares() {
 
     env.block.height += 5;
 
-    let total_voting_power = query_total_power_at_height(deps.as_ref(), env.clone(), None).unwrap();
+    let total_voting_power = query_total_stake_at_height(deps.as_ref(), env.clone(), None).unwrap();
     assert_eq!(total_voting_power, Uint128::new(166666667667));
     let voting_power =
-        query_voting_power_at_height(deps.as_ref(), env.clone(), delegator_addr.clone(), None)
-            .unwrap();
+        query_stake_at_height(deps.as_ref(), env.clone(), delegator_addr.to_string(), None).unwrap();
     assert_eq!(voting_power, Uint128::new(166666667667));
 
     env.block.height += 5;
@@ -1475,10 +1161,10 @@ fn test_after_delegation_modified_large_scaled_shares() {
 
     env.block.height += 5;
 
-    let total_voting_power = query_total_power_at_height(deps.as_ref(), env.clone(), None).unwrap();
+    let total_voting_power = query_total_stake_at_height(deps.as_ref(), env.clone(), None).unwrap();
     assert_eq!(total_voting_power, Uint128::new(166666667666));
     let voting_power =
-        query_voting_power_at_height(deps.as_ref(), env.clone(), delegator_addr, None).unwrap();
+        query_stake_at_height(deps.as_ref(), env.clone(), delegator_addr.to_string(), None).unwrap();
     assert_eq!(voting_power, Uint128::new(166666667666));
 }
 

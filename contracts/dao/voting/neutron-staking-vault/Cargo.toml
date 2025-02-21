@@ -26,6 +26,7 @@ thiserror = { version = "1.0" }
 cwd-macros = { path = "../../../../packages/cwd-macros" }
 cwd-interface = { path = "../../../../packages/cwd-interface" }
 vesting-base = { git = "https://github.com/neutron-org/neutron-tge-contracts.git" }
+neutron-staking-tracker = { path = "../neutron-staking-tracker" }
 
 [dev-dependencies]
 cw-multi-test = "0.16.5"

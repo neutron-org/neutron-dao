@@ -2645,6 +2645,7 @@ dependencies = [
  "cw2 1.1.2",
  "cwd-interface",
  "cwd-macros",
+ "neutron-staking-tracker",
  "schemars",
  "serde",
  "thiserror",

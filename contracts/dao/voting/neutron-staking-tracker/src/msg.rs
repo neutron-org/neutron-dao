@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Decimal256, Uint128};
+use cosmwasm_std::{Decimal256, Uint128};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
@@ -22,12 +22,6 @@ pub enum ExecuteMsg {
         description: Option<String>,
         owner: Option<String>,
         staking_proxy_info_contract_address: Option<String>,
-    },
-    AddToBlacklist {
-        addresses: Vec<String>,
-    },
-    RemoveFromBlacklist {
-        addresses: Vec<String>, // List of addresses to remove from the blacklist
     },
 }
 
@@ -76,28 +70,28 @@ pub enum SudoMsg {
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum QueryMsg {
+    /// Gets the contract's config.
     #[returns(crate::state::Config)]
     Config {},
 
-    #[returns(Vec<Addr>)]
-    ListBlacklistedAddresses {
-        start_after: Option<Addr>,
-        limit: Option<u32>,
+    /// Gets the staked (bonded) tokens for given `address` at given `height`.
+    /// Stake of unbonded validators does not count.
+    #[returns(Uint128)]
+    StakeAtHeight {
+        address: String,
+        height: Option<u64>,
     },
 
-    #[returns(bool)]
-    IsAddressBlacklisted { address: String },
-
+    /// Gets the total staked (bonded) tokens for given `height`.
+    /// Stake of unbonded validators does not count.
     #[returns(Uint128)]
-    VotingPowerAtHeight { address: Addr, height: Option<u64> },
-
-    #[returns(Uint128)]
-    TotalPowerAtHeight { height: Option<u64> },
+    TotalStakeAtHeight { height: Option<u64> },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct MigrateMsg {}
 
+/// Messages to the staking-info-proxy contract.
 #[cw_serde]
 pub enum ProxyInfoExecute {
     UpdateStake { user: String },
