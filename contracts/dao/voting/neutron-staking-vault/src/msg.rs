@@ -62,3 +62,21 @@ pub enum QueryMsg {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct MigrateMsg {}
+
+// Tracker query interface. Used to query user stakes.
+#[cw_serde]
+#[derive(QueryResponses)]
+pub enum TrackerQueryMsg {
+    /// Gets the staked (bonded) tokens for given `address` at given `height`.
+    /// Stake of unbonded validators does not count.
+    #[returns(Uint128)]
+    StakeAtHeight {
+        address: String,
+        height: Option<u64>,
+    },
+
+    /// Gets the total staked (bonded) tokens for given `height`.
+    /// Stake of unbonded validators does not count.
+    #[returns(Uint128)]
+    TotalStakeAtHeight { height: Option<u64> },
+}

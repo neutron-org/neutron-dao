@@ -11,9 +11,8 @@ use cwd_interface::voting::{
 };
 
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, TrackerQueryMsg};
 use crate::state::{Config, BLACKLISTED_ADDRESSES, CONFIG, DAO};
-use neutron_staking_tracker::msg::QueryMsg as TrackerQueryMsg;
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-investors-vesting-vault";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
