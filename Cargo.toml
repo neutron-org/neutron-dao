@@ -2,6 +2,8 @@
 members = [
     "contracts/dao/cwd-core",
     "contracts/dao/neutron-chain-manager",
+    "contracts/dao/neutron-staking-rewards",
+    "contracts/dao/neutron-staking-info-proxy",
     "contracts/dao/proposal/*",
     "contracts/dao/pre-propose/*",
     "contracts/dao/voting/*",
