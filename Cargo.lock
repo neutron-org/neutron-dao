@@ -2602,15 +2602,15 @@ dependencies = [
 
 [[package]]
 name = "neutron-std"
-version = "5.0.0"
-source = "git+https://github.com/neutron-org/neutron-std.git?branch=feat/add-interchain-security-protobuf#47e90841f1a971d69c0e1baedd4253a087237918"
+version = "5.1.2"
+source = "git+https://github.com/neutron-org/neutron-std.git?branch=feat/whitelist_fee_tiers#00d91fddd2d7f19005e65c57467d6b861a221148"
 dependencies = [
  "bech32 0.9.1",
  "chrono",
  "cosmos-sdk-proto",
  "cosmwasm-schema 2.1.4",
  "cosmwasm-std 2.1.4",
- "neutron-std-derive 0.20.1 (git+https://github.com/neutron-org/neutron-std.git?branch=feat/add-interchain-security-protobuf)",
+ "neutron-std-derive 0.20.1 (git+https://github.com/neutron-org/neutron-std.git?branch=feat/whitelist_fee_tiers)",
  "prost 0.12.6",
  "prost-types",
  "protobuf 3.3.0",
@@ -2627,7 +2627,7 @@ dependencies = [
 [[package]]
 name = "neutron-std-derive"
 version = "0.20.1"
-source = "git+https://github.com/neutron-org/neutron-std.git?branch=feat/add-interchain-security-protobuf#47e90841f1a971d69c0e1baedd4253a087237918"
+source = "git+https://github.com/neutron-org/neutron-std.git?branch=feat/whitelist_fee_tiers#00d91fddd2d7f19005e65c57467d6b861a221148"
 dependencies = [
  "itertools 0.10.5",
  "proc-macro2",
