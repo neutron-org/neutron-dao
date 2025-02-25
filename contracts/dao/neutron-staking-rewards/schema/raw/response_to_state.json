@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "StateResponse",
+  "description": "Response for `QueryMsg::State`",
+  "type": "object",
+  "required": [
+    "global_reward_index",
+    "last_global_update_block"
+  ],
+  "properties": {
+    "global_reward_index": {
+      "type": "string"
+    },
+    "last_global_update_block": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "InstantiateMsg",
+  "type": "object",
+  "required": [
+    "annual_reward_rate_bps",
+    "blocks_per_year",
+    "dao_address",
+    "owner",
+    "staking_denom",
+    "staking_info_proxy"
+  ],
+  "properties": {
+    "annual_reward_rate_bps": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    },
+    "blocks_per_year": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    },
+    "dao_address": {
+      "type": "string"
+    },
+    "owner": {
+      "type": "string"
+    },
+    "staking_denom": {
+      "type": "string"
+    },
+    "staking_info_proxy": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}
