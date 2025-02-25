@@ -201,9 +201,9 @@ pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> Result<cosmwasm_std::Binary, 
     match msg {
         QueryMsg::Config {} => Ok(to_json_binary(&query_config(deps)?)?),
         QueryMsg::Providers {} => Ok(to_json_binary(&query_providers(deps)?)?),
-        QueryMsg::UserStake { address, height } => {
-            Ok(to_json_binary(&query_user_stake(deps, address, height)?)?)
-        }
+        QueryMsg::UserStake { address, height } => Ok(to_json_binary(&query_stake_at_height(
+            deps, address, height,
+        )?)?),
     }
 }
 
@@ -227,7 +227,7 @@ fn query_providers(deps: Deps) -> StdResult<ProvidersResponse> {
 
 /// Returns sum of stake of each provider.
 /// Returns Err if any of PROVIDER queries returned Err.
-fn query_user_stake(deps: Deps, address: String, height: u64) -> Result<Coin, ContractError> {
+fn query_stake_at_height(deps: Deps, address: String, height: u64) -> Result<Coin, ContractError> {
     let user_addr = deps.api.addr_validate(&address)?;
     let config = CONFIG.load(deps.storage)?;
     let providers: Vec<Addr> = PROVIDERS
@@ -235,7 +235,7 @@ fn query_user_stake(deps: Deps, address: String, height: u64) -> Result<Coin, Co
         .collect::<Result<_, _>>()?;
     let amount = providers
         .into_iter()
-        .map(|provider| query_voting_power(deps, user_addr.clone(), &provider, height))
+        .map(|provider| query_stake(deps, user_addr.clone(), &provider, height))
         .collect::<Result<Vec<_>, _>>()? // error caught here immediately
         .into_iter()
         .sum::<Uint128>();
@@ -261,7 +261,7 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
 
 /// Queries the user’s voting power from the external provider,
 /// ensuring that the returned denom matches this contract’s expected staking_denom.
-fn query_voting_power(
+fn query_stake(
     deps: Deps,
     address: Addr,
     provider: &Addr,
@@ -269,7 +269,7 @@ fn query_voting_power(
 ) -> Result<Uint128, ContractError> {
     let user_stake: Uint128 = deps.querier.query_wasm_smart(
         provider,
-        &ProviderStakeQuery::VotingPowerAtHeight {
+        &ProviderStakeQuery::StakeAtHeight {
             address,
             height: Some(height),
         },

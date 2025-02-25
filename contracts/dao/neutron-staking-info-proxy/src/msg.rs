@@ -62,5 +62,5 @@ pub struct MigrateMsg {}
 /// If height is None, latest block stake info will be issued
 #[cw_serde]
 pub enum ProviderStakeQuery {
-    VotingPowerAtHeight { address: Addr, height: Option<u64> },
+    StakeAtHeight { address: Addr, height: Option<u64> },
 }
