@@ -701,14 +701,25 @@ fn query_list_delegations(
         .map(|(k1, k2)| Bound::exclusive((k1, k2)));
     let range_max = None;
     let res = DELEGATIONS.range(deps.storage, range_min, range_max, Order::Ascending);
+    // TODO: this is gonna be query on BONDED_VALIDATORS item
+    // For testing now lets do an ineffective and incorrect solution
+    // let bonded_vals = VALIDATORS.range(deps.storage, None, None, Order::Ascending).filter(|(_, v) | v.unwrap().bonded);
     let list: Vec<Delegation> = res
-        .take(limit)
         .map(|r| match r {
             Ok((_, v)) => Ok(v),
             Err(e) => Err(e),
         })
         .collect::<StdResult<_>>()?;
-    Ok(list)
+
+    // TODO: delete this later!
+    let vals = query_list_validators(deps, None, Some(100000000))?; // kek
+    let res: Vec<Delegation> = list
+        .into_iter()
+        .filter(|l| vals.iter().find(|v| v.bonded && v.oper_address == l.validator_address).map(|_a| true).unwrap_or(false))
+        .take(limit)
+        .collect();
+
+    Ok(res)
 }
 
 pub fn query_is_address_blacklisted(deps: Deps, address: String) -> StdResult<bool> {
