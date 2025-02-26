@@ -606,6 +606,7 @@ fn test_before_validator_slashed_with_self_bonded_only() {
         .unwrap();
 
     let slashing_fraction = Decimal256::percent(10); // 10% slashing
+    let tokens_to_burn: Uint128 = Uint128::new(100);
 
     // Call `before_validator_slashed` with the validator’s address
     let res = before_validator_slashed(
@@ -613,6 +614,7 @@ fn test_before_validator_slashed_with_self_bonded_only() {
         env.clone(),
         oper_addr.to_string(),
         slashing_fraction,
+        tokens_to_burn,
     );
 
     assert!(
@@ -632,9 +634,9 @@ fn test_before_validator_slashed_with_self_bonded_only() {
         ("action", "before_validator_slashed"),
         ("valoper_address", "neutronvaloper1xyz"),
         ("cons_address", "neutronvalcons1xyz"),
-        ("total_tokens", "900"),      // 10% slashed from 1000 → 900
-        ("total_shares", "1000"),     // Shares remain unchanged
-        ("slashing_fraction", "0.1"), // 10% slashing
+        ("total_tokens", "900"),   // 10% slashed from 1000 → 900
+        ("total_shares", "1000"),  // Shares remain unchanged
+        ("tokens_to_burn", "100"), // 10% slashing
     ];
 
     // Convert response attributes for assertion
@@ -728,12 +730,14 @@ fn test_before_validator_slashed() {
         Uint128::new(500), // Ensure delegation data is available
     )]));
 
+    let tokens_to_burn: Uint128 = Uint128::new(50);
     // Call `before_validator_slashed`
     let res = before_validator_slashed(
         deps.as_mut(),
         env.clone(),
         oper_addr.to_string(),
         slashing_fraction,
+        tokens_to_burn,
     );
     assert!(res.is_ok(), "Error: {:?}", res.err());
 
@@ -756,7 +760,7 @@ fn test_before_validator_slashed() {
         ("cons_address", "neutronvalcons1xyz"),
         ("total_tokens", "450"),
         ("total_shares", "500"),
-        ("slashing_fraction", "0.1"),
+        ("tokens_to_burn", "50"),
     ];
 
     // Convert `response.attributes` from `Vec<Attribute>` to `Vec<(&str, &str)>`
@@ -880,12 +884,14 @@ fn test_before_validator_slashed_voting_power_drops() {
         ),
     ]));
 
+    let tokens_to_burn: Uint128 = Uint128::new(100);
     // Call before_validator_slashed
     let res = before_validator_slashed(
         deps.as_mut(),
         env.clone(),
         oper_addr.to_string(),
         slashing_fraction,
+        tokens_to_burn,
     );
     assert!(res.is_ok(), "Error: {:?}", res.err());
 
@@ -945,15 +951,13 @@ fn test_before_validator_slashed_voting_power_drops() {
         .map(|attr| (attr.key.as_str(), attr.value.as_str()))
         .collect();
 
-    let slashing_fraction_str = slashing_fraction.to_string(); // Store the string first
-
     let expected_attributes = vec![
         ("action", "before_validator_slashed"),
         ("valoper_address", oper_addr.as_str()),
         ("cons_address", cons_addr.as_str()),
         ("total_tokens", "900"),
         ("total_shares", "1000"),
-        ("slashing_fraction", slashing_fraction_str.as_str()), // Use the stored string
+        ("tokens_to_burn", "100"), // Use the stored string
     ];
 
     assert_eq!(actual_attributes, expected_attributes);
