@@ -212,6 +212,8 @@ pub fn sudo(deps: DepsMut, env: Env, msg: SudoMsg) -> Result<Response, ContractE
         SudoMsg::BeforeValidatorSlashed { val_addr, fraction } => {
             before_validator_slashed(deps, env, val_addr, fraction)
         }
+        // if some reason we accidentally subscribed to a hook but don't have an implementation, just return ok to not cause any problems for a caller
+        _ => Ok(Response::new()),
     }
 }
 
