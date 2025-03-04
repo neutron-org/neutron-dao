@@ -1131,7 +1131,7 @@ fn test_after_delegation_modified_large_scaled_shares() {
 #[test]
 fn test_after_validator_begin_unbonding() {
     let mut deps = dependencies(); // Initialize dependencies
-    let env = mock_env(); // Mock environment
+    let mut env = mock_env(); // Mock environment
 
     let admin = deps.api.addr_make("admin");
     // Define operator (valoper) and consensus (valcons) addresses
@@ -1167,6 +1167,9 @@ fn test_after_validator_begin_unbonding() {
             env.block.height,
         )
         .unwrap();
+
+    // Pass height so we don't unbond on the saving height
+    env.block.height += 5;
 
     let unbonding_height = env.block.height;
 
@@ -1205,7 +1208,16 @@ fn test_after_validator_begin_unbonding() {
             .unwrap()
             .contains(&updated_validator.oper_address.to_string()),
         "Validator should not be bonded after unbonding begins"
-    ); // TODO: load_at_height(n) empty, n+1 should have one element
+    );
+    // Previous validator state should still be bonded
+    assert!(
+        BONDED_VALIDATORS
+            .may_load_at_height(deps.as_ref().storage, env.block.height - 1)
+            .unwrap()
+            .unwrap()
+            .contains(&updated_validator.oper_address.to_string()),
+        "Validator should bonded before unbonding begins"
+    );
     assert!(
         updated_validator.active,
         "Validator should remain active during unbonding"
