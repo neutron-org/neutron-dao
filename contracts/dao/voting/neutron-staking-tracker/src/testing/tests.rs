@@ -872,9 +872,9 @@ fn test_after_delegation_modified() {
             ("action", "after_delegation_modified"),
             ("delegator", delegator_addr.to_string().as_str()),
             ("valoper_address", oper_addr.to_string().as_str()),
+            ("delegation_shares", "200"),
             ("total_shares", "1200"),
             ("total_tokens", "1200"),
-            ("delegation_shares", "200"),
         ]
     );
 
@@ -1059,9 +1059,9 @@ fn test_after_delegation_modified_large_scaled_shares() {
             ("action", "after_delegation_modified"),
             ("delegator", delegator_addr.to_string().as_str()),
             ("valoper_address", oper_addr.to_string().as_str()),
+            ("delegation_shares", "166666667667000000000000000000"),
             ("total_shares", "166666667667000000000000000000"),
             ("total_tokens", "166666667667"),
-            ("delegation_shares", "166666667667000000000000000000"),
         ]
     );
 
