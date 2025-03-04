@@ -496,15 +496,15 @@ pub(crate) fn before_delegation_removed(
 
     let previous_shares = delegation.shares;
 
-    // Load validator by `valoper_address`
-    // TODO!
-    let mut validator = VALIDATORS.load(deps.storage, &valoper_addr)?;
+    // Load validator by `valoper_address`.
+    // Validator can not exist if it was unbonded when delegation was removed.
+    if let Some(mut validator) = VALIDATORS.may_load(deps.storage, &valoper_addr)? {
+        // Since it's `before_delegation_removed`, we can safely remove all shares from validator
+        validator.remove_del_shares(previous_shares)?;
 
-    // Since it's `before_delegation_removed`, we can safely remove all shares from validator
-    validator.remove_del_shares(previous_shares)?;
-
-    // Save the updated validator state
-    VALIDATORS.save(deps.storage, &valoper_addr, &validator, env.block.height)?;
+        // Save the updated validator state
+        VALIDATORS.save(deps.storage, &valoper_addr, &validator, env.block.height)?;
+    }
 
     delegation.shares = Uint128::zero();
     DELEGATIONS.save(
