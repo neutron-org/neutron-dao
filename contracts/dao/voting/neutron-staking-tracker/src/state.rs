@@ -1,6 +1,6 @@
 use crate::error::ContractError;
 use cosmwasm_std::{Addr, Uint128};
-use cw_storage_plus::{Item, Map, SnapshotMap, Strategy};
+use cw_storage_plus::{Item, Map, SnapshotItem, SnapshotMap, Strategy};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -51,9 +51,7 @@ impl Config {
 /// - `active`: Whether the validator is active in the network.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 pub struct Validator {
-    pub cons_address: Addr,
     pub oper_address: Addr,
-    pub bonded: bool,
     /// The total amount of delegator shares for this validator.
     ///
     /// Stored as a `Uint128` to maintain compatibility with Cosmos SDK’s `sdk.Dec`, which is serialized
@@ -162,6 +160,10 @@ pub const CONFIG: Item<Config> = Item::new("config");
 
 /// Stores the **DAO address** responsible for managing governance decisions.
 pub const DAO: Item<Addr> = Item::new("dao");
+
+/// Stores the list of bonded validators.
+pub const BONDED_VALIDATORS: SnapshotItem<Vec<String>> =
+    SnapshotItem::new("bonded_validators", "", "", Strategy::EveryBlock);
 
 #[cfg(test)]
 mod tests {

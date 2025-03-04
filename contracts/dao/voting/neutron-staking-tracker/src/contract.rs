@@ -1,8 +1,10 @@
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, ProxyInfoExecute, QueryMsg, SudoMsg};
 use crate::state::{
-    Config, Delegation, Validator, BLACKLISTED_ADDRESSES, CONFIG, DAO, DELEGATIONS, VALIDATORS,
+    Config, Delegation, Validator, BLACKLISTED_ADDRESSES, BONDED_VALIDATORS, CONFIG, DAO,
+    DELEGATIONS, VALIDATORS,
 };
+use std::collections::HashSet;
 use std::ops::Mul;
 
 #[cfg(not(feature = "library"))]
@@ -30,7 +32,7 @@ const REPLY_ON_BEFORE_DELEGATION_REMOVED_ERROR_STAKING_PROXY_ID: u64 = 7;
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
@@ -51,6 +53,7 @@ pub fn instantiate(
     config.validate()?;
     CONFIG.save(deps.storage, &config)?;
     DAO.save(deps.storage, &info.sender)?;
+    BONDED_VALIDATORS.save(deps.storage, &Vec::new(), env.block.height)?;
 
     Ok(Response::new()
         .add_attribute("action", "instantiate")
@@ -220,7 +223,6 @@ pub fn sudo(deps: DepsMut, env: Env, msg: SudoMsg) -> Result<Response, ContractE
             cons_addr,
             val_addr,
         } => after_validator_removed(deps, env, cons_addr, val_addr),
-        SudoMsg::AfterValidatorCreated { val_addr } => after_validator_created(deps, env, val_addr),
         SudoMsg::AfterValidatorBeginUnbonding {
             cons_addr,
             val_addr,
@@ -243,10 +245,9 @@ pub fn sudo(deps: DepsMut, env: Env, msg: SudoMsg) -> Result<Response, ContractE
 pub(crate) fn after_validator_bonded(
     deps: DepsMut,
     env: Env,
-    valcons_address: String,
+    _valcons_address: String,
     valoper_address: String,
 ) -> Result<Response, ContractError> {
-    let valcons_addr = Addr::unchecked(&valcons_address);
     let valoper_addr = Addr::unchecked(&valoper_address);
 
     let querier = StakingQuerier::new(&deps.querier);
@@ -261,28 +262,32 @@ pub(crate) fn after_validator_bonded(
         })?;
 
     let total_tokens = Uint128::from_str(&validator_info.tokens)?;
-
     let total_shares = Uint128::from_str(&validator_info.delegator_shares)?;
 
     // Load validator or initialize if missing
     let mut validator = VALIDATORS
         .may_load(deps.storage, &valoper_addr)?
         .unwrap_or(Validator {
-            cons_address: valcons_addr.clone(),
             oper_address: valoper_addr.clone(),
-            bonded: false,
             total_tokens: Uint128::zero(),
             total_shares: Uint128::zero(),
             active: true,
         });
 
     // Update validator state
-    validator.bonded = true;
     validator.total_tokens = total_tokens;
     validator.total_shares = total_shares;
-
     // Save updated validator using valoper as the key
     VALIDATORS.save(deps.storage, &valoper_addr, &validator, env.block.height)?;
+
+    let mut bonded_validators = BONDED_VALIDATORS.load(deps.storage)?;
+    if bonded_validators.contains(&valoper_addr.to_string()) {
+        return Err(ContractError::ValidatorAlreadyBonded {
+            validator: valoper_address,
+        });
+    }
+    bonded_validators.push(valoper_addr.to_string());
+    BONDED_VALIDATORS.save(deps.storage, &bonded_validators, env.block.height)?;
 
     // Call proxy info to notify about change of stake
     let resp = with_slashing_event(
@@ -293,7 +298,6 @@ pub(crate) fn after_validator_bonded(
 
     Ok(resp
         .add_attribute("action", "validator_bonded")
-        .add_attribute("valcons_address", valcons_address)
         .add_attribute("valoper_address", valoper_address)
         .add_attribute("total_tokens", validator.total_tokens.to_string())
         .add_attribute("total_shares", validator.total_shares.to_string()))
@@ -339,7 +343,6 @@ pub(crate) fn before_validator_modified(
     Ok(Response::new()
         .add_attribute("action", "before_validator_modified")
         .add_attribute("valoper_address", valoper_address)
-        .add_attribute("cons_address", validator.cons_address.to_string())
         .add_attribute("total_tokens", validator.total_tokens.to_string())
         .add_attribute("total_shares", validator.total_shares.to_string()))
 }
@@ -377,7 +380,6 @@ pub fn before_validator_slashed(
     Ok(resp
         .add_attribute("action", "before_validator_slashed")
         .add_attribute("valoper_address", valoper_address)
-        .add_attribute("cons_address", validator.cons_address.to_string())
         .add_attribute("total_tokens", validator.total_tokens.to_string())
         .add_attribute("total_shares", validator.total_shares.to_string())
         .add_attribute("slashing_fraction", slashing_fraction.to_string()))
@@ -386,30 +388,21 @@ pub fn before_validator_slashed(
 pub(crate) fn after_validator_begin_unbonding(
     deps: DepsMut,
     env: Env,
-    valcons_address: String,
+    _valcons_address: String,
     valoper_address: String,
 ) -> Result<Response, ContractError> {
     let valoper_addr = Addr::unchecked(valoper_address.clone());
 
-    // Load validator by valoper_address
-    let mut validator = VALIDATORS.may_load(deps.storage, &valoper_addr)?.ok_or(
-        ContractError::ValidatorNotFound {
-            address: valoper_address.clone(),
-        },
-    )?;
-
-    if !validator.bonded {
+    let mut bonded_vals = BONDED_VALIDATORS.load(deps.storage)?;
+    if !bonded_vals.contains(&valoper_addr.to_string()) {
         return Err(ContractError::ValidatorNotBonded {
             validator: valoper_address.clone(),
         });
     }
 
     // Mark validator as unbonded
-    validator.bonded = false;
-    validator.cons_address = Addr::unchecked(valcons_address);
-
-    // Save updated validator state
-    VALIDATORS.save(deps.storage, &valoper_addr, &validator, env.block.height)?;
+    bonded_vals.retain(|a| a != &valoper_addr.to_string());
+    BONDED_VALIDATORS.save(deps.storage, &bonded_vals, env.block.height)?;
 
     // Call proxy info to notify about change of stake
     let resp = with_slashing_event(
@@ -421,9 +414,9 @@ pub(crate) fn after_validator_begin_unbonding(
     Ok(resp
         .add_attribute("action", "after_validator_begin_unbonding")
         .add_attribute("valoper_address", valoper_address)
-        .add_attribute("cons_address", validator.cons_address.to_string()) // Still stored inside
         .add_attribute("unbonding_start_height", env.block.height.to_string()))
 }
+
 pub(crate) fn after_delegation_modified(
     deps: DepsMut,
     env: Env,
@@ -524,7 +517,6 @@ pub(crate) fn after_delegation_modified(
     Ok(resp
         .add_attribute("action", "after_delegation_modified")
         .add_attribute("delegator", delegator.to_string())
-        .add_attribute("cons_address", validator.cons_address.to_string()) // Still stored inside Validator
         .add_attribute("valoper_address", valoper_address.to_string())
         .add_attribute("total_shares", validator.total_shares.to_string())
         .add_attribute("total_tokens", validator.total_tokens.to_string())
@@ -585,7 +577,7 @@ pub(crate) fn after_validator_removed(
     deps: DepsMut,
     env: Env,
     valoper_address: String,
-    valcons_address: String,
+    _valcons_address: String,
 ) -> Result<Response, ContractError> {
     let validator_addr = Addr::unchecked(&valoper_address);
 
@@ -610,56 +602,7 @@ pub(crate) fn after_validator_removed(
 
     Ok(Response::new()
         .add_attribute("action", "after_validator_removed")
-        .add_attribute("valoper_address", valoper_address)
-        .add_attribute("valcons_address", valcons_address))
-}
-
-pub(crate) fn after_validator_created(
-    deps: DepsMut,
-    env: Env,
-    valoper_address: String,
-) -> Result<Response, ContractError> {
-    // Retrieve the consensus address using a helper function
-    let valoper_addr = Addr::unchecked(&valoper_address);
-
-    let querier = StakingQuerier::new(&deps.querier);
-    let validator_data = querier
-        .validator(valoper_address.clone())?
-        .validator
-        .ok_or_else(|| ContractError::ValidatorNotFound {
-            address: valoper_address.clone(),
-        })?;
-
-    let total_tokens = Uint128::from_str(&validator_data.tokens)?;
-
-    let total_shares = Uint128::from_str(&validator_data.delegator_shares).map_err(|_| {
-        ContractError::InvalidTokenData {
-            address: valoper_address.clone(),
-        }
-    })?;
-
-    let new_validator = Validator {
-        cons_address: Addr::unchecked(""),
-        oper_address: valoper_addr.clone(),
-        bonded: false,
-        total_tokens,
-        total_shares,
-        active: true,
-    };
-
-    // Use `valoper_address` as the primary key for storage
-    VALIDATORS.save(
-        deps.storage,
-        &valoper_addr, // Primary key is now `valoper`
-        &new_validator,
-        env.block.height,
-    )?;
-
-    Ok(Response::new()
-        .add_attribute("action", "validator_created")
-        .add_attribute("operator_address", valoper_address)
-        .add_attribute("total_tokens", total_tokens.to_string())
-        .add_attribute("total_shares", total_shares.to_string()))
+        .add_attribute("valoper_address", valoper_address))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -713,27 +656,30 @@ pub fn query_is_address_blacklisted(deps: Deps, address: String) -> StdResult<bo
 ///
 pub fn calculate_voting_power(deps: Deps, address: Addr, height: u64) -> StdResult<Uint128> {
     let mut power = Uint256::zero(); // Use Uint256 to avoid overflow
+    let bonded_vals = BONDED_VALIDATORS
+        .may_load_at_height(deps.storage, height)?
+        .unwrap_or_default();
 
-    for val_oper_address in VALIDATORS.keys(deps.storage, None, None, Order::Ascending) {
-        if let Some(validator) =
-            VALIDATORS.may_load_at_height(deps.storage, &val_oper_address?, height)?
-        {
-            if validator.bonded {
-                if let Some(delegation) = DELEGATIONS.may_load_at_height(
-                    deps.storage,
-                    (&address, &validator.oper_address),
-                    height,
-                )? {
-                    let shares_256 = Uint256::from(delegation.shares);
-                    let total_tokens_256 = Uint256::from(validator.total_tokens);
-                    let total_shares_256 = Uint256::from(validator.total_shares);
+    for val_oper_address in bonded_vals {
+        if let Some(validator) = VALIDATORS.may_load_at_height(
+            deps.storage,
+            &Addr::unchecked(val_oper_address),
+            height,
+        )? {
+            if let Some(delegation) = DELEGATIONS.may_load_at_height(
+                deps.storage,
+                (&address, &validator.oper_address),
+                height,
+            )? {
+                let shares_256 = Uint256::from(delegation.shares);
+                let total_tokens_256 = Uint256::from(validator.total_tokens);
+                let total_shares_256 = Uint256::from(validator.total_shares);
 
-                    let delegation_power_256 = shares_256
-                        .checked_mul(total_tokens_256)?
-                        .checked_div(total_shares_256)?;
+                let delegation_power_256 = shares_256
+                    .checked_mul(total_tokens_256)?
+                    .checked_div(total_shares_256)?;
 
-                    power = power.checked_add(delegation_power_256)?;
-                }
+                power = power.checked_add(delegation_power_256)?;
             }
         }
     }
@@ -768,15 +714,26 @@ pub fn query_total_power_at_height(
 ) -> StdResult<Uint128> {
     let height = height.unwrap_or(env.block.height);
 
-    // calc total vp as usual
-    let mut total_power = Uint128::zero();
-    for k in VALIDATORS.keys(deps.storage, None, None, Order::Ascending) {
-        if let Some(val) = VALIDATORS.may_load_at_height(deps.storage, &k?, height)? {
-            if val.bonded {
-                total_power = total_power.checked_add(val.total_tokens)?;
-            }
-        }
+    let bonded_vals = BONDED_VALIDATORS
+        .may_load_at_height(deps.storage, height)?
+        .unwrap_or_default()
+        .into_iter()
+        .collect::<HashSet<_>>();
+
+    if bonded_vals.is_empty() {
+        return Ok(Uint128::zero());
     }
+
+    // calc total vp as usual
+    let total_power: Uint128 = bonded_vals
+        .into_iter()
+        .map(|valoper_addr| {
+            VALIDATORS.may_load_at_height(deps.storage, &Addr::unchecked(valoper_addr), height)
+        })
+        .collect::<StdResult<Vec<Option<Validator>>>>()?
+        .into_iter()
+        .map(|m| m.map(|v| v.total_tokens).unwrap_or_default())
+        .sum();
 
     // sum voting power of blacklisted addresses
     let mut blacklisted_power = Uint128::zero();

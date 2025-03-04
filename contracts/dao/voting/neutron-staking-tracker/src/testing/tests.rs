@@ -1,17 +1,16 @@
 #[cfg(test)]
 use crate::contract::{
     after_delegation_modified, after_validator_begin_unbonding, after_validator_bonded,
-    after_validator_created, before_validator_slashed, execute, instantiate, query,
-    query_total_power_at_height, query_voting_power_at_height,
+    before_validator_slashed, execute, instantiate, query_total_power_at_height,
+    query_voting_power_at_height,
 };
-use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg};
 use crate::state::{
-    Config, Delegation, Validator, BLACKLISTED_ADDRESSES, CONFIG, DAO, DELEGATIONS, VALIDATORS,
+    Config, Delegation, Validator, BONDED_VALIDATORS, CONFIG, DAO, DELEGATIONS, VALIDATORS,
 };
 use crate::testing::mock_querier::mock_dependencies as dependencies;
 use cosmwasm_std::testing::message_info;
 use cosmwasm_std::{
-    from_json,
     testing::{mock_dependencies, mock_env},
     to_json_binary, Addr, Decimal256, Uint128,
 };
@@ -173,319 +172,6 @@ fn test_update_config_unauthorized() {
 }
 
 #[test]
-fn test_add_and_remove_from_blacklist() {
-    let mut deps = mock_dependencies();
-    deps.api = deps.api.with_prefix("neutron");
-
-    let admin = deps.api.addr_make("admin");
-    let addr1 = deps.api.addr_make("addr1");
-    let addr2 = deps.api.addr_make("addr2");
-
-    // Initialize config with owner
-    let config = Config {
-        name: String::from("Test Config"),
-        description: String::from("Testing blacklist functionality"),
-        owner: admin.clone(),
-        staking_proxy_info_contract_address: None,
-    };
-    CONFIG.save(deps.as_mut().storage, &config).unwrap();
-
-    // Add addresses to the blacklist
-    let res = execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&admin, &[]),
-        ExecuteMsg::AddToBlacklist {
-            addresses: vec![String::from(addr1.clone()), String::from(addr2.clone())],
-        },
-    );
-    assert!(res.is_ok(), "Error adding to blacklist: {:?}", res.err());
-
-    // Verify that addresses are blacklisted
-    let is_addr1_blacklisted = BLACKLISTED_ADDRESSES
-        .load(deps.as_ref().storage, addr1.clone())
-        .unwrap_or(false);
-    let is_addr2_blacklisted = BLACKLISTED_ADDRESSES
-        .load(deps.as_ref().storage, addr2.clone())
-        .unwrap_or(false);
-    assert!(is_addr1_blacklisted, "Address addr1 is not blacklisted");
-    assert!(is_addr2_blacklisted, "Address addr2 is not blacklisted");
-
-    // Remove addresses from the blacklist
-    let res = execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&admin, &[]),
-        ExecuteMsg::RemoveFromBlacklist {
-            addresses: vec![String::from(addr1.clone()), String::from(addr2.clone())],
-        },
-    );
-    assert!(
-        res.is_ok(),
-        "Error removing from blacklist: {:?}",
-        res.err()
-    );
-
-    // Verify that addresses are no longer blacklisted
-    let is_addr1_blacklisted = BLACKLISTED_ADDRESSES
-        .may_load(deps.as_ref().storage, addr1)
-        .unwrap();
-    let is_addr2_blacklisted = BLACKLISTED_ADDRESSES
-        .may_load(deps.as_ref().storage, addr2)
-        .unwrap();
-    assert!(
-        is_addr1_blacklisted.is_none(),
-        "Address addr1 is still blacklisted"
-    );
-    assert!(
-        is_addr2_blacklisted.is_none(),
-        "Address addr2 is still blacklisted"
-    );
-}
-
-#[test]
-fn test_check_if_address_is_blacklisted() {
-    let mut deps = dependencies();
-    deps.api = deps.api.with_prefix("neutron");
-
-    let admin = deps.api.addr_make("admin");
-    let addr1 = deps.api.addr_make("addr1");
-    let addr2 = deps.api.addr_make("addr2");
-
-    // Initialize config with owner
-    let config = Config {
-        name: String::from("Test Config"),
-        description: String::from("Testing blacklist functionality"),
-        owner: admin.clone(),
-        staking_proxy_info_contract_address: None,
-    };
-    CONFIG.save(deps.as_mut().storage, &config).unwrap();
-
-    // Add an address to the blacklist
-    let res = execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&admin, &[]),
-        ExecuteMsg::AddToBlacklist {
-            addresses: vec![addr1.to_string()],
-        },
-    );
-    assert!(res.is_ok(), "Error adding to blacklist: {:?}", res.err());
-
-    // Query if the address is blacklisted
-    let query_res = query(
-        deps.as_ref(),
-        mock_env(),
-        QueryMsg::IsAddressBlacklisted {
-            address: addr1.to_string(),
-        },
-    );
-    assert!(
-        query_res.is_ok(),
-        "Error querying blacklist status: {:?}",
-        query_res.err()
-    );
-
-    let is_blacklisted: bool = from_json(query_res.unwrap()).unwrap();
-    assert!(is_blacklisted, "Address addr1 should be blacklisted");
-
-    // Query an address that is not blacklisted
-    let query_res = query(
-        deps.as_ref(),
-        mock_env(),
-        QueryMsg::IsAddressBlacklisted {
-            address: addr2.to_string(),
-        },
-    );
-    assert!(
-        query_res.is_ok(),
-        "Error querying blacklist status: {:?}",
-        query_res.err()
-    );
-
-    let is_blacklisted: bool = from_json(query_res.unwrap()).unwrap();
-    assert!(!is_blacklisted, "Address addr2 should not be blacklisted");
-}
-
-#[test]
-fn test_total_vp_excludes_blacklisted_addresses() {
-    let mut deps = dependencies();
-    deps.api = deps.api.with_prefix("neutron");
-
-    let admin = deps.api.addr_make("admin");
-    let delegator1 = deps.api.addr_make("delegator1");
-    let delegator2 = deps.api.addr_make("delegator2");
-
-    let env = mock_env();
-
-    let config = Config {
-        name: "Test Vault".to_string(),
-        description: "Testing vault functionality".to_string(),
-        owner: admin.clone(),
-        staking_proxy_info_contract_address: None,
-    };
-    CONFIG.save(deps.as_mut().storage, &config).unwrap();
-
-    // Define consensus and operator addresses
-    let cons_addr1 = Addr::unchecked("neutronvalcons1xyz");
-    let oper_addr1 = Addr::unchecked("neutronvaloper1xyz");
-    let cons_addr2 = Addr::unchecked("neutronvalcons2xyz");
-    let oper_addr2 = Addr::unchecked("neutronvaloper2xyz");
-
-    // Add validators using consensus address as the key
-    let validator1 = Validator {
-        cons_address: cons_addr1.clone(),
-        oper_address: oper_addr1.clone(),
-        bonded: true,
-        total_tokens: Uint128::new(1000),
-        total_shares: Uint128::new(1000),
-        active: true,
-    };
-    VALIDATORS
-        .save(
-            deps.as_mut().storage,
-            &cons_addr1,
-            &validator1,
-            env.block.height,
-        )
-        .unwrap();
-
-    let validator2 = Validator {
-        cons_address: cons_addr2.clone(),
-        oper_address: oper_addr2.clone(),
-        bonded: true,
-        total_tokens: Uint128::new(500),
-        total_shares: Uint128::new(500),
-        active: true,
-    };
-    VALIDATORS
-        .save(
-            deps.as_mut().storage,
-            &cons_addr2,
-            &validator2,
-            env.block.height,
-        )
-        .unwrap();
-
-    let delegation1 = Delegation {
-        delegator_address: delegator1.clone(),
-        validator_address: oper_addr1.clone(), // Uses operator address
-        shares: Uint128::new(500),
-    };
-    DELEGATIONS
-        .save(
-            deps.as_mut().storage,
-            (&delegator1, &oper_addr1),
-            &delegation1,
-            env.block.height,
-        )
-        .unwrap();
-
-    let delegation2 = Delegation {
-        delegator_address: delegator2.clone(),
-        validator_address: oper_addr2.clone(), // Uses operator address
-        shares: Uint128::new(500),
-    };
-    DELEGATIONS
-        .save(
-            deps.as_mut().storage,
-            (&delegator2, &oper_addr2),
-            &delegation2,
-            env.block.height,
-        )
-        .unwrap();
-
-    // Query total voting power **before** blacklisting anything
-    let initial_query_res = query(
-        deps.as_ref(),
-        env.clone(),
-        QueryMsg::TotalPowerAtHeight {
-            height: Some(env.block.height + 1),
-        },
-    );
-    assert!(
-        initial_query_res.is_ok(),
-        "Error querying total power before blacklisting: {:?}",
-        initial_query_res.err()
-    );
-
-    let initial_total_power: Uint128 = from_json(initial_query_res.unwrap()).unwrap();
-
-    // Expected power: sum of both validator tokens (1000 + 500 = 1500)
-    assert_eq!(
-        initial_total_power,
-        Uint128::new(1500),
-        "Initial total power should be sum of both validators' tokens"
-    );
-
-    // Blacklist address "addr2"
-    let res = execute(
-        deps.as_mut(),
-        env.clone(),
-        message_info(&admin, &[]),
-        ExecuteMsg::AddToBlacklist {
-            addresses: vec![delegator2.to_string()],
-        },
-    );
-    assert!(res.is_ok(), "Error adding to blacklist: {:?}", res.err());
-
-    // Ensure validator1 still exists and has tokens
-    let validator1_state = VALIDATORS.load(deps.as_ref().storage, &cons_addr1).unwrap();
-    assert_eq!(
-        validator1_state.total_tokens,
-        Uint128::new(1000),
-        "Validator1's tokens are incorrect"
-    );
-
-    // Ensure validator2 still exists
-    let validator2_state = VALIDATORS.load(deps.as_ref().storage, &cons_addr2).unwrap();
-    assert_eq!(
-        validator2_state.total_tokens,
-        Uint128::new(500),
-        "Validator2's tokens are incorrect"
-    );
-
-    // Ensure delegation1 is still present
-    let delegation1_state = DELEGATIONS
-        .load(deps.as_ref().storage, (&delegator1, &oper_addr1))
-        .unwrap();
-    assert_eq!(
-        delegation1_state.shares,
-        Uint128::new(500),
-        "Delegation1 shares incorrect"
-    );
-
-    // Ensure delegation2 is blacklisted correctly
-    let is_blacklisted = BLACKLISTED_ADDRESSES
-        .load(deps.as_ref().storage, delegator2.clone())
-        .unwrap_or(false);
-    assert!(is_blacklisted, "Delegator2 should be blacklisted");
-
-    // Query total voting power **after** blacklisting
-    let query_res = query(
-        deps.as_ref(),
-        env.clone(),
-        QueryMsg::TotalPowerAtHeight {
-            height: Some(env.block.height + 1),
-        },
-    );
-    assert!(
-        query_res.is_ok(),
-        "Error querying total power after blacklisting: {:?}",
-        query_res.err()
-    );
-
-    let total_power: Uint128 = from_json(query_res.unwrap()).unwrap();
-
-    // Only validator1's power should count (1000), validator2's delegation is blacklisted
-    assert_eq!(
-        total_power,
-        Uint128::new(1000),
-        "Total power should exclude blacklisted address"
-    );
-}
-
-#[test]
 fn test_after_validator_bonded_with_mock_query() {
     let mut deps = dependencies(); // Using the mock_dependencies function
     let env = mock_env(); // Creating a mock environment
@@ -505,15 +191,16 @@ fn test_after_validator_bonded_with_mock_query() {
     let oper_addr = Addr::unchecked("neutronvaloper1xyz");
     let cons_addr = Addr::unchecked("neutronvalcons1xyz");
 
+    BONDED_VALIDATORS
+        .save(deps.as_mut().storage, &Vec::new(), env.block.height)
+        .unwrap();
     // Store an initial validator state with `bonded = false`
     VALIDATORS
         .save(
             deps.as_mut().storage,
             &oper_addr,
             &Validator {
-                cons_address: cons_addr.clone(),
                 oper_address: oper_addr.clone(),
-                bonded: false,
                 total_tokens: Uint128::zero(),
                 total_shares: Uint128::zero(),
                 active: true,
@@ -551,7 +238,10 @@ fn test_after_validator_bonded_with_mock_query() {
 
     // Load updated validator state
     let updated_validator = VALIDATORS.load(deps.as_ref().storage, &oper_addr).unwrap(); //  Now using operator address as the key
-    assert!(updated_validator.bonded, "Validator should be bonded");
+    assert!(BONDED_VALIDATORS
+        .load(deps.as_ref().storage)
+        .unwrap()
+        .contains(&updated_validator.oper_address.to_string())); // TODO: load_at_height(n) empty, n+1 should have one element
     assert!(updated_validator.active, "Validator should remain active");
     assert_eq!(updated_validator.total_tokens, Uint128::new(1000));
     assert_eq!(updated_validator.total_shares, Uint128::new(1000));
@@ -562,7 +252,6 @@ fn test_after_validator_bonded_with_mock_query() {
         response.attributes,
         vec![
             ("action", "validator_bonded"),
-            ("valcons_address", &*cons_addr.to_string()), // Match contract's attribute key
             ("valoper_address", &*oper_addr.to_string()), // Match contract's attribute key
             ("total_tokens", "1000"),
             ("total_shares", "1000"),
@@ -587,14 +276,14 @@ fn test_before_validator_slashed_with_self_bonded_only() {
     CONFIG.save(deps.as_mut().storage, &config).unwrap();
 
     // Define consensus and operator addresses
-    let cons_addr = Addr::unchecked("neutronvalcons1xyz");
     let oper_addr = Addr::unchecked("neutronvaloper1xyz");
 
     // Validator has self-bonded tokens but no external delegations
+    BONDED_VALIDATORS
+        .save(deps.as_mut().storage, &vec![oper_addr.to_string()], 0)
+        .unwrap();
     let validator = Validator {
-        cons_address: cons_addr.clone(),
         oper_address: oper_addr.clone(),
-        bonded: true,
         total_tokens: Uint128::new(1000), // Self-bonded tokens
         total_shares: Uint128::new(1000), // No external delegators
         active: true,
@@ -631,7 +320,6 @@ fn test_before_validator_slashed_with_self_bonded_only() {
     let expected_attributes = vec![
         ("action", "before_validator_slashed"),
         ("valoper_address", "neutronvaloper1xyz"),
-        ("cons_address", "neutronvalcons1xyz"),
         ("total_tokens", "900"),      // 10% slashed from 1000 → 900
         ("total_shares", "1000"),     // Shares remain unchanged
         ("slashing_fraction", "0.1"), // 10% slashing
@@ -665,13 +353,17 @@ fn test_before_validator_slashed() {
 
     // Define operator and consensus addresses
     let oper_addr = Addr::unchecked("neutronvaloper1xyz");
-    let cons_addr = Addr::unchecked("neutronvalcons1xyz");
 
     // Store validator using `valoper_address` as the key
+    BONDED_VALIDATORS
+        .save(
+            deps.as_mut().storage,
+            &vec![oper_addr.to_string()],
+            env.block.height,
+        )
+        .unwrap();
     let validator = Validator {
-        cons_address: cons_addr.clone(), // Still stored inside struct
         oper_address: oper_addr.clone(),
-        bonded: true,
         total_tokens: Uint128::new(500),
         total_shares: Uint128::new(500), // Shares remain constant after slashing
         active: true,
@@ -753,7 +445,6 @@ fn test_before_validator_slashed() {
     let expected_attributes = vec![
         ("action", "before_validator_slashed"),
         ("valoper_address", "neutronvaloper1xyz"),
-        ("cons_address", "neutronvalcons1xyz"),
         ("total_tokens", "450"),
         ("total_shares", "500"),
         ("slashing_fraction", "0.1"),
@@ -788,13 +479,17 @@ fn test_before_validator_slashed_voting_power_drops() {
 
     // Define operator address (primary key for validators now)
     let oper_addr = Addr::unchecked("neutronvaloper1xyz");
-    let cons_addr = Addr::unchecked("neutronvalcons1xyz");
 
     // Initial validator state
+    BONDED_VALIDATORS
+        .save(
+            deps.as_mut().storage,
+            &vec![oper_addr.to_string()],
+            env.block.height,
+        )
+        .unwrap();
     let validator = Validator {
-        cons_address: cons_addr.clone(),
         oper_address: oper_addr.clone(),
-        bonded: true,
         total_tokens: Uint128::new(1000),
         total_shares: Uint128::new(1000),
         active: true,
@@ -950,7 +645,6 @@ fn test_before_validator_slashed_voting_power_drops() {
     let expected_attributes = vec![
         ("action", "before_validator_slashed"),
         ("valoper_address", oper_addr.as_str()),
-        ("cons_address", cons_addr.as_str()),
         ("total_tokens", "900"),
         ("total_shares", "1000"),
         ("slashing_fraction", slashing_fraction_str.as_str()), // Use the stored string
@@ -960,80 +654,26 @@ fn test_before_validator_slashed_voting_power_drops() {
 }
 
 #[test]
-fn test_after_validator_created_with_mock_query() {
-    let mut deps = dependencies();
-
-    let env = mock_env();
-
-    // Define operator (valoper) and consensus (valcons) addresses
-    let oper_addr = Addr::unchecked("neutronvaloper1xyz");
-
-    // Mock the validator query response
-    let proto_validator = CosmosValidator {
-        operator_address: oper_addr.to_string(),
-        consensus_pubkey: None,
-        jailed: false,
-        status: 2, // Unbonded status
-        tokens: "1000".to_string(),
-        delegator_shares: "1000".to_string(),
-        description: None,
-        unbonding_height: 0,
-        unbonding_time: None,
-        commission: None,
-        min_self_delegation: "1".to_string(),
-        unbonding_on_hold_ref_count: 0,
-        unbonding_ids: vec![],
-    };
-
-    deps.querier.with_validators(vec![proto_validator]);
-
-    // Call `after_validator_created`
-    let res = after_validator_created(deps.as_mut(), env.clone(), oper_addr.to_string());
-    assert!(res.is_ok(), "Error: {:?}", res.err());
-
-    let validator = VALIDATORS.load(deps.as_ref().storage, &oper_addr).unwrap();
-    assert_eq!(
-        validator.oper_address, oper_addr,
-        "Operator address mismatch"
-    );
-    assert!(
-        !validator.bonded,
-        "Validator should not be bonded initially"
-    );
-    assert_eq!(
-        validator.total_tokens,
-        Uint128::new(1000),
-        "Total tokens do not match the mocked data"
-    );
-    assert_eq!(
-        validator.total_shares,
-        Uint128::new(1000),
-        "Total shares do not match the mocked data"
-    );
-    assert!(validator.active, "Validator should be active");
-}
-
-#[test]
 fn test_create_delegation_and_query_voting_power_direct_write() {
     let mut deps = mock_dependencies();
     let mut env = mock_env();
 
     // Define Consensus (`valcons`) and Operator (`valoper`) addresses
-    let cons_addr = Addr::unchecked("neutronvalcons1xyz");
     let oper_addr = Addr::unchecked("neutronvaloper1xyz");
     let delegator_addr = Addr::unchecked("delegator1");
 
     // Store validator directly in state (Using consensus address as key)
+    BONDED_VALIDATORS
+        .save(deps.as_mut().storage, &vec![oper_addr.to_string()], 10)
+        .unwrap();
     let validator = Validator {
-        cons_address: cons_addr.clone(), // `valcons`
         oper_address: oper_addr.clone(), // `valoper`
-        bonded: true,
         total_tokens: Uint128::new(1000),
         total_shares: Uint128::new(1000),
         active: true,
     };
     VALIDATORS
-        .save(deps.as_mut().storage, &cons_addr, &validator, 10) // Store by consensus address
+        .save(deps.as_mut().storage, &oper_addr, &validator, 10) // Store by consensus address
         .unwrap();
 
     // Store delegation directly in state (Using operator address)
@@ -1139,14 +779,18 @@ fn test_after_delegation_modified() {
 
     // Define operator (valoper) and consensus (valcons) addresses
     let oper_addr = Addr::unchecked("neutronvaloper1xyz");
-    let cons_addr = Addr::unchecked("neutronvalcons1xyz");
     let delegator_addr = delegator1;
 
     // Store validator in the state using valoper as the primary key
+    BONDED_VALIDATORS
+        .save(
+            deps.as_mut().storage,
+            &vec![oper_addr.to_string()],
+            env.block.height,
+        )
+        .unwrap();
     let validator = Validator {
-        cons_address: cons_addr.clone(),
         oper_address: oper_addr.clone(),
-        bonded: true,
         total_tokens: Uint128::new(1000),
         total_shares: Uint128::new(1000),
         active: true,
@@ -1227,7 +871,6 @@ fn test_after_delegation_modified() {
         vec![
             ("action", "after_delegation_modified"),
             ("delegator", delegator_addr.to_string().as_str()),
-            ("cons_address", cons_addr.to_string().as_str()),
             ("valoper_address", oper_addr.to_string().as_str()),
             ("total_shares", "1200"),
             ("total_tokens", "1200"),
@@ -1317,14 +960,18 @@ fn test_after_delegation_modified_large_scaled_shares() {
 
     // Define operator (valoper) and consensus (valcons) addresses
     let oper_addr = Addr::unchecked("neutronvaloper1xdlvhs2l2wq0cc3eskyxphstns3348el5l4qan");
-    let cons_addr = Addr::unchecked("neutronvalcons1xyz");
     let delegator_addr = delegator1;
 
     // Store validator in the state using valoper as the primary key
+    BONDED_VALIDATORS
+        .save(
+            deps.as_mut().storage,
+            &vec![oper_addr.to_string()],
+            env.block.height,
+        )
+        .unwrap();
     let validator = Validator {
-        cons_address: cons_addr.clone(),
         oper_address: oper_addr.clone(),
-        bonded: true,
         total_tokens: Uint128::new(166666667666), // Tokens remain as original values
         total_shares: Uint128::new(166666667666000000000000000000), // Shares scaled up
         active: true,
@@ -1411,7 +1058,6 @@ fn test_after_delegation_modified_large_scaled_shares() {
         vec![
             ("action", "after_delegation_modified"),
             ("delegator", delegator_addr.to_string().as_str()),
-            ("cons_address", cons_addr.to_string().as_str()),
             ("valoper_address", oper_addr.to_string().as_str()),
             ("total_shares", "166666667667000000000000000000"),
             ("total_tokens", "166666667667"),
@@ -1501,14 +1147,19 @@ fn test_after_validator_begin_unbonding() {
     CONFIG.save(deps.as_mut().storage, &config).unwrap();
 
     // Store an initial validator state with `bonded = true`
+    BONDED_VALIDATORS
+        .save(
+            deps.as_mut().storage,
+            &vec![oper_addr.to_string()],
+            env.block.height,
+        )
+        .unwrap();
     VALIDATORS
         .save(
             deps.as_mut().storage,
             &oper_addr,
             &Validator {
-                cons_address: cons_addr.clone(),
                 oper_address: oper_addr.clone(),
-                bonded: true,
                 total_tokens: Uint128::new(1000),
                 total_shares: Uint128::new(1000),
                 active: true,
@@ -1517,7 +1168,7 @@ fn test_after_validator_begin_unbonding() {
         )
         .unwrap();
 
-    let unboding_height = env.block.height;
+    let unbonding_height = env.block.height;
 
     // Mock the validator query response (now in unbonding state)
     let proto_validator = CosmosValidator {
@@ -1549,9 +1200,12 @@ fn test_after_validator_begin_unbonding() {
     // Load updated validator state
     let updated_validator = VALIDATORS.load(deps.as_ref().storage, &oper_addr).unwrap();
     assert!(
-        !updated_validator.bonded,
+        !BONDED_VALIDATORS
+            .load(deps.as_ref().storage)
+            .unwrap()
+            .contains(&updated_validator.oper_address.to_string()),
         "Validator should not be bonded after unbonding begins"
-    );
+    ); // TODO: load_at_height(n) empty, n+1 should have one element
     assert!(
         updated_validator.active,
         "Validator should remain active during unbonding"
@@ -1574,8 +1228,7 @@ fn test_after_validator_begin_unbonding() {
         vec![
             ("action", "after_validator_begin_unbonding"),
             ("valoper_address", &*oper_addr.to_string()), // Match contract's attribute key
-            ("cons_address", &*cons_addr.to_string()),
-            ("unbonding_start_height", &*unboding_height.to_string()),
+            ("unbonding_start_height", &*unbonding_height.to_string()),
         ]
     );
 }

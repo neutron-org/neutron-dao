@@ -49,6 +49,9 @@ pub enum ContractError {
     #[error("Validator is not bonded: {validator}")]
     ValidatorNotBonded { validator: String },
 
+    #[error("Validator already bonded: {validator}")]
+    ValidatorAlreadyBonded { validator: String },
+
     #[error("Delegation not found for delegator: {delegator}, validator: {validator}")]
     DelegationNotFound {
         delegator: String,
