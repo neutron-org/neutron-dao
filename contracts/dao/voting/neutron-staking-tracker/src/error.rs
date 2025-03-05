@@ -100,6 +100,9 @@ pub enum ContractError {
     #[error("Generic overflow error occurred.")]
     OverflowError(#[from] OverflowError),
 
-    #[error("Invalid shares: {shares_str}")]
-    InvalidSharesFormat { shares_str: String },
+    #[error("Invalid shares: {shares_str}. Err: {err}")]
+    InvalidSharesFormat { shares_str: String, err: String },
+
+    #[error("Unsupported hook: {hook}")]
+    UnsupportedHook { hook: String },
 }
