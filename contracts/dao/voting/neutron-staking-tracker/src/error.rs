@@ -102,4 +102,7 @@ pub enum ContractError {
 
     #[error("Invalid shares: {shares_str}. Err: {err}")]
     InvalidSharesFormat { shares_str: String, err: String },
+
+    #[error("Unsupported hook: {hook}")]
+    UnsupportedHook { hook: String },
 }
