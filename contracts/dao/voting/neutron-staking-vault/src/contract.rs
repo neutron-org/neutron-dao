@@ -8,7 +8,7 @@ use cosmwasm_std::{
     StdResult, Uint128,
 };
 use cw2::set_contract_version;
-use cw_storage_plus::Bound;
+use cw_paginate::paginate_map_keys;
 use cwd_interface::voting::{
     BondingStatusResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
@@ -336,16 +336,13 @@ pub fn query_list_blacklisted_addresses(
     start_after: Option<Addr>,
     limit: Option<u32>,
 ) -> StdResult<Vec<Addr>> {
-    let start = start_after.map(Bound::exclusive); // Convert to exclusive Bound
-
-    let limit = limit.unwrap_or(10) as usize;
-
-    let blacklisted: Vec<Addr> = BLACKLISTED_ADDRESSES
-        .keys(deps.storage, start, None, Order::Ascending)
-        .take(limit)
-        .collect::<StdResult<Vec<_>>>()?;
-
-    Ok(blacklisted)
+    paginate_map_keys(
+        deps,
+        &BLACKLISTED_ADDRESSES,
+        start_after,
+        limit,
+        Order::Ascending,
+    )
 }
 
 pub fn query_is_address_blacklisted(deps: Deps, address: String) -> StdResult<bool> {
