@@ -2636,6 +2636,7 @@ version = "0.1.0"
 dependencies = [
  "cosmwasm-schema 2.2.1",
  "cosmwasm-std 2.2.1",
+ "thiserror",
 ]
 
 [[package]]
@@ -2658,6 +2659,8 @@ name = "neutron-staking-rewards-common"
 version = "0.1.0"
 dependencies = [
  "cosmwasm-schema 2.2.1",
+ "cosmwasm-std 2.2.1",
+ "thiserror",
 ]
 
 [[package]]

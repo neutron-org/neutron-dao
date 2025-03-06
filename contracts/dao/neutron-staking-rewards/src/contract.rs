@@ -4,14 +4,17 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 
-use crate::error::ContractError;
-use crate::error::ContractError::{DaoStakeChangeNotTracked, InvalidStakeDenom, Unauthorized};
-use crate::msg::{
+use crate::state::{CONFIG, STATE, USERS};
+use neutron_staking_info_proxy_common::msg::QueryMsg as InfoProxyQueryMsg;
+use neutron_staking_rewards_common::error::ContractError;
+use neutron_staking_rewards_common::error::ContractError::{
+    DaoStakeChangeNotTracked, InvalidStakeDenom, Unauthorized,
+};
+use neutron_staking_rewards_common::msg::ExecuteMsg;
+use neutron_staking_rewards_common::msg::{
     ConfigResponse, InstantiateMsg, MigrateMsg, QueryMsg, RewardsResponse, StateResponse,
 };
-use crate::state::{Config, State, UserInfo, CONFIG, STATE, USERS};
-use neutron_staking_info_proxy_common::query::QueryMsg as InfoProxyQueryMsg;
-use neutron_staking_rewards_common::msg::ExecuteMsg;
+use neutron_staking_rewards_common::types::{Config, State, UserInfo};
 
 const CONTRACT_NAME: &str = "crates.io:neutron-staking-rewards";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");

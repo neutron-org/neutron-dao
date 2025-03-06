@@ -3,7 +3,7 @@ use cosmwasm_std::{
     coin, from_json, to_json_binary, Binary, Coin, ContractResult, Empty, OwnedDeps, Querier,
     QuerierResult, QueryRequest, StdResult, SystemError, SystemResult, WasmQuery,
 };
-use neutron_staking_info_proxy_common::query::QueryMsg as InfoProxyQueryMsg;
+use neutron_staking_info_proxy_common::msg::QueryMsg as InfoProxyQueryMsg;
 use std::collections::HashMap;
 use std::marker::PhantomData;
 

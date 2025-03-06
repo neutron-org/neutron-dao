@@ -1,16 +1,18 @@
-use crate::error::ContractError;
-use crate::error::ContractError::{NoStakingRewardsContractSet, Unauthorized};
-use crate::msg::{InstantiateMsg, MigrateMsg};
-use crate::state::{Config, CONFIG, PROVIDERS};
+use crate::state::{CONFIG, PROVIDERS};
 use cosmwasm_std::{
     entry_point, to_json_binary, Addr, Coin, Deps, DepsMut, Env, MessageInfo, Order, Response,
     StdResult, Uint128, WasmMsg,
 };
 use cw2::set_contract_version;
-use neutron_staking_info_proxy_common::msg::ExecuteMsg;
-use neutron_staking_info_proxy_common::query::{
+use neutron_staking_info_proxy_common::error::ContractError;
+use neutron_staking_info_proxy_common::error::ContractError::{
+    NoStakingRewardsContractSet, Unauthorized,
+};
+use neutron_staking_info_proxy_common::msg::{
     ConfigResponse, ProviderStakeQueryMsg, ProvidersResponse, QueryMsg,
 };
+use neutron_staking_info_proxy_common::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg};
+use neutron_staking_info_proxy_common::types::Config;
 use neutron_staking_rewards_common::msg::ExecuteMsg as RewardsExecuteMsg;
 
 const CONTRACT_NAME: &str = "crates.io:neutron-staking-info-proxy-info-proxy";

@@ -16,7 +16,7 @@ use cw_multi_test::{custom_app, App, AppResponse, Contract, ContractWrapper, Exe
 use cwd_interface::voting::{
     InfoResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
-use neutron_staking_info_proxy_common::query::ProviderStakeQueryMsg;
+use neutron_staking_info_proxy_common::msg::ProviderStakeQueryMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 

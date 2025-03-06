@@ -1,6 +1,4 @@
 use crate::contract::{execute, instantiate, query};
-use crate::error::ContractError;
-use crate::msg::{InstantiateMsg, QueryMsg, RewardsResponse};
 use crate::state::CONFIG;
 use crate::testing::mock_querier::mock_dependencies;
 use cosmwasm_std::testing::MockApi;
@@ -9,7 +7,8 @@ use cosmwasm_std::{
     testing::{message_info, mock_env},
     BankMsg, CosmosMsg, Response, Uint128,
 };
-use neutron_staking_rewards_common::msg::ExecuteMsg;
+use neutron_staking_rewards_common::error::ContractError;
+use neutron_staking_rewards_common::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, RewardsResponse};
 
 // Helper to create a default instantiate message
 fn default_init_msg(api: MockApi) -> InstantiateMsg {

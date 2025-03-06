@@ -3,7 +3,7 @@ use cosmwasm_std::{
     from_json, to_json_binary, Binary, ContractResult, Empty, OwnedDeps, Querier, QuerierResult,
     QueryRequest, StdResult, SystemError, SystemResult, Uint128, WasmQuery,
 };
-use neutron_staking_info_proxy_common::query::ProviderStakeQueryMsg;
+use neutron_staking_info_proxy_common::msg::ProviderStakeQueryMsg;
 use std::marker::PhantomData;
 
 pub fn mock_dependencies() -> OwnedDeps<MockStorage, MockApi, WasmMockQuerier> {

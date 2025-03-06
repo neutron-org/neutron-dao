@@ -1,7 +1,5 @@
 use cosmwasm_schema::write_api;
-use neutron_staking_info_proxy::msg::{InstantiateMsg, MigrateMsg};
-use neutron_staking_info_proxy_common::query::QueryMsg;
-use neutron_staking_rewards_common::msg::ExecuteMsg;
+use neutron_staking_info_proxy_common::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 
 fn main() {
     write_api! {

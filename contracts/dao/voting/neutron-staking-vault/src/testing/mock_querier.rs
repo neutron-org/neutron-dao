@@ -6,7 +6,7 @@ use cosmwasm_std::{
     QuerierResult, QueryRequest, StdError, StdResult, SystemError, SystemResult, Uint128,
     WasmQuery,
 };
-use neutron_staking_info_proxy_common::query::ProviderStakeQueryMsg;
+use neutron_staking_info_proxy_common::msg::ProviderStakeQueryMsg;
 
 pub const MOCK_STAKING_TRACKER: &str = "neutronmockstakingtracker";
 

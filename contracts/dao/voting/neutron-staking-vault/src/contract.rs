@@ -12,7 +12,7 @@ use cw_paginate::paginate_map_keys;
 use cwd_interface::voting::{
     BondingStatusResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
-use neutron_staking_info_proxy_common::query::ProviderStakeQueryMsg;
+use neutron_staking_info_proxy_common::msg::ProviderStakeQueryMsg;
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-investors-vesting-vault";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");

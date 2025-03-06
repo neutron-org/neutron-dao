@@ -1,6 +1,4 @@
 use crate::contract::{execute, instantiate, query};
-use crate::error::ContractError::Unauthorized;
-use crate::msg::InstantiateMsg;
 use crate::state::{CONFIG, PROVIDERS};
 use crate::testing::mock_querier::{
     mock_dependencies, PROVIDER1, PROVIDER2, PROVIDER3, STAKING_REWARDS_CONTRACT,
@@ -11,7 +9,8 @@ use cosmwasm_std::{
     testing::{message_info, mock_env},
     to_json_binary, Addr, Coin, Order, SubMsg, Uint128, WasmMsg,
 };
-use neutron_staking_info_proxy_common::{msg::ExecuteMsg, query::QueryMsg};
+use neutron_staking_info_proxy_common::error::ContractError::Unauthorized;
+use neutron_staking_info_proxy_common::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use neutron_staking_rewards_common::msg::ExecuteMsg as RewardsExecuteMsg;
 
 // Helper to create a default instantiate message
