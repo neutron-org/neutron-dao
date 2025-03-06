@@ -1,6 +1,7 @@
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, ProxyInfoExecute, QueryMsg, SudoMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, SudoMsg};
 use crate::state::{Config, Delegation, Validator, CONFIG, DAO, DELEGATIONS, VALIDATORS};
+use neutron_staking_info_proxy_common::msg::ExecuteMsg as StakingInfoProxyExecuteMsg;
 use std::ops::Mul;
 
 #[cfg(not(feature = "library"))]
@@ -657,7 +658,7 @@ pub fn query_stake_at_height(
     height: Option<u64>,
 ) -> StdResult<Uint128> {
     let height = height.unwrap_or(env.block.height);
-    let addr = Addr::unchecked(address);
+    let addr = deps.api.addr_validate(&address)?;
     let stake = calculate_stake_at_height(deps, addr, height)?;
 
     Ok(stake)
@@ -735,7 +736,7 @@ fn with_update_stake_msg(
     if let Some(staking_proxy_info_contract_address) = config.staking_proxy_info_contract_address {
         let update_stake_msg = WasmMsg::Execute {
             contract_addr: staking_proxy_info_contract_address.to_string(),
-            msg: to_json_binary(&ProxyInfoExecute::UpdateStake {
+            msg: to_json_binary(&StakingInfoProxyExecuteMsg::UpdateStake {
                 user: user.to_string(),
             })?,
             funds: vec![],
@@ -757,7 +758,7 @@ fn with_slashing_event(resp: Response, deps: Deps, reason: u64) -> Result<Respon
         {
             let slashing_msg = WasmMsg::Execute {
                 contract_addr: staking_proxy_info_contract_address.to_string(),
-                msg: to_json_binary(&ProxyInfoExecute::Slashing {})?,
+                msg: to_json_binary(&StakingInfoProxyExecuteMsg::Slashing {})?,
                 funds: vec![],
             };
 

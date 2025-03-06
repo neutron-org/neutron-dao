@@ -1,5 +1,5 @@
 [package]
-authors = ["Dmitrii Kolupaegv <dmitry.kolupaev@hadronlabs.org>"]
+authors = ["Dmitrii Kolupaev <dmitry.kolupaev@hadronlabs.org>"]
 description = "Proxy staking updates from staking providers to the rewards contract"
 edition = "2021"
 name = "neutron-staking-info-proxy"
@@ -21,8 +21,5 @@ cw2 = "2.0.0"
 schemars = "0.8.8"
 serde = { version = "1.0.175", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0" }
-neutron-staking-rewards = { path = "../neutron-staking-rewards", features = ["library"] }
-
-[dev-dependencies]
-anyhow = "1.0.57"
-cw-multi-test = "0.16.5"
+neutron-staking-rewards-common = { path = "../../../packages/neutron-staking-rewards-common" }
+neutron-staking-info-proxy-common =  { path = "../../../packages/neutron-staking-info-proxy-common" }

@@ -2619,31 +2619,45 @@ dependencies = [
 name = "neutron-staking-info-proxy"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "cosmwasm-schema 2.2.1",
  "cosmwasm-std 2.2.1",
- "cw-multi-test",
  "cw-storage-plus 2.0.0",
  "cw2 2.0.0",
- "neutron-staking-rewards",
+ "neutron-staking-info-proxy-common",
+ "neutron-staking-rewards-common",
  "schemars",
  "serde",
  "thiserror",
 ]
 
 [[package]]
+name = "neutron-staking-info-proxy-common"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-schema 2.2.1",
+ "cosmwasm-std 2.2.1",
+]
+
+[[package]]
 name = "neutron-staking-rewards"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "cosmwasm-schema 2.2.1",
  "cosmwasm-std 2.2.1",
- "cw-multi-test",
  "cw-storage-plus 2.0.0",
  "cw2 2.0.0",
+ "neutron-staking-info-proxy-common",
+ "neutron-staking-rewards-common",
  "schemars",
  "serde",
  "thiserror",
+]
+
+[[package]]
+name = "neutron-staking-rewards-common"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-schema 2.2.1",
 ]
 
 [[package]]
@@ -2656,11 +2670,11 @@ dependencies = [
  "cw-storage-plus 2.0.0",
  "cw-utils 2.0.0",
  "cw2 2.0.0",
+ "neutron-staking-info-proxy-common",
  "neutron-std 5.1.2 (git+https://github.com/neutron-org/neutron-std)",
  "prost 0.12.6",
  "schemars",
  "serde",
- "serde_json",
  "thiserror",
 ]
 
@@ -2676,6 +2690,7 @@ dependencies = [
  "cw2 1.1.2",
  "cwd-interface",
  "cwd-macros",
+ "neutron-staking-info-proxy-common",
  "schemars",
  "serde",
  "thiserror",

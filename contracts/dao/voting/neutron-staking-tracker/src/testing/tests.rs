@@ -370,7 +370,7 @@ fn test_before_validator_slashed() {
         .unwrap();
 
     // Store delegation using `valoper_address`
-    let delegator_addr = Addr::unchecked("delegator1");
+    let delegator_addr = deps.api.addr_make("delegator1");
     let delegation = Delegation {
         delegator_address: delegator_addr.clone(),
         validator_address: oper_addr.clone(), // Uses `valoper_address`
@@ -495,8 +495,8 @@ fn test_before_validator_slashed_voting_power_drops() {
         .unwrap();
 
     // Store multiple delegations using operator address
-    let delegator1 = Addr::unchecked("delegator1");
-    let delegator2 = Addr::unchecked("delegator2");
+    let delegator1 = deps.api.addr_make("delegator1");
+    let delegator2 = deps.api.addr_make("delegator2");
 
     let delegation1 = Delegation {
         delegator_address: delegator1.clone(),
@@ -705,7 +705,7 @@ fn test_create_delegation_and_query_voting_power_direct_write() {
     // Define Consensus (`valcons`) and Operator (`valoper`) addresses
     let cons_addr = Addr::unchecked("neutronvalcons1xyz");
     let oper_addr = Addr::unchecked("neutronvaloper1xyz");
-    let delegator_addr = Addr::unchecked("delegator1");
+    let delegator_addr = deps.api.addr_make("delegator1");
 
     // Store validator directly in state (Using consensus address as key)
     let validator = Validator {
@@ -749,7 +749,6 @@ fn test_create_delegation_and_query_voting_power_direct_write() {
         query_res, delegation.shares,
         "Delegator voting power mismatch"
     );
-    // assert_eq!(query_res.height, env.block.height, "Unexpected query height");
 
     // Query **total voting power** at current height
     let total_power_res = query_total_stake_at_height(deps.as_ref(), env.clone(), None);
@@ -760,7 +759,6 @@ fn test_create_delegation_and_query_voting_power_direct_write() {
         total_power_response, validator.total_tokens,
         "Total voting power mismatch"
     );
-    // assert_eq!(total_power_response.height, env.block.height, "Unexpected query height");
 
     // Simulate passage of time (historical queries)
     let historical_height = 11;

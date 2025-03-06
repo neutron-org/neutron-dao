@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 
-use crate::msg::TrackerQueryMsg;
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage};
 use cosmwasm_std::{
     from_json, to_json_binary, Addr, Binary, ContractResult, Empty, OwnedDeps, Querier,
     QuerierResult, QueryRequest, StdError, StdResult, SystemError, SystemResult, Uint128,
     WasmQuery,
 };
+use neutron_staking_info_proxy_common::query::ProviderStakeQueryMsg;
 
 pub const MOCK_STAKING_TRACKER: &str = "neutronmockstakingtracker";
 
@@ -56,16 +56,16 @@ impl WasmMockQuerier {
             QueryRequest::Wasm(WasmQuery::Smart { contract_addr, msg }) => {
                 match contract_addr.as_str() {
                     MOCK_STAKING_TRACKER => {
-                        let q: TrackerQueryMsg = from_json(msg).unwrap();
+                        let q: ProviderStakeQueryMsg = from_json(msg).unwrap();
                         let resp: StdResult<Binary> = match q {
-                            TrackerQueryMsg::StakeAtHeight { address, height: _ } => {
+                            ProviderStakeQueryMsg::StakeAtHeight { address, height: _ } => {
                                 if let Some(stake) = self.stake.get(&address) {
                                     to_json_binary(stake)
                                 } else {
                                     Err(StdError::generic_err("no stake for user"))
                                 }
                             }
-                            TrackerQueryMsg::TotalStakeAtHeight { .. } => to_json_binary(
+                            ProviderStakeQueryMsg::TotalStakeAtHeight { .. } => to_json_binary(
                                 &self.stake.values().fold(Uint128::zero(), |acc, b| acc + b),
                             ),
                         };

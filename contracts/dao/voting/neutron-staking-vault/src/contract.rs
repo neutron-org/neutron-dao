@@ -1,3 +1,6 @@
+use crate::error::ContractError;
+use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
+use crate::state::{Config, BLACKLISTED_ADDRESSES, CONFIG, DAO};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -9,10 +12,7 @@ use cw_storage_plus::Bound;
 use cwd_interface::voting::{
     BondingStatusResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
-
-use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, TrackerQueryMsg};
-use crate::state::{Config, BLACKLISTED_ADDRESSES, CONFIG, DAO};
+use neutron_staking_info_proxy_common::query::ProviderStakeQueryMsg;
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-investors-vesting-vault";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -261,7 +261,7 @@ pub fn query_voting_power_at_height(
 
     let total_power: Uint128 = deps.querier.query_wasm_smart(
         config.staking_tracker_contract_address,
-        &TrackerQueryMsg::StakeAtHeight {
+        &ProviderStakeQueryMsg::StakeAtHeight {
             address,
             height: Some(height),
         },
@@ -283,7 +283,7 @@ pub fn query_total_power_at_height(
 
     let total_power: Uint128 = deps.querier.query_wasm_smart(
         &config.staking_tracker_contract_address,
-        &TrackerQueryMsg::TotalStakeAtHeight {
+        &ProviderStakeQueryMsg::TotalStakeAtHeight {
             height: Some(height),
         },
     )?;
@@ -294,7 +294,7 @@ pub fn query_total_power_at_height(
         let addr = blacklisted_addr?;
         let power: Uint128 = deps.querier.query_wasm_smart(
             &config.staking_tracker_contract_address,
-            &TrackerQueryMsg::StakeAtHeight {
+            &ProviderStakeQueryMsg::StakeAtHeight {
                 address: addr.to_string(),
                 height: Some(height),
             },

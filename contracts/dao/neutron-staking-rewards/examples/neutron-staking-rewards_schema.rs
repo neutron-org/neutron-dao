@@ -1,5 +1,6 @@
 use cosmwasm_schema::write_api;
-use neutron_staking_rewards::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
+use neutron_staking_rewards::msg::{InstantiateMsg, MigrateMsg, QueryMsg};
+use neutron_staking_rewards_common::msg::ExecuteMsg;
 
 fn main() {
     write_api! {

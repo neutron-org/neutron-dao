@@ -7,10 +7,11 @@ use cw2::set_contract_version;
 use crate::error::ContractError;
 use crate::error::ContractError::{DaoStakeChangeNotTracked, InvalidStakeDenom, Unauthorized};
 use crate::msg::{
-    ConfigResponse, ExecuteMsg, InfoProxyQuery, InstantiateMsg, MigrateMsg, QueryMsg,
-    RewardsResponse, StateResponse,
+    ConfigResponse, InstantiateMsg, MigrateMsg, QueryMsg, RewardsResponse, StateResponse,
 };
 use crate::state::{Config, State, UserInfo, CONFIG, STATE, USERS};
+use neutron_staking_info_proxy_common::query::QueryMsg as InfoProxyQueryMsg;
+use neutron_staking_rewards_common::msg::ExecuteMsg;
 
 const CONTRACT_NAME: &str = "crates.io:neutron-staking-rewards";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -514,7 +515,7 @@ fn safe_query_user_stake(
 ) -> Result<Coin, ContractError> {
     let res: StdResult<Coin> = deps.querier.query_wasm_smart(
         staking_info_proxy,
-        &InfoProxyQuery::UserStake {
+        &InfoProxyQueryMsg::UserStake {
             address: user_addr.to_string(),
             // increment height because staking_tracker contract returns (n-1) data on
             // query_voting_power_at_height(n) and query_total_power_at_height(n)

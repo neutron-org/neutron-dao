@@ -90,10 +90,3 @@ pub enum QueryMsg {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct MigrateMsg {}
-
-/// Messages to the staking-info-proxy contract.
-#[cw_serde]
-pub enum ProxyInfoExecute {
-    UpdateStake { user: String },
-    Slashing {},
-}

@@ -13,7 +13,7 @@ pub struct Config {
     /// Address of staking tracker contract address.
     /// Used for querying user's and total stake at height.
     pub staking_tracker_contract_address: Addr,
-    /// Contract's owner that can update config
+    /// Contract's owner that can update config and manage blacklist
     pub owner: Addr,
 }
 

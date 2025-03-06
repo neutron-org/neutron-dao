@@ -30,9 +30,9 @@ pub enum ExecuteMsg {
         description: Option<String>,
         name: Option<String>,
     },
-    /// Adds given `addresses` to blacklist.
+    /// Adds given `addresses` to blacklist. Allowed only for owner to do.
     AddToBlacklist { addresses: Vec<String> },
-    /// Removes given `addresses` from blacklist.
+    /// Removes given `addresses` from blacklist. Allowed only for owner to do.
     RemoveFromBlacklist {
         addresses: Vec<String>, // List of addresses to remove from the blacklist
     },
@@ -62,21 +62,3 @@ pub enum QueryMsg {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct MigrateMsg {}
-
-// Tracker query interface. Used to query user stakes.
-#[cw_serde]
-#[derive(QueryResponses)]
-pub enum TrackerQueryMsg {
-    /// Gets the staked (bonded) tokens for given `address` at given `height`.
-    /// Stake of unbonded validators does not count.
-    #[returns(Uint128)]
-    StakeAtHeight {
-        address: String,
-        height: Option<u64>,
-    },
-
-    /// Gets the total staked (bonded) tokens for given `height`.
-    /// Stake of unbonded validators does not count.
-    #[returns(Uint128)]
-    TotalStakeAtHeight { height: Option<u64> },
-}

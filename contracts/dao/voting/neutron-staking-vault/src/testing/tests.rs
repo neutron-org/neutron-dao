@@ -2,7 +2,7 @@ use crate::contract::{execute, query};
 use crate::contract::{migrate, CONTRACT_NAME, CONTRACT_VERSION};
 use crate::msg::ExecuteMsg::{AddToBlacklist, RemoveFromBlacklist};
 use crate::msg::QueryMsg::{IsAddressBlacklisted, TotalPowerAtHeight};
-use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, TrackerQueryMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::state::{Config, BLACKLISTED_ADDRESSES, CONFIG};
 use crate::testing::mock_querier;
 use crate::testing::mock_querier::{mock_dependencies_staking, MOCK_STAKING_TRACKER};
@@ -16,6 +16,7 @@ use cw_multi_test::{custom_app, App, AppResponse, Contract, ContractWrapper, Exe
 use cwd_interface::voting::{
     InfoResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
+use neutron_staking_info_proxy_common::query::ProviderStakeQueryMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -34,13 +35,13 @@ fn vault_contract() -> Box<dyn Contract<Empty>> {
     Box::new(contract)
 }
 
-fn staking_tracker_query(_deps: Deps, _env: Env, msg: TrackerQueryMsg) -> StdResult<Binary> {
+fn staking_tracker_query(_deps: Deps, _env: Env, msg: ProviderStakeQueryMsg) -> StdResult<Binary> {
     match msg {
-        TrackerQueryMsg::StakeAtHeight { .. } => {
+        ProviderStakeQueryMsg::StakeAtHeight { .. } => {
             let response = Uint128::from(10000u64);
             to_json_binary(&response)
         }
-        TrackerQueryMsg::TotalStakeAtHeight { .. } => {
+        ProviderStakeQueryMsg::TotalStakeAtHeight { .. } => {
             let response = Uint128::from(10000u64);
             to_json_binary(&response)
         }
@@ -55,7 +56,7 @@ fn staking_tracker_contract() -> Box<dyn Contract<Empty>> {
     let contract: ContractWrapper<
         EmptyMsg,
         EmptyMsg,
-        TrackerQueryMsg,
+        ProviderStakeQueryMsg,
         ContractError,
         ContractError,
         cosmwasm_std::StdError,

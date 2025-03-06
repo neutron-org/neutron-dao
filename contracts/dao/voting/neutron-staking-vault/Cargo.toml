@@ -25,6 +25,7 @@ serde = { version = "1.0.175", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0" }
 cwd-macros = { path = "../../../../packages/cwd-macros" }
 cwd-interface = { path = "../../../../packages/cwd-interface" }
+neutron-staking-info-proxy-common = { path = "../../../../packages/neutron-staking-info-proxy-common" }
 
 [dev-dependencies]
 cw-multi-test = "0.16.5"

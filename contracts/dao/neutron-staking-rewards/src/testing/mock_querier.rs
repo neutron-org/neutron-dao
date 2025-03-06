@@ -1,9 +1,9 @@
-use crate::msg::InfoProxyQuery;
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage};
 use cosmwasm_std::{
     coin, from_json, to_json_binary, Binary, Coin, ContractResult, Empty, OwnedDeps, Querier,
     QuerierResult, QueryRequest, StdResult, SystemError, SystemResult, WasmQuery,
 };
+use neutron_staking_info_proxy_common::query::QueryMsg as InfoProxyQueryMsg;
 use std::collections::HashMap;
 use std::marker::PhantomData;
 
@@ -57,9 +57,9 @@ impl WasmMockQuerier {
             QueryRequest::Wasm(WasmQuery::Smart { contract_addr, msg }) => {
                 match contract_addr.as_str() {
                     STAKING_INFO_PROXY_CONTRACT => {
-                        let q: InfoProxyQuery = from_json(msg).unwrap();
+                        let q: InfoProxyQueryMsg = from_json(msg).unwrap();
                         let resp: StdResult<Binary> = match q {
-                            InfoProxyQuery::UserStake { address, height } => {
+                            InfoProxyQueryMsg::UserStake { address, height } => {
                                 let balance_history = self.user_balances.get(&address).unwrap();
                                 let mut result = to_json_binary(&coin(0u128, "untrn"));
                                 for (historical_height, amount) in balance_history.iter().rev() {
@@ -70,6 +70,7 @@ impl WasmMockQuerier {
                                 }
                                 result
                             }
+                            _ => unimplemented!(),
                         };
                         SystemResult::Ok(ContractResult::from(resp))
                     }

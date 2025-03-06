@@ -1,6 +1,6 @@
 use crate::contract::{execute, instantiate, query};
 use crate::error::ContractError::Unauthorized;
-use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::msg::InstantiateMsg;
 use crate::state::{CONFIG, PROVIDERS};
 use crate::testing::mock_querier::{
     mock_dependencies, PROVIDER1, PROVIDER2, PROVIDER3, STAKING_REWARDS_CONTRACT,
@@ -11,9 +11,8 @@ use cosmwasm_std::{
     testing::{message_info, mock_env},
     to_json_binary, Addr, Coin, Order, SubMsg, Uint128, WasmMsg,
 };
-use neutron_staking_rewards::msg::ExecuteMsg::{
-    Slashing as RewardsMsgSlashing, UpdateStake as RewardsMsgUpdateStake,
-};
+use neutron_staking_info_proxy_common::{msg::ExecuteMsg, query::QueryMsg};
+use neutron_staking_rewards_common::msg::ExecuteMsg as RewardsExecuteMsg;
 
 // Helper to create a default instantiate message
 fn default_init_msg(api: MockApi) -> InstantiateMsg {
@@ -153,7 +152,7 @@ fn test_update_stake() {
 
     let expected = WasmMsg::Execute {
         contract_addr: STAKING_REWARDS_CONTRACT.to_string(),
-        msg: to_json_binary(&RewardsMsgUpdateStake {
+        msg: to_json_binary(&RewardsExecuteMsg::UpdateStake {
             user: deps.api.addr_make("user1").to_string(),
         })
         .unwrap(),
@@ -201,7 +200,7 @@ fn test_slashing() {
 
     let expected = WasmMsg::Execute {
         contract_addr: STAKING_REWARDS_CONTRACT.to_string(),
-        msg: to_json_binary(&RewardsMsgSlashing {}).unwrap(),
+        msg: to_json_binary(&RewardsExecuteMsg::Slashing {}).unwrap(),
         funds: vec![],
     };
     assert_eq!(resp.messages, vec![SubMsg::reply_never(expected)])

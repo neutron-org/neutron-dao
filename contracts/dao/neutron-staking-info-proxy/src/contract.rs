@@ -1,20 +1,19 @@
 use crate::error::ContractError;
 use crate::error::ContractError::{NoStakingRewardsContractSet, Unauthorized};
-use crate::msg::{
-    ConfigResponse, ExecuteMsg, InstantiateMsg, MigrateMsg, ProviderStakeQuery, ProvidersResponse,
-    QueryMsg,
-};
+use crate::msg::{InstantiateMsg, MigrateMsg};
 use crate::state::{Config, CONFIG, PROVIDERS};
 use cosmwasm_std::{
     entry_point, to_json_binary, Addr, Coin, Deps, DepsMut, Env, MessageInfo, Order, Response,
     StdResult, Uint128, WasmMsg,
 };
 use cw2::set_contract_version;
-use neutron_staking_rewards::msg::ExecuteMsg::{
-    Slashing as RewardsMsgSlashing, UpdateStake as RewardsMsgUpdateStake,
+use neutron_staking_info_proxy_common::msg::ExecuteMsg;
+use neutron_staking_info_proxy_common::query::{
+    ConfigResponse, ProviderStakeQueryMsg, ProvidersResponse, QueryMsg,
 };
+use neutron_staking_rewards_common::msg::ExecuteMsg as RewardsExecuteMsg;
 
-const CONTRACT_NAME: &str = "crates.io:neutron-staking-info-proxy";
+const CONTRACT_NAME: &str = "crates.io:neutron-staking-info-proxy-info-proxy";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[entry_point]
@@ -158,7 +157,7 @@ fn update_stake(
             .staking_rewards
             .ok_or(NoStakingRewardsContractSet {})?
             .to_string(),
-        msg: to_json_binary(&RewardsMsgUpdateStake {
+        msg: to_json_binary(&RewardsExecuteMsg::UpdateStake {
             user: user.to_string(),
         })?,
         funds: vec![],
@@ -184,7 +183,7 @@ fn slashing(deps: DepsMut, _: Env, info: MessageInfo) -> Result<Response, Contra
             .staking_rewards
             .ok_or(NoStakingRewardsContractSet {})?
             .to_string(),
-        msg: to_json_binary(&RewardsMsgSlashing {})?,
+        msg: to_json_binary(&RewardsExecuteMsg::Slashing {})?,
         funds: vec![],
     };
 
@@ -269,8 +268,8 @@ fn query_stake(
 ) -> Result<Uint128, ContractError> {
     let user_stake: Uint128 = deps.querier.query_wasm_smart(
         provider,
-        &ProviderStakeQuery::StakeAtHeight {
-            address,
+        &ProviderStakeQueryMsg::StakeAtHeight {
+            address: address.to_string(),
             height: Some(height),
         },
     )?;

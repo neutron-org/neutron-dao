@@ -1,0 +1,11 @@
+[package]
+name = "neutron-staking-rewards-common"
+description = "shared neutron-staking-rewards interface"
+version = "0.1.0"
+authors = []
+edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/neutron/neutron-dao"
+
+[dependencies]
+cosmwasm-schema = { version = "2.2.0" }
