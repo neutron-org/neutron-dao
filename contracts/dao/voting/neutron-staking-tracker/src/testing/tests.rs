@@ -455,7 +455,7 @@ fn test_before_validator_slashed() {
 }
 
 #[test]
-fn test_before_validator_slashed_voting_power_drops() {
+fn test_before_validator_slashed_stake_drops() {
     let mut deps = dependencies();
     let env = mock_env();
 
@@ -528,11 +528,9 @@ fn test_before_validator_slashed_voting_power_drops() {
 
     let slashing_fraction = Decimal256::percent(10); // 10% slashing
 
-    // Calculate voting power BEFORE slashing
-    let voting_power_before_1 =
-        delegation1.shares * validator.total_tokens / validator.total_shares;
-    let voting_power_before_2 =
-        delegation2.shares * validator.total_tokens / validator.total_shares;
+    // Calculate stake BEFORE slashing
+    let stake_before_1 = delegation1.shares * validator.total_tokens / validator.total_shares;
+    let stake_before_2 = delegation2.shares * validator.total_tokens / validator.total_shares;
 
     // Mock validator query to reflect slashed tokens
     let proto_validator = CosmosValidator {
@@ -603,20 +601,20 @@ fn test_before_validator_slashed_voting_power_drops() {
         "Validator total tokens do not match expected value after slashing!"
     );
 
-    // Calculate voting power AFTER slashing
-    let voting_power_after_1 = updated_delegation1.shares * updated_validator.total_tokens
+    // Calculate stake AFTER slashing
+    let stake_after_1 = updated_delegation1.shares * updated_validator.total_tokens
         / updated_validator.total_shares;
-    let voting_power_after_2 = updated_delegation2.shares * updated_validator.total_tokens
+    let stake_after_2 = updated_delegation2.shares * updated_validator.total_tokens
         / updated_validator.total_shares;
 
-    // Ensure delegators' voting power decreased
+    // Ensure delegators' stake decreased
     assert!(
-        voting_power_after_1 < voting_power_before_1,
-        "Delegator 1's voting power did not decrease!"
+        stake_after_1 < stake_before_1,
+        "Delegator 1's stake did not decrease!"
     );
     assert!(
-        voting_power_after_2 < voting_power_before_2,
-        "Delegator 2's voting power did not decrease!"
+        stake_after_2 < stake_before_2,
+        "Delegator 2's stake did not decrease!"
     );
 
     // Validate response attributes
@@ -698,7 +696,7 @@ fn test_after_validator_created_with_mock_query() {
 }
 
 #[test]
-fn test_create_delegation_and_query_voting_power_direct_write() {
+fn test_create_delegation_and_query_stake_direct_write() {
     let mut deps = mock_dependencies();
     let mut env = mock_env();
 
@@ -735,36 +733,33 @@ fn test_create_delegation_and_query_voting_power_direct_write() {
         )
         .unwrap();
 
-    // 🔍 Query **current** voting power
+    // 🔍 Query **current** stake
     let query_response = query_stake_at_height(
         deps.as_ref(),
         env.clone(),
         delegator_addr.to_string(),
         Some(env.block.height + 1), // Latest height
     );
-    assert!(query_response.is_ok(), "Failed to query voting power");
+    assert!(query_response.is_ok(), "Failed to query stake");
 
     let query_res = query_response.unwrap();
-    assert_eq!(
-        query_res, delegation.shares,
-        "Delegator voting power mismatch"
-    );
+    assert_eq!(query_res, delegation.shares, "Delegator stake mismatch");
 
-    // Query **total voting power** at current height
-    let total_power_res = query_total_stake_at_height(deps.as_ref(), env.clone(), None);
-    assert!(total_power_res.is_ok(), "Failed to query total power");
+    // Query **total stake** at current height
+    let total_stake_res = query_total_stake_at_height(deps.as_ref(), env.clone(), None);
+    assert!(total_stake_res.is_ok(), "Failed to query total stake");
 
-    let total_power_response = total_power_res.unwrap();
+    let total_stake_response = total_stake_res.unwrap();
     assert_eq!(
-        total_power_response, validator.total_tokens,
-        "Total voting power mismatch"
+        total_stake_response, validator.total_tokens,
+        "Total stake mismatch"
     );
 
     // Simulate passage of time (historical queries)
     let historical_height = 11;
     env.block.height = historical_height;
 
-    // Query **historical** voting power
+    // Query **historical** stake
     let historical_vp_res = query_stake_at_height(
         deps.as_ref(),
         env.clone(),
@@ -773,30 +768,29 @@ fn test_create_delegation_and_query_voting_power_direct_write() {
     );
     assert!(
         historical_vp_res.is_ok(),
-        "Failed to query historical voting power"
+        "Failed to query historical stake"
     );
 
     let historical_vp = historical_vp_res.unwrap();
     assert_eq!(
         historical_vp, delegation.shares,
-        "Historical voting power mismatch"
+        "Historical stake mismatch"
     );
     // assert_eq!(historical_vp.height, historical_height, "Unexpected historical height");
 
-    // 🔍 Query **historical** total power
-    let historical_total_power_res =
+    // 🔍 Query **historical** total stake
+    let historical_total_stake_res =
         query_total_stake_at_height(deps.as_ref(), env.clone(), Some(historical_height));
     assert!(
-        historical_total_power_res.is_ok(),
-        "Failed to query historical total power"
+        historical_total_stake_res.is_ok(),
+        "Failed to query historical total stake"
     );
 
-    let historical_total_power = historical_total_power_res.unwrap();
+    let historical_total_stake = historical_total_stake_res.unwrap();
     assert_eq!(
-        historical_total_power, validator.total_tokens,
-        "Historical total power mismatch"
+        historical_total_stake, validator.total_tokens,
+        "Historical total stake mismatch"
     );
-    // assert_eq!(historical_total_power.height, historical_height, "Unexpected historical height");
 }
 
 #[test]
@@ -919,12 +913,11 @@ fn test_after_delegation_modified() {
 
     env.block.height += 5;
 
-    let total_voting_power = query_total_stake_at_height(deps.as_ref(), env.clone(), None).unwrap();
-    assert_eq!(total_voting_power, Uint128::new(1200));
-    let voting_power =
-        query_stake_at_height(deps.as_ref(), env.clone(), delegator_addr.to_string(), None)
-            .unwrap();
-    assert_eq!(voting_power, Uint128::new(200));
+    let total_stake = query_total_stake_at_height(deps.as_ref(), env.clone(), None).unwrap();
+    assert_eq!(total_stake, Uint128::new(1200));
+    let stake = query_stake_at_height(deps.as_ref(), env.clone(), delegator_addr.to_string(), None)
+        .unwrap();
+    assert_eq!(stake, Uint128::new(200));
 
     env.block.height += 5;
 
@@ -970,12 +963,11 @@ fn test_after_delegation_modified() {
 
     env.block.height += 5;
 
-    let total_voting_power = query_total_stake_at_height(deps.as_ref(), env.clone(), None).unwrap();
-    assert_eq!(total_voting_power, Uint128::new(1100));
-    let voting_power =
-        query_stake_at_height(deps.as_ref(), env.clone(), delegator_addr.to_string(), None)
-            .unwrap();
-    assert_eq!(voting_power, Uint128::new(100));
+    let total_stake_2 = query_total_stake_at_height(deps.as_ref(), env.clone(), None).unwrap();
+    assert_eq!(total_stake_2, Uint128::new(1100));
+    let stake = query_stake_at_height(deps.as_ref(), env.clone(), delegator_addr.to_string(), None)
+        .unwrap();
+    assert_eq!(stake, Uint128::new(100));
 }
 
 #[test]
@@ -1104,12 +1096,11 @@ fn test_after_delegation_modified_large_scaled_shares() {
 
     env.block.height += 5;
 
-    let total_voting_power = query_total_stake_at_height(deps.as_ref(), env.clone(), None).unwrap();
-    assert_eq!(total_voting_power, Uint128::new(166666667667));
-    let voting_power =
-        query_stake_at_height(deps.as_ref(), env.clone(), delegator_addr.to_string(), None)
-            .unwrap();
-    assert_eq!(voting_power, Uint128::new(166666667667));
+    let total_stake = query_total_stake_at_height(deps.as_ref(), env.clone(), None).unwrap();
+    assert_eq!(total_stake, Uint128::new(166666667667));
+    let stake = query_stake_at_height(deps.as_ref(), env.clone(), delegator_addr.to_string(), None)
+        .unwrap();
+    assert_eq!(stake, Uint128::new(166666667667));
 
     env.block.height += 5;
 
@@ -1158,12 +1149,11 @@ fn test_after_delegation_modified_large_scaled_shares() {
 
     env.block.height += 5;
 
-    let total_voting_power = query_total_stake_at_height(deps.as_ref(), env.clone(), None).unwrap();
-    assert_eq!(total_voting_power, Uint128::new(166666667666));
-    let voting_power =
-        query_stake_at_height(deps.as_ref(), env.clone(), delegator_addr.to_string(), None)
-            .unwrap();
-    assert_eq!(voting_power, Uint128::new(166666667666));
+    let total_stake = query_total_stake_at_height(deps.as_ref(), env.clone(), None).unwrap();
+    assert_eq!(total_stake, Uint128::new(166666667666));
+    let stake = query_stake_at_height(deps.as_ref(), env.clone(), delegator_addr.to_string(), None)
+        .unwrap();
+    assert_eq!(stake, Uint128::new(166666667666));
 }
 
 #[test]

@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 pub struct InstantiateMsg {
-    // Staking watcher contract.
+    // Staking tracker contract.
     pub staking_tracker_contract_address: String,
     // Description contains information that characterizes the vault.
     pub description: String,
