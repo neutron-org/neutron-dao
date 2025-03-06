@@ -18,7 +18,7 @@
       "type": "string"
     },
     "owner": {
-      "description": "Contract's owner that can update config",
+      "description": "Contract's owner that can update config and manage blacklist",
       "allOf": [
         {
           "$ref": "#/definitions/Addr"

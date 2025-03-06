@@ -3,7 +3,7 @@
   "title": "ExecuteMsg",
   "oneOf": [
     {
-      "description": "Updates the contract configuration. Must be called by the `owner`.",
+      "description": "Update contract configuration. Must be called by `owner`.",
       "type": "object",
       "required": [
         "update_config"
@@ -12,6 +12,22 @@
         "update_config": {
           "type": "object",
           "properties": {
+            "annual_reward_rate_bps": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint64",
+              "minimum": 0.0
+            },
+            "blocks_per_year": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint64",
+              "minimum": 0.0
+            },
             "owner": {
               "type": [
                 "string",
@@ -24,7 +40,7 @@
                 "null"
               ]
             },
-            "staking_rewards": {
+            "staking_info_proxy": {
               "type": [
                 "string",
                 "null"
@@ -37,32 +53,7 @@
       "additionalProperties": false
     },
     {
-      "description": "Updates staking info providers. Must be called by the `owner`.",
-      "type": "object",
-      "required": [
-        "update_providers"
-      ],
-      "properties": {
-        "update_providers": {
-          "type": "object",
-          "required": [
-            "providers"
-          ],
-          "properties": {
-            "providers": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            }
-          },
-          "additionalProperties": false
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "description": "Proxies stake updates from designated providers to the staking rewards contract. Must be called by one of the `PROVIDERS`.",
+      "description": "Called by the (authorized) Staking Info Proxy whenever a user’s stake changes.",
       "type": "object",
       "required": [
         "update_stake"
@@ -84,7 +75,7 @@
       "additionalProperties": false
     },
     {
-      "description": "Proxies slashing evens from designated providers to the staking rewards contract. Must be called by one of the `PROVIDERS`.",
+      "description": "Called by the (authorized) Staking Info Proxy whenever a validator gets slashed.",
       "type": "object",
       "required": [
         "slashing"
@@ -92,6 +83,28 @@
       "properties": {
         "slashing": {
           "type": "object",
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Called by a user to claim their accrued rewards. Allows to specify an optional address to which the rewards should be sent.",
+      "type": "object",
+      "required": [
+        "claim_rewards"
+      ],
+      "properties": {
+        "claim_rewards": {
+          "type": "object",
+          "properties": {
+            "to_address": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
           "additionalProperties": false
         }
       },

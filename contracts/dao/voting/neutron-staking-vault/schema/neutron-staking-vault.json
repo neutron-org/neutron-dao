@@ -71,7 +71,7 @@
         "additionalProperties": false
       },
       {
-        "description": "Adds given `addresses` to blacklist.",
+        "description": "Adds given `addresses` to blacklist. Allowed only for owner to do.",
         "type": "object",
         "required": [
           "add_to_blacklist"
@@ -95,7 +95,7 @@
         "additionalProperties": false
       },
       {
-        "description": "Removes given `addresses` from blacklist.",
+        "description": "Removes given `addresses` from blacklist. Allowed only for owner to do.",
         "type": "object",
         "required": [
           "remove_from_blacklist"
@@ -453,7 +453,7 @@
           "type": "string"
         },
         "owner": {
-          "description": "Contract's owner that can update config",
+          "description": "Contract's owner that can update config and manage blacklist",
           "allOf": [
             {
               "$ref": "#/definitions/Addr"
