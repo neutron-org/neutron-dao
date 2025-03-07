@@ -27,7 +27,7 @@ pub enum ContractError {
     #[error("Unauthorized action.")]
     Unauthorized {},
 
-    #[error("Validator not found: {address}")]
+    #[error("Validator not found in staking module: {address}")]
     ValidatorNotFound { address: String },
 
     #[error(transparent)]
