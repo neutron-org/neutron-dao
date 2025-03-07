@@ -1,8 +1,8 @@
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, ProxyInfoExecute, QueryMsg, SudoMsg};
 use crate::state::{
-    Config, Delegation, Validator, BLACKLISTED_ADDRESSES, BONDED_VALIDATORS, CONFIG, DAO,
-    DELEGATIONS, VALIDATORS,
+    Config, Delegation, Validator, BLACKLISTED_ADDRESSES, BONDED_VALIDATORS, CONFIG, DELEGATIONS,
+    VALIDATORS,
 };
 use std::collections::HashSet;
 use std::ops::Mul;
@@ -11,7 +11,7 @@ use std::ops::Mul;
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_json_binary, Addr, Binary, Decimal256, Deps, DepsMut, Env, MessageInfo, Order, Reply,
-    Response, StdError, StdResult, SubMsg, Uint128, Uint256, WasmMsg,
+    Response, StdResult, SubMsg, Uint128, Uint256, WasmMsg,
 };
 use cw2::set_contract_version;
 use cw_storage_plus::Bound;
@@ -33,7 +33,7 @@ const REPLY_ON_BEFORE_DELEGATION_REMOVED_ERROR_STAKING_PROXY_ID: u64 = 7;
 pub fn instantiate(
     deps: DepsMut,
     env: Env,
-    info: MessageInfo,
+    _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
@@ -52,7 +52,6 @@ pub fn instantiate(
     };
     config.validate()?;
     CONFIG.save(deps.storage, &config)?;
-    DAO.save(deps.storage, &info.sender)?;
     BONDED_VALIDATORS.save(deps.storage, &Vec::new(), env.block.height)?;
 
     Ok(Response::new()
@@ -247,7 +246,6 @@ pub(crate) fn after_validator_bonded(
             oper_address: valoper_addr.clone(),
             total_tokens: Uint128::zero(),
             total_shares: Uint128::zero(),
-            active: true,
         });
 
     // Update validator state
@@ -375,8 +373,9 @@ pub(crate) fn after_delegation_modified(
                 .delegation_response
                 .and_then(|resp| resp.delegation)
                 .map(|del| {
-                    Uint128::from_str(&del.shares).map_err(|_| ContractError::InvalidSharesFormat {
+                    Uint128::from_str(&del.shares).map_err(|e| ContractError::InvalidSharesFormat {
                         shares_str: del.shares.clone(),
+                        err: e.to_string(),
                     })
                 })
         })
@@ -649,29 +648,6 @@ pub fn query_total_power_at_height(
     let net_power = total_power.checked_sub(blacklisted_power)?;
 
     Ok(net_power)
-}
-
-pub fn query_dao(deps: Deps) -> StdResult<Binary> {
-    let dao = DAO.load(deps.storage)?;
-    to_json_binary(&dao)
-}
-
-pub fn query_name(deps: Deps) -> StdResult<Binary> {
-    let config = CONFIG.load(deps.storage)?;
-    to_json_binary(&config.name)
-}
-
-pub fn query_description(deps: Deps) -> StdResult<Binary> {
-    let config = CONFIG.load(deps.storage)?;
-    to_json_binary(&config.description)
-}
-
-pub fn query_list_bonders(
-    _deps: Deps,
-    _start_after: Option<String>,
-    _limit: Option<u32>,
-) -> StdResult<Binary> {
-    Err(StdError::generic_err("Bonding is disabled"))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

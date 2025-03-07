@@ -6,7 +6,7 @@ use crate::contract::{
 };
 use crate::msg::{ExecuteMsg, InstantiateMsg};
 use crate::state::{
-    Config, Delegation, Validator, BONDED_VALIDATORS, CONFIG, DAO, DELEGATIONS, VALIDATORS,
+    Config, Delegation, Validator, BONDED_VALIDATORS, CONFIG, DELEGATIONS, VALIDATORS,
 };
 use crate::testing::mock_querier::mock_dependencies as dependencies;
 use cosmwasm_std::testing::message_info;
@@ -74,11 +74,7 @@ fn test_instantiate() {
     let config = CONFIG.load(&deps.storage).unwrap();
     assert_eq!(config.name, "Test DAO");
     assert_eq!(config.description, "A test DAO contract");
-    assert_eq!(config.owner, valid_neutron_address); //  Fix assertion
-
-    // Validate DAO storage
-    let dao = DAO.load(&deps.storage).unwrap();
-    assert_eq!(dao, valid_neutron_address); //  Fix assertion
+    assert_eq!(config.owner, valid_neutron_address);
 }
 
 #[test]
@@ -203,7 +199,6 @@ fn test_after_validator_bonded_with_mock_query() {
                 oper_address: oper_addr.clone(),
                 total_tokens: Uint128::zero(),
                 total_shares: Uint128::zero(),
-                active: true,
             },
             env.block.height,
         )
@@ -241,8 +236,7 @@ fn test_after_validator_bonded_with_mock_query() {
     assert!(BONDED_VALIDATORS
         .load(deps.as_ref().storage)
         .unwrap()
-        .contains(&updated_validator.oper_address.to_string())); // TODO: load_at_height(n) empty, n+1 should have one element
-    assert!(updated_validator.active, "Validator should remain active");
+        .contains(&updated_validator.oper_address.to_string()));
     assert_eq!(updated_validator.total_tokens, Uint128::new(1000));
     assert_eq!(updated_validator.total_shares, Uint128::new(1000));
 
@@ -286,7 +280,6 @@ fn test_before_validator_slashed_with_self_bonded_only() {
         oper_address: oper_addr.clone(),
         total_tokens: Uint128::new(1000), // Self-bonded tokens
         total_shares: Uint128::new(1000), // No external delegators
-        active: true,
     };
 
     // Store validator state by operator address
@@ -366,7 +359,6 @@ fn test_before_validator_slashed() {
         oper_address: oper_addr.clone(),
         total_tokens: Uint128::new(500),
         total_shares: Uint128::new(500), // Shares remain constant after slashing
-        active: true,
     };
     VALIDATORS
         .save(
@@ -492,7 +484,6 @@ fn test_before_validator_slashed_voting_power_drops() {
         oper_address: oper_addr.clone(),
         total_tokens: Uint128::new(1000),
         total_shares: Uint128::new(1000),
-        active: true,
     };
 
     // Store validator using operator address as the key
@@ -670,7 +661,6 @@ fn test_create_delegation_and_query_voting_power_direct_write() {
         oper_address: oper_addr.clone(), // `valoper`
         total_tokens: Uint128::new(1000),
         total_shares: Uint128::new(1000),
-        active: true,
     };
     VALIDATORS
         .save(deps.as_mut().storage, &oper_addr, &validator, 10) // Store by consensus address
@@ -793,7 +783,6 @@ fn test_after_delegation_modified() {
         oper_address: oper_addr.clone(),
         total_tokens: Uint128::new(1000),
         total_shares: Uint128::new(1000),
-        active: true,
     };
     VALIDATORS
         .save(
@@ -974,7 +963,6 @@ fn test_after_delegation_modified_large_scaled_shares() {
         oper_address: oper_addr.clone(),
         total_tokens: Uint128::new(166666667666), // Tokens remain as original values
         total_shares: Uint128::new(166666667666000000000000000000), // Shares scaled up
-        active: true,
     };
     VALIDATORS
         .save(
@@ -1162,7 +1150,6 @@ fn test_after_validator_begin_unbonding() {
                 oper_address: oper_addr.clone(),
                 total_tokens: Uint128::new(1000),
                 total_shares: Uint128::new(1000),
-                active: true,
             },
             env.block.height,
         )
@@ -1217,10 +1204,6 @@ fn test_after_validator_begin_unbonding() {
             .unwrap()
             .contains(&updated_validator.oper_address.to_string()),
         "Validator should bonded before unbonding begins"
-    );
-    assert!(
-        updated_validator.active,
-        "Validator should remain active during unbonding"
     );
     assert_eq!(
         updated_validator.total_tokens,
