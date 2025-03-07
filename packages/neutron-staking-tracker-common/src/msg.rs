@@ -31,21 +31,12 @@ pub enum SudoMsg {
         val_addr: String,
     },
 
-    AfterValidatorRemoved {
-        cons_addr: String,
-        val_addr: String,
-    },
-
     AfterValidatorCreated {
         val_addr: String,
     },
 
     AfterValidatorBeginUnbonding {
         cons_addr: String,
-        val_addr: String,
-    },
-
-    BeforeValidatorModified {
         val_addr: String,
     },
 

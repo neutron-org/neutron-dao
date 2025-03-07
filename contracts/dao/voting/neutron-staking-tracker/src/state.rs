@@ -34,6 +34,3 @@ pub const DELEGATIONS: SnapshotMap<(&Addr, &Addr), Delegation> = SnapshotMap::ne
 ///
 /// Contains metadata such as the contract's **name, description, owner, and token denom**.
 pub const CONFIG: Item<Config> = Item::new("config");
-
-/// Stores the **DAO address** responsible for managing governance decisions.
-pub const DAO: Item<Addr> = Item::new("dao");

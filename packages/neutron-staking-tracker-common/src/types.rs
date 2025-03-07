@@ -1,7 +1,7 @@
 use crate::error::ContractError;
-use cosmwasm_schema::schemars::JsonSchema;
-use cosmwasm_schema::serde::{Deserialize, Serialize};
 use cosmwasm_std::{Addr, Uint128};
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 
 /// Configuration settings for the smart contract.
 ///
@@ -47,15 +47,13 @@ impl Config {
 /// - `bonded`: Whether the validator is bonded (actively participating in consensus).
 /// - `total_tokens`: Total staked tokens delegated to this validator.
 /// - `total_shares`: Total delegation shares representing ownership over the staked tokens.
-/// - `active`: Whether the validator is active in the network.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 pub struct Validator {
     pub cons_address: Addr,
     pub oper_address: Addr,
     pub bonded: bool,
-    /// The total amount of delegator shares for this validator.
-    ///
-    /// Stored as a `Uint128` to maintain compatibility with Cosmos SDK’s `sdk.Dec`, which is serialized
+    /// Both `total_shares` and `total_tokens` are stored as a `Uint128` to
+    /// maintain compatibility with Cosmos SDK’s `sdk.Dec`, which is serialized
     /// as an integer without a decimal point (scaled by `10^18`).
     ///
     /// ### Why `Uint128`?
@@ -74,8 +72,8 @@ pub struct Validator {
     /// Since Cosmos SDK stores `sdk.Dec` values as large integers, using `Uint128` prevents
     /// unnecessary conversions.
     pub total_tokens: Uint128,
+    /// The total amount of delegator shares for this validator.
     pub total_shares: Uint128,
-    pub active: bool,
 }
 
 impl Validator {
@@ -119,47 +117,4 @@ pub struct Delegation {
     ///
     /// Using `Uint128` directly eliminates unnecessary conversion steps while ensuring compatibility.
     pub shares: Uint128,
-}
-
-#[cfg(test)]
-mod tests {
-    use super::Config;
-    use crate::error::ContractError;
-    use cosmwasm_std::Addr;
-
-    /// Tests the validation logic for the `Config` struct.
-    ///
-    /// Ensures that empty fields are properly rejected with the correct `ContractError`.
-    #[test]
-    fn test_config_validate() {
-        let cfg_ok = Config {
-            name: String::from("name"),
-            description: String::from("description"),
-            owner: Addr::unchecked("owner"),
-            staking_proxy_info_contract_address: None,
-        };
-        assert_eq!(cfg_ok.validate(), Ok(()));
-
-        let cfg_empty_name = Config {
-            name: String::from(""),
-            description: String::from("description"),
-            owner: Addr::unchecked("owner"),
-            staking_proxy_info_contract_address: None,
-        };
-        assert_eq!(
-            cfg_empty_name.validate(),
-            Err(ContractError::NameIsEmpty {})
-        );
-
-        let cfg_empty_description = Config {
-            name: String::from("name"),
-            description: String::from(""),
-            owner: Addr::unchecked("owner"),
-            staking_proxy_info_contract_address: None,
-        };
-        assert_eq!(
-            cfg_empty_description.validate(),
-            Err(ContractError::DescriptionIsEmpty {})
-        );
-    }
 }

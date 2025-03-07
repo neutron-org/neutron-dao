@@ -4,7 +4,7 @@ use crate::contract::{
     after_validator_created, before_validator_slashed, execute, instantiate, query_stake_at_height,
     query_total_stake_at_height,
 };
-use crate::state::{CONFIG, DAO, DELEGATIONS, VALIDATORS};
+use crate::state::{CONFIG, DELEGATIONS, VALIDATORS};
 use crate::testing::mock_querier::mock_dependencies as dependencies;
 use cosmwasm_std::testing::message_info;
 use cosmwasm_std::{
@@ -73,11 +73,7 @@ fn test_instantiate() {
     let config = CONFIG.load(&deps.storage).unwrap();
     assert_eq!(config.name, "Test DAO");
     assert_eq!(config.description, "A test DAO contract");
-    assert_eq!(config.owner, valid_neutron_address); //  Fix assertion
-
-    // Validate DAO storage
-    let dao = DAO.load(&deps.storage).unwrap();
-    assert_eq!(dao, valid_neutron_address); //  Fix assertion
+    assert_eq!(config.owner, valid_neutron_address);
 }
 
 #[test]
@@ -201,7 +197,6 @@ fn test_after_validator_bonded_with_mock_query() {
                 bonded: false,
                 total_tokens: Uint128::zero(),
                 total_shares: Uint128::zero(),
-                active: true,
             },
             env.block.height,
         )
@@ -237,7 +232,6 @@ fn test_after_validator_bonded_with_mock_query() {
     // Load updated validator state
     let updated_validator = VALIDATORS.load(deps.as_ref().storage, &oper_addr).unwrap(); //  Now using operator address as the key
     assert!(updated_validator.bonded, "Validator should be bonded");
-    assert!(updated_validator.active, "Validator should remain active");
     assert_eq!(updated_validator.total_tokens, Uint128::new(1000));
     assert_eq!(updated_validator.total_shares, Uint128::new(1000));
 
@@ -282,7 +276,6 @@ fn test_before_validator_slashed_with_self_bonded_only() {
         bonded: true,
         total_tokens: Uint128::new(1000), // Self-bonded tokens
         total_shares: Uint128::new(1000), // No external delegators
-        active: true,
     };
 
     // Store validator state by operator address
@@ -359,7 +352,6 @@ fn test_before_validator_slashed() {
         bonded: true,
         total_tokens: Uint128::new(500),
         total_shares: Uint128::new(500), // Shares remain constant after slashing
-        active: true,
     };
     VALIDATORS
         .save(
@@ -482,7 +474,6 @@ fn test_before_validator_slashed_stake_drops() {
         bonded: true,
         total_tokens: Uint128::new(1000),
         total_shares: Uint128::new(1000),
-        active: true,
     };
 
     // Store validator using operator address as the key
@@ -693,7 +684,6 @@ fn test_after_validator_created_with_mock_query() {
         Uint128::new(1000),
         "Total shares do not match the mocked data"
     );
-    assert!(validator.active, "Validator should be active");
 }
 
 #[test]
@@ -713,7 +703,6 @@ fn test_create_delegation_and_query_stake_direct_write() {
         bonded: true,
         total_tokens: Uint128::new(1000),
         total_shares: Uint128::new(1000),
-        active: true,
     };
     VALIDATORS
         .save(deps.as_mut().storage, &cons_addr, &validator, 10) // Store by consensus address
@@ -826,7 +815,6 @@ fn test_after_delegation_modified() {
         bonded: true,
         total_tokens: Uint128::new(1000),
         total_shares: Uint128::new(1000),
-        active: true,
     };
     VALIDATORS
         .save(
@@ -1003,7 +991,6 @@ fn test_after_delegation_modified_large_scaled_shares() {
         bonded: true,
         total_tokens: Uint128::new(166666667666), // Tokens remain as original values
         total_shares: Uint128::new(166666667666000000000000000000), // Shares scaled up
-        active: true,
     };
     VALIDATORS
         .save(
@@ -1186,13 +1173,12 @@ fn test_after_validator_begin_unbonding() {
                 bonded: true,
                 total_tokens: Uint128::new(1000),
                 total_shares: Uint128::new(1000),
-                active: true,
             },
             env.block.height,
         )
         .unwrap();
 
-    let unboding_height = env.block.height;
+    let unbonding_height = env.block.height;
 
     // Mock the validator query response (now in unbonding state)
     let proto_validator = CosmosValidator {
@@ -1227,10 +1213,6 @@ fn test_after_validator_begin_unbonding() {
         !updated_validator.bonded,
         "Validator should not be bonded after unbonding begins"
     );
-    assert!(
-        updated_validator.active,
-        "Validator should remain active during unbonding"
-    );
     assert_eq!(
         updated_validator.total_tokens,
         Uint128::new(1000),
@@ -1250,7 +1232,7 @@ fn test_after_validator_begin_unbonding() {
             ("action", "after_validator_begin_unbonding"),
             ("valoper_address", &*oper_addr.to_string()), // Match contract's attribute key
             ("cons_address", &*cons_addr.to_string()),
-            ("unbonding_start_height", &*unboding_height.to_string()),
+            ("unbonding_start_height", &*unbonding_height.to_string()),
         ]
     );
 }
