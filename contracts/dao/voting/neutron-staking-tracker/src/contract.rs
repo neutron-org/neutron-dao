@@ -97,14 +97,6 @@ pub fn execute(
     }
 }
 
-pub fn execute_bond(
-    _deps: DepsMut,
-    _env: Env,
-    _info: MessageInfo,
-) -> Result<Response, ContractError> {
-    Err(ContractError::BondingDisabled {})
-}
-
 pub fn execute_add_to_blacklist(
     deps: DepsMut,
     info: MessageInfo,
@@ -157,15 +149,6 @@ pub fn execute_remove_from_blacklist(
     Ok(resp
         .add_attribute("action", "remove_from_blacklist")
         .add_attribute("removed_addresses", format!("{:?}", addresses)))
-}
-
-pub fn execute_unbond(
-    _: DepsMut,
-    _: Env,
-    _: MessageInfo,
-    _: Uint128,
-) -> Result<Response, ContractError> {
-    Err(ContractError::DirectUnbondingDisabled {})
 }
 
 pub fn execute_update_config(
@@ -232,7 +215,6 @@ pub fn sudo(deps: DepsMut, env: Env, msg: SudoMsg) -> Result<Response, ContractE
         SudoMsg::BeforeValidatorSlashed { val_addr, fraction } => {
             before_validator_slashed(deps, env, val_addr, fraction)
         }
-        _ => Ok(Response::new()),
     }
 }
 
@@ -274,21 +256,20 @@ pub(crate) fn after_validator_bonded(
     // Save updated validator using valoper as the key
     VALIDATORS.save(deps.storage, &valoper_addr, &validator, env.block.height)?;
 
-    let mut bonded_validators = BONDED_VALIDATORS.load(deps.storage)?;
-    if bonded_validators.contains(&valoper_addr.to_string()) {
-        return Err(ContractError::ValidatorAlreadyBonded {
-            validator: valoper_address,
-        });
-    }
-    bonded_validators.push(valoper_addr.to_string());
-    BONDED_VALIDATORS.save(deps.storage, &bonded_validators, env.block.height)?;
+    let mut resp = Response::new();
 
-    // Call proxy info to notify about change of stake
-    let resp = with_slashing_event(
-        Response::new(),
-        deps.as_ref(),
-        REPLY_ON_AFTER_VALIDATOR_BONDED_ERROR_STAKING_PROXY_ID,
-    )?;
+    let mut bonded_validators = BONDED_VALIDATORS.load(deps.storage)?;
+    if !bonded_validators.contains(&valoper_addr.to_string()) {
+        bonded_validators.push(valoper_addr.to_string());
+        BONDED_VALIDATORS.save(deps.storage, &bonded_validators, env.block.height)?;
+
+        // Call proxy info to notify about change of stake
+        resp = with_slashing_event(
+            resp,
+            deps.as_ref(),
+            REPLY_ON_AFTER_VALIDATOR_BONDED_ERROR_STAKING_PROXY_ID,
+        )?;
+    }
 
     Ok(resp
         .add_attribute("action", "validator_bonded")
@@ -341,13 +322,16 @@ pub(crate) fn after_validator_begin_unbonding(
     _valcons_address: String,
     valoper_address: String,
 ) -> Result<Response, ContractError> {
-    let valoper_addr = Addr::unchecked(valoper_address.clone());
+    let mut resp = Response::new()
+        .add_attribute("action", "after_validator_begin_unbonding")
+        .add_attribute("valoper_address", valoper_address.clone())
+        .add_attribute("unbonding_start_height", env.block.height.to_string());
+
+    let valoper_addr = Addr::unchecked(valoper_address);
 
     let mut bonded_vals = BONDED_VALIDATORS.load(deps.storage)?;
     if !bonded_vals.contains(&valoper_addr.to_string()) {
-        return Err(ContractError::ValidatorNotBonded {
-            validator: valoper_address.clone(),
-        });
+        return Ok(resp);
     }
 
     // Mark validator as unbonded
@@ -355,16 +339,13 @@ pub(crate) fn after_validator_begin_unbonding(
     BONDED_VALIDATORS.save(deps.storage, &bonded_vals, env.block.height)?;
 
     // Call proxy info to notify about change of stake
-    let resp = with_slashing_event(
-        Response::new(),
+    resp = with_slashing_event(
+        resp,
         deps.as_ref(),
         REPLY_ON_AFTER_VALIDATOR_BEGIN_UNBONDING_ERROR_STAKING_PROXY_ID,
     )?;
 
-    Ok(resp
-        .add_attribute("action", "after_validator_begin_unbonding")
-        .add_attribute("valoper_address", valoper_address)
-        .add_attribute("unbonding_start_height", env.block.height.to_string()))
+    Ok(resp)
 }
 
 pub(crate) fn after_delegation_modified(

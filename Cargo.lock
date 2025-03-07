@@ -2650,17 +2650,14 @@ dependencies = [
 name = "neutron-staking-tracker"
 version = "0.2.1"
 dependencies = [
- "bech32 0.11.0",
  "cosmwasm-schema 2.2.1",
  "cosmwasm-std 2.2.1",
  "cw-storage-plus 2.0.0",
- "cw-utils 2.0.0",
  "cw2 2.0.0",
  "neutron-std 5.1.2 (git+https://github.com/neutron-org/neutron-std)",
  "prost 0.12.6",
  "schemars",
  "serde",
- "serde_json",
  "thiserror",
 ]
 
