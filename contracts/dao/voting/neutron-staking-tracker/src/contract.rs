@@ -1,7 +1,10 @@
-use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, SudoMsg};
-use crate::state::{Config, Delegation, Validator, CONFIG, DAO, DELEGATIONS, VALIDATORS};
+use crate::state::{CONFIG, DAO, DELEGATIONS, VALIDATORS};
 use neutron_staking_info_proxy_common::msg::ExecuteMsg as StakingInfoProxyExecuteMsg;
+use neutron_staking_tracker_common::error::ContractError;
+use neutron_staking_tracker_common::msg::{
+    ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, SudoMsg,
+};
+use neutron_staking_tracker_common::types::{Config, Delegation, Validator};
 use std::ops::Mul;
 
 #[cfg(not(feature = "library"))]

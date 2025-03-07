@@ -1,0 +1,16 @@
+[package]
+name = "neutron-staking-tracker-common"
+description = "shared neutron-staking-tracker interface"
+version = "0.1.0"
+authors = []
+edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/neutron/neutron-dao"
+
+[dependencies]
+cosmwasm-schema = { version = "2.2.0" }
+cosmwasm-std =  { version = "2.2.0" }
+cw-utils = { version = "2.0.0" }
+schemars = "0.8.8"
+serde = { version = "1.0.175", default-features = false, features = ["derive"] }
+thiserror = { version = "1.0" }

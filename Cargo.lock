@@ -2671,11 +2671,20 @@ dependencies = [
  "cosmwasm-schema 2.2.1",
  "cosmwasm-std 2.2.1",
  "cw-storage-plus 2.0.0",
- "cw-utils 2.0.0",
  "cw2 2.0.0",
  "neutron-staking-info-proxy-common",
+ "neutron-staking-tracker-common",
  "neutron-std 5.1.2 (git+https://github.com/neutron-org/neutron-std)",
  "prost 0.12.6",
+]
+
+[[package]]
+name = "neutron-staking-tracker-common"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-schema 2.2.1",
+ "cosmwasm-std 2.2.1",
+ "cw-utils 2.0.0",
  "schemars",
  "serde",
  "thiserror",
@@ -2695,6 +2704,7 @@ dependencies = [
  "cwd-interface",
  "cwd-macros",
  "neutron-staking-info-proxy-common",
+ "neutron-staking-tracker-common",
  "schemars",
  "serde",
  "thiserror",

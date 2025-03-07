@@ -4,14 +4,15 @@ use crate::contract::{
     after_validator_created, before_validator_slashed, execute, instantiate, query_stake_at_height,
     query_total_stake_at_height,
 };
-use crate::msg::{ExecuteMsg, InstantiateMsg};
-use crate::state::{Config, Delegation, Validator, CONFIG, DAO, DELEGATIONS, VALIDATORS};
+use crate::state::{CONFIG, DAO, DELEGATIONS, VALIDATORS};
 use crate::testing::mock_querier::mock_dependencies as dependencies;
 use cosmwasm_std::testing::message_info;
 use cosmwasm_std::{
     testing::{mock_dependencies, mock_env},
     to_json_binary, Addr, Decimal256, Uint128,
 };
+use neutron_staking_tracker_common::msg::{ExecuteMsg, InstantiateMsg};
+use neutron_staking_tracker_common::types::{Config, Delegation, Validator};
 use neutron_std::types::cosmos::staking::v1beta1::{
     QueryValidatorResponse, Validator as CosmosValidator,
 };

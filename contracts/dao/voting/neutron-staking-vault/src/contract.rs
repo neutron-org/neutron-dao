@@ -12,7 +12,7 @@ use cw_paginate::paginate_map_keys;
 use cwd_interface::voting::{
     BondingStatusResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
-use neutron_staking_info_proxy_common::msg::ProviderStakeQueryMsg;
+use neutron_staking_tracker_common::msg::QueryMsg as TrackerQueryMsg;
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-investors-vesting-vault";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -261,7 +261,7 @@ pub fn query_voting_power_at_height(
 
     let total_power: Uint128 = deps.querier.query_wasm_smart(
         config.staking_tracker_contract_address,
-        &ProviderStakeQueryMsg::StakeAtHeight {
+        &TrackerQueryMsg::StakeAtHeight {
             address,
             height: Some(height),
         },
@@ -283,7 +283,7 @@ pub fn query_total_power_at_height(
 
     let total_power: Uint128 = deps.querier.query_wasm_smart(
         &config.staking_tracker_contract_address,
-        &ProviderStakeQueryMsg::TotalStakeAtHeight {
+        &TrackerQueryMsg::TotalStakeAtHeight {
             height: Some(height),
         },
     )?;
@@ -294,7 +294,7 @@ pub fn query_total_power_at_height(
         let addr = blacklisted_addr?;
         let power: Uint128 = deps.querier.query_wasm_smart(
             &config.staking_tracker_contract_address,
-            &ProviderStakeQueryMsg::StakeAtHeight {
+            &TrackerQueryMsg::StakeAtHeight {
                 address: addr.to_string(),
                 height: Some(height),
             },

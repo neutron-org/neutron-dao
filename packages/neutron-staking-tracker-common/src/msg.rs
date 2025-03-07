@@ -1,8 +1,8 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Decimal256, Uint128};
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
-#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
+
+#[cw_serde]
+#[serde(rename_all = "snake_case")]
 pub struct InstantiateMsg {
     /// Name contains the vault name which is used to ease the vault's recognition.
     pub name: String,
@@ -14,8 +14,7 @@ pub struct InstantiateMsg {
     pub staking_proxy_info_contract_address: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum ExecuteMsg {
     UpdateConfig {
         name: Option<String>,
@@ -25,8 +24,7 @@ pub enum ExecuteMsg {
     },
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum SudoMsg {
     AfterValidatorBonded {
         cons_addr: String,
@@ -71,7 +69,7 @@ pub enum SudoMsg {
 #[derive(QueryResponses)]
 pub enum QueryMsg {
     /// Gets the contract's config.
-    #[returns(crate::state::Config)]
+    #[returns(crate::types::Config)]
     Config {},
 
     /// Gets the staked (bonded) tokens for given `address` at given `height`.
@@ -88,5 +86,6 @@ pub enum QueryMsg {
     TotalStakeAtHeight { height: Option<u64> },
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[cw_serde]
+#[serde(rename_all = "snake_case")]
 pub struct MigrateMsg {}
