@@ -4,15 +4,15 @@ use crate::state::{Config, BLACKLISTED_ADDRESSES, CONFIG, DAO};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Order, Response, StdError,
-    StdResult, Uint128,
+    to_json_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult,
+    Uint128,
 };
 use cw2::set_contract_version;
-use cw_paginate::paginate_map_keys;
 use cwd_interface::voting::{
     BondingStatusResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
 use neutron_staking_tracker_common::msg::QueryMsg as TrackerQueryMsg;
+use std::collections::HashSet;
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-investors-vesting-vault";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -75,9 +75,11 @@ pub fn execute(
             description,
             name,
         ),
-        ExecuteMsg::AddToBlacklist { addresses } => execute_add_to_blacklist(deps, info, addresses),
+        ExecuteMsg::AddToBlacklist { addresses } => {
+            execute_add_to_blacklist(deps, env, info, addresses)
+        }
         ExecuteMsg::RemoveFromBlacklist { addresses } => {
-            execute_remove_from_blacklist(deps, info, addresses)
+            execute_remove_from_blacklist(deps, env, info, addresses)
         }
     }
 }
@@ -150,6 +152,7 @@ pub fn execute_update_config(
 
 pub fn execute_add_to_blacklist(
     deps: DepsMut,
+    env: Env,
     info: MessageInfo,
     addresses: Vec<String>,
 ) -> Result<Response, ContractError> {
@@ -158,9 +161,24 @@ pub fn execute_add_to_blacklist(
         return Err(ContractError::Unauthorized {});
     }
 
-    for address in &addresses {
-        let addr = deps.api.addr_validate(address)?;
-        BLACKLISTED_ADDRESSES.save(deps.storage, addr, &())?;
+    let validated_addresses: Vec<Addr> = addresses
+        .iter()
+        .map(|x| deps.api.addr_validate(&x))
+        .collect::<StdResult<_>>()?;
+
+    if let Some(mut blacklisted_addresses) = BLACKLISTED_ADDRESSES.may_load(deps.storage)? {
+        let blacklisted_addresses_set: HashSet<Addr> =
+            blacklisted_addresses.iter().cloned().collect();
+
+        blacklisted_addresses.extend(
+            validated_addresses
+                .into_iter()
+                .filter(|x| !blacklisted_addresses_set.contains(x)),
+        );
+
+        BLACKLISTED_ADDRESSES.save(deps.storage, &blacklisted_addresses, env.block.height)?;
+    } else {
+        BLACKLISTED_ADDRESSES.save(deps.storage, &validated_addresses, env.block.height)?;
     }
 
     Ok(Response::new()
@@ -170,6 +188,7 @@ pub fn execute_add_to_blacklist(
 
 pub fn execute_remove_from_blacklist(
     deps: DepsMut,
+    env: Env,
     info: MessageInfo,
     addresses: Vec<String>,
 ) -> Result<Response, ContractError> {
@@ -178,9 +197,17 @@ pub fn execute_remove_from_blacklist(
         return Err(ContractError::Unauthorized {});
     }
 
-    for address in &addresses {
-        let addr = deps.api.addr_validate(address)?;
-        BLACKLISTED_ADDRESSES.remove(deps.storage, addr);
+    if let Some(mut blacklisted_addresses) = BLACKLISTED_ADDRESSES.may_load(deps.storage)? {
+        let validated_addresses: HashSet<Addr> = addresses
+            .iter()
+            .map(|x| deps.api.addr_validate(&x))
+            .collect::<StdResult<Vec<_>>>()?
+            .into_iter()
+            .collect();
+
+        blacklisted_addresses.retain(|x| !validated_addresses.contains(x));
+
+        BLACKLISTED_ADDRESSES.save(deps.storage, &blacklisted_addresses, env.block.height)?;
     }
 
     Ok(Response::new()
@@ -250,11 +277,15 @@ pub fn query_voting_power_at_height(
     let height = height.unwrap_or(env.block.height);
     let addr = Addr::unchecked(address.clone());
 
-    if BLACKLISTED_ADDRESSES.has(deps.storage, addr) {
-        return Ok(VotingPowerAtHeightResponse {
-            power: Uint128::zero(),
-            height,
-        });
+    if let Some(blacklisted_addresses) =
+        BLACKLISTED_ADDRESSES.may_load_at_height(deps.storage, height)?
+    {
+        if blacklisted_addresses.contains(&addr) {
+            return Ok(VotingPowerAtHeightResponse {
+                power: Uint128::zero(),
+                height,
+            });
+        }
     }
 
     let config = CONFIG.load(deps.storage)?;
@@ -290,16 +321,19 @@ pub fn query_total_power_at_height(
 
     // sum voting power of blacklisted addresses
     let mut blacklisted_power = Uint128::zero();
-    for blacklisted_addr in BLACKLISTED_ADDRESSES.keys(deps.storage, None, None, Order::Ascending) {
-        let addr = blacklisted_addr?;
-        let power: Uint128 = deps.querier.query_wasm_smart(
-            &config.staking_tracker_contract_address,
-            &TrackerQueryMsg::StakeAtHeight {
-                address: addr.to_string(),
-                height: Some(height),
-            },
-        )?;
-        blacklisted_power = blacklisted_power.checked_add(power)?;
+    if let Some(blacklisted_addresses) =
+        BLACKLISTED_ADDRESSES.may_load_at_height(deps.storage, height)?
+    {
+        for address in blacklisted_addresses {
+            let power: Uint128 = deps.querier.query_wasm_smart(
+                &config.staking_tracker_contract_address,
+                &TrackerQueryMsg::StakeAtHeight {
+                    address: address.to_string(),
+                    height: Some(height),
+                },
+            )?;
+            blacklisted_power = blacklisted_power.checked_add(power)?;
+        }
     }
 
     // subtract blacklisted voting power
@@ -333,21 +367,31 @@ pub fn query_description(deps: Deps) -> StdResult<Binary> {
 
 pub fn query_list_blacklisted_addresses(
     deps: Deps,
-    start_after: Option<Addr>,
+    start_after: Option<u32>,
     limit: Option<u32>,
 ) -> StdResult<Vec<Addr>> {
-    paginate_map_keys(
-        deps,
-        &BLACKLISTED_ADDRESSES,
-        start_after,
-        limit,
-        Order::Ascending,
-    )
+    if let Some(mut blacklisted_addresses) = BLACKLISTED_ADDRESSES.may_load(deps.storage)? {
+        let tail = match start_after {
+            Some(start_after) => blacklisted_addresses.split_off(start_after.try_into().unwrap()),
+            None => blacklisted_addresses,
+        };
+
+        return match limit {
+            Some(limit) => Ok(tail.into_iter().take(limit.try_into().unwrap()).collect()),
+            None => Ok(tail),
+        };
+    }
+
+    Ok(vec![])
 }
 
 pub fn query_is_address_blacklisted(deps: Deps, address: String) -> StdResult<bool> {
     let addr = Addr::unchecked(address);
-    Ok(BLACKLISTED_ADDRESSES.has(deps.storage, addr))
+
+    match BLACKLISTED_ADDRESSES.may_load(deps.storage)? {
+        Some(blacklisted_addresses) => Ok(blacklisted_addresses.contains(&addr)),
+        None => Ok(false),
+    }
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
