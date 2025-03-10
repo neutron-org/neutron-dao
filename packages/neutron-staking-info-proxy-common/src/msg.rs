@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Coin};
+use cosmwasm_std::{Coin, Uint128};
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -29,6 +29,9 @@ pub enum ExecuteMsg {
 }
 
 #[cw_serde]
+pub struct MigrateMsg {}
+
+#[cw_serde]
 #[derive(QueryResponses)]
 pub enum QueryMsg {
     /// Retrieves the contract configuration.
@@ -42,6 +45,25 @@ pub enum QueryMsg {
     UserStake { address: String, height: u64 },
 }
 
+/// Queries that each staking provider must implement.
+#[cw_serde]
+#[derive(QueryResponses)]
+pub enum ProviderStakeQueryMsg {
+    /// Gets the staked (bonded) tokens for given `address` at given `height`.
+    /// Stake of unbonded validators does not count.
+    /// If height is None, latest block stake info will be issued.
+    #[returns(Uint128)]
+    StakeAtHeight {
+        address: String,
+        height: Option<u64>,
+    },
+
+    /// Gets the total staked (bonded) tokens for given `height`.
+    /// Stake of unbonded validators does not count.
+    #[returns(Uint128)]
+    TotalStakeAtHeight { height: Option<u64> },
+}
+
 /// Response for `QueryMsg::Config`
 #[cw_serde]
 pub struct ConfigResponse {
@@ -53,14 +75,4 @@ pub struct ConfigResponse {
 #[cw_serde]
 pub struct ProvidersResponse {
     pub providers: Vec<String>,
-}
-
-#[cw_serde]
-pub struct MigrateMsg {}
-
-/// Queries stake information from the provider for specific user and height.
-/// If height is None, latest block stake info will be issued
-#[cw_serde]
-pub enum ProviderStakeQuery {
-    VotingPowerAtHeight { address: Addr, height: Option<u64> },
 }

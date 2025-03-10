@@ -3,6 +3,7 @@
   "title": "ExecuteMsg",
   "oneOf": [
     {
+      "description": "Updates config. Allowed only for owner to do.",
       "type": "object",
       "required": [
         "update_config"
@@ -34,6 +35,54 @@
                 "string",
                 "null"
               ]
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Adds given `addresses` to blacklist. Allowed only for owner to do.",
+      "type": "object",
+      "required": [
+        "add_to_blacklist"
+      ],
+      "properties": {
+        "add_to_blacklist": {
+          "type": "object",
+          "required": [
+            "addresses"
+          ],
+          "properties": {
+            "addresses": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Removes given `addresses` from blacklist. Allowed only for owner to do.",
+      "type": "object",
+      "required": [
+        "remove_from_blacklist"
+      ],
+      "properties": {
+        "remove_from_blacklist": {
+          "type": "object",
+          "required": [
+            "addresses"
+          ],
+          "properties": {
+            "addresses": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
           }
         }

@@ -21,7 +21,5 @@ cw2 = "2.0.0"
 schemars = "0.8.8"
 serde = { version = "1.0.175", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0" }
-
-[dev-dependencies]
-anyhow = "1.0.57"
-cw-multi-test = "0.16.5"
+neutron-staking-rewards-common = { path = "../../../packages/neutron-staking-rewards-common" }
+neutron-staking-info-proxy-common =  { path = "../../../packages/neutron-staking-info-proxy-common" }

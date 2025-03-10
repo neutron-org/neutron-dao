@@ -1,8 +1,10 @@
-use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, ProxyInfoExecute, QueryMsg, SudoMsg};
-use crate::state::{
-    Config, Delegation, Validator, BLACKLISTED_ADDRESSES, CONFIG, DELEGATIONS, VALIDATORS,
+use crate::state::{CONFIG, DELEGATIONS, VALIDATORS};
+use neutron_staking_info_proxy_common::msg::ExecuteMsg as StakingInfoProxyExecuteMsg;
+use neutron_staking_tracker_common::error::ContractError;
+use neutron_staking_tracker_common::msg::{
+    ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, SudoMsg,
 };
+use neutron_staking_tracker_common::types::{Config, Delegation, Validator};
 use std::ops::Mul;
 
 #[cfg(not(feature = "library"))]
@@ -12,7 +14,6 @@ use cosmwasm_std::{
     Response, StdResult, SubMsg, Uint128, Uint256, WasmMsg,
 };
 use cw2::set_contract_version;
-use cw_storage_plus::Bound;
 use neutron_std::types::cosmos::staking::v1beta1::{QueryValidatorResponse, StakingQuerier};
 use std::str::FromStr;
 
@@ -23,9 +24,7 @@ const REPLY_ON_AFTER_DELEGATION_MODIFIED_ERROR_STAKING_PROXY_ID: u64 = 1;
 const REPLY_ON_BEFORE_VALIDATOR_SLASHED_ERROR_STAKING_PROXY_ID: u64 = 2;
 const REPLY_ON_AFTER_VALIDATOR_BEGIN_UNBONDING_ERROR_STAKING_PROXY_ID: u64 = 3;
 const REPLY_ON_AFTER_VALIDATOR_BONDED_ERROR_STAKING_PROXY_ID: u64 = 4;
-const REPLY_ON_ADD_TO_BLACKLIST_ERROR_STAKING_PROXY_ID: u64 = 5;
-const REPLY_ON_REMOVE_FROM_BLACKLIST_ERROR_STAKING_PROXY_ID: u64 = 6;
-const REPLY_ON_BEFORE_DELEGATION_REMOVED_ERROR_STAKING_PROXY_ID: u64 = 7;
+const REPLY_ON_BEFORE_DELEGATION_REMOVED_ERROR_STAKING_PROXY_ID: u64 = 5;
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -86,65 +85,24 @@ pub fn execute(
             description,
             staking_proxy_info_contract_address,
         ),
-        ExecuteMsg::AddToBlacklist { addresses } => execute_add_to_blacklist(deps, info, addresses),
-        ExecuteMsg::RemoveFromBlacklist { addresses } => {
-            execute_remove_from_blacklist(deps, info, addresses)
-        }
     }
 }
 
-pub fn execute_add_to_blacklist(
-    deps: DepsMut,
-    info: MessageInfo,
-    addresses: Vec<String>,
+pub fn execute_bond(
+    _deps: DepsMut,
+    _env: Env,
+    _info: MessageInfo,
 ) -> Result<Response, ContractError> {
-    let config = CONFIG.load(deps.storage)?;
-    if info.sender != config.owner {
-        return Err(ContractError::Unauthorized {});
-    }
-
-    let mut resp = Response::new();
-    for address in &addresses {
-        let addr = deps.api.addr_validate(address)?;
-        resp = with_update_stake_msg(
-            resp,
-            deps.as_ref(),
-            &addr,
-            REPLY_ON_ADD_TO_BLACKLIST_ERROR_STAKING_PROXY_ID,
-        )?;
-        BLACKLISTED_ADDRESSES.save(deps.storage, addr, &true)?;
-    }
-
-    Ok(resp
-        .add_attribute("action", "add_to_blacklist")
-        .add_attribute("added_addresses", format!("{:?}", addresses)))
+    Err(ContractError::BondingDisabled {})
 }
 
-pub fn execute_remove_from_blacklist(
-    deps: DepsMut,
-    info: MessageInfo,
-    addresses: Vec<String>,
+pub fn execute_unbond(
+    _: DepsMut,
+    _: Env,
+    _: MessageInfo,
+    _: Uint128,
 ) -> Result<Response, ContractError> {
-    let config = CONFIG.load(deps.storage)?;
-    if info.sender != config.owner {
-        return Err(ContractError::Unauthorized {});
-    }
-
-    let mut resp = Response::new();
-    for address in &addresses {
-        let addr = deps.api.addr_validate(address)?;
-        resp = with_update_stake_msg(
-            resp,
-            deps.as_ref(),
-            &addr,
-            REPLY_ON_REMOVE_FROM_BLACKLIST_ERROR_STAKING_PROXY_ID,
-        )?;
-        BLACKLISTED_ADDRESSES.remove(deps.storage, addr);
-    }
-
-    Ok(resp
-        .add_attribute("action", "remove_from_blacklist")
-        .add_attribute("removed_addresses", format!("{:?}", addresses)))
+    Err(ContractError::DirectUnbondingDisabled {})
 }
 
 pub fn execute_update_config(
@@ -555,54 +513,23 @@ pub(crate) fn after_validator_created(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::VotingPowerAtHeight { address, height } => {
-            to_json_binary(&query_voting_power_at_height(deps, env, address, height)?)
+        QueryMsg::StakeAtHeight { address, height } => {
+            to_json_binary(&query_stake_at_height(deps, env, address, height)?)
         }
-        QueryMsg::TotalPowerAtHeight { height } => {
-            to_json_binary(&query_total_power_at_height(deps, env, height)?)
+        QueryMsg::TotalStakeAtHeight { height } => {
+            to_json_binary(&query_total_stake_at_height(deps, env, height)?)
         }
         QueryMsg::Config {} => to_json_binary(&CONFIG.load(deps.storage)?),
-        QueryMsg::ListBlacklistedAddresses { start_after, limit } => {
-            to_json_binary(&query_list_blacklisted_addresses(deps, start_after, limit)?)
-        }
-        QueryMsg::IsAddressBlacklisted { address } => {
-            to_json_binary(&query_is_address_blacklisted(deps, address)?)
-        }
     }
 }
 
-pub fn query_list_blacklisted_addresses(
-    deps: Deps,
-    start_after: Option<Addr>,
-    limit: Option<u32>,
-) -> StdResult<Vec<Addr>> {
-    let start = start_after.map(Bound::exclusive); // Convert to exclusive Bound
-
-    let limit = limit.unwrap_or(10) as usize;
-
-    let blacklisted: Vec<Addr> = BLACKLISTED_ADDRESSES
-        .keys(deps.storage, start, None, Order::Ascending)
-        .take(limit)
-        .collect::<StdResult<Vec<_>>>()?;
-
-    Ok(blacklisted)
-}
-
-pub fn query_is_address_blacklisted(deps: Deps, address: String) -> StdResult<bool> {
-    let addr = Addr::unchecked(address);
-    let is_blacklisted = BLACKLISTED_ADDRESSES
-        .may_load(deps.storage, addr)?
-        .unwrap_or(false);
-    Ok(is_blacklisted)
-}
-
-/// Calculates the voting power of a delegator at a specific block height.
+/// Calculates the stake of a delegator at a specific block height.
 ///
 /// Uses `Uint256` for intermediate calculations to avoid precision loss and overflow,
 /// then converts the final result back to `Uint128`.
 ///
-pub fn calculate_voting_power(deps: Deps, address: Addr, height: u64) -> StdResult<Uint128> {
-    let mut power = Uint256::zero(); // Use Uint256 to avoid overflow
+pub fn calculate_stake_at_height(deps: Deps, address: Addr, height: u64) -> StdResult<Uint128> {
+    let mut stake = Uint256::zero(); // Use Uint256 to avoid overflow
 
     for val_oper_address in VALIDATORS.keys(deps.storage, None, None, Order::Ascending) {
         if let Some(validator) =
@@ -618,40 +545,36 @@ pub fn calculate_voting_power(deps: Deps, address: Addr, height: u64) -> StdResu
                     let total_tokens_256 = Uint256::from(validator.total_tokens);
                     let total_shares_256 = Uint256::from(validator.total_shares);
 
-                    let delegation_power_256 = shares_256
+                    let delegation_stake_256 = shares_256
                         .checked_mul(total_tokens_256)?
                         .checked_div(total_shares_256)?;
 
-                    power = power.checked_add(delegation_power_256)?;
+                    stake = stake.checked_add(delegation_stake_256)?;
                 }
             }
         }
     }
 
     // Convert back to Uint128 safely
-    let power_128 = Uint128::try_from(power)?;
+    let stake_128 = Uint128::try_from(stake)?;
 
-    Ok(power_128)
+    Ok(stake_128)
 }
 
-pub fn query_voting_power_at_height(
+pub fn query_stake_at_height(
     deps: Deps,
     env: Env,
-    address: Addr,
+    address: String,
     height: Option<u64>,
 ) -> StdResult<Uint128> {
     let height = height.unwrap_or(env.block.height);
+    let addr = deps.api.addr_validate(&address)?;
+    let stake = calculate_stake_at_height(deps, addr, height)?;
 
-    if let Some(true) = BLACKLISTED_ADDRESSES.may_load(deps.storage, address.clone())? {
-        return Ok(Uint128::zero());
-    }
-
-    let power = calculate_voting_power(deps, address, height)?;
-
-    Ok(power)
+    Ok(stake)
 }
 
-pub fn query_total_power_at_height(
+pub fn query_total_stake_at_height(
     deps: Deps,
     env: Env,
     height: Option<u64>,
@@ -659,27 +582,16 @@ pub fn query_total_power_at_height(
     let height = height.unwrap_or(env.block.height);
 
     // calc total vp as usual
-    let mut total_power = Uint128::zero();
+    let mut total_stake = Uint128::zero();
     for k in VALIDATORS.keys(deps.storage, None, None, Order::Ascending) {
         if let Some(val) = VALIDATORS.may_load_at_height(deps.storage, &k?, height)? {
             if val.bonded {
-                total_power = total_power.checked_add(val.total_tokens)?;
+                total_stake = total_stake.checked_add(val.total_tokens)?;
             }
         }
     }
 
-    // sum voting power of blacklisted addresses
-    let mut blacklisted_power = Uint128::zero();
-    for blacklisted_addr in BLACKLISTED_ADDRESSES.keys(deps.storage, None, None, Order::Ascending) {
-        let addr = blacklisted_addr?;
-        blacklisted_power =
-            blacklisted_power.checked_add(calculate_voting_power(deps, addr, height)?)?;
-    }
-
-    // subtr blacklisted voting power
-    let net_power = total_power.checked_sub(blacklisted_power)?;
-
-    Ok(net_power)
+    Ok(total_stake)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -711,7 +623,7 @@ fn with_update_stake_msg(
     if let Some(staking_proxy_info_contract_address) = config.staking_proxy_info_contract_address {
         let update_stake_msg = WasmMsg::Execute {
             contract_addr: staking_proxy_info_contract_address.to_string(),
-            msg: to_json_binary(&ProxyInfoExecute::UpdateStake {
+            msg: to_json_binary(&StakingInfoProxyExecuteMsg::UpdateStake {
                 user: user.to_string(),
             })?,
             funds: vec![],
@@ -733,7 +645,7 @@ fn with_slashing_event(resp: Response, deps: Deps, reason: u64) -> Result<Respon
         {
             let slashing_msg = WasmMsg::Execute {
                 contract_addr: staking_proxy_info_contract_address.to_string(),
-                msg: to_json_binary(&ProxyInfoExecute::Slashing {})?,
+                msg: to_json_binary(&StakingInfoProxyExecuteMsg::Slashing {})?,
                 funds: vec![],
             };
 

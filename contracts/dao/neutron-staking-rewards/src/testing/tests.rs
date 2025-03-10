@@ -1,7 +1,4 @@
 use crate::contract::{execute, instantiate, query};
-use crate::error::ContractError;
-use crate::msg::ExecuteMsg::UpdateStake;
-use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, RewardsResponse};
 use crate::state::CONFIG;
 use crate::testing::mock_querier::mock_dependencies;
 use cosmwasm_std::testing::MockApi;
@@ -10,6 +7,8 @@ use cosmwasm_std::{
     testing::{message_info, mock_env},
     BankMsg, CosmosMsg, Response, Uint128,
 };
+use neutron_staking_rewards_common::error::ContractError;
+use neutron_staking_rewards_common::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, RewardsResponse};
 
 // Helper to create a default instantiate message
 fn default_init_msg(api: MockApi) -> InstantiateMsg {
@@ -136,7 +135,7 @@ fn test_update_global_index_same_block() {
         env.block.height,
         coin(1_000_000_000u128, "untrn"),
     );
-    let update_msg = UpdateStake {
+    let update_msg = ExecuteMsg::UpdateStake {
         user: user.to_string(),
     };
     let proxy_info = message_info(&proxy, &[]);
@@ -1201,7 +1200,7 @@ fn test_two_users_with_slashing() {
         env.block.height,
         coin(user_stake_before_slashing, "untrn"),
     );
-    let update_msg_1 = UpdateStake {
+    let update_msg_1 = ExecuteMsg::UpdateStake {
         user: user1.to_string(),
     };
     let _ = execute(deps.as_mut(), env.clone(), proxy_info.clone(), update_msg_1).unwrap();
@@ -1211,7 +1210,7 @@ fn test_two_users_with_slashing() {
         env.block.height,
         coin(user_stake_before_slashing, "untrn"),
     );
-    let update_msg_2 = UpdateStake {
+    let update_msg_2 = ExecuteMsg::UpdateStake {
         user: user2.to_string(),
     };
     let _ = execute(deps.as_mut(), env.clone(), proxy_info.clone(), update_msg_2).unwrap();
@@ -1310,7 +1309,7 @@ fn test_user_with_slashing_and_config_change() {
         env.block.height,
         coin(user_stake, "untrn"),
     );
-    let update_msg_1 = UpdateStake {
+    let update_msg_1 = ExecuteMsg::UpdateStake {
         user: user.to_string(),
     };
     let _ = execute(deps.as_mut(), env.clone(), proxy_info.clone(), update_msg_1).unwrap();

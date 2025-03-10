@@ -14,6 +14,7 @@ members = [
     "contracts/tokenomics/reserve",
     "contracts/tokenomics/distribution",
     "contracts/dao/voting/neutron-staking-tracker",
+    "contracts/dao/voting/neutron-staking-vault",
     "packages/*",
 ]
 
