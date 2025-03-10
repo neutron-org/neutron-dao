@@ -9,13 +9,13 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 pub struct InstantiateMsg {
-    // Staking watcher contract
+    // Staking tracker contract.
     pub staking_tracker_contract_address: String,
     // Description contains information that characterizes the vault.
     pub description: String,
     // Owner can update all configs including changing the owner. This will generally be a DAO.
     pub owner: String,
-    // Name of the vault
+    // Name of the vault.
     pub name: String,
 }
 
@@ -23,11 +23,18 @@ pub struct InstantiateMsg {
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
+    /// Updates config. Allowed only for owner to do.
     UpdateConfig {
         staking_tracker_contract_address: Option<String>,
         owner: Option<String>,
         description: Option<String>,
         name: Option<String>,
+    },
+    /// Adds given `addresses` to blacklist. Allowed only for owner to do.
+    AddToBlacklist { addresses: Vec<String> },
+    /// Removes given `addresses` from blacklist. Allowed only for owner to do.
+    RemoveFromBlacklist {
+        addresses: Vec<String>, // List of addresses to remove from the blacklist
     },
 }
 
@@ -37,8 +44,20 @@ pub enum ExecuteMsg {
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum QueryMsg {
+    /// Returns contract's config.
     #[returns(crate::state::Config)]
     Config {},
+
+    /// Lists blacklisted addresses.
+    #[returns(Vec<Addr>)]
+    ListBlacklistedAddresses {
+        start_after: Option<Addr>,
+        limit: Option<u32>,
+    },
+
+    // Returns true if given `address` is blacklisted.
+    #[returns(bool)]
+    IsAddressBlacklisted { address: String },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]

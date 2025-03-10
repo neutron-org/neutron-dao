@@ -1,20 +1,21 @@
-use crate::error::ContractError;
-use crate::error::ContractError::{NoStakingRewardsContractSet, Unauthorized};
-use crate::msg::{
-    ConfigResponse, ExecuteMsg, InstantiateMsg, MigrateMsg, ProviderStakeQuery, ProvidersResponse,
-    QueryMsg,
-};
-use crate::state::{Config, CONFIG, PROVIDERS};
+use crate::state::{CONFIG, PROVIDERS};
 use cosmwasm_std::{
     entry_point, to_json_binary, Addr, Coin, Deps, DepsMut, Env, MessageInfo, Order, Response,
     StdResult, Uint128, WasmMsg,
 };
 use cw2::set_contract_version;
-use neutron_staking_rewards::msg::ExecuteMsg::{
-    Slashing as RewardsMsgSlashing, UpdateStake as RewardsMsgUpdateStake,
+use neutron_staking_info_proxy_common::error::ContractError;
+use neutron_staking_info_proxy_common::error::ContractError::{
+    NoStakingRewardsContractSet, Unauthorized,
 };
+use neutron_staking_info_proxy_common::msg::{
+    ConfigResponse, ProviderStakeQueryMsg, ProvidersResponse, QueryMsg,
+};
+use neutron_staking_info_proxy_common::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg};
+use neutron_staking_info_proxy_common::types::Config;
+use neutron_staking_rewards_common::msg::ExecuteMsg as RewardsExecuteMsg;
 
-const CONTRACT_NAME: &str = "crates.io:neutron-staking-info-proxy";
+const CONTRACT_NAME: &str = "crates.io:neutron-staking-info-proxy-info-proxy";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[entry_point]
@@ -158,7 +159,7 @@ fn update_stake(
             .staking_rewards
             .ok_or(NoStakingRewardsContractSet {})?
             .to_string(),
-        msg: to_json_binary(&RewardsMsgUpdateStake {
+        msg: to_json_binary(&RewardsExecuteMsg::UpdateStake {
             user: user.to_string(),
         })?,
         funds: vec![],
@@ -184,7 +185,7 @@ fn slashing(deps: DepsMut, _: Env, info: MessageInfo) -> Result<Response, Contra
             .staking_rewards
             .ok_or(NoStakingRewardsContractSet {})?
             .to_string(),
-        msg: to_json_binary(&RewardsMsgSlashing {})?,
+        msg: to_json_binary(&RewardsExecuteMsg::Slashing {})?,
         funds: vec![],
     };
 
@@ -201,9 +202,9 @@ pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> Result<cosmwasm_std::Binary, 
     match msg {
         QueryMsg::Config {} => Ok(to_json_binary(&query_config(deps)?)?),
         QueryMsg::Providers {} => Ok(to_json_binary(&query_providers(deps)?)?),
-        QueryMsg::UserStake { address, height } => {
-            Ok(to_json_binary(&query_user_stake(deps, address, height)?)?)
-        }
+        QueryMsg::UserStake { address, height } => Ok(to_json_binary(&query_stake_at_height(
+            deps, address, height,
+        )?)?),
     }
 }
 
@@ -227,7 +228,7 @@ fn query_providers(deps: Deps) -> StdResult<ProvidersResponse> {
 
 /// Returns sum of stake of each provider.
 /// Returns Err if any of PROVIDER queries returned Err.
-fn query_user_stake(deps: Deps, address: String, height: u64) -> Result<Coin, ContractError> {
+fn query_stake_at_height(deps: Deps, address: String, height: u64) -> Result<Coin, ContractError> {
     let user_addr = deps.api.addr_validate(&address)?;
     let config = CONFIG.load(deps.storage)?;
     let providers: Vec<Addr> = PROVIDERS
@@ -235,7 +236,7 @@ fn query_user_stake(deps: Deps, address: String, height: u64) -> Result<Coin, Co
         .collect::<Result<_, _>>()?;
     let amount = providers
         .into_iter()
-        .map(|provider| query_voting_power(deps, user_addr.clone(), &provider, height))
+        .map(|provider| query_stake(deps, user_addr.clone(), &provider, height))
         .collect::<Result<Vec<_>, _>>()? // error caught here immediately
         .into_iter()
         .sum::<Uint128>();
@@ -261,7 +262,7 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
 
 /// Queries the user’s voting power from the external provider,
 /// ensuring that the returned denom matches this contract’s expected staking_denom.
-fn query_voting_power(
+fn query_stake(
     deps: Deps,
     address: Addr,
     provider: &Addr,
@@ -269,8 +270,8 @@ fn query_voting_power(
 ) -> Result<Uint128, ContractError> {
     let user_stake: Uint128 = deps.querier.query_wasm_smart(
         provider,
-        &ProviderStakeQuery::VotingPowerAtHeight {
-            address,
+        &ProviderStakeQueryMsg::StakeAtHeight {
+            address: address.to_string(),
             height: Some(height),
         },
     )?;

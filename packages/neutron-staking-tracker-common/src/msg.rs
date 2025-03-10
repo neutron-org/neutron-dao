@@ -1,8 +1,8 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Decimal256, Uint128};
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
-#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
+use cosmwasm_std::{Decimal256, Uint128};
+
+#[cw_serde]
+#[serde(rename_all = "snake_case")]
 pub struct InstantiateMsg {
     /// Name contains the vault name which is used to ease the vault's recognition.
     pub name: String,
@@ -14,8 +14,7 @@ pub struct InstantiateMsg {
     pub staking_proxy_info_contract_address: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum ExecuteMsg {
     UpdateConfig {
         name: Option<String>,
@@ -23,16 +22,9 @@ pub enum ExecuteMsg {
         owner: Option<String>,
         staking_proxy_info_contract_address: Option<String>,
     },
-    AddToBlacklist {
-        addresses: Vec<String>,
-    },
-    RemoveFromBlacklist {
-        addresses: Vec<String>, // List of addresses to remove from the blacklist
-    },
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum SudoMsg {
     AfterValidatorBonded {
         cons_addr: String,
@@ -63,30 +55,24 @@ pub enum SudoMsg {
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum QueryMsg {
-    #[returns(crate::state::Config)]
+    /// Gets the contract's config.
+    #[returns(crate::types::Config)]
     Config {},
 
-    #[returns(Vec<Addr>)]
-    ListBlacklistedAddresses {
-        start_after: Option<Addr>,
-        limit: Option<u32>,
+    /// Gets the staked (bonded) tokens for given `address` at given `height`.
+    /// Stake of unbonded validators does not count.
+    #[returns(Uint128)]
+    StakeAtHeight {
+        address: String,
+        height: Option<u64>,
     },
 
-    #[returns(bool)]
-    IsAddressBlacklisted { address: String },
-
+    /// Gets the total staked (bonded) tokens for given `height`.
+    /// Stake of unbonded validators does not count.
     #[returns(Uint128)]
-    VotingPowerAtHeight { address: Addr, height: Option<u64> },
-
-    #[returns(Uint128)]
-    TotalPowerAtHeight { height: Option<u64> },
+    TotalStakeAtHeight { height: Option<u64> },
 }
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
-pub struct MigrateMsg {}
 
 #[cw_serde]
-pub enum ProxyInfoExecute {
-    UpdateStake { user: String },
-    Slashing {},
-}
+#[serde(rename_all = "snake_case")]
+pub struct MigrateMsg {}

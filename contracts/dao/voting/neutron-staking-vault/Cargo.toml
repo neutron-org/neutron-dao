@@ -25,7 +25,9 @@ serde = { version = "1.0.175", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0" }
 cwd-macros = { path = "../../../../packages/cwd-macros" }
 cwd-interface = { path = "../../../../packages/cwd-interface" }
-vesting-base = { git = "https://github.com/neutron-org/neutron-tge-contracts.git" }
+neutron-staking-info-proxy-common = { path = "../../../../packages/neutron-staking-info-proxy-common" }
+cw-paginate = { path = "../../../../packages/cw-paginate" }
+neutron-staking-tracker-common = { path = "../../../../packages/neutron-staking-tracker-common" }
 
 [dev-dependencies]
 cw-multi-test = "0.16.5"

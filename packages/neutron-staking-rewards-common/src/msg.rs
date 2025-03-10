@@ -46,11 +46,6 @@ pub enum QueryMsg {
     Rewards { user: String },
 }
 
-#[cw_serde]
-pub enum InfoProxyQuery {
-    UserStake { address: String, height: u64 },
-}
-
 /// Response for `QueryMsg::Config`
 #[cw_serde]
 pub struct ConfigResponse {

@@ -1,16 +1,18 @@
+use crate::error::ContractError;
+use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
+use crate::state::{Config, BLACKLISTED_ADDRESSES, CONFIG, DAO};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult, Uint128,
+    to_json_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Order, Response, StdError,
+    StdResult, Uint128,
 };
 use cw2::set_contract_version;
+use cw_paginate::paginate_map_keys;
 use cwd_interface::voting::{
     BondingStatusResponse, TotalPowerAtHeightResponse, VotingPowerAtHeightResponse,
 };
-
-use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
-use crate::state::{Config, CONFIG, DAO};
+use neutron_staking_tracker_common::msg::QueryMsg as TrackerQueryMsg;
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-investors-vesting-vault";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -73,6 +75,10 @@ pub fn execute(
             description,
             name,
         ),
+        ExecuteMsg::AddToBlacklist { addresses } => execute_add_to_blacklist(deps, info, addresses),
+        ExecuteMsg::RemoveFromBlacklist { addresses } => {
+            execute_remove_from_blacklist(deps, info, addresses)
+        }
     }
 }
 
@@ -142,6 +148,46 @@ pub fn execute_update_config(
         .add_attribute("owner", config.owner))
 }
 
+pub fn execute_add_to_blacklist(
+    deps: DepsMut,
+    info: MessageInfo,
+    addresses: Vec<String>,
+) -> Result<Response, ContractError> {
+    let config = CONFIG.load(deps.storage)?;
+    if info.sender != config.owner {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    for address in &addresses {
+        let addr = deps.api.addr_validate(address)?;
+        BLACKLISTED_ADDRESSES.save(deps.storage, addr, &())?;
+    }
+
+    Ok(Response::new()
+        .add_attribute("action", "add_to_blacklist")
+        .add_attribute("added_addresses", format!("{:?}", addresses)))
+}
+
+pub fn execute_remove_from_blacklist(
+    deps: DepsMut,
+    info: MessageInfo,
+    addresses: Vec<String>,
+) -> Result<Response, ContractError> {
+    let config = CONFIG.load(deps.storage)?;
+    if info.sender != config.owner {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    for address in &addresses {
+        let addr = deps.api.addr_validate(address)?;
+        BLACKLISTED_ADDRESSES.remove(deps.storage, addr);
+    }
+
+    Ok(Response::new()
+        .add_attribute("action", "remove_from_blacklist")
+        .add_attribute("removed_addresses", format!("{:?}", addresses)))
+}
+
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
@@ -161,6 +207,12 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         }
         QueryMsg::ListBonders { start_after, limit } => {
             query_list_bonders(deps, env, start_after, limit)
+        }
+        QueryMsg::ListBlacklistedAddresses { start_after, limit } => {
+            to_json_binary(&query_list_blacklisted_addresses(deps, start_after, limit)?)
+        }
+        QueryMsg::IsAddressBlacklisted { address } => {
+            to_json_binary(&query_is_address_blacklisted(deps, address)?)
         }
     }
 }
@@ -196,19 +248,27 @@ pub fn query_voting_power_at_height(
     height: Option<u64>,
 ) -> StdResult<VotingPowerAtHeightResponse> {
     let height = height.unwrap_or(env.block.height);
+    let addr = deps.api.addr_validate(&address)?;
+
+    if BLACKLISTED_ADDRESSES.has(deps.storage, addr) {
+        return Ok(VotingPowerAtHeightResponse {
+            power: Uint128::zero(),
+            height,
+        });
+    }
 
     let config = CONFIG.load(deps.storage)?;
 
-    let unclaimed_amount: Uint128 = deps.querier.query_wasm_smart(
+    let total_power: Uint128 = deps.querier.query_wasm_smart(
         config.staking_tracker_contract_address,
-        &QueryMsg::VotingPowerAtHeight {
+        &TrackerQueryMsg::StakeAtHeight {
             address,
             height: Some(height),
         },
     )?;
 
     Ok(VotingPowerAtHeightResponse {
-        power: unclaimed_amount,
+        power: total_power,
         height,
     })
 }
@@ -218,19 +278,35 @@ pub fn query_total_power_at_height(
     env: Env,
     height: Option<u64>,
 ) -> StdResult<TotalPowerAtHeightResponse> {
+    let config = CONFIG.load(deps.storage)?;
     let height = height.unwrap_or(env.block.height);
 
-    let config = CONFIG.load(deps.storage)?;
-
-    let unclaimed_amount_total: Uint128 = deps.querier.query_wasm_smart(
-        config.staking_tracker_contract_address,
-        &QueryMsg::TotalPowerAtHeight {
+    let total_power: Uint128 = deps.querier.query_wasm_smart(
+        &config.staking_tracker_contract_address,
+        &TrackerQueryMsg::TotalStakeAtHeight {
             height: Some(height),
         },
     )?;
 
+    // sum voting power of blacklisted addresses
+    let mut blacklisted_power = Uint128::zero();
+    for blacklisted_addr in BLACKLISTED_ADDRESSES.keys(deps.storage, None, None, Order::Ascending) {
+        let addr = blacklisted_addr?;
+        let power: Uint128 = deps.querier.query_wasm_smart(
+            &config.staking_tracker_contract_address,
+            &TrackerQueryMsg::StakeAtHeight {
+                address: addr.to_string(),
+                height: Some(height),
+            },
+        )?;
+        blacklisted_power = blacklisted_power.checked_add(power)?;
+    }
+
+    // subtract blacklisted voting power
+    let net_power = total_power.checked_sub(blacklisted_power)?;
+
     Ok(TotalPowerAtHeightResponse {
-        power: unclaimed_amount_total,
+        power: net_power,
         height,
     })
 }
@@ -253,6 +329,25 @@ pub fn query_name(deps: Deps) -> StdResult<Binary> {
 pub fn query_description(deps: Deps) -> StdResult<Binary> {
     let config: Config = CONFIG.load(deps.storage)?;
     to_json_binary(&config.description)
+}
+
+pub fn query_list_blacklisted_addresses(
+    deps: Deps,
+    start_after: Option<Addr>,
+    limit: Option<u32>,
+) -> StdResult<Vec<Addr>> {
+    paginate_map_keys(
+        deps,
+        &BLACKLISTED_ADDRESSES,
+        start_after,
+        limit,
+        Order::Ascending,
+    )
+}
+
+pub fn query_is_address_blacklisted(deps: Deps, address: String) -> StdResult<bool> {
+    let addr = deps.api.addr_validate(&address)?;
+    Ok(BLACKLISTED_ADDRESSES.has(deps.storage, addr))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
