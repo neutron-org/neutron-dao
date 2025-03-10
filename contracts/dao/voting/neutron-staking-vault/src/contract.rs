@@ -275,7 +275,7 @@ pub fn query_voting_power_at_height(
     height: Option<u64>,
 ) -> StdResult<VotingPowerAtHeightResponse> {
     let height = height.unwrap_or(env.block.height);
-    let addr = Addr::unchecked(address.clone());
+    let addr = deps.api.addr_validate(&address)?;
 
     if let Some(blacklisted_addresses) =
         BLACKLISTED_ADDRESSES.may_load_at_height(deps.storage, height)?
@@ -386,7 +386,7 @@ pub fn query_list_blacklisted_addresses(
 }
 
 pub fn query_is_address_blacklisted(deps: Deps, address: String) -> StdResult<bool> {
-    let addr = Addr::unchecked(address);
+    let addr = deps.api.addr_validate(&address)?;
 
     match BLACKLISTED_ADDRESSES.may_load(deps.storage)? {
         Some(blacklisted_addresses) => Ok(blacklisted_addresses.contains(&addr)),

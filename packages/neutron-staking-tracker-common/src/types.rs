@@ -118,3 +118,46 @@ pub struct Delegation {
     /// Using `Uint128` directly eliminates unnecessary conversion steps while ensuring compatibility.
     pub shares: Uint128,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::Config;
+    use crate::error::ContractError;
+    use cosmwasm_std::Addr;
+
+    /// Tests the validation logic for the `Config` struct.
+    ///
+    /// Ensures that empty fields are properly rejected with the correct `ContractError`.
+    #[test]
+    fn test_config_validate() {
+        let cfg_ok = Config {
+            name: String::from("name"),
+            description: String::from("description"),
+            owner: Addr::unchecked("owner"),
+            staking_proxy_info_contract_address: None,
+        };
+        assert_eq!(cfg_ok.validate(), Ok(()));
+
+        let cfg_empty_name = Config {
+            name: String::from(""),
+            description: String::from("description"),
+            owner: Addr::unchecked("owner"),
+            staking_proxy_info_contract_address: None,
+        };
+        assert_eq!(
+            cfg_empty_name.validate(),
+            Err(ContractError::NameIsEmpty {})
+        );
+
+        let cfg_empty_description = Config {
+            name: String::from("name"),
+            description: String::from(""),
+            owner: Addr::unchecked("owner"),
+            staking_proxy_info_contract_address: None,
+        };
+        assert_eq!(
+            cfg_empty_description.validate(),
+            Err(ContractError::DescriptionIsEmpty {})
+        );
+    }
+}
