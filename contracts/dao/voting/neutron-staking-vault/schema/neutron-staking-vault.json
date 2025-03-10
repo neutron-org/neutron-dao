@@ -461,7 +461,7 @@
           ]
         },
         "staking_tracker_contract_address": {
-          "description": "Address of staking tracker contract address. Used for querying user's and total stake at height.",
+          "description": "Address of staking tracker contract. Used for querying user's and total stake at height.",
           "allOf": [
             {
               "$ref": "#/definitions/Addr"

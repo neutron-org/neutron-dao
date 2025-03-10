@@ -10,7 +10,7 @@ pub struct Config {
     pub name: String,
     /// Description of the contract.
     pub description: String,
-    /// Address of staking tracker contract address.
+    /// Address of staking tracker contract.
     /// Used for querying user's and total stake at height.
     pub staking_tracker_contract_address: Addr,
     /// Contract's owner that can update config and manage blacklist
