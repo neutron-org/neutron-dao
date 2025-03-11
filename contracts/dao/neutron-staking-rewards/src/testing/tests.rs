@@ -1,5 +1,5 @@
 use crate::contract::{execute, instantiate, query};
-use crate::state::CONFIG;
+use crate::state::{CONFIG, PAUSED};
 use crate::testing::mock_querier::mock_dependencies;
 use cosmwasm_std::testing::MockApi;
 use cosmwasm_std::{
@@ -172,7 +172,7 @@ fn test_update_stake() {
     let mut deps = mock_dependencies();
 
     // Instantiate
-    let env = mock_env();
+    let mut env = mock_env();
     let info = message_info(&deps.api.addr_make("owner"), &[]);
     let msg = default_init_msg(deps.api);
     let res = instantiate(deps.as_mut(), env.clone(), info, msg).unwrap();
@@ -214,7 +214,22 @@ fn test_update_stake() {
     assert_eq!(
         res.err().unwrap(),
         ContractError::DaoStakeChangeNotTracked {}
-    )
+    );
+
+    // contract must be self paused if an error happens during stake update
+    let info_proxy = message_info(&deps.api.addr_make("proxy"), &[]);
+    let msg_update_stake = ExecuteMsg::UpdateStake {
+        user: deps.api.addr_make("user0").into_string(),
+    };
+    deps.querier.update_stake(
+        deps.api.addr_make("user0").into_string(),
+        env.block.height,
+        coin(1_000_000_000, "untrn"),
+    );
+
+    env.block.height -= 1; // this allows update_stake msg to fail
+    execute(deps.as_mut(), env.clone(), info_proxy, msg_update_stake).unwrap();
+    assert!(PAUSED.load(&deps.storage).unwrap());
 }
 
 /// Tests the following scenario:
