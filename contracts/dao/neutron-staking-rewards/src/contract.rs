@@ -4,7 +4,7 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 
-use crate::state::{CONFIG, STATE, USERS};
+use crate::state::{assert_pause, CONFIG, PAUSED, STATE, USERS};
 use neutron_staking_info_proxy_common::msg::QueryMsg as InfoProxyQueryMsg;
 use neutron_staking_rewards_common::error::ContractError;
 use neutron_staking_rewards_common::error::ContractError::{
@@ -55,6 +55,8 @@ pub fn instantiate(
     };
     STATE.save(deps.storage, &state)?;
 
+    PAUSED.save(deps.storage, &false)?;
+
     Ok(Response::new()
         .add_attribute("action", "instantiate")
         .add_attribute("owner", config.owner.to_string())
@@ -69,7 +71,7 @@ pub fn instantiate(
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
-    deps: DepsMut,
+    mut deps: DepsMut,
     env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
@@ -92,9 +94,31 @@ pub fn execute(
             staking_denom,
         ),
         // Updates the stake information for a particular user
-        ExecuteMsg::UpdateStake { user } => update_stake(deps, env, info, user),
+        ExecuteMsg::UpdateStake { user } => {
+            update_stake(deps.branch(), env, info, user).or_else(|err| match err {
+                Unauthorized {} => Err(err),
+                DaoStakeChangeNotTracked {} => Err(err),
+                _ => {
+                    let mut resp = Response::new();
+                    resp = resp.add_attribute("update_stake_error", format!("{}", err));
+                    PAUSED.save(deps.storage, &true)?;
+
+                    Ok(resp)
+                }
+            })
+        }
         // Updates the stake information for a particular user
-        ExecuteMsg::Slashing {} => slashing(deps, env, info),
+        ExecuteMsg::Slashing {} => slashing(deps.branch(), env, info).or_else(|err| match err {
+            Unauthorized {} => Err(err),
+            DaoStakeChangeNotTracked {} => Err(err),
+            _ => {
+                let mut resp = Response::new();
+                resp = resp.add_attribute("slashing_error", format!("{}", err));
+                PAUSED.save(deps.storage, &true)?;
+
+                Ok(resp)
+            }
+        }),
         // Claims any accrued rewards for the caller
         ExecuteMsg::ClaimRewards { to_address } => claim_rewards(deps, env, info, to_address),
     }
@@ -166,6 +190,9 @@ fn update_stake(
     info: MessageInfo,
     user: String,
 ) -> Result<Response, ContractError> {
+    // stake update is forbidden while the contract is on pause
+    assert_pause(deps.storage)?;
+
     let config = CONFIG.load(deps.storage)?;
 
     if info.sender != config.staking_info_proxy {
@@ -243,6 +270,9 @@ fn claim_rewards(
     info: MessageInfo,
     to_address: Option<String>,
 ) -> Result<Response, ContractError> {
+    // users can't claim rewards while the contract is on pause
+    assert_pause(deps.storage)?;
+
     let config = CONFIG.load(deps.storage)?;
 
     let (user_info, state) =
