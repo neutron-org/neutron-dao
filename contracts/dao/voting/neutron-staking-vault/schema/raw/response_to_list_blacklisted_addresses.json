@@ -1,38 +1,9 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Config",
-  "type": "object",
-  "required": [
-    "description",
-    "name",
-    "owner",
-    "staking_tracker_contract_address"
-  ],
-  "properties": {
-    "description": {
-      "description": "Description of the contract.",
-      "type": "string"
-    },
-    "name": {
-      "description": "Name of the contract.",
-      "type": "string"
-    },
-    "owner": {
-      "description": "Contract's owner that can update config and manage blacklist",
-      "allOf": [
-        {
-          "$ref": "#/definitions/Addr"
-        }
-      ]
-    },
-    "staking_tracker_contract_address": {
-      "description": "Address of staking tracker contract. Used for querying user's and total stake at height.",
-      "allOf": [
-        {
-          "$ref": "#/definitions/Addr"
-        }
-      ]
-    }
+  "title": "Array_of_Addr",
+  "type": "array",
+  "items": {
+    "$ref": "#/definitions/Addr"
   },
   "definitions": {
     "Addr": {

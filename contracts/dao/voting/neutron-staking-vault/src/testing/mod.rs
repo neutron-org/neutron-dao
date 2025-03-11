@@ -12,14 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use cosmwasm_schema::write_api;
-
-use neutron_staking_tracker_common::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
-
-fn main() {
-    write_api! {
-        instantiate: InstantiateMsg,
-        query: QueryMsg,
-        execute: ExecuteMsg,
-    }
-}
+mod mock_querier;
+mod tests;
