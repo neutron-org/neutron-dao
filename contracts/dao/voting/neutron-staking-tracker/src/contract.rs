@@ -5,7 +5,6 @@ use neutron_staking_tracker_common::msg::{
     ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, SudoMsg,
 };
 use neutron_staking_tracker_common::types::{Config, Delegation, Validator};
-use std::ops::Mul;
 
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
@@ -244,17 +243,23 @@ pub fn before_validator_slashed(
     // Load validator state
     let mut validator = VALIDATORS.load(deps.storage, &validator_addr)?;
 
-    // Ensure tokens are reduced but not negative
-    validator.total_tokens = validator.total_tokens.checked_sub(tokens_to_burn)?;
+    let mut resp = Response::new();
 
-    // Save updated validator state
-    VALIDATORS.save(deps.storage, &validator_addr, &validator, env.block.height)?;
+    // Defensive check to avoid calling events even though this hook
+    // shouldn't get called from cosmos-sdk when no tokens were burned
+    if tokens_to_burn > Uint128::zero() {
+        // Ensure tokens are reduced but not negative
+        validator.total_tokens = validator.total_tokens.checked_sub(tokens_to_burn)?;
 
-    let resp = with_slashing_event(
-        Response::new(),
-        deps.as_ref(),
-        REPLY_ON_BEFORE_VALIDATOR_SLASHED_ERROR_STAKING_PROXY_ID,
-    )?;
+        // Save updated validator state
+        VALIDATORS.save(deps.storage, &validator_addr, &validator, env.block.height)?;
+
+        resp = with_slashing_event(
+            resp,
+            deps.as_ref(),
+            REPLY_ON_BEFORE_VALIDATOR_SLASHED_ERROR_STAKING_PROXY_ID,
+        )?;
+    }
 
     Ok(resp
         .add_attribute("action", "before_validator_slashed")
