@@ -19,6 +19,7 @@ fn default_init_msg(api: MockApi) -> InstantiateMsg {
         dao_address: api.addr_make("dao").into(),
         staking_info_proxy: api.addr_make("proxy").into(),
         staking_denom: "untrn".to_string(),
+        security_address: api.addr_make("security_address").into(),
     }
 }
 
@@ -42,6 +43,7 @@ fn test_update_config_unauthorized() {
         blocks_per_year: None,
         staking_info_proxy: None,
         staking_denom: None,
+        security_address: None,
     };
     let info_non_owner = message_info(&non_owner, &[]);
     let err = execute(
@@ -765,6 +767,7 @@ fn test_slashing_no_effect() {
         annual_reward_rate_bps: 1000, // 10% annual rate.
         blocks_per_year: 10_000,      // 10,000 blocks per year.
         staking_denom: "untrn".to_string(),
+        security_address: deps.api.addr_make("security_address").into(),
     };
     let _res = instantiate(
         deps.as_mut(),
@@ -865,6 +868,7 @@ fn test_slashing_single_event() {
         annual_reward_rate_bps: 1000, // e.g. 10% annual rate
         blocks_per_year: 10_000,      // e.g. 10,000 blocks per year
         staking_denom: "untrn".to_string(),
+        security_address: deps.api.addr_make("security_address").into(),
     };
     let _res = instantiate(
         deps.as_mut(),
@@ -1007,6 +1011,7 @@ fn test_multiple_slashing_events() {
         annual_reward_rate_bps: 1000,
         blocks_per_year: 10_000,
         staking_denom: "untrn".to_string(),
+        security_address: deps.api.addr_make("security_address").into(),
     };
     let _ = instantiate(
         deps.as_mut(),
@@ -1105,6 +1110,7 @@ fn test_update_and_slash_same_block() {
         annual_reward_rate_bps: 1000,
         blocks_per_year: 10_000,
         staking_denom: "untrn".to_string(),
+        security_address: deps.api.addr_make("security_address").into(),
     };
     let _ = instantiate(
         deps.as_mut(),
@@ -1216,6 +1222,7 @@ fn test_two_users_with_slashing() {
         annual_reward_rate_bps: 1000, // 10%
         blocks_per_year: 100,
         staking_denom: "untrn".to_string(),
+        security_address: deps.api.addr_make("security_address").into(),
     };
     let _ = instantiate(
         deps.as_mut(),
@@ -1325,6 +1332,7 @@ fn test_user_with_slashing_and_config_change() {
         annual_reward_rate_bps: 1000, // 10%
         blocks_per_year: 100,
         staking_denom: "untrn".to_string(),
+        security_address: deps.api.addr_make("security_address").into(),
     };
     let _ = instantiate(
         deps.as_mut(),
@@ -1361,6 +1369,7 @@ fn test_user_with_slashing_and_config_change() {
         blocks_per_year: None,
         staking_info_proxy: None,
         staking_denom: None,
+        security_address: None,
     };
     let _ = execute(
         deps.as_mut(),

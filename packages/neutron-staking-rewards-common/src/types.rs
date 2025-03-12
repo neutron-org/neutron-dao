@@ -11,6 +11,8 @@ pub struct Config {
     pub annual_reward_rate_bps: u64,
     pub blocks_per_year: u64,
     pub staking_denom: String,
+    // an address that is allowed to pause/unpause the contract
+    pub security_address: Addr,
 }
 
 impl Config {

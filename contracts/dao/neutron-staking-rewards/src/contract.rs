@@ -4,7 +4,9 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 
-use crate::state::{assert_pause, CONFIG, PAUSED, STATE, USERS};
+use crate::state::{
+    assert_pause, is_allowed_to_pause, is_allowed_to_unpause, CONFIG, PAUSED, STATE, USERS,
+};
 use neutron_staking_info_proxy_common::msg::QueryMsg as InfoProxyQueryMsg;
 use neutron_staking_rewards_common::error::ContractError;
 use neutron_staking_rewards_common::error::ContractError::{
@@ -32,6 +34,7 @@ pub fn instantiate(
     let owner = deps.api.addr_validate(&msg.owner)?;
     let dao_address = deps.api.addr_validate(&msg.dao_address)?;
     let staking_info_proxy = deps.api.addr_validate(&msg.staking_info_proxy)?;
+    let security_address = deps.api.addr_validate(&msg.security_address)?;
 
     // Create and validate the contract configuration.
     let config = Config {
@@ -41,6 +44,7 @@ pub fn instantiate(
         annual_reward_rate_bps: msg.annual_reward_rate_bps,
         blocks_per_year: msg.blocks_per_year,
         staking_denom: msg.staking_denom,
+        security_address,
     };
     config.validate()?;
     CONFIG.save(deps.storage, &config)?;
@@ -83,6 +87,7 @@ pub fn execute(
             blocks_per_year,
             staking_info_proxy,
             staking_denom,
+            security_address,
         } => update_config(
             deps,
             env,
@@ -92,6 +97,7 @@ pub fn execute(
             blocks_per_year,
             staking_info_proxy,
             staking_denom,
+            security_address,
         ),
         // Updates the stake information for a particular user
         ExecuteMsg::UpdateStake { user } => {
@@ -121,7 +127,31 @@ pub fn execute(
         }),
         // Claims any accrued rewards for the caller
         ExecuteMsg::ClaimRewards { to_address } => claim_rewards(deps, env, info, to_address),
+        // Pauses the contract
+        ExecuteMsg::Pause {} => pause(deps, info),
+        // Unpauses the contract
+        ExecuteMsg::Unpause {} => unpause(deps, info),
     }
+}
+
+fn unpause(deps: DepsMut, info: MessageInfo) -> Result<Response, ContractError> {
+    let config = CONFIG.load(deps.storage)?;
+    if !is_allowed_to_unpause(&config, &info.sender) {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    PAUSED.save(deps.storage, &false)?;
+    Ok(Response::new())
+}
+
+fn pause(deps: DepsMut, info: MessageInfo) -> Result<Response, ContractError> {
+    let config = CONFIG.load(deps.storage)?;
+    if !is_allowed_to_pause(&config, &info.sender) {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    PAUSED.save(deps.storage, &true)?;
+    Ok(Response::new())
 }
 
 /// Updates configuration parameters for the contract.
@@ -136,6 +166,7 @@ fn update_config(
     blocks_per_year: Option<u64>,
     staking_info_proxy: Option<String>,
     staking_denom: Option<String>,
+    security_address: Option<String>,
 ) -> Result<Response, ContractError> {
     // Load the existing configuration
     let mut config = CONFIG.load(deps.storage)?;
@@ -165,6 +196,9 @@ fn update_config(
     if let Some(denom) = staking_denom {
         config.staking_denom = denom;
     }
+    if let Some(security_address) = security_address {
+        config.security_address = deps.api.addr_validate(&security_address)?;
+    }
 
     // Validate updated config and save
     config.validate()?;
@@ -179,7 +213,8 @@ fn update_config(
         )
         .add_attribute("blocks_per_year", config.blocks_per_year.to_string())
         .add_attribute("staking_info_proxy", config.staking_info_proxy.to_string())
-        .add_attribute("staking_denom", config.staking_denom))
+        .add_attribute("staking_denom", config.staking_denom)
+        .add_attribute("security_address", config.security_address.to_string()))
 }
 
 /// Called by the staking_info_proxy to update a user’s staked amount in this contract’s state.
