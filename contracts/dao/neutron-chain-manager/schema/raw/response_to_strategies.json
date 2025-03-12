@@ -100,7 +100,8 @@
         "fee_tiers",
         "good_til_purge_allowance",
         "max_jits_per_block",
-        "paused"
+        "paused",
+        "whitelisted_lps"
       ],
       "properties": {
         "fee_tiers": {

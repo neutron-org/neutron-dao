@@ -926,7 +926,8 @@
         "fee_tiers",
         "good_til_purge_allowance",
         "max_jits_per_block",
-        "paused"
+        "paused",
+        "whitelisted_lps"
       ],
       "properties": {
         "fee_tiers": {
@@ -939,6 +940,9 @@
           "type": "boolean"
         },
         "paused": {
+          "type": "boolean"
+        },
+        "whitelisted_lps": {
           "type": "boolean"
         }
       },
@@ -2085,6 +2089,21 @@
         }
       },
       "additionalProperties": false
+    },
+    "SoftwareUpgradePermission": {
+      "type": "object",
+      "required": [
+        "cancel_upgrade",
+        "upgrade"
+      ],
+      "properties": {
+        "cancel_upgrade": {
+          "type": "boolean"
+        },
+        "upgrade": {
+          "type": "boolean"
+        }
+      }
     },
     "SoftwareUpgradeProposal": {
       "description": "Deprecated. SoftwareUpgradeProposal defines the struct for software upgrade proposal.",
