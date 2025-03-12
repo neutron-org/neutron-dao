@@ -10,7 +10,7 @@ use crate::state::{
 use neutron_staking_info_proxy_common::msg::QueryMsg as InfoProxyQueryMsg;
 use neutron_staking_rewards_common::error::ContractError;
 use neutron_staking_rewards_common::error::ContractError::{
-    DaoStakeChangeNotTracked, InvalidStakeDenom, Unauthorized,
+    ContractPaused, DaoStakeChangeNotTracked, InvalidStakeDenom, Unauthorized,
 };
 use neutron_staking_rewards_common::msg::ExecuteMsg;
 use neutron_staking_rewards_common::msg::{
@@ -104,6 +104,7 @@ pub fn execute(
             update_stake(deps.branch(), env, info, user).or_else(|err| match err {
                 Unauthorized {} => Err(err),
                 DaoStakeChangeNotTracked {} => Err(err),
+                ContractPaused {} => Err(err),
                 _ => {
                     let mut resp = Response::new();
                     resp = resp.add_attribute("update_stake_error", format!("{}", err));
@@ -117,6 +118,7 @@ pub fn execute(
         ExecuteMsg::Slashing {} => slashing(deps.branch(), env, info).or_else(|err| match err {
             Unauthorized {} => Err(err),
             DaoStakeChangeNotTracked {} => Err(err),
+            ContractPaused {} => Err(err),
             _ => {
                 let mut resp = Response::new();
                 resp = resp.add_attribute("slashing_error", format!("{}", err));
@@ -270,6 +272,8 @@ fn update_stake(
 /// only send a single Slashing message for a single height, i.e., if multiple validators were
 /// slashed on height X, only one Slashing message must be sent.
 fn slashing(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
+    assert_pause(deps.storage)?;
+
     let config = CONFIG.load(deps.storage)?;
 
     if info.sender != config.staking_info_proxy {
