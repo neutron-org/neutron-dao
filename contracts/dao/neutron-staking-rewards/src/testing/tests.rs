@@ -1,5 +1,5 @@
 use crate::contract::{execute, instantiate, query};
-use crate::state::{CONFIG, PAUSED};
+use crate::state::{CONFIG, PAUSED, STATE};
 use crate::testing::mock_querier::mock_dependencies;
 use cosmwasm_std::testing::MockApi;
 use cosmwasm_std::{
@@ -228,7 +228,9 @@ fn test_update_stake() {
     );
 
     env.block.height -= 1; // this allows update_stake msg to fail
+                           // update_stake call must not raise an error
     execute(deps.as_mut(), env.clone(), info_proxy, msg_update_stake).unwrap();
+    // but the contract must be paused after an errored call
     assert!(PAUSED.load(&deps.storage).unwrap());
 }
 
@@ -966,9 +968,23 @@ fn test_slashing_single_event() {
     let query_rewards_msg = QueryMsg::Rewards {
         user: user1.to_string(),
     };
-    let bin = query(deps.as_ref(), env, query_rewards_msg).unwrap();
+    let bin = query(deps.as_ref(), env.clone(), query_rewards_msg).unwrap();
     let rewards_after_claim: RewardsResponse = cosmwasm_std::from_json(bin).unwrap();
     assert_eq!(rewards_after_claim.pending_rewards.amount, Uint128::zero());
+
+    // remove state entity for the slashing call to fail
+    STATE.remove(&mut deps.storage);
+    // Execute the slashing event (only allowed by the proxy).
+    let slashing_msg = ExecuteMsg::Slashing {};
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        proxy_info.clone(),
+        slashing_msg.clone(),
+    )
+    .unwrap(); // the contract should raise an error
+               // but instead the contract must be paused after an errored call
+    assert!(PAUSED.load(&deps.storage).unwrap());
 }
 
 /// Two slashing events occur before the user queries and claims rewards.
