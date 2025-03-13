@@ -25,7 +25,7 @@ pub enum ContractError {
     ZeroBlocksPerYear {},
 
     #[error("Invalid annual reward rate bps: {bps} must be in [0;10000] range")]
-    InvalidBPS {bps: u64},
+    InvalidBPS { bps: u64 },
 
     #[error("CheckedMultiplyRatioError error: {0}")]
     CheckedMultiplyFractionError(#[from] CheckedMultiplyFractionError),

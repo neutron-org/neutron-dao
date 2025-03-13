@@ -24,7 +24,9 @@ impl Config {
         }
 
         if self.annual_reward_rate_bps > 10_000 {
-            return Err(ContractError::InvalidBPS {bps: self.annual_reward_rate_bps});
+            return Err(ContractError::InvalidBPS {
+                bps: self.annual_reward_rate_bps,
+            });
         }
 
         Ok(())
@@ -152,11 +154,11 @@ mod tests {
 
         for tc in test_cases {
             let result = tc.config.validate();
-            
+
             match (&result, &tc.expected_result) {
                 (Ok(_), Ok(_)) => {
                     // Both are Ok, test passes
-                },
+                }
                 (Err(e1), Err(e2)) => {
                     // Compare error variants
                     assert_eq!(
@@ -167,13 +169,11 @@ mod tests {
                         tc.expected_result,
                         result
                     );
-                },
+                }
                 _ => {
                     panic!(
                         "Test case '{}' failed: expected {:?}, got {:?}",
-                        tc.name,
-                        tc.expected_result,
-                        result
+                        tc.name, tc.expected_result, result
                     );
                 }
             }

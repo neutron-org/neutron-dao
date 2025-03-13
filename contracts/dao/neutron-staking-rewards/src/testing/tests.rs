@@ -70,13 +70,7 @@ fn test_claim_rewards_unauthorized() {
     let dao = deps.api.addr_make("dao");
     let update_config_msg = ExecuteMsg::ClaimRewards { to_address: None };
     let info_dao = message_info(&dao, &[]);
-    let err = execute(
-        deps.as_mut(),
-        env.clone(),
-        info_dao,
-        update_config_msg,
-    )
-    .unwrap_err();
+    let err = execute(deps.as_mut(), env.clone(), info_dao, update_config_msg).unwrap_err();
     assert!(matches!(err, ContractError::Unauthorized {}));
 }
 
