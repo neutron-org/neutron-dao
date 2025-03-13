@@ -161,25 +161,22 @@ pub fn execute_add_to_blacklist(
         return Err(ContractError::Unauthorized {});
     }
 
-    let validated_addresses: Vec<Addr> = addresses
+    let validated_addresses: HashSet<Addr> = addresses
         .iter()
         .map(|x| deps.api.addr_validate(&x))
         .collect::<StdResult<_>>()?;
 
-    if let Some(mut blacklisted_addresses) = BLACKLISTED_ADDRESSES.may_load(deps.storage)? {
-        let blacklisted_addresses_set: HashSet<Addr> =
-            blacklisted_addresses.iter().cloned().collect();
+    let mut blacklisted_addresses_set: HashSet<Addr> = BLACKLISTED_ADDRESSES
+        .may_load(deps.storage)?
+        .unwrap_or_default()
+        .into_iter()
+        .collect();
 
-        blacklisted_addresses.extend(
-            validated_addresses
-                .into_iter()
-                .filter(|x| !blacklisted_addresses_set.contains(x)),
-        );
+    blacklisted_addresses_set.extend(validated_addresses);
 
-        BLACKLISTED_ADDRESSES.save(deps.storage, &blacklisted_addresses, env.block.height)?;
-    } else {
-        BLACKLISTED_ADDRESSES.save(deps.storage, &validated_addresses, env.block.height)?;
-    }
+    let blacklisted_addresses: Vec<Addr> = blacklisted_addresses_set.into_iter().collect();
+
+    BLACKLISTED_ADDRESSES.save(deps.storage, &blacklisted_addresses, env.block.height)?;
 
     Ok(Response::new()
         .add_attribute("action", "add_to_blacklist")
@@ -372,12 +369,21 @@ pub fn query_list_blacklisted_addresses(
 ) -> StdResult<Vec<Addr>> {
     if let Some(mut blacklisted_addresses) = BLACKLISTED_ADDRESSES.may_load(deps.storage)? {
         let tail = match start_after {
-            Some(start_after) => blacklisted_addresses.split_off(start_after.try_into().unwrap()),
+            Some(start_after) => blacklisted_addresses.split_off(
+                start_after
+                    .try_into()
+                    .unwrap_or(0)
+                    .min(blacklisted_addresses.len()),
+            ),
             None => blacklisted_addresses,
         };
 
         return match limit {
-            Some(limit) => Ok(tail.into_iter().take(limit.try_into().unwrap()).collect()),
+            Some(limit) => {
+                let limit = limit.try_into().unwrap_or(tail.len());
+
+                Ok(tail.into_iter().take(limit).collect())
+            }
             None => Ok(tail),
         };
     }
