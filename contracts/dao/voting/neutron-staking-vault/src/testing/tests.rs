@@ -401,7 +401,7 @@ fn test_voting_power_queries() {
     let prev_height = app.block_info().height - 10;
 
     // Query the previous height, total 10000, ADDR1 1000, ADDR2 1000
-    // Total power is 8000
+    // Total power is 10000
     let resp = get_total_power_at_height(&mut app, addr.clone(), Some(prev_height));
     assert_eq!(Uint128::from(10000u64), resp.power);
 
@@ -443,14 +443,23 @@ fn test_voting_power_queries() {
         get_voting_power_at_height(&mut app, addr.clone(), ADDR1.to_string(), Some(prev_height));
     assert!(resp.power.is_zero());
 
-    // For current height, total 9000, ADDR1 1000
-    // Total power is 150
+    // ADDR2 has 0 power
+    let resp =
+        get_voting_power_at_height(&mut app, addr.clone(), ADDR2.to_string(), Some(prev_height));
+    assert!(resp.power.is_zero());
+
+    // For current height, total 9000, ADDR1 1000, ADDR2 0
+    // Total power is 9000
     let resp = get_total_power_at_height(&mut app, addr.clone(), None);
     assert_eq!(Uint128::from(9000u64), resp.power);
 
     // ADDR1 has 1000 power
     let resp = get_voting_power_at_height(&mut app, addr.clone(), ADDR1.to_string(), None);
     assert_eq!(Uint128::from(1000u64), resp.power);
+
+    // ADDR2 has 0 power
+    let resp = get_voting_power_at_height(&mut app, addr.clone(), ADDR2.to_string(), None);
+    assert!(resp.power.is_zero());
 }
 
 #[test]
