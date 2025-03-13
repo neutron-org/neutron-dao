@@ -1,6 +1,8 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Coin;
 
+use crate::types::SlashingEvent;
+
 #[cw_serde]
 pub struct InstantiateMsg {
     pub owner: String,
@@ -44,6 +46,10 @@ pub enum QueryMsg {
     /// Returns the user's current pending rewards.
     #[returns(RewardsResponse)]
     Rewards { user: String },
+
+    // Returns slashing events recorded by the contract
+    #[returns(SlashingEventsResponse)]
+    SlashingEvents { from_height: u64 },
 }
 
 /// Response for `QueryMsg::Config`
@@ -62,6 +68,12 @@ pub struct ConfigResponse {
 pub struct StateResponse {
     pub global_reward_index: String,
     pub last_global_update_block: u64,
+}
+
+/// Response for `QueryMsg::SlashingEvents`
+#[cw_serde]
+pub struct SlashingEventsResponse {
+    pub slashing_events: Vec<SlashingEvent>,
 }
 
 /// Response for `QueryMsg::Rewards`

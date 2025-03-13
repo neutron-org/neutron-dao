@@ -33,7 +33,7 @@ impl Config {
     }
 }
 
-type SlashingEvent = (GlobalRewardIndex, u64);
+pub type SlashingEvent = (GlobalRewardIndex, u64);
 type GlobalRewardIndex = Decimal;
 
 /// Frequently updated reward-related data.

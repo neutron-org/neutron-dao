@@ -69,6 +69,7 @@ pub enum ProviderStakeQueryMsg {
 pub struct ConfigResponse {
     pub owner: String,
     pub staking_rewards: Option<String>,
+    pub staking_denom: String,
 }
 
 /// Response for `QueryMsg::Providers`

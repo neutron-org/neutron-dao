@@ -10,10 +10,10 @@ use neutron_staking_rewards_common::error::ContractError;
 use neutron_staking_rewards_common::error::ContractError::{
     DaoStakeChangeNotTracked, InvalidStakeDenom, Unauthorized,
 };
-use neutron_staking_rewards_common::msg::ExecuteMsg;
 use neutron_staking_rewards_common::msg::{
     ConfigResponse, InstantiateMsg, MigrateMsg, QueryMsg, RewardsResponse, StateResponse,
 };
+use neutron_staking_rewards_common::msg::{ExecuteMsg, SlashingEventsResponse};
 use neutron_staking_rewards_common::types::{Config, State, UserInfo};
 
 const CONTRACT_NAME: &str = "crates.io:neutron-staking-rewards";
@@ -289,6 +289,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<cosmwasm_std::Binary
         QueryMsg::Config {} => Ok(to_json_binary(&query_config(deps)?)?),
         QueryMsg::State {} => Ok(to_json_binary(&query_state(deps)?)?),
         QueryMsg::Rewards { user } => Ok(to_json_binary(&query_rewards(deps, env, user)?)?),
+        QueryMsg::SlashingEvents { from_height } => {
+            Ok(to_json_binary(&query_slashing_events(deps, from_height)?)?)
+        }
     }
 }
 
@@ -311,6 +314,14 @@ fn query_state(deps: Deps) -> StdResult<StateResponse> {
     Ok(StateResponse {
         global_reward_index: state.global_reward_index.to_string(),
         last_global_update_block: state.global_update_height,
+    })
+}
+
+/// Returns slice of slashing events.
+fn query_slashing_events(deps: Deps, from_height: u64) -> StdResult<SlashingEventsResponse> {
+    let state = STATE.load(deps.storage)?;
+    Ok(SlashingEventsResponse {
+        slashing_events: state.load_unprocessed_slashing_events(from_height),
     })
 }
 
