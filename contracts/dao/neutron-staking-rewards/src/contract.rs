@@ -245,6 +245,10 @@ fn claim_rewards(
 ) -> Result<Response, ContractError> {
     let config = CONFIG.load(deps.storage)?;
 
+    if info.sender == config.dao_address {
+        return Err(Unauthorized {});
+    }
+
     let (user_info, state) =
         process_slashing_events(deps.as_ref(), config.clone(), info.sender.clone())?;
     let updated_state = get_updated_state(&config, &state, env.block.height)?;

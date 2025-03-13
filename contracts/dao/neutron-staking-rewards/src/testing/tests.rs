@@ -55,6 +55,32 @@ fn test_update_config_unauthorized() {
 }
 
 #[test]
+fn test_claim_rewards_unauthorized() {
+    let mut deps = mock_dependencies();
+
+    // Set up the contract.
+    // Instantiate
+    let env = mock_env();
+    let info = message_info(&deps.api.addr_make("owner"), &[]);
+    let msg = default_init_msg(deps.api);
+    let res = instantiate(deps.as_mut(), env.clone(), info, msg).unwrap();
+    assert_eq!(res.messages.len(), 0);
+
+    // Attempt to claim from dao
+    let dao = deps.api.addr_make("dao");
+    let update_config_msg = ExecuteMsg::ClaimRewards { to_address: None };
+    let info_dao = message_info(&dao, &[]);
+    let err = execute(
+        deps.as_mut(),
+        env.clone(),
+        info_dao,
+        update_config_msg,
+    )
+    .unwrap_err();
+    assert!(matches!(err, ContractError::Unauthorized {}));
+}
+
+#[test]
 fn test_claim_rewards_no_pending() {
     let mut deps = mock_dependencies();
 
