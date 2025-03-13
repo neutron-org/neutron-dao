@@ -23,6 +23,10 @@ impl Config {
             return Err(ContractError::ZeroBlocksPerYear {});
         }
 
+        if self.annual_reward_rate_bps > 10_000 {
+            return Err(ContractError::InvalidBPS {bps: self.annual_reward_rate_bps});
+        }
+
         Ok(())
     }
 }
@@ -57,4 +61,122 @@ pub struct UserInfo {
     pub user_reward_index: Decimal,
     pub last_update_block: u64,
     pub pending_rewards: Coin,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_config_validation() {
+        struct TestCase {
+            name: &'static str,
+            config: Config,
+            expected_result: Result<(), ContractError>,
+        }
+
+        let test_cases = vec![
+            TestCase {
+                name: "valid configuration",
+                config: Config {
+                    owner: Addr::unchecked("owner"),
+                    dao_address: Addr::unchecked("dao"),
+                    staking_info_proxy: Addr::unchecked("proxy"),
+                    annual_reward_rate_bps: 500, // 5%
+                    blocks_per_year: 5_256_000,  // Approximately 6 seconds per block
+                    staking_denom: "ustake".to_string(),
+                },
+                expected_result: Ok(()),
+            },
+            TestCase {
+                name: "empty staking denomination",
+                config: Config {
+                    owner: Addr::unchecked("owner"),
+                    dao_address: Addr::unchecked("dao"),
+                    staking_info_proxy: Addr::unchecked("proxy"),
+                    annual_reward_rate_bps: 500,
+                    blocks_per_year: 5_256_000,
+                    staking_denom: "".to_string(),
+                },
+                expected_result: Err(ContractError::EmptyStakeDenom {}),
+            },
+            TestCase {
+                name: "zero blocks per year",
+                config: Config {
+                    owner: Addr::unchecked("owner"),
+                    dao_address: Addr::unchecked("dao"),
+                    staking_info_proxy: Addr::unchecked("proxy"),
+                    annual_reward_rate_bps: 500,
+                    blocks_per_year: 0,
+                    staking_denom: "ustake".to_string(),
+                },
+                expected_result: Err(ContractError::ZeroBlocksPerYear {}),
+            },
+            TestCase {
+                name: "invalid BPS (>10,000)",
+                config: Config {
+                    owner: Addr::unchecked("owner"),
+                    dao_address: Addr::unchecked("dao"),
+                    staking_info_proxy: Addr::unchecked("proxy"),
+                    annual_reward_rate_bps: 12_000,
+                    blocks_per_year: 5_256_000,
+                    staking_denom: "ustake".to_string(),
+                },
+                expected_result: Err(ContractError::InvalidBPS { bps: 12_000 }),
+            },
+            TestCase {
+                name: "maximum valid BPS (10,000)",
+                config: Config {
+                    owner: Addr::unchecked("owner"),
+                    dao_address: Addr::unchecked("dao"),
+                    staking_info_proxy: Addr::unchecked("proxy"),
+                    annual_reward_rate_bps: 10_000,
+                    blocks_per_year: 5_256_000,
+                    staking_denom: "ustake".to_string(),
+                },
+                expected_result: Ok(()),
+            },
+            TestCase {
+                name: "minimum valid blocks per year (1)",
+                config: Config {
+                    owner: Addr::unchecked("owner"),
+                    dao_address: Addr::unchecked("dao"),
+                    staking_info_proxy: Addr::unchecked("proxy"),
+                    annual_reward_rate_bps: 500,
+                    blocks_per_year: 1,
+                    staking_denom: "ustake".to_string(),
+                },
+                expected_result: Ok(()),
+            },
+        ];
+
+        for tc in test_cases {
+            let result = tc.config.validate();
+            
+            match (&result, &tc.expected_result) {
+                (Ok(_), Ok(_)) => {
+                    // Both are Ok, test passes
+                },
+                (Err(e1), Err(e2)) => {
+                    // Compare error variants
+                    assert_eq!(
+                        format!("{:?}", e1),
+                        format!("{:?}", e2),
+                        "Test case '{}' failed: expected {:?}, got {:?}",
+                        tc.name,
+                        tc.expected_result,
+                        result
+                    );
+                },
+                _ => {
+                    panic!(
+                        "Test case '{}' failed: expected {:?}, got {:?}",
+                        tc.name,
+                        tc.expected_result,
+                        result
+                    );
+                }
+            }
+        }
+    }
 }
