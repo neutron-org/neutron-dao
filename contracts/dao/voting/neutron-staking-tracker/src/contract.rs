@@ -1,4 +1,4 @@
-use crate::state::{BONDED_VALIDATORS, CONFIG, DELEGATIONS, VALIDATORS};
+use crate::state::{BONDED_VALIDATORS_SET, CONFIG, DELEGATIONS, VALIDATORS};
 use neutron_staking_info_proxy_common::msg::ExecuteMsg as StakingInfoProxyExecuteMsg;
 use neutron_staking_tracker_common::error::ContractError;
 use neutron_staking_tracker_common::msg::{
@@ -50,7 +50,8 @@ pub fn instantiate(
     };
     config.validate()?;
     CONFIG.save(deps.storage, &config)?;
-    BONDED_VALIDATORS.save(deps.storage, &Vec::new(), env.block.height)?;
+
+    BONDED_VALIDATORS_SET.save(deps.storage, &Vec::new(), env.block.height)?;
 
     Ok(Response::new()
         .add_attribute("action", "instantiate")
@@ -137,6 +138,11 @@ pub fn execute_update_config(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn sudo(deps: DepsMut, env: Env, msg: SudoMsg) -> Result<Response, ContractError> {
     match msg {
+        SudoMsg::AfterValidatorCreated { val_addr } => after_validator_created(deps, env, val_addr),
+        SudoMsg::AfterValidatorRemoved {
+            cons_addr,
+            val_addr,
+        } => after_validator_removed(deps, env, cons_addr, val_addr),
         SudoMsg::AfterValidatorBonded {
             cons_addr,
             val_addr,
@@ -155,6 +161,62 @@ pub fn sudo(deps: DepsMut, env: Env, msg: SudoMsg) -> Result<Response, ContractE
             before_validator_slashed(deps, env, val_addr, fraction)
         }
     }
+}
+
+pub(crate) fn after_validator_created(
+    deps: DepsMut,
+    env: Env,
+    valoper_address: String,
+) -> Result<Response, ContractError> {
+    // Retrieve the consensus address using a helper function
+    let valoper_addr = Addr::unchecked(&valoper_address);
+
+    let querier = StakingQuerier::new(&deps.querier);
+    let validator_data = querier
+        .validator(valoper_address.clone())?
+        .validator
+        .ok_or_else(|| ContractError::ValidatorNotFound {
+            address: valoper_address.clone(),
+        })?;
+
+    let total_tokens = Uint128::from_str(&validator_data.tokens)?;
+    let total_shares = Uint128::from_str(&validator_data.delegator_shares)?;
+
+    let new_validator = Validator {
+        oper_address: valoper_addr.clone(),
+        total_tokens,
+        total_shares,
+    };
+
+    // Use `valoper_address` as the primary key for storage
+    VALIDATORS.save(
+        deps.storage,
+        &valoper_addr, // Primary key is now `valoper`
+        &new_validator,
+        env.block.height,
+    )?;
+
+    Ok(Response::new()
+        .add_attribute("action", "after_validator_created")
+        .add_attribute("operator_address", valoper_address)
+        .add_attribute("total_tokens", total_tokens.to_string())
+        .add_attribute("total_shares", total_shares.to_string()))
+}
+
+pub(crate) fn after_validator_removed(
+    deps: DepsMut,
+    env: Env,
+    valoper_address: String,
+    _valcons_address: String,
+) -> Result<Response, ContractError> {
+    let validator_addr = Addr::unchecked(&valoper_address);
+
+    // Remove validator
+    VALIDATORS.remove(deps.storage, &validator_addr, env.block.height)?;
+
+    Ok(Response::new()
+        .add_attribute("action", "after_validator_removed")
+        .add_attribute("valoper_address", valoper_address))
 }
 
 pub(crate) fn after_validator_bonded(
@@ -196,11 +258,11 @@ pub(crate) fn after_validator_bonded(
 
     let mut resp = Response::new();
 
-    let mut bonded_validators = BONDED_VALIDATORS.load(deps.storage)?;
-    // Defensive check - what if bonded_validators didn't contain valoper_addr
+    let mut bonded_validators = BONDED_VALIDATORS_SET.load(deps.storage)?;
+    // Defensive check
     if !bonded_validators.contains(&valoper_addr.to_string()) {
         bonded_validators.push(valoper_addr.to_string());
-        BONDED_VALIDATORS.save(deps.storage, &bonded_validators, env.block.height)?;
+        BONDED_VALIDATORS_SET.save(deps.storage, &bonded_validators, env.block.height)?;
 
         // Call proxy info to notify about change of stake
         resp = with_slashing_event(
@@ -225,14 +287,15 @@ pub fn before_validator_slashed(
 ) -> Result<Response, ContractError> {
     let mut resp = Response::new()
         .add_attribute("action", "before_validator_slashed")
-        .add_attribute("valoper_address", &valoper_address);
+        .add_attribute("valoper_address", &valoper_address)
+        .add_attribute("slashing_fraction", slashing_fraction.to_string());
 
     let validator_addr = Addr::unchecked(&valoper_address);
 
     // Load validator state
     let validator = VALIDATORS.may_load(deps.storage, &validator_addr)?;
 
-    // Defensive check - what if we don't have validator yet for some reason
+    // Defensive check
     if let Some(mut validator) = validator {
         // Calculate slashed tokens using Decimal256 multiplication and ceiling conversion
         let slashed_tokens: Uint256 = slashing_fraction
@@ -258,7 +321,7 @@ pub fn before_validator_slashed(
             .add_attribute("total_shares", validator.total_shares.to_string())
     }
 
-    Ok(resp.add_attribute("slashing_fraction", slashing_fraction.to_string()))
+    Ok(resp)
 }
 
 pub(crate) fn after_validator_begin_unbonding(
@@ -274,14 +337,14 @@ pub(crate) fn after_validator_begin_unbonding(
 
     let valoper_addr = Addr::unchecked(valoper_address);
 
-    let mut bonded_vals = BONDED_VALIDATORS.load(deps.storage)?;
+    let mut bonded_vals = BONDED_VALIDATORS_SET.load(deps.storage)?;
     if !bonded_vals.contains(&valoper_addr.to_string()) {
         return Ok(resp);
     }
 
     // Mark validator as unbonded
     bonded_vals.retain(|a| a != &valoper_addr.to_string());
-    BONDED_VALIDATORS.save(deps.storage, &bonded_vals, env.block.height)?;
+    BONDED_VALIDATORS_SET.save(deps.storage, &bonded_vals, env.block.height)?;
 
     // Call proxy info to notify about change of stake
     resp = with_slashing_event(
@@ -305,7 +368,7 @@ pub(crate) fn after_delegation_modified(
     let querier = StakingQuerier::new(&deps.querier);
 
     // Query **current delegation state** from the chain (fallback to zero if query fails)
-    let actual_shares = querier
+    let current_shares = querier
         .delegation(delegator_address.clone(), valoper_address.clone())
         .ok() // If query fails, treat as no delegation
         .and_then(|delegation_info| {
@@ -335,71 +398,66 @@ pub(crate) fn after_delegation_modified(
         &Delegation {
             delegator_address: delegator.clone(),
             validator_address: valoper_addr.clone(),
-            shares: actual_shares, // **Ensure correct shares are stored**
+            shares: current_shares, // **Ensure correct shares are stored**
         },
         env.block.height,
     )?;
 
-    let mut resp = Response::new()
+    // Load the validator by `valoper_address`.
+    let mut validator = VALIDATORS.load(deps.storage, &valoper_addr)?;
+
+    // https://github.com/neutron-org/cosmos-sdk/blob/83295e7c1380071cb9a0f405442d06acf387228c/x/staking/keeper/delegation.go#L1048
+    // https://github.com/neutron-org/cosmos-sdk/blob/83295e7c1380071cb9a0f405442d06acf387228c/x/staking/keeper/validator.go#L148
+    // - **Unbonding (Delegation Decrease)**:
+    //   - When a delegator **removes** or **reduces** their delegation (`actual_shares < previous_shares`),
+    //     we **cannot** rely on the chain's validator query because the state isn't updated yet due to the unbonding period.
+    //   - Instead, we must **manually recalculate** the validator's `total_tokens` and `total_shares`
+    //     by removing the undelegated shares.
+    //
+    // - **Bonding (Delegation Increase)**:
+    //   - When a delegator **adds** or **increases** their delegation (`actual_shares >= previous_shares`),
+    //     we can simply **query the validator's latest state** from the chain.
+    //   - This is because the validator's `total_tokens` and `total_shares` are **already updated**
+    //     by the time this function is executed.
+    //
+    if current_shares < previous_shares {
+        let undelegated_shares = previous_shares - current_shares;
+
+        validator.remove_del_shares(undelegated_shares)?;
+    } else {
+        // Query validator data to get the latest **total tokens & shares**
+        let validator_data = querier
+            .validator(valoper_address.clone())?
+            .validator
+            .ok_or_else(|| ContractError::ValidatorNotFound {
+                address: valoper_address.clone(),
+            })?;
+
+        validator.total_shares = Uint128::from_str(&validator_data.delegator_shares)?;
+        validator.total_tokens = Uint128::from_str(&validator_data.tokens)?;
+    }
+
+    // Save updated validator state
+    VALIDATORS.save(deps.storage, &valoper_addr, &validator, env.block.height)?;
+
+    let mut resp = Response::new();
+
+    // Do not need to trigger rewards recalculation if delegation was to unbonded validator,
+    // since it does not change the stake.
+    resp = with_update_stake_msg(
+        resp,
+        deps.as_ref(),
+        &delegator,
+        REPLY_ON_AFTER_DELEGATION_MODIFIED_ERROR_STAKING_PROXY_ID,
+    )?;
+
+    Ok(resp
         .add_attribute("action", "after_delegation_modified")
         .add_attribute("delegator", delegator.to_string())
         .add_attribute("valoper_address", valoper_address.to_string())
-        .add_attribute("delegation_shares", actual_shares.to_string());
-
-    // Load validator by `valoper_address`.
-    // If validator not found, that means he's not bonded.
-    // This situation can happen if new validator was created, not yet bonded, and delegated to.
-    // Because we didn't bond to this validator, we didn't store him in `VALIDATOR` snapshot map.
-    if let Some(mut validator) = VALIDATORS.may_load(deps.storage, &valoper_addr)? {
-        // https://github.com/neutron-org/cosmos-sdk/blob/83295e7c1380071cb9a0f405442d06acf387228c/x/staking/keeper/delegation.go#L1048
-        // https://github.com/neutron-org/cosmos-sdk/blob/83295e7c1380071cb9a0f405442d06acf387228c/x/staking/keeper/validator.go#L148
-        // - **Unbonding (Delegation Decrease)**:
-        //   - When a delegator **removes** or **reduces** their delegation (`actual_shares < previous_shares`),
-        //     we **cannot** rely on the chain's validator query because the state isn't updated yet due to the unbonding period.
-        //   - Instead, we must **manually recalculate** the validator's `total_tokens` and `total_shares`
-        //     by removing the undelegated shares.
-        //
-        // - **Bonding (Delegation Increase)**:
-        //   - When a delegator **adds** or **increases** their delegation (`actual_shares >= previous_shares`),
-        //     we can simply **query the validator's latest state** from the chain.
-        //   - This is because the validator's `total_tokens` and `total_shares` are **already updated**
-        //     by the time this function is executed.
-        //
-        if actual_shares < previous_shares {
-            let undelegated_shares = previous_shares - actual_shares;
-
-            validator.remove_del_shares(undelegated_shares)?;
-        } else {
-            // Query validator data to get the latest **total tokens & shares**
-            let validator_data = querier
-                .validator(valoper_address.clone())?
-                .validator
-                .ok_or_else(|| ContractError::ValidatorNotFound {
-                    address: valoper_address.clone(),
-                })?;
-
-            validator.total_shares = Uint128::from_str(&validator_data.delegator_shares)?;
-            validator.total_tokens = Uint128::from_str(&validator_data.tokens)?;
-        }
-
-        // Save updated validator state
-        VALIDATORS.save(deps.storage, &valoper_addr, &validator, env.block.height)?;
-
-        resp = resp
-            .add_attribute("total_shares", validator.total_shares.to_string())
-            .add_attribute("total_tokens", validator.total_tokens.to_string());
-
-        // Do not need to trigger rewards recalculation if delegation was to unbonded validator,
-        // since it does not change the stake.
-        resp = with_update_stake_msg(
-            resp,
-            deps.as_ref(),
-            &delegator,
-            REPLY_ON_AFTER_DELEGATION_MODIFIED_ERROR_STAKING_PROXY_ID,
-        )?;
-    }
-
-    Ok(resp)
+        .add_attribute("delegation_shares", current_shares.to_string())
+        .add_attribute("total_shares", validator.total_shares.to_string())
+        .add_attribute("total_tokens", validator.total_tokens.to_string()))
 }
 
 pub(crate) fn before_delegation_removed(
@@ -414,17 +472,17 @@ pub(crate) fn before_delegation_removed(
     let mut resp = Response::new();
 
     // Load shares amount we have for the delegation in the contract's state
-    let previous_shares = DELEGATIONS
+    let shares = DELEGATIONS
         .may_load(deps.storage, (&delegator, &valoper_addr))?
         .map(|d| d.shares);
 
-    // Defensive check - what if delegation did not exist when we try to remove it
-    if let Some(previous_shares) = previous_shares {
-        // Load validator by `valoper_address`.
-        // Validator can potentially does not exist if it was unbonded when delegation was removed.
+    // Defensive check
+    if let Some(shares) = shares {
+        // Load the validator by `valoper_address`.
+        // The validator may not exist if they were unbonded when the delegation was removed.
         if let Some(mut validator) = VALIDATORS.may_load(deps.storage, &valoper_addr)? {
             // Since it's `before_delegation_removed`, we can safely remove all shares from validator
-            validator.remove_del_shares(previous_shares)?;
+            validator.remove_del_shares(shares)?;
 
             // Save the updated validator state
             VALIDATORS.save(deps.storage, &valoper_addr, &validator, env.block.height)?;
@@ -466,7 +524,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 ///
 pub fn calculate_stake_at_height(deps: Deps, address: Addr, height: u64) -> StdResult<Uint128> {
     let mut stake = Uint256::zero(); // Use Uint256 to avoid overflow
-    let bonded_vals = BONDED_VALIDATORS
+    let bonded_vals = BONDED_VALIDATORS_SET
         .may_load_at_height(deps.storage, height)?
         .unwrap_or_default();
 
@@ -520,7 +578,7 @@ pub fn query_total_stake_at_height(
 ) -> StdResult<Uint128> {
     let height = height.unwrap_or(env.block.height);
 
-    let bonded_vals = BONDED_VALIDATORS
+    let bonded_vals = BONDED_VALIDATORS_SET
         .may_load_at_height(deps.storage, height)?
         .unwrap_or_default()
         .into_iter()
@@ -599,7 +657,7 @@ fn with_slashing_event(resp: Response, deps: Deps, reason: u64) -> Result<Respon
                 funds: vec![],
             };
 
-            // Use submsg because we want to ignore possible errors here.
+            // Use SubMsg because we want to ignore possible errors here.
             // This contract should be errorless no matter what.
             resp.add_submessage(SubMsg::reply_on_error(slashing_msg, reason))
         } else {
