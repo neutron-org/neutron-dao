@@ -211,7 +211,7 @@ pub(crate) fn after_validator_bonded(
     }
 
     Ok(resp
-        .add_attribute("action", "validator_bonded")
+        .add_attribute("action", "after_validator_bonded")
         .add_attribute("valoper_address", valoper_address)
         .add_attribute("total_tokens", validator.total_tokens.to_string())
         .add_attribute("total_shares", validator.total_shares.to_string()))
