@@ -198,9 +198,7 @@ pub fn execute_remove_from_blacklist(
         let validated_addresses: HashSet<Addr> = addresses
             .iter()
             .map(|x| deps.api.addr_validate(&x))
-            .collect::<StdResult<Vec<_>>>()?
-            .into_iter()
-            .collect();
+            .collect::<StdResult<_>>()?;
 
         blacklisted_addresses.retain(|x| !validated_addresses.contains(x));
 
