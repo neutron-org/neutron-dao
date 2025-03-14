@@ -660,7 +660,7 @@ fn test_create_delegation_and_query_stake_direct_write() {
         total_shares: Uint128::new(1000),
     };
     VALIDATORS
-        .save(deps.as_mut().storage, &oper_addr, &validator, 10) // Store by consensus address
+        .save(deps.as_mut().storage, &oper_addr, &validator, 10)
         .unwrap();
 
     // Store delegation directly in state (Using operator address)
