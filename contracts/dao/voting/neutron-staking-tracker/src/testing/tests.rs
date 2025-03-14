@@ -336,7 +336,7 @@ fn test_after_validator_bonded_with_mock_query() {
         response.attributes,
         vec![
             ("action", "after_validator_bonded"),
-            ("valoper_address", &oper_addr.to_string()), // Match contract's attribute key
+            ("valoper_address", oper_addr.to_string().as_ref()), // Match contract's attribute key
             ("total_tokens", "1000"),
             ("total_shares", "1000"),
         ]
