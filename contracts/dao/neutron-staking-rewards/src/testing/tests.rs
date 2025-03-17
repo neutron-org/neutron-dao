@@ -29,6 +29,10 @@ fn assert_contract_is_paused(mut deps: DepsMut, env: Env, proxy: Addr, user: Add
 
     assert!(PAUSED.load(deps.storage).unwrap());
 
+    let bin_resp = query(deps.as_ref(), mock_env(), QueryMsg::IsPaused {}).unwrap();
+    let is_paused_resp: bool = cosmwasm_std::from_json(bin_resp).unwrap();
+    assert!(is_paused_resp);
+
     let slashing_msg = ExecuteMsg::Slashing {};
     assert_eq!(
         execute(
@@ -104,7 +108,7 @@ fn test_pause_contract() {
     execute(deps.as_mut(), env.clone(), info_security.clone(), pause_msg).unwrap();
     assert_contract_is_paused(deps.as_mut(), env.clone(), proxy, user);
 
-    // Owner can unpause the contract
+    // Security address can unpause the contract
     let unpause_msg = ExecuteMsg::Unpause {};
     execute(deps.as_mut(), env.clone(), info_security, unpause_msg).unwrap();
     assert_pause(&deps.storage).unwrap();

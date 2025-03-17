@@ -101,30 +101,38 @@ pub fn execute(
         ),
         // Updates the stake information for a particular user
         ExecuteMsg::UpdateStake { user } => {
+            // try to update stake, if an error happens during the update we need to pause the contract
+            // (because an error is terrible and it breaks out internal accounting)
+            // We don't need to pause the contract in cases:
+            // * if it's Unauthorized error;
+            // * if it's DaoStakeChangeNotTracked error;
+            // * of if the contract is already paused.
             update_stake(deps.branch(), env, info, user).or_else(|err| match err {
                 Unauthorized {} => Err(err),
                 DaoStakeChangeNotTracked {} => Err(err),
                 ContractPaused {} => Err(err),
                 _ => {
-                    let mut resp = Response::new();
-                    resp = resp.add_attribute("update_stake_error", format!("{}", err));
                     PAUSED.save(deps.storage, &true)?;
 
-                    Ok(resp)
+                    Ok(Response::new().add_attribute("update_stake_error", format!("{}", err)))
                 }
             })
         }
         // Updates the stake information for a particular user
+        // try to account slashing, if an error happens during the method execution, we need to pause the contract
+        // (because an error is terrible and it breaks out internal accounting)
+        // We don't need to pause the contract in cases:
+        // * if it's Unauthorized error;
+        // * if it's DaoStakeChangeNotTracked error;
+        // * of if the contract is already paused.
         ExecuteMsg::Slashing {} => slashing(deps.branch(), env, info).or_else(|err| match err {
             Unauthorized {} => Err(err),
             DaoStakeChangeNotTracked {} => Err(err),
             ContractPaused {} => Err(err),
             _ => {
-                let mut resp = Response::new();
-                resp = resp.add_attribute("slashing_error", format!("{}", err));
                 PAUSED.save(deps.storage, &true)?;
 
-                Ok(resp)
+                Ok(Response::new().add_attribute("slashing_error", format!("{}", err)))
             }
         }),
         // Claims any accrued rewards for the caller
@@ -354,6 +362,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<cosmwasm_std::Binary
         QueryMsg::Config {} => Ok(to_json_binary(&query_config(deps)?)?),
         QueryMsg::State {} => Ok(to_json_binary(&query_state(deps)?)?),
         QueryMsg::Rewards { user } => Ok(to_json_binary(&query_rewards(deps, env, user)?)?),
+        QueryMsg::IsPaused {} => Ok(to_json_binary(&query_is_paused(deps)?)?),
     }
 }
 
@@ -377,6 +386,12 @@ fn query_state(deps: Deps) -> StdResult<StateResponse> {
         global_reward_index: state.global_reward_index.to_string(),
         last_global_update_block: state.global_update_height,
     })
+}
+
+/// Returns true if contract is paused, false if not
+fn query_is_paused(deps: Deps) -> StdResult<bool> {
+    let is_paused = PAUSED.load(deps.storage)?;
+    Ok(is_paused)
 }
 
 /// Returns how many rewards the user currently has pending, simulating a global index update at

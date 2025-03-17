@@ -52,6 +52,10 @@ pub enum QueryMsg {
     /// Returns the user's current pending rewards.
     #[returns(RewardsResponse)]
     Rewards { user: String },
+
+    /// Returns true if the contract is paused, false otherwise
+    #[returns(bool)]
+    IsPaused {},
 }
 
 /// Response for `QueryMsg::Config`
