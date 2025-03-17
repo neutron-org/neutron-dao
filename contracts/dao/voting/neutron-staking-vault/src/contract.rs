@@ -367,18 +367,27 @@ pub fn query_list_blacklisted_addresses(
 ) -> StdResult<Vec<Addr>> {
     if let Some(mut blacklisted_addresses) = BLACKLISTED_ADDRESSES.may_load(deps.storage)? {
         let tail = match start_after {
-            Some(start_after) => blacklisted_addresses.split_off(
-                start_after
-                    .try_into()
-                    .unwrap_or(0)
-                    .min(blacklisted_addresses.len()),
-            ),
+            Some(start_after) => {
+                let start_after: usize = start_after.try_into().map_err(|e| {
+                    StdError::generic_err(format!(
+                        "start_after {} of addresses is invalid: {:?}",
+                        start_after, e
+                    ))
+                })?;
+
+                blacklisted_addresses.split_off(start_after.min(blacklisted_addresses.len()))
+            }
             None => blacklisted_addresses,
         };
 
         return match limit {
             Some(limit) => {
-                let limit = limit.try_into().unwrap_or(tail.len());
+                let limit = limit.try_into().map_err(|e| {
+                    StdError::generic_err(format!(
+                        "limit {} of addresses is invalid: {:?}",
+                        limit, e
+                    ))
+                })?;
 
                 Ok(tail.into_iter().take(limit).collect())
             }
