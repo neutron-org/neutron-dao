@@ -472,8 +472,7 @@ fn load_user_or_default(
     user_addr: Addr,
     staking_denom: String,
 ) -> Result<(UserInfo, bool), ContractError> {
-    let maybe_user_info = USERS
-        .may_load(deps.storage, &user_addr)?;
+    let maybe_user_info = USERS.may_load(deps.storage, &user_addr)?;
     let existed = maybe_user_info.is_some();
     let user_info = maybe_user_info.unwrap_or_else(|| UserInfo {
         user_reward_index: Decimal::zero(),
