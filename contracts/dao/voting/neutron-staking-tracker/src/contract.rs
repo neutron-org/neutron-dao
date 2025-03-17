@@ -440,12 +440,8 @@ pub(crate) fn after_delegation_modified(
     // Save updated validator state
     VALIDATORS.save(deps.storage, &valoper_addr, &validator, env.block.height)?;
 
-    let mut resp = Response::new();
-
-    // Do not need to trigger rewards recalculation if delegation was to unbonded validator,
-    // since it does not change the stake.
-    resp = with_update_stake_msg(
-        resp,
+    let resp = with_update_stake_msg(
+        Response::new(),
         deps.as_ref(),
         &delegator,
         REPLY_ON_AFTER_DELEGATION_MODIFIED_ERROR_STAKING_PROXY_ID,
