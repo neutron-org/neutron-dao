@@ -7,6 +7,7 @@
     "blocks_per_year",
     "dao_address",
     "owner",
+    "security_address",
     "staking_denom",
     "staking_info_proxy"
   ],
@@ -25,6 +26,9 @@
       "type": "string"
     },
     "owner": {
+      "type": "string"
+    },
+    "security_address": {
       "type": "string"
     },
     "staking_denom": {
