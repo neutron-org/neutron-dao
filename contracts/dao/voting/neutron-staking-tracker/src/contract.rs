@@ -5,7 +5,6 @@ use neutron_staking_tracker_common::msg::{
     ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, SudoMsg,
 };
 use neutron_staking_tracker_common::types::{Config, Delegation, Validator};
-use std::ops::Mul;
 
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
@@ -167,9 +166,11 @@ pub fn sudo(deps: DepsMut, env: Env, msg: SudoMsg) -> Result<Response, ContractE
         SudoMsg::BeforeDelegationRemoved { del_addr, val_addr } => {
             before_delegation_removed(deps, env, del_addr, val_addr)
         }
-        SudoMsg::BeforeValidatorSlashed { val_addr, fraction } => {
-            before_validator_slashed(deps, env, val_addr, fraction)
-        }
+        SudoMsg::BeforeValidatorSlashed {
+            val_addr,
+            fraction,
+            tokens_to_burn,
+        } => before_validator_slashed(deps, env, val_addr, fraction, tokens_to_burn),
     }
 }
 
@@ -234,31 +235,31 @@ pub fn before_validator_slashed(
     deps: DepsMut,
     env: Env,
     valoper_address: String,
-    slashing_fraction: Decimal256,
+    _slashing_fraction: Decimal256,
+    tokens_to_burn: Uint128,
 ) -> Result<Response, ContractError> {
     let validator_addr = Addr::unchecked(&valoper_address);
 
     // Load validator state
     let mut validator = VALIDATORS.load(deps.storage, &validator_addr)?;
 
-    // Calculate slashed tokens using Decimal256 multiplication and ceiling conversion
-    let slashed_tokens: Uint256 = slashing_fraction
-        .mul(Decimal256::from_atomics(validator.total_tokens, 0)?)
-        .to_uint_ceil();
+    let mut resp = Response::new();
 
-    let slashed_tokens_uint128: Uint128 = slashed_tokens.try_into()?;
+    // Defensive check to avoid calling events even though this hook
+    // shouldn't get called from cosmos-sdk when no tokens were burned
+    if tokens_to_burn > Uint128::zero() {
+        // Ensure tokens are reduced but not negative
+        validator.total_tokens = validator.total_tokens.checked_sub(tokens_to_burn)?;
 
-    // Ensure tokens are reduced but not negative
-    validator.total_tokens = validator.total_tokens.checked_sub(slashed_tokens_uint128)?;
+        // Save updated validator state
+        VALIDATORS.save(deps.storage, &validator_addr, &validator, env.block.height)?;
 
-    // Save updated validator state
-    VALIDATORS.save(deps.storage, &validator_addr, &validator, env.block.height)?;
-
-    let resp = with_slashing_event(
-        Response::new(),
-        deps.as_ref(),
-        REPLY_ON_BEFORE_VALIDATOR_SLASHED_ERROR_STAKING_PROXY_ID,
-    )?;
+        resp = with_slashing_event(
+            resp,
+            deps.as_ref(),
+            REPLY_ON_BEFORE_VALIDATOR_SLASHED_ERROR_STAKING_PROXY_ID,
+        )?;
+    }
 
     Ok(resp
         .add_attribute("action", "before_validator_slashed")
@@ -266,7 +267,7 @@ pub fn before_validator_slashed(
         .add_attribute("cons_address", validator.cons_address.to_string())
         .add_attribute("total_tokens", validator.total_tokens.to_string())
         .add_attribute("total_shares", validator.total_shares.to_string())
-        .add_attribute("slashing_fraction", slashing_fraction.to_string()))
+        .add_attribute("tokens_to_burn", tokens_to_burn.to_string()))
 }
 
 pub(crate) fn after_validator_begin_unbonding(
