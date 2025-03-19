@@ -79,10 +79,6 @@ impl WasmMockQuerier {
                                         break;
                                     }
                                 }
-                                println!(
-                                    "UserStake query to height={:?} result={:?}",
-                                    height, result
-                                );
                                 result
                             }
                             _ => unimplemented!(),

@@ -378,6 +378,8 @@ fn get_updated_user_info(
     Ok(user_info)
 }
 
+
+
 fn process_slashing_events(
     deps: Deps,
     config: Config,

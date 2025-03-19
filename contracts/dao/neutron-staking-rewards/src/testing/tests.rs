@@ -1386,7 +1386,7 @@ fn test_slashing_bonding_with_update_stake_on_same_block() {
         dao_address: dao.to_string(),
         staking_info_proxy: proxy.to_string(),
         annual_reward_rate_bps: 1000, // e.g. 10% annual rate
-        blocks_per_year: 10_000,      // e.g. 10,000 blocks per year
+        blocks_per_year: 100,      // e.g. 10,000 blocks per year
         staking_denom: "untrn".to_string(),
     };
     let _res = instantiate(
@@ -1404,7 +1404,7 @@ fn test_slashing_bonding_with_update_stake_on_same_block() {
     deps.querier.update_stake(
         user1.to_string(),
         env.block.height,
-        coin(500_000, "untrn"), // 0 since validator is not yet bonded
+        coin(500_000, "untrn"),
     );
     let proxy_info = message_info(&proxy, &[]);
     let update_stake_msg = ExecuteMsg::UpdateStake {
@@ -1431,19 +1431,21 @@ fn test_slashing_bonding_with_update_stake_on_same_block() {
     env.block.height += 10;
 
     // ----- STEP 4: use claim_rewards to see if change of stake because of unbonding was recognized
-    let proxy_info = message_info(&proxy, &[]);
-    let update_stake_msg = ExecuteMsg::ClaimRewards { to_address: None };
-    let _res = execute(
+    let user_info = message_info(&user1, &[]);
+    let claim_rewards_msg = ExecuteMsg::ClaimRewards { to_address: None };
+    let res = execute(
         deps.as_mut(),
         env.clone(),
-        proxy_info.clone(),
-        update_stake_msg,
+        user_info.clone(),
+        claim_rewards_msg,
     )
     .unwrap();
 
     // claim should expect
-    // 500_000 * apr for 10 blocks + 1_000_000 * apr for 10 blocks
-    apr = TODO
+    // 1_000_000 * block_apr * 10 blocks
+    let result: f32 = 0.1 * 1_000_000.0 / 100.0 * 10.0;
+    let actual_rewards = unwrap_send_amount_from_update_stake(res);
+    assert_eq!(Uint128::new(result as u128), actual_rewards);
 }
 
 // helpers
