@@ -4,11 +4,13 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 
-use crate::state::{CONFIG, STATE, USERS};
+use crate::state::{
+    assert_pause, is_allowed_to_pause, is_allowed_to_unpause, CONFIG, PAUSED, STATE, USERS,
+};
 use neutron_staking_info_proxy_common::msg::QueryMsg as InfoProxyQueryMsg;
 use neutron_staking_rewards_common::error::ContractError;
 use neutron_staking_rewards_common::error::ContractError::{
-    DaoStakeChangeNotTracked, InvalidStakeDenom, Unauthorized,
+    ContractPaused, DaoStakeChangeNotTracked, InvalidStakeDenom, Unauthorized,
 };
 use neutron_staking_rewards_common::msg::ExecuteMsg;
 use neutron_staking_rewards_common::msg::{
@@ -32,6 +34,7 @@ pub fn instantiate(
     let owner = deps.api.addr_validate(&msg.owner)?;
     let dao_address = deps.api.addr_validate(&msg.dao_address)?;
     let staking_info_proxy = deps.api.addr_validate(&msg.staking_info_proxy)?;
+    let security_address = deps.api.addr_validate(&msg.security_address)?;
 
     // Create and validate the contract configuration.
     let config = Config {
@@ -41,6 +44,7 @@ pub fn instantiate(
         annual_reward_rate_bps: msg.annual_reward_rate_bps,
         blocks_per_year: msg.blocks_per_year,
         staking_denom: msg.staking_denom,
+        security_address,
     };
     config.validate()?;
     CONFIG.save(deps.storage, &config)?;
@@ -54,6 +58,8 @@ pub fn instantiate(
         slashing_events: vec![],
     };
     STATE.save(deps.storage, &state)?;
+
+    PAUSED.save(deps.storage, &false)?;
 
     Ok(Response::new()
         .add_attribute("action", "instantiate")
@@ -69,7 +75,7 @@ pub fn instantiate(
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
-    deps: DepsMut,
+    mut deps: DepsMut,
     env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
@@ -81,6 +87,7 @@ pub fn execute(
             blocks_per_year,
             staking_info_proxy,
             staking_denom,
+            security_address,
         } => update_config(
             deps,
             env,
@@ -90,14 +97,71 @@ pub fn execute(
             blocks_per_year,
             staking_info_proxy,
             staking_denom,
+            security_address,
         ),
         // Updates the stake information for a particular user
-        ExecuteMsg::UpdateStake { user } => update_stake(deps, env, info, user),
+        ExecuteMsg::UpdateStake { user } => {
+            // try to update stake, if an error happens during the update we need to pause the contract
+            // (because an error is terrible and it breaks out internal accounting)
+            // We don't need to pause the contract in cases:
+            // * if it's Unauthorized error;
+            // * if it's DaoStakeChangeNotTracked error;
+            // * of if the contract is already paused.
+            update_stake(deps.branch(), env, info, user).or_else(|err| match err {
+                Unauthorized {} => Err(err),
+                DaoStakeChangeNotTracked {} => Err(err),
+                ContractPaused {} => Err(err),
+                _ => {
+                    PAUSED.save(deps.storage, &true)?;
+
+                    Ok(Response::new().add_attribute("update_stake_error", format!("{}", err)))
+                }
+            })
+        }
         // Updates the stake information for a particular user
-        ExecuteMsg::Slashing {} => slashing(deps, env, info),
+        // try to account slashing, if an error happens during the method execution, we need to pause the contract
+        // (because an error is terrible and it breaks out internal accounting)
+        // We don't need to pause the contract in cases:
+        // * if it's Unauthorized error;
+        // * if it's DaoStakeChangeNotTracked error;
+        // * of if the contract is already paused.
+        ExecuteMsg::Slashing {} => slashing(deps.branch(), env, info).or_else(|err| match err {
+            Unauthorized {} => Err(err),
+            DaoStakeChangeNotTracked {} => Err(err),
+            ContractPaused {} => Err(err),
+            _ => {
+                PAUSED.save(deps.storage, &true)?;
+
+                Ok(Response::new().add_attribute("slashing_error", format!("{}", err)))
+            }
+        }),
         // Claims any accrued rewards for the caller
         ExecuteMsg::ClaimRewards { to_address } => claim_rewards(deps, env, info, to_address),
+        // Pauses the contract
+        ExecuteMsg::Pause {} => pause(deps, info),
+        // Unpauses the contract
+        ExecuteMsg::Unpause {} => unpause(deps, info),
     }
+}
+
+fn unpause(deps: DepsMut, info: MessageInfo) -> Result<Response, ContractError> {
+    let config = CONFIG.load(deps.storage)?;
+    if !is_allowed_to_unpause(&config, &info.sender) {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    PAUSED.save(deps.storage, &false)?;
+    Ok(Response::new())
+}
+
+fn pause(deps: DepsMut, info: MessageInfo) -> Result<Response, ContractError> {
+    let config = CONFIG.load(deps.storage)?;
+    if !is_allowed_to_pause(&config, &info.sender) {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    PAUSED.save(deps.storage, &true)?;
+    Ok(Response::new())
 }
 
 /// Updates configuration parameters for the contract.
@@ -112,6 +176,7 @@ fn update_config(
     blocks_per_year: Option<u64>,
     staking_info_proxy: Option<String>,
     staking_denom: Option<String>,
+    security_address: Option<String>,
 ) -> Result<Response, ContractError> {
     // Load the existing configuration
     let mut config = CONFIG.load(deps.storage)?;
@@ -141,6 +206,9 @@ fn update_config(
     if let Some(denom) = staking_denom {
         config.staking_denom = denom;
     }
+    if let Some(security_address) = security_address {
+        config.security_address = deps.api.addr_validate(&security_address)?;
+    }
 
     // Validate updated config and save
     config.validate()?;
@@ -155,7 +223,8 @@ fn update_config(
         )
         .add_attribute("blocks_per_year", config.blocks_per_year.to_string())
         .add_attribute("staking_info_proxy", config.staking_info_proxy.to_string())
-        .add_attribute("staking_denom", config.staking_denom))
+        .add_attribute("staking_denom", config.staking_denom)
+        .add_attribute("security_address", config.security_address.to_string()))
 }
 
 /// Called by the staking_info_proxy to update a user’s staked amount in this contract’s state.
@@ -166,6 +235,9 @@ fn update_stake(
     info: MessageInfo,
     user: String,
 ) -> Result<Response, ContractError> {
+    // stake update is forbidden while the contract is on pause
+    assert_pause(deps.storage)?;
+
     let config = CONFIG.load(deps.storage)?;
 
     if info.sender != config.staking_info_proxy {
@@ -208,6 +280,8 @@ fn update_stake(
 /// only send a single Slashing message for a single height, i.e., if multiple validators were
 /// slashed on height X, only one Slashing message must be sent.
 fn slashing(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
+    assert_pause(deps.storage)?;
+
     let config = CONFIG.load(deps.storage)?;
 
     if info.sender != config.staking_info_proxy {
@@ -243,6 +317,9 @@ fn claim_rewards(
     info: MessageInfo,
     to_address: Option<String>,
 ) -> Result<Response, ContractError> {
+    // users can't claim rewards while the contract is on pause
+    assert_pause(deps.storage)?;
+
     let config = CONFIG.load(deps.storage)?;
 
     let (user_info, state) =
@@ -285,6 +362,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<cosmwasm_std::Binary
         QueryMsg::Config {} => Ok(to_json_binary(&query_config(deps)?)?),
         QueryMsg::State {} => Ok(to_json_binary(&query_state(deps)?)?),
         QueryMsg::Rewards { user } => Ok(to_json_binary(&query_rewards(deps, env, user)?)?),
+        QueryMsg::IsPaused {} => Ok(to_json_binary(&query_is_paused(deps)?)?),
     }
 }
 
@@ -308,6 +386,12 @@ fn query_state(deps: Deps) -> StdResult<StateResponse> {
         global_reward_index: state.global_reward_index.to_string(),
         last_global_update_block: state.global_update_height,
     })
+}
+
+/// Returns true if contract is paused, false if not
+fn query_is_paused(deps: Deps) -> StdResult<bool> {
+    let is_paused = PAUSED.load(deps.storage)?;
+    Ok(is_paused)
 }
 
 /// Returns how many rewards the user currently has pending, simulating a global index update at

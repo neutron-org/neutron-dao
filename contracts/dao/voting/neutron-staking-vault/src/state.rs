@@ -1,6 +1,6 @@
 use crate::{ContractError, ContractResult};
 use cosmwasm_std::Addr;
-use cw_storage_plus::{Item, Map};
+use cw_storage_plus::{Item, SnapshotItem, Strategy};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -34,6 +34,13 @@ pub const CONFIG: Item<Config> = Item::new("config");
 pub const DAO: Item<Addr> = Item::new("dao");
 
 /// If an address is blacklisted, its stake is **excluded** from governance and voting power calculations.
-/// - **Key:** `Addr` → The blacklisted wallet address.
-/// - **Value:** `()` -> Not needed.
-pub const BLACKLISTED_ADDRESSES: Map<Addr, ()> = Map::new("blacklisted_addresses");
+///
+/// - **Value:** `Vec<Addr>` -> The blacklisted wallet addresses.
+///
+/// We use `SnapshotItem` to enable querying blacklisted addresses at any height.
+pub const BLACKLISTED_ADDRESSES: SnapshotItem<Vec<Addr>> = SnapshotItem::new(
+    "blacklisted_addresses",
+    "blacklisted_addresses__checkpoints",
+    "blacklisted_addresses__changelog",
+    Strategy::EveryBlock,
+);
