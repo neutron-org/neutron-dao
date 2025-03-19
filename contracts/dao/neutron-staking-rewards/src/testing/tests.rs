@@ -1518,6 +1518,7 @@ fn test_slashing_bonding_with_update_stake_on_same_block() {
         owner: owner.to_string(),
         dao_address: dao.to_string(),
         staking_info_proxy: proxy.to_string(),
+        security_address: deps.api.addr_make("security_address").into(),
         annual_reward_rate_bps: 1000, // e.g. 10% annual rate
         blocks_per_year: 100,      // e.g. 10,000 blocks per year
         staking_denom: "untrn".to_string(),
@@ -1551,7 +1552,7 @@ fn test_slashing_bonding_with_update_stake_on_same_block() {
     )
     .unwrap();
 
-    // ----- STEP 2: Set slashing event on same height (imply unbonding)
+    // ----- STEP 2: Set slashing event on same height (imply bonding)
     //
     let slashing_msg = ExecuteMsg::Slashing {};
     let _res = execute(deps.as_mut(), env.clone(), proxy_info.clone(), slashing_msg).unwrap();
