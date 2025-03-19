@@ -1418,7 +1418,7 @@ fn test_slashing_bonding_with_update_stake_on_same_block() {
     )
     .unwrap();
 
-    // ----- STEP 2: Set slashing event on same height
+    // ----- STEP 2: Set slashing event on same height (imply unbonding)
     //
     let slashing_msg = ExecuteMsg::Slashing {};
     let _res = execute(deps.as_mut(), env.clone(), proxy_info.clone(), slashing_msg).unwrap();
