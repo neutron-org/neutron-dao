@@ -214,6 +214,7 @@ fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     Ok(ConfigResponse {
         owner: config.owner.to_string(),
         staking_rewards: config.staking_rewards.map(|s| s.to_string()),
+        staking_denom: config.staking_denom,
     })
 }
 
