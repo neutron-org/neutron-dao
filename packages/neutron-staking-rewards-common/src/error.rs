@@ -32,4 +32,7 @@ pub enum ContractError {
         current_block: u64,
         last_global_update_block: u64,
     },
+
+    #[error("Action is denied, the contract is on pause temporarily")]
+    ContractPaused {},
 }

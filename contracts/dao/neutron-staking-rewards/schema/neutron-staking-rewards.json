@@ -11,6 +11,7 @@
       "blocks_per_year",
       "dao_address",
       "owner",
+      "security_address",
       "staking_denom",
       "staking_info_proxy"
     ],
@@ -29,6 +30,9 @@
         "type": "string"
       },
       "owner": {
+        "type": "string"
+      },
+      "security_address": {
         "type": "string"
       },
       "staking_denom": {
@@ -71,6 +75,12 @@
                 "minimum": 0.0
               },
               "owner": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "security_address": {
                 "type": [
                   "string",
                   "null"
@@ -147,6 +157,34 @@
                 ]
               }
             },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "description": "Pauses the contract, can be called either by the owner or security_address",
+        "type": "object",
+        "required": [
+          "pause"
+        ],
+        "properties": {
+          "pause": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "description": "Unpauses the contract, can be called either by the owner or security_address",
+        "type": "object",
+        "required": [
+          "unpause"
+        ],
+        "properties": {
+          "unpause": {
+            "type": "object",
             "additionalProperties": false
           }
         },

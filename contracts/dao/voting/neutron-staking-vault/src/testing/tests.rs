@@ -38,7 +38,7 @@ fn vault_contract() -> Box<dyn Contract<Empty>> {
 fn staking_tracker_query(_deps: Deps, _env: Env, msg: ProviderStakeQueryMsg) -> StdResult<Binary> {
     match msg {
         ProviderStakeQueryMsg::StakeAtHeight { .. } => {
-            let response = Uint128::from(10000u64);
+            let response = Uint128::from(1000u64);
             to_json_binary(&response)
         }
         ProviderStakeQueryMsg::TotalStakeAtHeight { .. } => {
@@ -107,6 +107,34 @@ fn update_config(
             description,
             name: None,
         },
+        &[],
+    )
+}
+
+fn add_to_blacklist(
+    app: &mut App,
+    contract_addr: Addr,
+    sender: &str,
+    addresses: Vec<String>,
+) -> anyhow::Result<AppResponse> {
+    app.execute_contract(
+        Addr::unchecked(sender),
+        contract_addr,
+        &ExecuteMsg::AddToBlacklist { addresses },
+        &[],
+    )
+}
+
+fn remove_from_blacklist(
+    app: &mut App,
+    contract_addr: Addr,
+    sender: &str,
+    addresses: Vec<String>,
+) -> anyhow::Result<AppResponse> {
+    app.execute_contract(
+        Addr::unchecked(sender),
+        contract_addr,
+        &ExecuteMsg::RemoveFromBlacklist { addresses },
         &[],
     )
 }
@@ -355,8 +383,83 @@ fn test_voting_power_queries() {
     let resp = get_total_power_at_height(&mut app, addr.clone(), None);
     assert_eq!(Uint128::from(10000u64), resp.power);
 
-    let resp = get_voting_power_at_height(&mut app, addr, ADDR1.to_string(), None);
+    let resp = get_voting_power_at_height(&mut app, addr.clone(), ADDR1.to_string(), None);
+    assert_eq!(Uint128::from(1000u64), resp.power);
+
+    let resp = get_voting_power_at_height(&mut app, addr.clone(), ADDR2.to_string(), None);
+    assert_eq!(Uint128::from(1000u64), resp.power);
+
+    // Add ADDR1, ADDR2 to blacklist
+    add_to_blacklist(
+        &mut app,
+        addr.clone(),
+        DAO_ADDR,
+        vec![ADDR1.to_string(), ADDR2.to_string()],
+    )
+    .unwrap();
+    app.update_block(|b| b.height += 10);
+    let prev_height = app.block_info().height - 10;
+
+    // Query the previous height, total 10000, ADDR1 1000, ADDR2 1000
+    // Total power is 10000
+    let resp = get_total_power_at_height(&mut app, addr.clone(), Some(prev_height));
     assert_eq!(Uint128::from(10000u64), resp.power);
+
+    // ADDR1 has 1000 power
+    let resp =
+        get_voting_power_at_height(&mut app, addr.clone(), ADDR1.to_string(), Some(prev_height));
+    assert_eq!(Uint128::from(1000u64), resp.power);
+
+    // ADDR2 has 1000 power
+    let resp =
+        get_voting_power_at_height(&mut app, addr.clone(), ADDR2.to_string(), Some(prev_height));
+    assert_eq!(Uint128::from(1000u64), resp.power);
+
+    // For current height, total 8000, ADDR1 0, ADDR2 0
+    // Total power is 8000
+    let resp = get_total_power_at_height(&mut app, addr.clone(), None);
+    assert_eq!(Uint128::from(8000u64), resp.power);
+
+    // ADDR1 has 0 power
+    let resp = get_voting_power_at_height(&mut app, addr.clone(), ADDR1.to_string(), None);
+    assert!(resp.power.is_zero());
+
+    // ADDR2 has 0 power
+    let resp = get_voting_power_at_height(&mut app, addr.clone(), ADDR2.to_string(), None);
+    assert!(resp.power.is_zero());
+
+    // Remove ADDR1 from blacklist
+    remove_from_blacklist(&mut app, addr.clone(), DAO_ADDR, vec![ADDR1.to_string()]).unwrap();
+    app.update_block(|b| b.height += 5);
+    let prev_height = app.block_info().height - 5;
+
+    // Query the previous height, total 8000, ADDR1 0, ADDR2 0
+    // Total power is 8000
+    let resp = get_total_power_at_height(&mut app, addr.clone(), Some(prev_height));
+    assert_eq!(Uint128::from(8000u64), resp.power);
+
+    // ADDR1 has 0 power
+    let resp =
+        get_voting_power_at_height(&mut app, addr.clone(), ADDR1.to_string(), Some(prev_height));
+    assert!(resp.power.is_zero());
+
+    // ADDR2 has 0 power
+    let resp =
+        get_voting_power_at_height(&mut app, addr.clone(), ADDR2.to_string(), Some(prev_height));
+    assert!(resp.power.is_zero());
+
+    // For current height, total 9000, ADDR1 1000, ADDR2 0
+    // Total power is 9000
+    let resp = get_total_power_at_height(&mut app, addr.clone(), None);
+    assert_eq!(Uint128::from(9000u64), resp.power);
+
+    // ADDR1 has 1000 power
+    let resp = get_voting_power_at_height(&mut app, addr.clone(), ADDR1.to_string(), None);
+    assert_eq!(Uint128::from(1000u64), resp.power);
+
+    // ADDR2 has 0 power
+    let resp = get_voting_power_at_height(&mut app, addr.clone(), ADDR2.to_string(), None);
+    assert!(resp.power.is_zero());
 }
 
 #[test]
@@ -399,8 +502,12 @@ fn test_add_and_remove_from_blacklist() {
     assert!(res.is_ok(), "Error adding to blacklist: {:?}", res.err());
 
     // Verify that addresses are blacklisted
-    let is_addr1_blacklisted = BLACKLISTED_ADDRESSES.has(deps.as_ref().storage, addr1.clone());
-    let is_addr2_blacklisted = BLACKLISTED_ADDRESSES.has(deps.as_ref().storage, addr2.clone());
+    let blacklisted_addresses = BLACKLISTED_ADDRESSES
+        .may_load(deps.as_ref().storage)
+        .unwrap()
+        .unwrap();
+    let is_addr1_blacklisted = blacklisted_addresses.contains(&addr1);
+    let is_addr2_blacklisted = blacklisted_addresses.contains(&addr2);
     assert!(is_addr1_blacklisted, "Address addr1 is not blacklisted");
     assert!(is_addr2_blacklisted, "Address addr2 is not blacklisted");
 
@@ -420,20 +527,14 @@ fn test_add_and_remove_from_blacklist() {
     );
 
     // Verify that addresses are no longer blacklisted
-    let is_addr1_blacklisted = BLACKLISTED_ADDRESSES
-        .may_load(deps.as_ref().storage, addr1)
+    let blacklisted_addresses = BLACKLISTED_ADDRESSES
+        .may_load(deps.as_ref().storage)
+        .unwrap()
         .unwrap();
-    let is_addr2_blacklisted = BLACKLISTED_ADDRESSES
-        .may_load(deps.as_ref().storage, addr2)
-        .unwrap();
-    assert!(
-        is_addr1_blacklisted.is_none(),
-        "Address addr1 is still blacklisted"
-    );
-    assert!(
-        is_addr2_blacklisted.is_none(),
-        "Address addr2 is still blacklisted"
-    );
+    let is_addr1_blacklisted = blacklisted_addresses.contains(&addr1);
+    let is_addr2_blacklisted = blacklisted_addresses.contains(&addr2);
+    assert!(!is_addr1_blacklisted, "Address addr1 is still blacklisted");
+    assert!(!is_addr2_blacklisted, "Address addr2 is still blacklisted");
 }
 
 #[test]
@@ -589,7 +690,11 @@ fn test_total_vp_excludes_blacklisted_addresses() {
     assert!(res.is_ok(), "Error adding to blacklist: {:?}", res.err());
 
     // Ensure delegation2 is blacklisted correctly
-    let is_blacklisted = BLACKLISTED_ADDRESSES.has(deps.as_ref().storage, user2);
+    let blacklisted_addresses = BLACKLISTED_ADDRESSES
+        .may_load(deps.as_ref().storage)
+        .unwrap()
+        .unwrap();
+    let is_blacklisted = blacklisted_addresses.contains(&user2);
     assert!(is_blacklisted, "Delegator2 should be blacklisted");
 
     // Query total voting power **after** blacklisting

@@ -58,6 +58,7 @@ pub enum SudoMsg {
     BeforeValidatorSlashed {
         val_addr: String,
         fraction: Decimal256,
+        tokens_to_burn: Uint128,
     },
 }
 

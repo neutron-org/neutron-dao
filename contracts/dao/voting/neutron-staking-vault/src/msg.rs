@@ -51,7 +51,7 @@ pub enum QueryMsg {
     /// Lists blacklisted addresses.
     #[returns(Vec<Addr>)]
     ListBlacklistedAddresses {
-        start_after: Option<Addr>,
+        start_after: Option<u32>,
         limit: Option<u32>,
     },
 
