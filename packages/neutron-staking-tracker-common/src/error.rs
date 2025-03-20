@@ -50,4 +50,7 @@ pub enum ContractError {
 
     #[error("ValidatorAlreadyBonded: {address}")]
     ValidatorAlreadyBonded { address: String },
+
+    #[error("ValidatorNotBonded: {address}")]
+    ValidatorNotBonded { address: String },
 }

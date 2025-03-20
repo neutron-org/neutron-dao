@@ -329,11 +329,13 @@ pub(crate) fn after_validator_begin_unbonding(
         .add_attribute("valoper_address", valoper_address.clone())
         .add_attribute("unbonding_start_height", env.block.height.to_string());
 
-    let valoper_addr = Addr::unchecked(valoper_address);
+    let valoper_addr = Addr::unchecked(&valoper_address);
 
     let mut bonded_vals = BONDED_VALIDATORS_SET.load(deps.storage)?;
     if !bonded_vals.contains(&valoper_addr.to_string()) {
-        return Ok(resp);
+        return Err(ContractError::ValidatorNotBonded {
+            address: valoper_address,
+        });
     }
 
     // Mark validator as unbonded
@@ -379,13 +381,13 @@ pub(crate) fn after_delegation_modified(
         .transpose()?
         .unwrap_or(Uint128::zero()); // Default to zero if delegation does not exist
 
-    // Load from delegations or zeros shares one if this delegation is new.
+    // Load delegation shares or zero shares in case this delegation is new.
     let previous_shares = DELEGATIONS
         .may_load(deps.storage, (&delegator, &valoper_addr))?
         .map(|d| d.shares)
         .unwrap_or(Uint128::zero());
 
-    // **Ensure delegation is correctly overwritten with actual shares**
+    // Update delegation shares
     DELEGATIONS.save(
         deps.storage,
         (&delegator, &valoper_addr),
