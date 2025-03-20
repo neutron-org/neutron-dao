@@ -257,21 +257,22 @@ pub(crate) fn after_validator_bonded(
     // Save updated validator using valoper as the key
     VALIDATORS.save(deps.storage, &valoper_addr, &validator, env.block.height)?;
 
-    let mut resp = Response::new();
-
     let mut bonded_validators = BONDED_VALIDATORS_SET.load(deps.storage)?;
-    // Defensive check
-    if !bonded_validators.contains(&valoper_addr.to_string()) {
-        bonded_validators.push(valoper_addr.to_string());
-        BONDED_VALIDATORS_SET.save(deps.storage, &bonded_validators, env.block.height)?;
-
-        // Call proxy info to notify about change of stake
-        resp = with_slashing_event(
-            resp,
-            deps.as_ref(),
-            REPLY_ON_AFTER_VALIDATOR_BONDED_ERROR_STAKING_PROXY_ID,
-        )?;
+    if bonded_validators.contains(&valoper_addr.to_string()) {
+        return Err(ContractError::ValidatorAlreadyBonded {
+            address: valoper_addr.to_string(),
+        });
     }
+
+    bonded_validators.push(valoper_addr.to_string());
+    BONDED_VALIDATORS_SET.save(deps.storage, &bonded_validators, env.block.height)?;
+
+    // Call proxy info to notify about change of stake
+    let resp = with_slashing_event(
+        Response::new(),
+        deps.as_ref(),
+        REPLY_ON_AFTER_VALIDATOR_BONDED_ERROR_STAKING_PROXY_ID,
+    )?;
 
     Ok(resp
         .add_attribute("action", "after_validator_bonded")
@@ -293,8 +294,8 @@ pub fn before_validator_slashed(
 
     let mut resp = Response::new();
 
-    // Defensive check to avoid calling events even though this hook
-    // shouldn't get called from cosmos-sdk when no tokens were burned
+    // Defensive check to avoid excessive callback calls.
+    // Note that before_validator_slashed shouldn't get called from Cosmos-SDK if no tokens were burned.
     if tokens_to_burn > Uint128::zero() {
         // Ensure tokens are reduced but not negative
         validator.total_tokens = validator.total_tokens.checked_sub(tokens_to_burn)?;
@@ -433,6 +434,9 @@ pub(crate) fn after_delegation_modified(
     // Save updated validator state
     VALIDATORS.save(deps.storage, &valoper_addr, &validator, env.block.height)?;
 
+    // Update user stake information for rewards.
+    // Note that we want to call this even for delegations in unbonded validators.
+    // Not doing so will mess up replay unprocessed slashing events in rewards.
     let resp = with_update_stake_msg(
         Response::new(),
         deps.as_ref(),
@@ -458,34 +462,27 @@ pub(crate) fn before_delegation_removed(
     let delegator = deps.api.addr_validate(&delegator_address)?;
     let valoper_addr = Addr::unchecked(valoper_address);
 
-    let mut resp = Response::new();
-
     // Load shares amount we have for the delegation in the contract's state
     let shares = DELEGATIONS
-        .may_load(deps.storage, (&delegator, &valoper_addr))?
-        .map(|d| d.shares);
+        .load(deps.storage, (&delegator, &valoper_addr))
+        .map(|d| d.shares)?;
 
-    // Defensive check
-    if let Some(shares) = shares {
-        // Load the validator by `valoper_address`.
-        // The validator may not exist if they were unbonded when the delegation was removed.
-        if let Some(mut validator) = VALIDATORS.may_load(deps.storage, &valoper_addr)? {
-            // Since it's `before_delegation_removed`, we can safely remove all shares from validator
-            validator.remove_del_shares(shares)?;
+    // Load the validator by `valoper_address`.
+    let mut validator = VALIDATORS.load(deps.storage, &valoper_addr)?;
+    // Since it's `before_delegation_removed`, we can safely remove all shares from validator
+    validator.remove_del_shares(shares)?;
 
-            // Save the updated validator state
-            VALIDATORS.save(deps.storage, &valoper_addr, &validator, env.block.height)?;
-        }
+    // Save the updated validator state
+    VALIDATORS.save(deps.storage, &valoper_addr, &validator, env.block.height)?;
 
-        DELEGATIONS.remove(deps.storage, (&delegator, &valoper_addr), env.block.height)?;
+    DELEGATIONS.remove(deps.storage, (&delegator, &valoper_addr), env.block.height)?;
 
-        resp = with_update_stake_msg(
-            resp,
-            deps.as_ref(),
-            &delegator,
-            REPLY_ON_BEFORE_DELEGATION_REMOVED_ERROR_STAKING_PROXY_ID,
-        )?;
-    }
+    let resp = with_update_stake_msg(
+        Response::new(),
+        deps.as_ref(),
+        &delegator,
+        REPLY_ON_BEFORE_DELEGATION_REMOVED_ERROR_STAKING_PROXY_ID,
+    )?;
 
     Ok(resp
         .add_attribute("action", "before_delegation_removed")

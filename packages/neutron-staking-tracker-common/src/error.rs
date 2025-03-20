@@ -47,4 +47,7 @@ pub enum ContractError {
 
     #[error("Unsupported hook: {hook}")]
     UnsupportedHook { hook: String },
+
+    #[error("ValidatorAlreadyBonded: {address}")]
+    ValidatorAlreadyBonded { address: String },
 }
