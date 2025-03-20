@@ -1,5 +1,5 @@
 use crate::contract::{execute, instantiate, query};
-use crate::state::CONFIG;
+use crate::state::{assert_pause, CONFIG, PAUSED, STATE};
 use crate::testing::mock_querier::mock_dependencies;
 use cosmwasm_std::testing::MockApi;
 use cosmwasm_std::{
@@ -7,6 +7,7 @@ use cosmwasm_std::{
     testing::{message_info, mock_env},
     BankMsg, CosmosMsg, Response, Uint128,
 };
+use cosmwasm_std::{Addr, DepsMut, Env};
 use neutron_staking_rewards_common::error::ContractError;
 use neutron_staking_rewards_common::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, RewardsResponse};
 
@@ -19,7 +20,98 @@ fn default_init_msg(api: MockApi) -> InstantiateMsg {
         dao_address: api.addr_make("dao").into(),
         staking_info_proxy: api.addr_make("proxy").into(),
         staking_denom: "untrn".to_string(),
+        security_address: api.addr_make("security_address").into(),
     }
+}
+
+fn assert_contract_is_paused(mut deps: DepsMut, env: Env, proxy: Addr, user: Addr) {
+    let proxy_info = message_info(&proxy, &[]);
+
+    assert!(PAUSED.load(deps.storage).unwrap());
+
+    let bin_resp = query(deps.as_ref(), mock_env(), QueryMsg::IsPaused {}).unwrap();
+    let is_paused_resp: bool = cosmwasm_std::from_json(bin_resp).unwrap();
+    assert!(is_paused_resp);
+
+    let slashing_msg = ExecuteMsg::Slashing {};
+    assert_eq!(
+        execute(
+            deps.branch(),
+            env.clone(),
+            proxy_info.clone(),
+            slashing_msg.clone(),
+        )
+        .unwrap_err(),
+        ContractError::ContractPaused {}
+    );
+
+    let msg_update_stake = ExecuteMsg::UpdateStake {
+        user: user.clone().into_string(),
+    };
+    assert_eq!(
+        execute(
+            deps.branch(),
+            env.clone(),
+            proxy_info.clone(),
+            msg_update_stake,
+        )
+        .unwrap_err(),
+        ContractError::ContractPaused {}
+    );
+
+    let user_info = message_info(&user, &[]);
+    let claim_msg = ExecuteMsg::ClaimRewards { to_address: None };
+    assert_eq!(
+        execute(deps.branch(), env.clone(), user_info, claim_msg,).unwrap_err(),
+        ContractError::ContractPaused {}
+    );
+}
+
+#[test]
+fn test_pause_contract() {
+    let mut deps = mock_dependencies();
+    let proxy = deps.api.addr_make("proxy");
+    let user = deps.api.addr_make("user");
+    let security_address = deps.api.addr_make("security_address");
+
+    // Set up the contract.
+    // Instantiate
+    let env = mock_env();
+    let info = message_info(&deps.api.addr_make("owner"), &[]);
+    let msg = default_init_msg(deps.api);
+    let res = instantiate(deps.as_mut(), env.clone(), info, msg).unwrap();
+    assert_eq!(res.messages.len(), 0);
+
+    // Attempt to pause from an unauthorized account.
+    let someone = deps.api.addr_make("someone_else");
+    let pause_msg = ExecuteMsg::Pause {};
+    let info_non_owner = message_info(&someone, &[]);
+    let err = execute(deps.as_mut(), env.clone(), info_non_owner, pause_msg).unwrap_err();
+    assert!(matches!(err, ContractError::Unauthorized {}));
+
+    // Owner can pause the contract
+    let owner = deps.api.addr_make("owner");
+    let pause_msg = ExecuteMsg::Pause {};
+    let info_non_owner = message_info(&owner, &[]);
+    execute(deps.as_mut(), env.clone(), info_non_owner, pause_msg).unwrap();
+    assert_contract_is_paused(deps.as_mut(), env.clone(), proxy.clone(), user.clone());
+
+    // Owner can unpause the contract
+    let unpause_msg = ExecuteMsg::Unpause {};
+    let info_non_owner = message_info(&owner, &[]);
+    execute(deps.as_mut(), env.clone(), info_non_owner, unpause_msg).unwrap();
+    assert_pause(&deps.storage).unwrap();
+
+    // Security address can pause the contract
+    let pause_msg = ExecuteMsg::Pause {};
+    let info_security = message_info(&security_address, &[]);
+    execute(deps.as_mut(), env.clone(), info_security.clone(), pause_msg).unwrap();
+    assert_contract_is_paused(deps.as_mut(), env.clone(), proxy, user);
+
+    // Security address can unpause the contract
+    let unpause_msg = ExecuteMsg::Unpause {};
+    execute(deps.as_mut(), env.clone(), info_security, unpause_msg).unwrap();
+    assert_pause(&deps.storage).unwrap();
 }
 
 #[test]
@@ -42,6 +134,7 @@ fn test_update_config_unauthorized() {
         blocks_per_year: None,
         staking_info_proxy: None,
         staking_denom: None,
+        security_address: None,
     };
     let info_non_owner = message_info(&non_owner, &[]);
     let err = execute(
@@ -190,9 +283,11 @@ fn test_update_global_index_same_block() {
 #[test]
 fn test_update_stake() {
     let mut deps = mock_dependencies();
+    let proxy = deps.api.addr_make("proxy");
+    let user = deps.api.addr_make("user");
 
     // Instantiate
-    let env = mock_env();
+    let mut env = mock_env();
     let info = message_info(&deps.api.addr_make("owner"), &[]);
     let msg = default_init_msg(deps.api);
     let res = instantiate(deps.as_mut(), env.clone(), info, msg).unwrap();
@@ -234,7 +329,24 @@ fn test_update_stake() {
     assert_eq!(
         res.err().unwrap(),
         ContractError::DaoStakeChangeNotTracked {}
-    )
+    );
+
+    // contract must be self paused if an error happens during stake update
+    let info_proxy = message_info(&deps.api.addr_make("proxy"), &[]);
+    let msg_update_stake = ExecuteMsg::UpdateStake {
+        user: deps.api.addr_make("user0").into_string(),
+    };
+    deps.querier.update_stake(
+        deps.api.addr_make("user0").into_string(),
+        env.block.height,
+        coin(1_000_000_000, "untrn"),
+    );
+
+    env.block.height -= 1; // this allows update_stake msg to fail
+                           // update_stake call must not raise an error
+    execute(deps.as_mut(), env.clone(), info_proxy, msg_update_stake).unwrap();
+    // but the contract must be paused after an errored call
+    assert_contract_is_paused(deps.as_mut(), env, proxy, user);
 }
 
 /// Tests the following scenario:
@@ -768,6 +880,7 @@ fn test_slashing_no_effect() {
         annual_reward_rate_bps: 1000, // 10% annual rate.
         blocks_per_year: 10_000,      // 10,000 blocks per year.
         staking_denom: "untrn".to_string(),
+        security_address: deps.api.addr_make("security_address").into(),
     };
     let _res = instantiate(
         deps.as_mut(),
@@ -868,6 +981,7 @@ fn test_slashing_single_event() {
         annual_reward_rate_bps: 1000, // e.g. 10% annual rate
         blocks_per_year: 10_000,      // e.g. 10,000 blocks per year
         staking_denom: "untrn".to_string(),
+        security_address: deps.api.addr_make("security_address").into(),
     };
     let _res = instantiate(
         deps.as_mut(),
@@ -971,9 +1085,23 @@ fn test_slashing_single_event() {
     let query_rewards_msg = QueryMsg::Rewards {
         user: user1.to_string(),
     };
-    let bin = query(deps.as_ref(), env, query_rewards_msg).unwrap();
+    let bin = query(deps.as_ref(), env.clone(), query_rewards_msg).unwrap();
     let rewards_after_claim: RewardsResponse = cosmwasm_std::from_json(bin).unwrap();
     assert_eq!(rewards_after_claim.pending_rewards.amount, Uint128::zero());
+
+    // remove state entity for the slashing call to fail
+    STATE.remove(&mut deps.storage);
+    // Execute the slashing event (only allowed by the proxy).
+    let slashing_msg = ExecuteMsg::Slashing {};
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        proxy_info.clone(),
+        slashing_msg.clone(),
+    )
+    .unwrap(); // the contract should raise an error
+               // but instead the contract must be paused after an errored call
+    assert_contract_is_paused(deps.as_mut(), env, proxy, user1);
 }
 
 /// Two slashing events occur before the user queries and claims rewards.
@@ -996,6 +1124,7 @@ fn test_multiple_slashing_events() {
         annual_reward_rate_bps: 1000,
         blocks_per_year: 10_000,
         staking_denom: "untrn".to_string(),
+        security_address: deps.api.addr_make("security_address").into(),
     };
     let _ = instantiate(
         deps.as_mut(),
@@ -1094,6 +1223,7 @@ fn test_update_and_slash_same_block() {
         annual_reward_rate_bps: 1000,
         blocks_per_year: 10_000,
         staking_denom: "untrn".to_string(),
+        security_address: deps.api.addr_make("security_address").into(),
     };
     let _ = instantiate(
         deps.as_mut(),
@@ -1205,6 +1335,7 @@ fn test_two_users_with_slashing() {
         annual_reward_rate_bps: 1000, // 10%
         blocks_per_year: 100,
         staking_denom: "untrn".to_string(),
+        security_address: deps.api.addr_make("security_address").into(),
     };
     let _ = instantiate(
         deps.as_mut(),
@@ -1314,6 +1445,7 @@ fn test_user_with_slashing_and_config_change() {
         annual_reward_rate_bps: 1000, // 10%
         blocks_per_year: 100,
         staking_denom: "untrn".to_string(),
+        security_address: deps.api.addr_make("security_address").into(),
     };
     let _ = instantiate(
         deps.as_mut(),
@@ -1350,6 +1482,7 @@ fn test_user_with_slashing_and_config_change() {
         blocks_per_year: None,
         staking_info_proxy: None,
         staking_denom: None,
+        security_address: None,
     };
     let _ = execute(
         deps.as_mut(),

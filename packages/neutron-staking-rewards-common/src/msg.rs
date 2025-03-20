@@ -11,6 +11,7 @@ pub struct InstantiateMsg {
     pub dao_address: String,
     pub staking_info_proxy: String,
     pub staking_denom: String,
+    pub security_address: String,
 }
 
 #[cw_serde]
@@ -22,6 +23,7 @@ pub enum ExecuteMsg {
         blocks_per_year: Option<u64>,
         staking_info_proxy: Option<String>,
         staking_denom: Option<String>,
+        security_address: Option<String>,
     },
     /// Called by the (authorized) Staking Info Proxy whenever a user’s stake changes.
     UpdateStake { user: String },
@@ -30,6 +32,12 @@ pub enum ExecuteMsg {
     /// Called by a user to claim their accrued rewards. Allows to specify an optional
     /// address to which the rewards should be sent.
     ClaimRewards { to_address: Option<String> },
+
+    /// Pauses the contract, can be called either by the owner or security_address
+    Pause {},
+
+    /// Unpauses the contract, can be called either by the owner or security_address
+    Unpause {},
 }
 
 #[cw_serde]
@@ -46,10 +54,12 @@ pub enum QueryMsg {
     /// Returns the user's current pending rewards.
     #[returns(RewardsResponse)]
     Rewards { user: String },
-
     // Returns slashing events recorded by the contract
     #[returns(SlashingEventsResponse)]
     SlashingEvents { from_height: u64 },
+    /// Returns true if the contract is paused, false otherwise
+    #[returns(bool)]
+    IsPaused {},
 }
 
 /// Response for `QueryMsg::Config`

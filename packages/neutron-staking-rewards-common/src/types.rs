@@ -11,6 +11,8 @@ pub struct Config {
     pub annual_reward_rate_bps: u64,
     pub blocks_per_year: u64,
     pub staking_denom: String,
+    // an address that is allowed to pause/unpause the contract
+    pub security_address: Addr,
 }
 
 impl Config {
@@ -83,6 +85,7 @@ mod tests {
                 config: Config {
                     owner: Addr::unchecked("owner"),
                     dao_address: Addr::unchecked("dao"),
+                    security_address: Addr::unchecked("security"),
                     staking_info_proxy: Addr::unchecked("proxy"),
                     annual_reward_rate_bps: 500, // 5%
                     blocks_per_year: 5_256_000,  // Approximately 6 seconds per block
@@ -95,6 +98,7 @@ mod tests {
                 config: Config {
                     owner: Addr::unchecked("owner"),
                     dao_address: Addr::unchecked("dao"),
+                    security_address: Addr::unchecked("security"),
                     staking_info_proxy: Addr::unchecked("proxy"),
                     annual_reward_rate_bps: 500,
                     blocks_per_year: 5_256_000,
@@ -107,6 +111,7 @@ mod tests {
                 config: Config {
                     owner: Addr::unchecked("owner"),
                     dao_address: Addr::unchecked("dao"),
+                    security_address: Addr::unchecked("security"),
                     staking_info_proxy: Addr::unchecked("proxy"),
                     annual_reward_rate_bps: 500,
                     blocks_per_year: 0,
@@ -119,6 +124,7 @@ mod tests {
                 config: Config {
                     owner: Addr::unchecked("owner"),
                     dao_address: Addr::unchecked("dao"),
+                    security_address: Addr::unchecked("security"),
                     staking_info_proxy: Addr::unchecked("proxy"),
                     annual_reward_rate_bps: 12_000,
                     blocks_per_year: 5_256_000,
@@ -131,6 +137,7 @@ mod tests {
                 config: Config {
                     owner: Addr::unchecked("owner"),
                     dao_address: Addr::unchecked("dao"),
+                    security_address: Addr::unchecked("security"),
                     staking_info_proxy: Addr::unchecked("proxy"),
                     annual_reward_rate_bps: 10_000,
                     blocks_per_year: 5_256_000,
@@ -143,6 +150,7 @@ mod tests {
                 config: Config {
                     owner: Addr::unchecked("owner"),
                     dao_address: Addr::unchecked("dao"),
+                    security_address: Addr::unchecked("security"),
                     staking_info_proxy: Addr::unchecked("proxy"),
                     annual_reward_rate_bps: 500,
                     blocks_per_year: 1,
