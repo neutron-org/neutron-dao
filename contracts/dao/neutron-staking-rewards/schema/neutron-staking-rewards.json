@@ -245,6 +245,20 @@
           }
         },
         "additionalProperties": false
+      },
+      {
+        "description": "Returns true if the contract is paused, false otherwise",
+        "type": "object",
+        "required": [
+          "is_paused"
+        ],
+        "properties": {
+          "is_paused": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
       }
     ]
   },
@@ -294,6 +308,11 @@
         }
       },
       "additionalProperties": false
+    },
+    "is_paused": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Boolean",
+      "type": "boolean"
     },
     "rewards": {
       "$schema": "http://json-schema.org/draft-07/schema#",
