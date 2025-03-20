@@ -406,7 +406,7 @@ pub(crate) fn after_delegation_modified(
     // https://github.com/neutron-org/cosmos-sdk/blob/83295e7c1380071cb9a0f405442d06acf387228c/x/staking/keeper/validator.go#L148
     // - **Unbonding (Delegation Decrease)**:
     //   - When a delegator **removes** or **reduces** their delegation (`actual_shares < previous_shares`),
-    //     we **cannot** rely on the chain's validator query because the state isn't updated yet due to the unbonding period.
+    //     we **cannot** rely on the chain's validator query because the state isn't updated yet due to this hook being called before validator state update.
     //   - Instead, we must **manually recalculate** the validator's `total_tokens` and `total_shares`
     //     by removing the undelegated shares.
     //
