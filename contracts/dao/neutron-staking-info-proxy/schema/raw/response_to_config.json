@@ -4,10 +4,14 @@
   "description": "Response for `QueryMsg::Config`",
   "type": "object",
   "required": [
-    "owner"
+    "owner",
+    "staking_denom"
   ],
   "properties": {
     "owner": {
+      "type": "string"
+    },
+    "staking_denom": {
       "type": "string"
     },
     "staking_rewards": {

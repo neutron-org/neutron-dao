@@ -53,6 +53,29 @@
       "additionalProperties": false
     },
     {
+      "type": "object",
+      "required": [
+        "slashing_events"
+      ],
+      "properties": {
+        "slashing_events": {
+          "type": "object",
+          "required": [
+            "from_height"
+          ],
+          "properties": {
+            "from_height": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
       "description": "Returns true if the contract is paused, false otherwise",
       "type": "object",
       "required": [
