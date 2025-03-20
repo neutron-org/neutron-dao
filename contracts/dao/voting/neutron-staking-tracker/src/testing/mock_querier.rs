@@ -230,10 +230,6 @@ impl WasmMockQuerier {
     /// Allows setting **mock delegations** for testing.
     pub fn with_delegations(&mut self, delegations: HashMap<(String, String), Uint128>) {
         for ((delegator_addr, validator_addr), shares) in delegations.iter() {
-            println!(
-                " Storing Delegation: Delegator: {}, Validator: {}, Shares: {}",
-                delegator_addr, validator_addr, shares
-            );
             self.delegations
                 .insert((delegator_addr.clone(), validator_addr.clone()), *shares);
         }

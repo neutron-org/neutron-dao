@@ -14,7 +14,7 @@
 
 use cosmwasm_schema::write_api;
 
-use neutron_staking_tracker::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use neutron_staking_tracker_common::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 
 fn main() {
     write_api! {

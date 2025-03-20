@@ -1,0 +1,25 @@
+[package]
+authors = ["Dmitrii Kolupaev <dmitry.kolupaev@hadronlabs.org>"]
+description = "Proxy staking updates from staking providers to the rewards contract"
+edition = "2021"
+name = "neutron-staking-info-proxy"
+repository = "https://github.com/neutron-org/neutron-dao"
+version = "0.1.0"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+# use library feature to disable all instantiate/execute/query exports
+library = []
+
+[dependencies]
+cosmwasm-schema = { version = "2.1.4" }
+cosmwasm-std = { version = "2.0.4" }
+cw-storage-plus = "2.0.0"
+cw2 = "2.0.0"
+schemars = "0.8.8"
+serde = { version = "1.0.175", default-features = false, features = ["derive"] }
+thiserror = { version = "1.0" }
+neutron-staking-rewards-common = { path = "../../../packages/neutron-staking-rewards-common" }
+neutron-staking-info-proxy-common =  { path = "../../../packages/neutron-staking-info-proxy-common" }

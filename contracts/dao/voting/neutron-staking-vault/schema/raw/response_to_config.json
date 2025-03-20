@@ -10,16 +10,28 @@
   ],
   "properties": {
     "description": {
+      "description": "Description of the contract.",
       "type": "string"
     },
     "name": {
+      "description": "Name of the contract.",
       "type": "string"
     },
     "owner": {
-      "$ref": "#/definitions/Addr"
+      "description": "Contract's owner that can update config and manage blacklist",
+      "allOf": [
+        {
+          "$ref": "#/definitions/Addr"
+        }
+      ]
     },
     "staking_tracker_contract_address": {
-      "$ref": "#/definitions/Addr"
+      "description": "Address of staking tracker contract. Used for querying user's and total stake at height.",
+      "allOf": [
+        {
+          "$ref": "#/definitions/Addr"
+        }
+      ]
     }
   },
   "definitions": {

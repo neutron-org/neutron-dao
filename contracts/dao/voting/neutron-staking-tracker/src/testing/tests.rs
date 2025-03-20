@@ -1,20 +1,19 @@
 #[cfg(test)]
 use crate::contract::{
     after_delegation_modified, after_validator_begin_unbonding, after_validator_bonded,
-    after_validator_created, before_validator_slashed, execute, instantiate, query,
-    query_total_power_at_height, query_voting_power_at_height,
+    before_validator_slashed, execute, instantiate, query_stake_at_height,
+    query_total_stake_at_height,
 };
-use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::state::{
-    Config, Delegation, Validator, BLACKLISTED_ADDRESSES, CONFIG, DAO, DELEGATIONS, VALIDATORS,
-};
+use crate::contract::{after_validator_created, after_validator_removed};
+use crate::state::{BONDED_VALIDATORS_SET, CONFIG, DELEGATIONS, VALIDATORS};
 use crate::testing::mock_querier::mock_dependencies as dependencies;
 use cosmwasm_std::testing::message_info;
 use cosmwasm_std::{
-    from_json,
     testing::{mock_dependencies, mock_env},
     to_json_binary, Addr, Decimal256, Uint128,
 };
+use neutron_staking_tracker_common::msg::{ExecuteMsg, InstantiateMsg};
+use neutron_staking_tracker_common::types::{Config, Delegation, Validator};
 use neutron_std::types::cosmos::staking::v1beta1::{
     QueryValidatorResponse, Validator as CosmosValidator,
 };
@@ -75,11 +74,7 @@ fn test_instantiate() {
     let config = CONFIG.load(&deps.storage).unwrap();
     assert_eq!(config.name, "Test DAO");
     assert_eq!(config.description, "A test DAO contract");
-    assert_eq!(config.owner, valid_neutron_address); //  Fix assertion
-
-    // Validate DAO storage
-    let dao = DAO.load(&deps.storage).unwrap();
-    assert_eq!(dao, valid_neutron_address); //  Fix assertion
+    assert_eq!(config.owner, valid_neutron_address);
 }
 
 #[test]
@@ -173,316 +168,93 @@ fn test_update_config_unauthorized() {
 }
 
 #[test]
-fn test_add_and_remove_from_blacklist() {
-    let mut deps = mock_dependencies();
-    deps.api = deps.api.with_prefix("neutron");
-
-    let admin = deps.api.addr_make("admin");
-    let addr1 = deps.api.addr_make("addr1");
-    let addr2 = deps.api.addr_make("addr2");
-
-    // Initialize config with owner
-    let config = Config {
-        name: String::from("Test Config"),
-        description: String::from("Testing blacklist functionality"),
-        owner: admin.clone(),
-        staking_proxy_info_contract_address: None,
-    };
-    CONFIG.save(deps.as_mut().storage, &config).unwrap();
-
-    // Add addresses to the blacklist
-    let res = execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&admin, &[]),
-        ExecuteMsg::AddToBlacklist {
-            addresses: vec![String::from(addr1.clone()), String::from(addr2.clone())],
-        },
-    );
-    assert!(res.is_ok(), "Error adding to blacklist: {:?}", res.err());
-
-    // Verify that addresses are blacklisted
-    let is_addr1_blacklisted = BLACKLISTED_ADDRESSES
-        .load(deps.as_ref().storage, addr1.clone())
-        .unwrap_or(false);
-    let is_addr2_blacklisted = BLACKLISTED_ADDRESSES
-        .load(deps.as_ref().storage, addr2.clone())
-        .unwrap_or(false);
-    assert!(is_addr1_blacklisted, "Address addr1 is not blacklisted");
-    assert!(is_addr2_blacklisted, "Address addr2 is not blacklisted");
-
-    // Remove addresses from the blacklist
-    let res = execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&admin, &[]),
-        ExecuteMsg::RemoveFromBlacklist {
-            addresses: vec![String::from(addr1.clone()), String::from(addr2.clone())],
-        },
-    );
-    assert!(
-        res.is_ok(),
-        "Error removing from blacklist: {:?}",
-        res.err()
-    );
-
-    // Verify that addresses are no longer blacklisted
-    let is_addr1_blacklisted = BLACKLISTED_ADDRESSES
-        .may_load(deps.as_ref().storage, addr1)
-        .unwrap();
-    let is_addr2_blacklisted = BLACKLISTED_ADDRESSES
-        .may_load(deps.as_ref().storage, addr2)
-        .unwrap();
-    assert!(
-        is_addr1_blacklisted.is_none(),
-        "Address addr1 is still blacklisted"
-    );
-    assert!(
-        is_addr2_blacklisted.is_none(),
-        "Address addr2 is still blacklisted"
-    );
-}
-
-#[test]
-fn test_check_if_address_is_blacklisted() {
+fn test_after_validator_created_with_mock_query() {
     let mut deps = dependencies();
-    deps.api = deps.api.with_prefix("neutron");
-
-    let admin = deps.api.addr_make("admin");
-    let addr1 = deps.api.addr_make("addr1");
-    let addr2 = deps.api.addr_make("addr2");
-
-    // Initialize config with owner
-    let config = Config {
-        name: String::from("Test Config"),
-        description: String::from("Testing blacklist functionality"),
-        owner: admin.clone(),
-        staking_proxy_info_contract_address: None,
-    };
-    CONFIG.save(deps.as_mut().storage, &config).unwrap();
-
-    // Add an address to the blacklist
-    let res = execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&admin, &[]),
-        ExecuteMsg::AddToBlacklist {
-            addresses: vec![addr1.to_string()],
-        },
-    );
-    assert!(res.is_ok(), "Error adding to blacklist: {:?}", res.err());
-
-    // Query if the address is blacklisted
-    let query_res = query(
-        deps.as_ref(),
-        mock_env(),
-        QueryMsg::IsAddressBlacklisted {
-            address: addr1.to_string(),
-        },
-    );
-    assert!(
-        query_res.is_ok(),
-        "Error querying blacklist status: {:?}",
-        query_res.err()
-    );
-
-    let is_blacklisted: bool = from_json(query_res.unwrap()).unwrap();
-    assert!(is_blacklisted, "Address addr1 should be blacklisted");
-
-    // Query an address that is not blacklisted
-    let query_res = query(
-        deps.as_ref(),
-        mock_env(),
-        QueryMsg::IsAddressBlacklisted {
-            address: addr2.to_string(),
-        },
-    );
-    assert!(
-        query_res.is_ok(),
-        "Error querying blacklist status: {:?}",
-        query_res.err()
-    );
-
-    let is_blacklisted: bool = from_json(query_res.unwrap()).unwrap();
-    assert!(!is_blacklisted, "Address addr2 should not be blacklisted");
-}
-
-#[test]
-fn test_total_vp_excludes_blacklisted_addresses() {
-    let mut deps = dependencies();
-    deps.api = deps.api.with_prefix("neutron");
-
-    let admin = deps.api.addr_make("admin");
-    let delegator1 = deps.api.addr_make("delegator1");
-    let delegator2 = deps.api.addr_make("delegator2");
 
     let env = mock_env();
 
-    let config = Config {
-        name: "Test Vault".to_string(),
-        description: "Testing vault functionality".to_string(),
-        owner: admin.clone(),
-        staking_proxy_info_contract_address: None,
+    // Define operator (valoper) and consensus (valcons) addresses
+    let oper_addr = Addr::unchecked("neutronvaloper1xyz");
+
+    // Mock the validator query response
+    let proto_validator = CosmosValidator {
+        operator_address: oper_addr.to_string(),
+        consensus_pubkey: None,
+        jailed: false,
+        status: 2, // Unbonded status
+        tokens: "1000".to_string(),
+        delegator_shares: "1000".to_string(),
+        description: None,
+        unbonding_height: 0,
+        unbonding_time: None,
+        commission: None,
+        min_self_delegation: "1".to_string(),
+        unbonding_on_hold_ref_count: 0,
+        unbonding_ids: vec![],
     };
-    CONFIG.save(deps.as_mut().storage, &config).unwrap();
 
-    // Define consensus and operator addresses
-    let cons_addr1 = Addr::unchecked("neutronvalcons1xyz");
-    let oper_addr1 = Addr::unchecked("neutronvaloper1xyz");
-    let cons_addr2 = Addr::unchecked("neutronvalcons2xyz");
-    let oper_addr2 = Addr::unchecked("neutronvaloper2xyz");
+    deps.querier.with_validators(vec![proto_validator]);
 
-    // Add validators using consensus address as the key
-    let validator1 = Validator {
-        cons_address: cons_addr1.clone(),
-        oper_address: oper_addr1.clone(),
-        bonded: true,
-        total_tokens: Uint128::new(1000),
-        total_shares: Uint128::new(1000),
-        active: true,
-    };
-    VALIDATORS
-        .save(
-            deps.as_mut().storage,
-            &cons_addr1,
-            &validator1,
-            env.block.height,
-        )
-        .unwrap();
+    // Call `after_validator_created`
+    let res = after_validator_created(deps.as_mut(), env.clone(), oper_addr.to_string());
+    assert!(res.is_ok(), "Error: {:?}", res.err());
 
-    let validator2 = Validator {
-        cons_address: cons_addr2.clone(),
-        oper_address: oper_addr2.clone(),
-        bonded: true,
-        total_tokens: Uint128::new(500),
-        total_shares: Uint128::new(500),
-        active: true,
-    };
-    VALIDATORS
-        .save(
-            deps.as_mut().storage,
-            &cons_addr2,
-            &validator2,
-            env.block.height,
-        )
-        .unwrap();
-
-    let delegation1 = Delegation {
-        delegator_address: delegator1.clone(),
-        validator_address: oper_addr1.clone(), // Uses operator address
-        shares: Uint128::new(500),
-    };
-    DELEGATIONS
-        .save(
-            deps.as_mut().storage,
-            (&delegator1, &oper_addr1),
-            &delegation1,
-            env.block.height,
-        )
-        .unwrap();
-
-    let delegation2 = Delegation {
-        delegator_address: delegator2.clone(),
-        validator_address: oper_addr2.clone(), // Uses operator address
-        shares: Uint128::new(500),
-    };
-    DELEGATIONS
-        .save(
-            deps.as_mut().storage,
-            (&delegator2, &oper_addr2),
-            &delegation2,
-            env.block.height,
-        )
-        .unwrap();
-
-    // Query total voting power **before** blacklisting anything
-    let initial_query_res = query(
-        deps.as_ref(),
-        env.clone(),
-        QueryMsg::TotalPowerAtHeight {
-            height: Some(env.block.height + 1),
-        },
-    );
-    assert!(
-        initial_query_res.is_ok(),
-        "Error querying total power before blacklisting: {:?}",
-        initial_query_res.err()
-    );
-
-    let initial_total_power: Uint128 = from_json(initial_query_res.unwrap()).unwrap();
-
-    // Expected power: sum of both validator tokens (1000 + 500 = 1500)
+    let validator = VALIDATORS.load(deps.as_ref().storage, &oper_addr).unwrap();
     assert_eq!(
-        initial_total_power,
-        Uint128::new(1500),
-        "Initial total power should be sum of both validators' tokens"
+        validator.oper_address, oper_addr,
+        "Operator address mismatch"
     );
+    assert_eq!(
+        validator.total_tokens,
+        Uint128::new(1000),
+        "Total tokens do not match the mocked data"
+    );
+    assert_eq!(
+        validator.total_shares,
+        Uint128::new(1000),
+        "Total shares do not match the mocked data"
+    );
+}
 
-    // Blacklist address "addr2"
-    let res = execute(
+#[test]
+fn test_after_validator_removed() {
+    let mut deps = dependencies();
+
+    let env = mock_env();
+
+    // Define operator (valoper) and consensus (valcons) addresses
+    let oper_addr = Addr::unchecked("neutronvaloper1xyz");
+    let cons_addr = Addr::unchecked("neutronvalconsoper1xyz");
+
+    // Store some validator
+    let validator = Validator {
+        oper_address: oper_addr.clone(),
+        total_tokens: Uint128::new(1000), // Self-bonded tokens
+        total_shares: Uint128::new(1000), // No external delegators
+    };
+    // Store validator state by operator address
+    VALIDATORS
+        .save(
+            deps.as_mut().storage,
+            &oper_addr,
+            &validator,
+            env.block.height,
+        )
+        .unwrap();
+
+    // Call `after_validator_removed`
+    let res = after_validator_removed(
         deps.as_mut(),
         env.clone(),
-        message_info(&admin, &[]),
-        ExecuteMsg::AddToBlacklist {
-            addresses: vec![delegator2.to_string()],
-        },
+        oper_addr.to_string(),
+        cons_addr.to_string(),
     );
-    assert!(res.is_ok(), "Error adding to blacklist: {:?}", res.err());
+    assert!(res.is_ok(), "Error: {:?}", res.err());
 
-    // Ensure validator1 still exists and has tokens
-    let validator1_state = VALIDATORS.load(deps.as_ref().storage, &cons_addr1).unwrap();
-    assert_eq!(
-        validator1_state.total_tokens,
-        Uint128::new(1000),
-        "Validator1's tokens are incorrect"
-    );
-
-    // Ensure validator2 still exists
-    let validator2_state = VALIDATORS.load(deps.as_ref().storage, &cons_addr2).unwrap();
-    assert_eq!(
-        validator2_state.total_tokens,
-        Uint128::new(500),
-        "Validator2's tokens are incorrect"
-    );
-
-    // Ensure delegation1 is still present
-    let delegation1_state = DELEGATIONS
-        .load(deps.as_ref().storage, (&delegator1, &oper_addr1))
+    let validator = VALIDATORS
+        .may_load(deps.as_ref().storage, &oper_addr)
         .unwrap();
-    assert_eq!(
-        delegation1_state.shares,
-        Uint128::new(500),
-        "Delegation1 shares incorrect"
-    );
-
-    // Ensure delegation2 is blacklisted correctly
-    let is_blacklisted = BLACKLISTED_ADDRESSES
-        .load(deps.as_ref().storage, delegator2.clone())
-        .unwrap_or(false);
-    assert!(is_blacklisted, "Delegator2 should be blacklisted");
-
-    // Query total voting power **after** blacklisting
-    let query_res = query(
-        deps.as_ref(),
-        env.clone(),
-        QueryMsg::TotalPowerAtHeight {
-            height: Some(env.block.height + 1),
-        },
-    );
-    assert!(
-        query_res.is_ok(),
-        "Error querying total power after blacklisting: {:?}",
-        query_res.err()
-    );
-
-    let total_power: Uint128 = from_json(query_res.unwrap()).unwrap();
-
-    // Only validator1's power should count (1000), validator2's delegation is blacklisted
-    assert_eq!(
-        total_power,
-        Uint128::new(1000),
-        "Total power should exclude blacklisted address"
-    );
+    assert!(validator.is_none(), "Validator should be removed")
 }
 
 #[test]
@@ -505,18 +277,18 @@ fn test_after_validator_bonded_with_mock_query() {
     let oper_addr = Addr::unchecked("neutronvaloper1xyz");
     let cons_addr = Addr::unchecked("neutronvalcons1xyz");
 
+    BONDED_VALIDATORS_SET
+        .save(deps.as_mut().storage, &Vec::new(), env.block.height)
+        .unwrap();
     // Store an initial validator state with `bonded = false`
     VALIDATORS
         .save(
             deps.as_mut().storage,
             &oper_addr,
             &Validator {
-                cons_address: cons_addr.clone(),
                 oper_address: oper_addr.clone(),
-                bonded: false,
                 total_tokens: Uint128::zero(),
                 total_shares: Uint128::zero(),
-                active: true,
             },
             env.block.height,
         )
@@ -551,8 +323,10 @@ fn test_after_validator_bonded_with_mock_query() {
 
     // Load updated validator state
     let updated_validator = VALIDATORS.load(deps.as_ref().storage, &oper_addr).unwrap(); //  Now using operator address as the key
-    assert!(updated_validator.bonded, "Validator should be bonded");
-    assert!(updated_validator.active, "Validator should remain active");
+    assert!(BONDED_VALIDATORS_SET
+        .load(deps.as_ref().storage)
+        .unwrap()
+        .contains(&updated_validator.oper_address.to_string()));
     assert_eq!(updated_validator.total_tokens, Uint128::new(1000));
     assert_eq!(updated_validator.total_shares, Uint128::new(1000));
 
@@ -561,9 +335,8 @@ fn test_after_validator_bonded_with_mock_query() {
     assert_eq!(
         response.attributes,
         vec![
-            ("action", "validator_bonded"),
-            ("valcons_address", &*cons_addr.to_string()), // Match contract's attribute key
-            ("valoper_address", &*oper_addr.to_string()), // Match contract's attribute key
+            ("action", "after_validator_bonded"),
+            ("valoper_address", oper_addr.to_string().as_ref()), // Match contract's attribute key
             ("total_tokens", "1000"),
             ("total_shares", "1000"),
         ]
@@ -587,17 +360,16 @@ fn test_before_validator_slashed_with_self_bonded_only() {
     CONFIG.save(deps.as_mut().storage, &config).unwrap();
 
     // Define consensus and operator addresses
-    let cons_addr = Addr::unchecked("neutronvalcons1xyz");
     let oper_addr = Addr::unchecked("neutronvaloper1xyz");
 
     // Validator has self-bonded tokens but no external delegations
+    BONDED_VALIDATORS_SET
+        .save(deps.as_mut().storage, &vec![oper_addr.to_string()], 0)
+        .unwrap();
     let validator = Validator {
-        cons_address: cons_addr.clone(),
         oper_address: oper_addr.clone(),
-        bonded: true,
         total_tokens: Uint128::new(1000), // Self-bonded tokens
         total_shares: Uint128::new(1000), // No external delegators
-        active: true,
     };
 
     // Store validator state by operator address
@@ -606,6 +378,7 @@ fn test_before_validator_slashed_with_self_bonded_only() {
         .unwrap();
 
     let slashing_fraction = Decimal256::percent(10); // 10% slashing
+    let tokens_to_burn: Uint128 = Uint128::new(100);
 
     // Call `before_validator_slashed` with the validator’s address
     let res = before_validator_slashed(
@@ -613,6 +386,7 @@ fn test_before_validator_slashed_with_self_bonded_only() {
         env.clone(),
         oper_addr.to_string(),
         slashing_fraction,
+        tokens_to_burn,
     );
 
     assert!(
@@ -631,10 +405,9 @@ fn test_before_validator_slashed_with_self_bonded_only() {
     let expected_attributes = vec![
         ("action", "before_validator_slashed"),
         ("valoper_address", "neutronvaloper1xyz"),
-        ("cons_address", "neutronvalcons1xyz"),
-        ("total_tokens", "900"),      // 10% slashed from 1000 → 900
-        ("total_shares", "1000"),     // Shares remain unchanged
-        ("slashing_fraction", "0.1"), // 10% slashing
+        ("total_tokens", "900"),   // 10% slashed from 1000 → 900
+        ("total_shares", "1000"),  // Shares remain unchanged
+        ("tokens_to_burn", "100"), // 10% slashing
     ];
 
     // Convert response attributes for assertion
@@ -665,16 +438,19 @@ fn test_before_validator_slashed() {
 
     // Define operator and consensus addresses
     let oper_addr = Addr::unchecked("neutronvaloper1xyz");
-    let cons_addr = Addr::unchecked("neutronvalcons1xyz");
 
     // Store validator using `valoper_address` as the key
+    BONDED_VALIDATORS_SET
+        .save(
+            deps.as_mut().storage,
+            &vec![oper_addr.to_string()],
+            env.block.height,
+        )
+        .unwrap();
     let validator = Validator {
-        cons_address: cons_addr.clone(), // Still stored inside struct
         oper_address: oper_addr.clone(),
-        bonded: true,
         total_tokens: Uint128::new(500),
         total_shares: Uint128::new(500), // Shares remain constant after slashing
-        active: true,
     };
     VALIDATORS
         .save(
@@ -686,7 +462,7 @@ fn test_before_validator_slashed() {
         .unwrap();
 
     // Store delegation using `valoper_address`
-    let delegator_addr = Addr::unchecked("delegator1");
+    let delegator_addr = deps.api.addr_make("delegator1");
     let delegation = Delegation {
         delegator_address: delegator_addr.clone(),
         validator_address: oper_addr.clone(), // Uses `valoper_address`
@@ -728,12 +504,14 @@ fn test_before_validator_slashed() {
         Uint128::new(500), // Ensure delegation data is available
     )]));
 
+    let tokens_to_burn: Uint128 = Uint128::new(50);
     // Call `before_validator_slashed`
     let res = before_validator_slashed(
         deps.as_mut(),
         env.clone(),
         oper_addr.to_string(),
         slashing_fraction,
+        tokens_to_burn,
     );
     assert!(res.is_ok(), "Error: {:?}", res.err());
 
@@ -753,10 +531,9 @@ fn test_before_validator_slashed() {
     let expected_attributes = vec![
         ("action", "before_validator_slashed"),
         ("valoper_address", "neutronvaloper1xyz"),
-        ("cons_address", "neutronvalcons1xyz"),
         ("total_tokens", "450"),
         ("total_shares", "500"),
-        ("slashing_fraction", "0.1"),
+        ("tokens_to_burn", "50"),
     ];
 
     // Convert `response.attributes` from `Vec<Attribute>` to `Vec<(&str, &str)>`
@@ -771,7 +548,7 @@ fn test_before_validator_slashed() {
 }
 
 #[test]
-fn test_before_validator_slashed_voting_power_drops() {
+fn test_before_validator_slashed_stake_drops() {
     let mut deps = dependencies();
     let env = mock_env();
 
@@ -788,16 +565,19 @@ fn test_before_validator_slashed_voting_power_drops() {
 
     // Define operator address (primary key for validators now)
     let oper_addr = Addr::unchecked("neutronvaloper1xyz");
-    let cons_addr = Addr::unchecked("neutronvalcons1xyz");
 
     // Initial validator state
+    BONDED_VALIDATORS_SET
+        .save(
+            deps.as_mut().storage,
+            &vec![oper_addr.to_string()],
+            env.block.height,
+        )
+        .unwrap();
     let validator = Validator {
-        cons_address: cons_addr.clone(),
         oper_address: oper_addr.clone(),
-        bonded: true,
         total_tokens: Uint128::new(1000),
         total_shares: Uint128::new(1000),
-        active: true,
     };
 
     // Store validator using operator address as the key
@@ -811,8 +591,8 @@ fn test_before_validator_slashed_voting_power_drops() {
         .unwrap();
 
     // Store multiple delegations using operator address
-    let delegator1 = Addr::unchecked("delegator1");
-    let delegator2 = Addr::unchecked("delegator2");
+    let delegator1 = deps.api.addr_make("delegator1");
+    let delegator2 = deps.api.addr_make("delegator2");
 
     let delegation1 = Delegation {
         delegator_address: delegator1.clone(),
@@ -844,11 +624,9 @@ fn test_before_validator_slashed_voting_power_drops() {
 
     let slashing_fraction = Decimal256::percent(10); // 10% slashing
 
-    // Calculate voting power BEFORE slashing
-    let voting_power_before_1 =
-        delegation1.shares * validator.total_tokens / validator.total_shares;
-    let voting_power_before_2 =
-        delegation2.shares * validator.total_tokens / validator.total_shares;
+    // Calculate stake BEFORE slashing
+    let stake_before_1 = delegation1.shares * validator.total_tokens / validator.total_shares;
+    let stake_before_2 = delegation2.shares * validator.total_tokens / validator.total_shares;
 
     // Mock validator query to reflect slashed tokens
     let proto_validator = CosmosValidator {
@@ -880,12 +658,14 @@ fn test_before_validator_slashed_voting_power_drops() {
         ),
     ]));
 
+    let tokens_to_burn: Uint128 = Uint128::new(100);
     // Call before_validator_slashed
     let res = before_validator_slashed(
         deps.as_mut(),
         env.clone(),
         oper_addr.to_string(),
         slashing_fraction,
+        tokens_to_burn,
     );
     assert!(res.is_ok(), "Error: {:?}", res.err());
 
@@ -919,20 +699,20 @@ fn test_before_validator_slashed_voting_power_drops() {
         "Validator total tokens do not match expected value after slashing!"
     );
 
-    // Calculate voting power AFTER slashing
-    let voting_power_after_1 = updated_delegation1.shares * updated_validator.total_tokens
+    // Calculate stake AFTER slashing
+    let stake_after_1 = updated_delegation1.shares * updated_validator.total_tokens
         / updated_validator.total_shares;
-    let voting_power_after_2 = updated_delegation2.shares * updated_validator.total_tokens
+    let stake_after_2 = updated_delegation2.shares * updated_validator.total_tokens
         / updated_validator.total_shares;
 
-    // Ensure delegators' voting power decreased
+    // Ensure delegators' stake decreased
     assert!(
-        voting_power_after_1 < voting_power_before_1,
-        "Delegator 1's voting power did not decrease!"
+        stake_after_1 < stake_before_1,
+        "Delegator 1's stake did not decrease!"
     );
     assert!(
-        voting_power_after_2 < voting_power_before_2,
-        "Delegator 2's voting power did not decrease!"
+        stake_after_2 < stake_before_2,
+        "Delegator 2's stake did not decrease!"
     );
 
     // Validate response attributes
@@ -945,95 +725,37 @@ fn test_before_validator_slashed_voting_power_drops() {
         .map(|attr| (attr.key.as_str(), attr.value.as_str()))
         .collect();
 
-    let slashing_fraction_str = slashing_fraction.to_string(); // Store the string first
-
     let expected_attributes = vec![
         ("action", "before_validator_slashed"),
         ("valoper_address", oper_addr.as_str()),
-        ("cons_address", cons_addr.as_str()),
         ("total_tokens", "900"),
         ("total_shares", "1000"),
-        ("slashing_fraction", slashing_fraction_str.as_str()), // Use the stored string
+        ("tokens_to_burn", "100"), // Use the stored string
     ];
 
     assert_eq!(actual_attributes, expected_attributes);
 }
 
 #[test]
-fn test_after_validator_created_with_mock_query() {
-    let mut deps = dependencies();
-
-    let env = mock_env();
-
-    // Define operator (valoper) and consensus (valcons) addresses
-    let oper_addr = Addr::unchecked("neutronvaloper1xyz");
-
-    // Mock the validator query response
-    let proto_validator = CosmosValidator {
-        operator_address: oper_addr.to_string(),
-        consensus_pubkey: None,
-        jailed: false,
-        status: 2, // Unbonded status
-        tokens: "1000".to_string(),
-        delegator_shares: "1000".to_string(),
-        description: None,
-        unbonding_height: 0,
-        unbonding_time: None,
-        commission: None,
-        min_self_delegation: "1".to_string(),
-        unbonding_on_hold_ref_count: 0,
-        unbonding_ids: vec![],
-    };
-
-    deps.querier.with_validators(vec![proto_validator]);
-
-    // Call `after_validator_created`
-    let res = after_validator_created(deps.as_mut(), env.clone(), oper_addr.to_string());
-    assert!(res.is_ok(), "Error: {:?}", res.err());
-
-    let validator = VALIDATORS.load(deps.as_ref().storage, &oper_addr).unwrap();
-    assert_eq!(
-        validator.oper_address, oper_addr,
-        "Operator address mismatch"
-    );
-    assert!(
-        !validator.bonded,
-        "Validator should not be bonded initially"
-    );
-    assert_eq!(
-        validator.total_tokens,
-        Uint128::new(1000),
-        "Total tokens do not match the mocked data"
-    );
-    assert_eq!(
-        validator.total_shares,
-        Uint128::new(1000),
-        "Total shares do not match the mocked data"
-    );
-    assert!(validator.active, "Validator should be active");
-}
-
-#[test]
-fn test_create_delegation_and_query_voting_power_direct_write() {
+fn test_create_delegation_and_query_stake_direct_write() {
     let mut deps = mock_dependencies();
     let mut env = mock_env();
 
     // Define Consensus (`valcons`) and Operator (`valoper`) addresses
-    let cons_addr = Addr::unchecked("neutronvalcons1xyz");
     let oper_addr = Addr::unchecked("neutronvaloper1xyz");
-    let delegator_addr = Addr::unchecked("delegator1");
+    let delegator_addr = deps.api.addr_make("delegator1");
 
     // Store validator directly in state (Using consensus address as key)
+    BONDED_VALIDATORS_SET
+        .save(deps.as_mut().storage, &vec![oper_addr.to_string()], 10)
+        .unwrap();
     let validator = Validator {
-        cons_address: cons_addr.clone(), // `valcons`
         oper_address: oper_addr.clone(), // `valoper`
-        bonded: true,
         total_tokens: Uint128::new(1000),
         total_shares: Uint128::new(1000),
-        active: true,
     };
     VALIDATORS
-        .save(deps.as_mut().storage, &cons_addr, &validator, 10) // Store by consensus address
+        .save(deps.as_mut().storage, &oper_addr, &validator, 10)
         .unwrap();
 
     // Store delegation directly in state (Using operator address)
@@ -1051,70 +773,64 @@ fn test_create_delegation_and_query_voting_power_direct_write() {
         )
         .unwrap();
 
-    // 🔍 Query **current** voting power
-    let query_response = query_voting_power_at_height(
+    // 🔍 Query **current** stake
+    let query_response = query_stake_at_height(
         deps.as_ref(),
         env.clone(),
-        delegator_addr.clone(),
+        delegator_addr.to_string(),
         Some(env.block.height + 1), // Latest height
     );
-    assert!(query_response.is_ok(), "Failed to query voting power");
+    assert!(query_response.is_ok(), "Failed to query stake");
 
     let query_res = query_response.unwrap();
-    assert_eq!(
-        query_res, delegation.shares,
-        "Delegator voting power mismatch"
-    );
-    // assert_eq!(query_res.height, env.block.height, "Unexpected query height");
+    assert_eq!(query_res, delegation.shares, "Delegator stake mismatch");
 
-    // Query **total voting power** at current height
-    let total_power_res = query_total_power_at_height(deps.as_ref(), env.clone(), None);
-    assert!(total_power_res.is_ok(), "Failed to query total power");
+    // Query **total stake** at current height
+    let total_stake_res = query_total_stake_at_height(deps.as_ref(), env.clone(), None);
+    assert!(total_stake_res.is_ok(), "Failed to query total stake");
 
-    let total_power_response = total_power_res.unwrap();
+    let total_stake_response = total_stake_res.unwrap();
     assert_eq!(
-        total_power_response, validator.total_tokens,
-        "Total voting power mismatch"
+        total_stake_response, validator.total_tokens,
+        "Total stake mismatch"
     );
-    // assert_eq!(total_power_response.height, env.block.height, "Unexpected query height");
 
     // Simulate passage of time (historical queries)
     let historical_height = 11;
     env.block.height = historical_height;
 
-    // Query **historical** voting power
-    let historical_vp_res = query_voting_power_at_height(
+    // Query **historical** stake
+    let historical_vp_res = query_stake_at_height(
         deps.as_ref(),
         env.clone(),
-        delegator_addr.clone(),
+        delegator_addr.to_string(),
         Some(historical_height),
     );
     assert!(
         historical_vp_res.is_ok(),
-        "Failed to query historical voting power"
+        "Failed to query historical stake"
     );
 
     let historical_vp = historical_vp_res.unwrap();
     assert_eq!(
         historical_vp, delegation.shares,
-        "Historical voting power mismatch"
+        "Historical stake mismatch"
     );
     // assert_eq!(historical_vp.height, historical_height, "Unexpected historical height");
 
-    // 🔍 Query **historical** total power
-    let historical_total_power_res =
-        query_total_power_at_height(deps.as_ref(), env.clone(), Some(historical_height));
+    // 🔍 Query **historical** total stake
+    let historical_total_stake_res =
+        query_total_stake_at_height(deps.as_ref(), env.clone(), Some(historical_height));
     assert!(
-        historical_total_power_res.is_ok(),
-        "Failed to query historical total power"
+        historical_total_stake_res.is_ok(),
+        "Failed to query historical total stake"
     );
 
-    let historical_total_power = historical_total_power_res.unwrap();
+    let historical_total_stake = historical_total_stake_res.unwrap();
     assert_eq!(
-        historical_total_power, validator.total_tokens,
-        "Historical total power mismatch"
+        historical_total_stake, validator.total_tokens,
+        "Historical total stake mismatch"
     );
-    // assert_eq!(historical_total_power.height, historical_height, "Unexpected historical height");
 }
 
 #[test]
@@ -1139,17 +855,20 @@ fn test_after_delegation_modified() {
 
     // Define operator (valoper) and consensus (valcons) addresses
     let oper_addr = Addr::unchecked("neutronvaloper1xyz");
-    let cons_addr = Addr::unchecked("neutronvalcons1xyz");
     let delegator_addr = delegator1;
 
     // Store validator in the state using valoper as the primary key
+    BONDED_VALIDATORS_SET
+        .save(
+            deps.as_mut().storage,
+            &vec![oper_addr.to_string()],
+            env.block.height,
+        )
+        .unwrap();
     let validator = Validator {
-        cons_address: cons_addr.clone(),
         oper_address: oper_addr.clone(),
-        bonded: true,
         total_tokens: Uint128::new(1000),
         total_shares: Uint128::new(1000),
-        active: true,
     };
     VALIDATORS
         .save(
@@ -1227,22 +946,20 @@ fn test_after_delegation_modified() {
         vec![
             ("action", "after_delegation_modified"),
             ("delegator", delegator_addr.to_string().as_str()),
-            ("cons_address", cons_addr.to_string().as_str()),
             ("valoper_address", oper_addr.to_string().as_str()),
+            ("delegation_shares", "200"),
             ("total_shares", "1200"),
             ("total_tokens", "1200"),
-            ("delegation_shares", "200"),
         ]
     );
 
     env.block.height += 5;
 
-    let total_voting_power = query_total_power_at_height(deps.as_ref(), env.clone(), None).unwrap();
-    assert_eq!(total_voting_power, Uint128::new(1200));
-    let voting_power =
-        query_voting_power_at_height(deps.as_ref(), env.clone(), delegator_addr.clone(), None)
-            .unwrap();
-    assert_eq!(voting_power, Uint128::new(200));
+    let total_stake = query_total_stake_at_height(deps.as_ref(), env.clone(), None).unwrap();
+    assert_eq!(total_stake, Uint128::new(1200));
+    let stake = query_stake_at_height(deps.as_ref(), env.clone(), delegator_addr.to_string(), None)
+        .unwrap();
+    assert_eq!(stake, Uint128::new(200));
 
     env.block.height += 5;
 
@@ -1288,11 +1005,11 @@ fn test_after_delegation_modified() {
 
     env.block.height += 5;
 
-    let total_voting_power = query_total_power_at_height(deps.as_ref(), env.clone(), None).unwrap();
-    assert_eq!(total_voting_power, Uint128::new(1100));
-    let voting_power =
-        query_voting_power_at_height(deps.as_ref(), env.clone(), delegator_addr, None).unwrap();
-    assert_eq!(voting_power, Uint128::new(100));
+    let total_stake_2 = query_total_stake_at_height(deps.as_ref(), env.clone(), None).unwrap();
+    assert_eq!(total_stake_2, Uint128::new(1100));
+    let stake = query_stake_at_height(deps.as_ref(), env.clone(), delegator_addr.to_string(), None)
+        .unwrap();
+    assert_eq!(stake, Uint128::new(100));
 }
 
 #[test]
@@ -1317,17 +1034,20 @@ fn test_after_delegation_modified_large_scaled_shares() {
 
     // Define operator (valoper) and consensus (valcons) addresses
     let oper_addr = Addr::unchecked("neutronvaloper1xdlvhs2l2wq0cc3eskyxphstns3348el5l4qan");
-    let cons_addr = Addr::unchecked("neutronvalcons1xyz");
     let delegator_addr = delegator1;
 
     // Store validator in the state using valoper as the primary key
+    BONDED_VALIDATORS_SET
+        .save(
+            deps.as_mut().storage,
+            &vec![oper_addr.to_string()],
+            env.block.height,
+        )
+        .unwrap();
     let validator = Validator {
-        cons_address: cons_addr.clone(),
         oper_address: oper_addr.clone(),
-        bonded: true,
         total_tokens: Uint128::new(166666667666), // Tokens remain as original values
         total_shares: Uint128::new(166666667666000000000000000000), // Shares scaled up
-        active: true,
     };
     VALIDATORS
         .save(
@@ -1411,22 +1131,20 @@ fn test_after_delegation_modified_large_scaled_shares() {
         vec![
             ("action", "after_delegation_modified"),
             ("delegator", delegator_addr.to_string().as_str()),
-            ("cons_address", cons_addr.to_string().as_str()),
             ("valoper_address", oper_addr.to_string().as_str()),
+            ("delegation_shares", "166666667667000000000000000000"),
             ("total_shares", "166666667667000000000000000000"),
             ("total_tokens", "166666667667"),
-            ("delegation_shares", "166666667667000000000000000000"),
         ]
     );
 
     env.block.height += 5;
 
-    let total_voting_power = query_total_power_at_height(deps.as_ref(), env.clone(), None).unwrap();
-    assert_eq!(total_voting_power, Uint128::new(166666667667));
-    let voting_power =
-        query_voting_power_at_height(deps.as_ref(), env.clone(), delegator_addr.clone(), None)
-            .unwrap();
-    assert_eq!(voting_power, Uint128::new(166666667667));
+    let total_stake = query_total_stake_at_height(deps.as_ref(), env.clone(), None).unwrap();
+    assert_eq!(total_stake, Uint128::new(166666667667));
+    let stake = query_stake_at_height(deps.as_ref(), env.clone(), delegator_addr.to_string(), None)
+        .unwrap();
+    assert_eq!(stake, Uint128::new(166666667667));
 
     env.block.height += 5;
 
@@ -1475,17 +1193,17 @@ fn test_after_delegation_modified_large_scaled_shares() {
 
     env.block.height += 5;
 
-    let total_voting_power = query_total_power_at_height(deps.as_ref(), env.clone(), None).unwrap();
-    assert_eq!(total_voting_power, Uint128::new(166666667666));
-    let voting_power =
-        query_voting_power_at_height(deps.as_ref(), env.clone(), delegator_addr, None).unwrap();
-    assert_eq!(voting_power, Uint128::new(166666667666));
+    let total_stake = query_total_stake_at_height(deps.as_ref(), env.clone(), None).unwrap();
+    assert_eq!(total_stake, Uint128::new(166666667666));
+    let stake = query_stake_at_height(deps.as_ref(), env.clone(), delegator_addr.to_string(), None)
+        .unwrap();
+    assert_eq!(stake, Uint128::new(166666667666));
 }
 
 #[test]
 fn test_after_validator_begin_unbonding() {
     let mut deps = dependencies(); // Initialize dependencies
-    let env = mock_env(); // Mock environment
+    let mut env = mock_env(); // Mock environment
 
     let admin = deps.api.addr_make("admin");
     // Define operator (valoper) and consensus (valcons) addresses
@@ -1501,23 +1219,30 @@ fn test_after_validator_begin_unbonding() {
     CONFIG.save(deps.as_mut().storage, &config).unwrap();
 
     // Store an initial validator state with `bonded = true`
+    BONDED_VALIDATORS_SET
+        .save(
+            deps.as_mut().storage,
+            &vec![oper_addr.to_string()],
+            env.block.height,
+        )
+        .unwrap();
     VALIDATORS
         .save(
             deps.as_mut().storage,
             &oper_addr,
             &Validator {
-                cons_address: cons_addr.clone(),
                 oper_address: oper_addr.clone(),
-                bonded: true,
                 total_tokens: Uint128::new(1000),
                 total_shares: Uint128::new(1000),
-                active: true,
             },
             env.block.height,
         )
         .unwrap();
 
-    let unboding_height = env.block.height;
+    // Pass height so we don't unbond on the saving height
+    env.block.height += 5;
+
+    let unbonding_height = env.block.height;
 
     // Mock the validator query response (now in unbonding state)
     let proto_validator = CosmosValidator {
@@ -1545,26 +1270,21 @@ fn test_after_validator_begin_unbonding() {
         oper_addr.to_string(),
     );
     assert!(res.is_ok(), "Error: {:?}", res.err());
-
-    // Load updated validator state
-    let updated_validator = VALIDATORS.load(deps.as_ref().storage, &oper_addr).unwrap();
     assert!(
-        !updated_validator.bonded,
+        !BONDED_VALIDATORS_SET
+            .load(deps.as_ref().storage)
+            .unwrap()
+            .contains(&oper_addr.to_string()),
         "Validator should not be bonded after unbonding begins"
     );
+    // Previous validator state should still be bonded
     assert!(
-        updated_validator.active,
-        "Validator should remain active during unbonding"
-    );
-    assert_eq!(
-        updated_validator.total_tokens,
-        Uint128::new(1000),
-        "Total tokens should remain unchanged"
-    );
-    assert_eq!(
-        updated_validator.total_shares,
-        Uint128::new(1000),
-        "Total shares should remain unchanged"
+        BONDED_VALIDATORS_SET
+            .may_load_at_height(deps.as_ref().storage, env.block.height - 1)
+            .unwrap()
+            .unwrap()
+            .contains(&oper_addr.to_string()),
+        "Validator should bonded before unbonding begins"
     );
 
     // Ensure response attributes match expected values
@@ -1574,8 +1294,7 @@ fn test_after_validator_begin_unbonding() {
         vec![
             ("action", "after_validator_begin_unbonding"),
             ("valoper_address", &*oper_addr.to_string()), // Match contract's attribute key
-            ("cons_address", &*cons_addr.to_string()),
-            ("unbonding_start_height", &*unboding_height.to_string()),
+            ("unbonding_start_height", &*unbonding_height.to_string()),
         ]
     );
 }
