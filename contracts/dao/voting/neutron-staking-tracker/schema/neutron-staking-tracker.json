@@ -152,6 +152,7 @@
         "additionalProperties": false
       },
       {
+        "description": "Returns delegations for bonded validators.",
         "type": "object",
         "required": [
           "list_delegations"
@@ -191,6 +192,7 @@
         "additionalProperties": false
       },
       {
+        "description": "Returns list of bonded validators.",
         "type": "object",
         "required": [
           "list_validators"
@@ -223,7 +225,13 @@
         },
         "additionalProperties": false
       }
-    ]
+    ],
+    "definitions": {
+      "Addr": {
+        "description": "A human readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multi-chain smart contracts no assumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways 1. Use `Addr::unchecked(input)` 2. Use `let checked: Addr = deps.api.addr_validate(input)?` 3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?` 4. Deserialize from JSON. This must only be done from JSON that was validated before such as a contract's state. `Addr` must not be used in messages sent by the user because this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create a mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String` instance.",
+        "type": "string"
+      }
+    }
   },
   "migrate": null,
   "sudo": null,
@@ -264,6 +272,122 @@
         "Addr": {
           "description": "A human readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multi-chain smart contracts no assumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways 1. Use `Addr::unchecked(input)` 2. Use `let checked: Addr = deps.api.addr_validate(input)?` 3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?` 4. Deserialize from JSON. This must only be done from JSON that was validated before such as a contract's state. `Addr` must not be used in messages sent by the user because this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create a mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String` instance.",
           "type": "string"
+        }
+      }
+    },
+    "list_delegations": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Array_of_Array_of_Tuple_of_Tuple_of_Addr_and_Addr_and_Delegation",
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "array",
+          "items": [
+            {
+              "type": "array",
+              "items": [
+                {
+                  "$ref": "#/definitions/Addr"
+                },
+                {
+                  "$ref": "#/definitions/Addr"
+                }
+              ],
+              "maxItems": 2,
+              "minItems": 2
+            },
+            {
+              "$ref": "#/definitions/Delegation"
+            }
+          ],
+          "maxItems": 2,
+          "minItems": 2
+        }
+      },
+      "definitions": {
+        "Addr": {
+          "description": "A human readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multi-chain smart contracts no assumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways 1. Use `Addr::unchecked(input)` 2. Use `let checked: Addr = deps.api.addr_validate(input)?` 3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?` 4. Deserialize from JSON. This must only be done from JSON that was validated before such as a contract's state. `Addr` must not be used in messages sent by the user because this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create a mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String` instance.",
+          "type": "string"
+        },
+        "Delegation": {
+          "description": "Represents a delegation made by a user to a validator.\n\nA delegation means that a **delegator** (user) has assigned their stake to a **validator**. - `delegator_address`: The user's wallet address that owns the stake. - `validator_address`: The operator address (`valoper`) of the validator receiving the delegation. - `shares`: The amount of **delegation shares** received in exchange for staked tokens.",
+          "type": "object",
+          "required": [
+            "delegator_address",
+            "shares",
+            "validator_address"
+          ],
+          "properties": {
+            "delegator_address": {
+              "$ref": "#/definitions/Addr"
+            },
+            "shares": {
+              "description": "The amount of shares this delegator has in the validator.\n\nStored as a `Uint128` for the same reasons as `Validator::total_shares`: - **Cosmos SDK Compatibility**: Delegator shares are serialized as large integers (scaled by `10^18`). - **Efficiency**: Avoids the need for complex conversions and floating-point arithmetic. - **Overflow Prevention**: Using `Decimal` would cause issues when working with large numbers due to its internal scaling mechanism.\n\n### Example: - `5.000000000000000000` shares in Cosmos SDK are stored as `\"5000000000000000000\"`. - `2.123456789000000000` shares are stored as `\"2123456789000000000\"`.\n\nUsing `Uint128` directly eliminates unnecessary conversion steps while ensuring compatibility.",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/Uint128"
+                }
+              ]
+            },
+            "validator_address": {
+              "$ref": "#/definitions/Addr"
+            }
+          },
+          "additionalProperties": false
+        },
+        "Uint128": {
+          "description": "A thin wrapper around u128 that is using strings for JSON encoding/decoding, such that the full u128 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u128` to get the value out:\n\n``` # use cosmwasm_std::Uint128; let a = Uint128::from(123u128); assert_eq!(a.u128(), 123);\n\nlet b = Uint128::from(42u64); assert_eq!(b.u128(), 42);\n\nlet c = Uint128::from(70u32); assert_eq!(c.u128(), 70); ```",
+          "type": "string"
+        }
+      }
+    },
+    "list_validators": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Array_of_Validator",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Validator"
+      },
+      "definitions": {
+        "Addr": {
+          "description": "A human readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multi-chain smart contracts no assumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways 1. Use `Addr::unchecked(input)` 2. Use `let checked: Addr = deps.api.addr_validate(input)?` 3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?` 4. Deserialize from JSON. This must only be done from JSON that was validated before such as a contract's state. `Addr` must not be used in messages sent by the user because this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create a mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String` instance.",
+          "type": "string"
+        },
+        "Uint128": {
+          "description": "A thin wrapper around u128 that is using strings for JSON encoding/decoding, such that the full u128 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u128` to get the value out:\n\n``` # use cosmwasm_std::Uint128; let a = Uint128::from(123u128); assert_eq!(a.u128(), 123);\n\nlet b = Uint128::from(42u64); assert_eq!(b.u128(), 42);\n\nlet c = Uint128::from(70u32); assert_eq!(c.u128(), 70); ```",
+          "type": "string"
+        },
+        "Validator": {
+          "description": "Represents a validator in the staking system.\n\nA validator is responsible for securing the network and participating in consensus. Each validator has: - `oper_address`: The **operator address** (`valoper`), used for staking/delegation. - `total_tokens`: Total staked tokens delegated to this validator. - `total_shares`: Total delegation shares representing ownership over the staked tokens.",
+          "type": "object",
+          "required": [
+            "oper_address",
+            "total_shares",
+            "total_tokens"
+          ],
+          "properties": {
+            "oper_address": {
+              "$ref": "#/definitions/Addr"
+            },
+            "total_shares": {
+              "description": "The total amount of delegator shares for this validator.",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/Uint128"
+                }
+              ]
+            },
+            "total_tokens": {
+              "description": "Both `total_shares` and `total_tokens` are stored as a `Uint128` to maintain compatibility with Cosmos SDK’s `sdk.Dec`, which is serialized as an integer without a decimal point (scaled by `10^18`).\n\n### Why `Uint128`? - **Preserves Precision**: The Cosmos SDK already scales `sdk.Dec` values by `10^18`, so `Uint128` naturally maintains precision. - **Avoids Unnecessary Transformations**: Using `Decimal` would require multiple conversions between string representations and numeric types, adding complexity and inefficiency. - **Prevents Overflow Issues**: `Decimal` in CosmWasm has limits on large numbers (e.g., `10M shares * 10^18` would overflow).\n\n### Example: In Cosmos SDK: - `1.000000000000000000` (1 with 18 decimal places) is stored as `\"1000000000000000000\"`. - `10.500000000000000000` (10.5 with 18 decimal places) is stored as `\"10500000000000000000\"`.\n\nSince Cosmos SDK stores `sdk.Dec` values as large integers, using `Uint128` prevents unnecessary conversions.",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/Uint128"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
         }
       }
     },

@@ -9,11 +9,14 @@ use std::collections::HashSet;
 
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_json_binary, Addr, Binary, Decimal256, Deps, DepsMut, Env, MessageInfo, Order, Reply, Response, StdResult, SubMsg, Uint128, Uint256, WasmMsg};
+use cosmwasm_std::{
+    to_json_binary, Addr, Binary, Decimal256, Deps, DepsMut, Env, MessageInfo, Order, Reply,
+    Response, StdResult, SubMsg, Uint128, Uint256, WasmMsg,
+};
 use cw2::set_contract_version;
+use cw_storage_plus::Bound;
 use neutron_std::types::cosmos::staking::v1beta1::{QueryValidatorResponse, StakingQuerier};
 use std::str::FromStr;
-use cw_storage_plus::Bound;
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:neutron-staking-tracker";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -597,7 +600,6 @@ pub fn query_total_stake_at_height(
 
     Ok(total_stake)
 }
-
 
 fn query_list_validators(
     deps: Deps,

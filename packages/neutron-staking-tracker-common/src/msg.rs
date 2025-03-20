@@ -1,4 +1,4 @@
-use crate::state::{Delegation, Validator};
+use crate::types::{Delegation, Validator};
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Decimal256, Uint128};
 use schemars::JsonSchema;

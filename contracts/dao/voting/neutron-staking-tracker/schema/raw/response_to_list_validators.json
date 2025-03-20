@@ -15,34 +15,27 @@
       "type": "string"
     },
     "Validator": {
-      "description": "Represents a validator in the staking system.\n\nA validator is responsible for securing the network and participating in consensus. Each validator has: - `cons_address`: The **consensus address** (`valcons`), used for signing blocks. - `oper_address`: The **operator address** (`valoper`), used for staking/delegation. - `bonded`: Whether the validator is bonded (actively participating in consensus). - `total_tokens`: Total staked tokens delegated to this validator. - `total_shares`: Total delegation shares representing ownership over the staked tokens. - `active`: Whether the validator is active in the network.",
+      "description": "Represents a validator in the staking system.\n\nA validator is responsible for securing the network and participating in consensus. Each validator has: - `oper_address`: The **operator address** (`valoper`), used for staking/delegation. - `total_tokens`: Total staked tokens delegated to this validator. - `total_shares`: Total delegation shares representing ownership over the staked tokens.",
       "type": "object",
       "required": [
-        "active",
-        "bonded",
-        "cons_address",
         "oper_address",
         "total_shares",
         "total_tokens"
       ],
       "properties": {
-        "active": {
-          "type": "boolean"
-        },
-        "bonded": {
-          "type": "boolean"
-        },
-        "cons_address": {
-          "$ref": "#/definitions/Addr"
-        },
         "oper_address": {
           "$ref": "#/definitions/Addr"
         },
         "total_shares": {
-          "$ref": "#/definitions/Uint128"
+          "description": "The total amount of delegator shares for this validator.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Uint128"
+            }
+          ]
         },
         "total_tokens": {
-          "description": "The total amount of delegator shares for this validator.\n\nStored as a `Uint128` to maintain compatibility with Cosmos SDK’s `sdk.Dec`, which is serialized as an integer without a decimal point (scaled by `10^18`).\n\n### Why `Uint128`? - **Preserves Precision**: The Cosmos SDK already scales `sdk.Dec` values by `10^18`, so `Uint128` naturally maintains precision. - **Avoids Unnecessary Transformations**: Using `Decimal` would require multiple conversions between string representations and numeric types, adding complexity and inefficiency. - **Prevents Overflow Issues**: `Decimal` in CosmWasm has limits on large numbers (e.g., `10M shares * 10^18` would overflow).\n\n### Example: In Cosmos SDK: - `1.000000000000000000` (1 with 18 decimal places) is stored as `\"1000000000000000000\"`. - `10.500000000000000000` (10.5 with 18 decimal places) is stored as `\"10500000000000000000\"`.\n\nSince Cosmos SDK stores `sdk.Dec` values as large integers, using `Uint128` prevents unnecessary conversions.",
+          "description": "Both `total_shares` and `total_tokens` are stored as a `Uint128` to maintain compatibility with Cosmos SDK’s `sdk.Dec`, which is serialized as an integer without a decimal point (scaled by `10^18`).\n\n### Why `Uint128`? - **Preserves Precision**: The Cosmos SDK already scales `sdk.Dec` values by `10^18`, so `Uint128` naturally maintains precision. - **Avoids Unnecessary Transformations**: Using `Decimal` would require multiple conversions between string representations and numeric types, adding complexity and inefficiency. - **Prevents Overflow Issues**: `Decimal` in CosmWasm has limits on large numbers (e.g., `10M shares * 10^18` would overflow).\n\n### Example: In Cosmos SDK: - `1.000000000000000000` (1 with 18 decimal places) is stored as `\"1000000000000000000\"`. - `10.500000000000000000` (10.5 with 18 decimal places) is stored as `\"10500000000000000000\"`.\n\nSince Cosmos SDK stores `sdk.Dec` values as large integers, using `Uint128` prevents unnecessary conversions.",
           "allOf": [
             {
               "$ref": "#/definitions/Uint128"

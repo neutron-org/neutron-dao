@@ -2683,7 +2683,6 @@ version = "0.1.0"
 dependencies = [
  "cosmwasm-schema 2.2.1",
  "cosmwasm-std 2.2.1",
- "cw-utils 2.0.0",
  "schemars",
  "serde",
  "thiserror",
