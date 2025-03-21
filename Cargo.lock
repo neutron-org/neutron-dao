@@ -2667,7 +2667,6 @@ dependencies = [
 name = "neutron-staking-tracker"
 version = "0.2.1"
 dependencies = [
- "bech32 0.11.0",
  "cosmwasm-schema 2.2.1",
  "cosmwasm-std 2.2.1",
  "cw-storage-plus 2.0.0",

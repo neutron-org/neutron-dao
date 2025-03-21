@@ -484,26 +484,28 @@ fn process_slashing_events(
 ) -> Result<(UserInfo, State), ContractError> {
     let state = STATE.load(deps.storage)?;
     // Load the user’s current info, or create a default if not present
-    let mut user_info =
+    let (mut user_info, existed) =
         load_user_or_default(deps, user_addr.clone(), config.staking_denom.clone())?;
 
-    let slashing_events = state.load_unprocessed_slashing_events(user_info.last_update_block);
-    for (slashing_event_global_index, slashing_event_height) in slashing_events.into_iter() {
-        user_info = get_updated_user_info(
-            user_info.clone(),
-            slashing_event_global_index,
-            slashing_event_height,
-            config.staking_denom.clone(),
-        )?;
+    if existed {
+        let slashing_events = state.load_unprocessed_slashing_events(user_info.last_update_block);
+        for (slashing_event_global_index, slashing_event_height) in slashing_events.into_iter() {
+            user_info = get_updated_user_info(
+                user_info.clone(),
+                slashing_event_global_index,
+                slashing_event_height,
+                config.staking_denom.clone(),
+            )?;
 
-        // Set the user stake to the value after the slashing event
-        user_info.stake = safe_query_user_stake(
-            &deps,
-            user_addr.clone(),
-            config.staking_info_proxy.clone(),
-            config.staking_denom.clone(),
-            slashing_event_height,
-        )?;
+            // Set the user stake to the value after the slashing event
+            user_info.stake = safe_query_user_stake(
+                &deps,
+                user_addr.clone(),
+                config.staking_info_proxy.clone(),
+                config.staking_denom.clone(),
+                slashing_event_height,
+            )?;
+        }
     }
 
     Ok((user_info, state))
@@ -563,21 +565,21 @@ fn get_updated_global_index(
 }
 
 /// Loads user info from state, or returns a default if the user has no entry yet.
+/// Returns (UserInfo, DidUserExists) value.
 fn load_user_or_default(
     deps: Deps,
     user_addr: Addr,
     staking_denom: String,
-) -> Result<UserInfo, ContractError> {
-    let user_info = USERS
-        .may_load(deps.storage, &user_addr)?
-        .unwrap_or_else(|| UserInfo {
-            user_reward_index: Decimal::zero(),
-            stake: coin(0u128, staking_denom.clone()),
-            last_update_block: 0u64,
-            pending_rewards: coin(0u128, staking_denom.clone()),
-        });
-
-    Ok(user_info)
+) -> Result<(UserInfo, bool), ContractError> {
+    let maybe_user_info = USERS.may_load(deps.storage, &user_addr)?;
+    let existed = maybe_user_info.is_some();
+    let user_info = maybe_user_info.unwrap_or_else(|| UserInfo {
+        user_reward_index: Decimal::zero(),
+        stake: coin(0u128, staking_denom.clone()),
+        last_update_block: 0u64,
+        pending_rewards: coin(0u128, staking_denom.clone()),
+    });
+    Ok((user_info, existed))
 }
 
 /// Calculates a user’s pending rewards given their current stake, the global reward index, and

@@ -42,16 +42,12 @@ impl Config {
 ///
 /// A validator is responsible for securing the network and participating in consensus.
 /// Each validator has:
-/// - `cons_address`: The **consensus address** (`valcons`), used for signing blocks.
 /// - `oper_address`: The **operator address** (`valoper`), used for staking/delegation.
-/// - `bonded`: Whether the validator is bonded (actively participating in consensus).
 /// - `total_tokens`: Total staked tokens delegated to this validator.
 /// - `total_shares`: Total delegation shares representing ownership over the staked tokens.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, JsonSchema, Debug)]
 pub struct Validator {
-    pub cons_address: Addr,
     pub oper_address: Addr,
-    pub bonded: bool,
     /// Both `total_shares` and `total_tokens` are stored as a `Uint128` to
     /// maintain compatibility with Cosmos SDK’s `sdk.Dec`, which is serialized
     /// as an integer without a decimal point (scaled by `10^18`).

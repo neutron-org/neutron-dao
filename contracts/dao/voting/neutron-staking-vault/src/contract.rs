@@ -163,7 +163,7 @@ pub fn execute_add_to_blacklist(
 
     let validated_addresses: HashSet<Addr> = addresses
         .iter()
-        .map(|x| deps.api.addr_validate(&x))
+        .map(|x| deps.api.addr_validate(x))
         .collect::<StdResult<_>>()?;
 
     let mut blacklisted_addresses_set: HashSet<Addr> = BLACKLISTED_ADDRESSES
@@ -197,7 +197,7 @@ pub fn execute_remove_from_blacklist(
     if let Some(mut blacklisted_addresses) = BLACKLISTED_ADDRESSES.may_load(deps.storage)? {
         let validated_addresses: HashSet<Addr> = addresses
             .iter()
-            .map(|x| deps.api.addr_validate(&x))
+            .map(|x| deps.api.addr_validate(x))
             .collect::<StdResult<_>>()?;
 
         blacklisted_addresses.retain(|x| !validated_addresses.contains(x));
