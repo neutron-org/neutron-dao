@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "InstantiateMsg",
+  "type": "object",
+  "required": [
+    "fee_rate",
+    "owner",
+    "source"
+  ],
+  "properties": {
+    "fee_rate": {
+      "description": "Defines the fee rate for the loans, e.g., fee_rate = 0.01 means that if you borrow 100untrn, you'll need to return 101untrn.",
+      "allOf": [
+        {
+          "$ref": "#/definitions/Decimal"
+        }
+      ]
+    },
+    "owner": {
+      "description": "Defines the owner of the contract. The owner can add and remove sources from the contract.",
+      "type": "string"
+    },
+    "source": {
+      "description": "Defines the address that is going to sponsor the loans. This address needs to grant a (Generic)Authorization to this contract to execute /cosmos.bank.v1beta1.MsgSend on its behalf.",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "Decimal": {
+      "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0\n\nThe greatest possible value that can be represented is 340282366920938463463.374607431768211455 (which is (2^128 - 1) / 10^18)",
+      "type": "string"
+    }
+  }
+}
