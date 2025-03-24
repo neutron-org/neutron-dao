@@ -27,10 +27,6 @@ const REPLY_ON_AFTER_VALIDATOR_BEGIN_UNBONDING_ERROR_STAKING_PROXY_ID: u64 = 3;
 const REPLY_ON_AFTER_VALIDATOR_BONDED_ERROR_STAKING_PROXY_ID: u64 = 4;
 const REPLY_ON_BEFORE_DELEGATION_REMOVED_ERROR_STAKING_PROXY_ID: u64 = 5;
 
-// TODO: remove it and just unwrap all in query
-// Default limit for pagination if unspecified in the queries
-const DEFAULT_LIMIT: u32 = 100;
-
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
@@ -606,18 +602,22 @@ fn query_list_validators(
     start_after: Option<Addr>,
     limit: Option<u32>,
 ) -> StdResult<Vec<Validator>> {
-    let limit = limit.unwrap_or(DEFAULT_LIMIT) as usize;
+    let limit = limit.map(|l| l as usize);
     let range_min = start_after.as_ref().map(Bound::exclusive);
     let range_max = None;
     let list = VALIDATORS
         .range(deps.storage, range_min, range_max, Order::Ascending)
-        .take(limit)
         .map(|r| match r {
             Ok((_, v)) => Ok(v),
             Err(e) => Err(e),
-        })
-        .collect::<StdResult<_>>()?;
-    Ok(list)
+        });
+    let page = if let Some(limit) = limit {
+        list.take(limit).collect::<StdResult<_>>()?
+    } else {
+        list.collect::<StdResult<_>>()?
+    };
+
+    Ok(page)
 }
 
 pub fn query_list_delegations(
@@ -625,20 +625,25 @@ pub fn query_list_delegations(
     start_after: Option<(Addr, Addr)>,
     limit: Option<u32>,
 ) -> StdResult<Vec<Delegation>> {
-    let limit = limit.unwrap_or(DEFAULT_LIMIT) as usize;
+    let limit = limit.map(|l| l as usize);
     let range_min = start_after
         .as_ref()
         .map(|(k1, k2)| Bound::exclusive((k1, k2)));
     let range_max = None;
-    let res = DELEGATIONS.range(deps.storage, range_min, range_max, Order::Ascending);
-    let list: Vec<Delegation> = res
-        .take(limit)
+    let list = DELEGATIONS
+        .range(deps.storage, range_min, range_max, Order::Ascending)
         .map(|r| match r {
             Ok((_, v)) => Ok(v),
             Err(e) => Err(e),
-        })
-        .collect::<StdResult<_>>()?;
-    Ok(list)
+        });
+
+    let page = if let Some(limit) = limit {
+        list.take(limit).collect::<StdResult<_>>()?
+    } else {
+        list.collect::<StdResult<_>>()?
+    };
+
+    Ok(page)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

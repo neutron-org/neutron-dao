@@ -84,14 +84,14 @@ pub enum QueryMsg {
     #[returns(Uint128)]
     TotalStakeAtHeight { height: Option<u64> },
 
-    /// Returns delegations for bonded validators.
+    /// Returns all delegations.
     #[returns(Vec<Vec<((Addr, Addr), Delegation)>>)]
     ListDelegations {
         start_after: Option<(Addr, Addr)>,
         limit: Option<u32>,
     },
 
-    /// Returns list of bonded validators.
+    /// Returns list of all validators.
     #[returns(Vec<Validator>)]
     ListValidators {
         start_after: Option<Addr>,
