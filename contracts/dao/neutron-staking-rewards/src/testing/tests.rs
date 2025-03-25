@@ -1518,7 +1518,7 @@ fn test_user_with_slashing_and_config_change() {
 
 /// Tests a slashing (bonding) event that happened right after the update_stake that happened because of after_delegation_modified
 #[test]
-fn test_slashing_bonding_with_update_stake_on_same_block() {
+fn test_update_stake_then_bonding_on_same_block() {
     // Create mock dependencies and environment.
     let mut deps = mock_dependencies();
     let mut env = mock_env();
@@ -1554,7 +1554,6 @@ fn test_slashing_bonding_with_update_stake_on_same_block() {
     env.block.height = 10;
 
     // ----- STEP 1: Set stake on a height = 10 (simulate call to update_stake on that height) -----
-    // Lets simulate that validator was unbonded
     deps.querier.update_stake(
         user1.to_string(),
         env.block.height,
@@ -1598,6 +1597,108 @@ fn test_slashing_bonding_with_update_stake_on_same_block() {
     // claim should expect
     // 1_000_000 * block_apr * 10 blocks
     let result: f32 = 0.1 * 1_000_000.0 / 100.0 * 10.0;
+    let actual_rewards = unwrap_send_amount_from_update_stake(res);
+    assert_eq!(Uint128::new(result as u128), actual_rewards);
+}
+
+/// Tests a slashing (bonding) event that happened right after the update_stake that happened because of after_delegation_modified
+#[test]
+fn test_slashing_then_update_stake_on_same_block() {
+    // Create mock dependencies and environment.
+    let mut deps = mock_dependencies();
+    let mut env = mock_env();
+    env.block.height = 0; // for simplicity
+
+    // Define addresses for the owner, proxy (which acts as the staking_info_proxy),
+    // the DAO, and a sample user.
+    let owner = deps.api.addr_make("owner");
+    let proxy = deps.api.addr_make("proxy");
+    let dao = deps.api.addr_make("dao");
+    let user1 = deps.api.addr_make("user1");
+
+    // Instantiate the contract.
+    // (Adjust the InstantiateMsg fields as needed.)
+    let instantiate_info = message_info(&owner, &[]);
+    let instantiate_msg = InstantiateMsg {
+        owner: owner.to_string(),
+        dao_address: dao.to_string(),
+        staking_info_proxy: proxy.to_string(),
+        security_address: deps.api.addr_make("security_address").into(),
+        annual_reward_rate_bps: 1000, // e.g. 10% annual rate
+        blocks_per_year: 100,      // e.g. 10,000 blocks per year
+        staking_denom: "untrn".to_string(),
+    };
+    let _res = instantiate(
+        deps.as_mut(),
+        env.clone(),
+        instantiate_info,
+        instantiate_msg,
+    )
+        .unwrap();
+
+    let proxy_info = message_info(&proxy, &[]);
+
+    // Set initial stake for user on height 0
+    deps.querier.update_stake(
+        user1.to_string(),
+        env.block.height,
+        coin(1_000_000, "untrn"),
+    );
+    let update_stake_msg = ExecuteMsg::UpdateStake {
+        user: user1.to_string(),
+    };
+    let _res = execute(
+        deps.as_mut(),
+        env.clone(),
+        proxy_info.clone(),
+        update_stake_msg,
+    );
+
+    // set height to 10
+    env.block.height = 10;
+
+    // ----- STEP 1: Set slashing event on same height
+    //
+    let slashing_msg = ExecuteMsg::Slashing {};
+    let _res = execute(deps.as_mut(), env.clone(), proxy_info.clone(), slashing_msg).unwrap();
+    deps.querier.update_stake(
+        user1.to_string(),
+        env.block.height,
+        coin(800_000, "untrn"),
+    );
+
+    // ----- STEP 2: Set stake on a height = 10 (simulate call to update_stake on that height) -----
+    let update_stake_msg = ExecuteMsg::UpdateStake {
+        user: user1.to_string(),
+    };
+    let _res = execute(
+        deps.as_mut(),
+        env.clone(),
+        proxy_info.clone(),
+        update_stake_msg,
+    )
+        .unwrap();
+    deps.querier
+        .update_last_stake(user1.to_string(), coin(2_000_000u128, "untrn"));
+
+
+    // set height to 10 blocks after bonding event
+    env.block.height += 10;
+
+    // ----- STEP 4: use claim_rewards to see if change of stake because of unbonding was recognized
+    let user_info = message_info(&user1, &[]);
+    let claim_rewards_msg = ExecuteMsg::ClaimRewards { to_address: None };
+    let res = execute(
+        deps.as_mut(),
+        env.clone(),
+        user_info.clone(),
+        claim_rewards_msg,
+    )
+        .unwrap();
+
+    // claim should expect
+    // 1_000_000 * block_apr * 10 blocks +
+    let result: f32 = (0.1 * 1_000_000.0 / 100.0 * 10.0) + (0.1 * 2_000_000.0 / 100.0 * 10.0);
     let actual_rewards = unwrap_send_amount_from_update_stake(res);
     assert_eq!(Uint128::new(result as u128), actual_rewards);
 }
