@@ -80,6 +80,7 @@ impl WasmMockQuerier {
                             paused: false,
                             max_jits_per_block: 20,
                             good_til_purge_allowance: 25000,
+                            whitelisted_lps: vec![],
                         }),
                     }
                     .to_proto_bytes();
