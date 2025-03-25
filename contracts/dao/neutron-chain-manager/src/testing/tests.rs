@@ -706,7 +706,7 @@ pub fn test_execute_execute_message_update_params_dex_authorized() {
         admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
             message: r#"{"@type":"/neutron.dex.MsgUpdateParams",
             "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
-            "params": {"fee_tiers":["1","2"],"paused":true,"max_jits_per_block":"25","good_til_purge_allowance":"540000"}}"#
+            "params": {"fee_tiers":["1","2"],"paused":true,"max_jits_per_block":"25","good_til_purge_allowance":"540000", "whitelisted_lps": ["neutron10h9stc5v6ntgeygf5xf945njqq5h32r54rf7kf"]}}"#
                 .to_string(),
         }),
     });
@@ -735,6 +735,7 @@ pub fn test_execute_execute_message_update_params_dex_authorized() {
             paused: true,
             max_jits_per_block: true,
             good_til_purge_allowance: true,
+            whitelisted_lps: true,
         })]),
     )
     .unwrap();
@@ -751,7 +752,7 @@ pub fn test_execute_execute_message_update_params_dex_unauthorized_fee_tiers() {
         admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
             message: r#"{"@type":"/neutron.dex.MsgUpdateParams",
              "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
-             "params": {"fee_tiers":["1","2"],"paused":true,"max_jits_per_block":"25","good_til_purge_allowance":"540000"}}"#
+             "params": {"fee_tiers":["1","2"],"paused":true,"max_jits_per_block":"25","good_til_purge_allowance":"540000", "whitelisted_lps": ["neutron10h9stc5v6ntgeygf5xf945njqq5h32r54rf7kf"]}}"#
                 .to_string(),
         }),
     });
@@ -780,6 +781,7 @@ pub fn test_execute_execute_message_update_params_dex_unauthorized_fee_tiers() {
             paused: true,
             max_jits_per_block: true,
             good_til_purge_allowance: true,
+            whitelisted_lps: true,
         })]),
     )
     .unwrap();
@@ -798,7 +800,7 @@ pub fn test_execute_execute_message_update_params_dex_unauthorized_paused() {
         admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
             message: r#"{"@type":"/neutron.dex.MsgUpdateParams",
              "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
-             "params": {"fee_tiers":["1","2"],"paused":true,"max_jits_per_block":"25","good_til_purge_allowance":"540000"}}"#
+             "params": {"fee_tiers":["1","2"],"paused":true,"max_jits_per_block":"25","good_til_purge_allowance":"540000", "whitelisted_lps": ["neutron10h9stc5v6ntgeygf5xf945njqq5h32r54rf7kf"]}}"#
                 .to_string(),
         }),
     });
@@ -827,6 +829,7 @@ pub fn test_execute_execute_message_update_params_dex_unauthorized_paused() {
             paused: false,
             max_jits_per_block: true,
             good_til_purge_allowance: true,
+            whitelisted_lps: true,
         })]),
     )
     .unwrap();
@@ -844,7 +847,7 @@ pub fn test_execute_execute_message_update_params_dex_unauthorized_max_jits_per_
         admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
             message: r#"{"@type":"/neutron.dex.MsgUpdateParams",
              "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
-             "params": {"fee_tiers":["1","2"],"paused":true,"max_jits_per_block":"25","good_til_purge_allowance":"540000"}}"#
+             "params": {"fee_tiers":["1","2"],"paused":true,"max_jits_per_block":"25","good_til_purge_allowance":"540000", "whitelisted_lps": ["neutron10h9stc5v6ntgeygf5xf945njqq5h32r54rf7kf"]}}"#
                 .to_string(),
         }),
     });
@@ -873,6 +876,7 @@ pub fn test_execute_execute_message_update_params_dex_unauthorized_max_jits_per_
             paused: true,
             max_jits_per_block: false,
             good_til_purge_allowance: true,
+            whitelisted_lps: true,
         })]),
     )
     .unwrap();
@@ -889,7 +893,7 @@ pub fn test_execute_execute_message_update_params_dex_unauthorized_good_til_purg
         admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
             message: r#"{"@type":"/neutron.dex.MsgUpdateParams",
              "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
-             "params": {"fee_tiers":["1","2"],"paused":true,"max_jits_per_block":"25","good_til_purge_allowance":"540000"}}"#
+             "params": {"fee_tiers":["1","2"],"paused":true,"max_jits_per_block":"25","good_til_purge_allowance":"540000", "whitelisted_lps": ["neutron10h9stc5v6ntgeygf5xf945njqq5h32r54rf7kf"]}}"#
                 .to_string(),
         }),
     });
@@ -918,6 +922,54 @@ pub fn test_execute_execute_message_update_params_dex_unauthorized_good_til_purg
             paused: true,
             max_jits_per_block: true,
             good_til_purge_allowance: false,
+            whitelisted_lps: true,
+        })]),
+    )
+    .unwrap();
+
+    let info = message_info(&Addr::unchecked("addr1"), &[]);
+    let err = execute_execute_messages(deps.as_mut(), info.clone(), vec![msg]).unwrap_err();
+    assert_eq!(err, Unauthorized {});
+}
+
+/// Checks that you can't change `whitelisted_lps` if you don't have the permission to do so
+/// (new style parameter changes).
+#[test]
+pub fn test_execute_execute_message_update_params_dex_unauthorized_whitelisted_lps() {
+    let msg = CosmosMsg::Custom(NeutronMsg::SubmitAdminProposal {
+        admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
+            message: r#"{"@type":"/neutron.dex.MsgUpdateParams",
+             "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
+             "params": {"fee_tiers":["1","2"],"paused":true,"max_jits_per_block":"25","good_til_purge_allowance":"540000", "whitelisted_lps": ["neutron10h9stc5v6ntgeygf5xf945njqq5h32r54rf7kf"]}}"#
+                .to_string(),
+        }),
+    });
+
+    let mut deps = mock_dependencies();
+    let env = mock_env();
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+
+    instantiate(
+        deps.as_mut(),
+        env.clone(),
+        info.clone(),
+        InstantiateMsg {
+            initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
+        },
+    )
+    .unwrap();
+
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    execute_add_strategy(
+        deps.as_mut(),
+        info.clone(),
+        Addr::unchecked("addr1".to_string()),
+        StrategyMsg::AllowOnly(vec![UpdateDexParamsPermission(DexUpdateParamsPermission {
+            fee_tiers: true,
+            paused: true,
+            max_jits_per_block: true,
+            good_til_purge_allowance: true,
+            whitelisted_lps: false,
         })]),
     )
     .unwrap();

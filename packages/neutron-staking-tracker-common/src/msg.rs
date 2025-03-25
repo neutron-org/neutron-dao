@@ -26,12 +26,17 @@ pub enum ExecuteMsg {
 
 #[cw_serde]
 pub enum SudoMsg {
-    AfterValidatorBonded {
+    AfterValidatorCreated {
+        val_addr: String,
+    },
+
+    AfterValidatorRemoved {
         cons_addr: String,
         val_addr: String,
     },
 
-    AfterValidatorCreated {
+    AfterValidatorBonded {
+        cons_addr: String,
         val_addr: String,
     },
 
