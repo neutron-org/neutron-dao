@@ -10,10 +10,11 @@ use std::collections::HashSet;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, Addr, Binary, Decimal256, Deps, DepsMut, Env, MessageInfo, Reply, Response,
-    StdResult, SubMsg, Uint128, Uint256, WasmMsg,
+    to_json_binary, Addr, Binary, Decimal256, Deps, DepsMut, Env, MessageInfo, Order, Reply,
+    Response, StdResult, SubMsg, Uint128, Uint256, WasmMsg,
 };
 use cw2::set_contract_version;
+use cw_storage_plus::Bound;
 use neutron_std::types::cosmos::staking::v1beta1::{QueryValidatorResponse, StakingQuerier};
 use std::str::FromStr;
 
@@ -502,6 +503,12 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
             to_json_binary(&query_total_stake_at_height(deps, env, height)?)
         }
         QueryMsg::Config {} => to_json_binary(&CONFIG.load(deps.storage)?),
+        QueryMsg::ListValidators { start_after, limit } => {
+            to_json_binary(&query_list_validators(deps, start_after, limit)?)
+        }
+        QueryMsg::ListDelegations { start_after, limit } => {
+            to_json_binary(&query_list_delegations(deps, start_after, limit)?)
+        }
     }
 }
 
@@ -588,6 +595,55 @@ pub fn query_total_stake_at_height(
         .sum();
 
     Ok(total_stake)
+}
+
+fn query_list_validators(
+    deps: Deps,
+    start_after: Option<Addr>,
+    limit: Option<u32>,
+) -> StdResult<Vec<Validator>> {
+    let limit = limit.map(|l| l as usize);
+    let range_min = start_after.as_ref().map(Bound::exclusive);
+    let range_max = None;
+    let list = VALIDATORS
+        .range(deps.storage, range_min, range_max, Order::Ascending)
+        .map(|r| match r {
+            Ok((_, v)) => Ok(v),
+            Err(e) => Err(e),
+        });
+    let page = if let Some(limit) = limit {
+        list.take(limit).collect::<StdResult<_>>()?
+    } else {
+        list.collect::<StdResult<_>>()?
+    };
+
+    Ok(page)
+}
+
+pub fn query_list_delegations(
+    deps: Deps,
+    start_after: Option<(Addr, Addr)>,
+    limit: Option<u32>,
+) -> StdResult<Vec<Delegation>> {
+    let limit = limit.map(|l| l as usize);
+    let range_min = start_after
+        .as_ref()
+        .map(|(k1, k2)| Bound::exclusive((k1, k2)));
+    let range_max = None;
+    let list = DELEGATIONS
+        .range(deps.storage, range_min, range_max, Order::Ascending)
+        .map(|r| match r {
+            Ok((_, v)) => Ok(v),
+            Err(e) => Err(e),
+        });
+
+    let page = if let Some(limit) = limit {
+        list.take(limit).collect::<StdResult<_>>()?
+    } else {
+        list.collect::<StdResult<_>>()?
+    };
+
+    Ok(page)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
