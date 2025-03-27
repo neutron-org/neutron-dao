@@ -1,0 +1,24 @@
+[package]
+authors = [""]
+description = "A Neutron staking watcher created for tracking natively staked asssets"
+edition = "2021"
+name = "neutron-staking-tracker"
+license = "Apache-2.0"
+repository = "https://github.com/neutron/neutron-dao"
+version = "0.2.1"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+library = []
+
+[dependencies]
+cosmwasm-schema = { version = "2.2.0" }
+cosmwasm-std = { version = "2.2.0" }
+neutron-std = { git = "https://github.com/neutron-org/neutron-std", version = "5.0.1-rc0" }
+cw-storage-plus = "2.0.0"
+cw2 = "2.0.0"
+prost = "0.12.4"
+neutron-staking-info-proxy-common = { path = "../../../../packages/neutron-staking-info-proxy-common" }
+neutron-staking-tracker-common = { path = "../../../../packages/neutron-staking-tracker-common" }

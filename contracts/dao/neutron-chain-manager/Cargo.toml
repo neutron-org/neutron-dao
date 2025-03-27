@@ -28,8 +28,9 @@ schemars = "0.8.8"
 serde = { version = "1.0.175", default-features = false, features = ["derive"] }
 serde_with = { version = "3.7.0", features = ["json"] }
 thiserror = { version = "1.0" }
-neutron-std = { git = "https://github.com/neutron-org/neutron-std.git", branch =  "feat/whitelist_fee_tiers" }
-neutron-sdk = { git = "https://github.com/neutron-org/neutron-sdk.git", branch =  "main" }
+
+neutron-std = { git = "https://github.com/neutron-org/neutron-std.git", branch = "main" }
+neutron-sdk = "0.11.0"
 serde-json-wasm = "1.0.1"
 prost = "0.9.0"
 
