@@ -2350,21 +2350,6 @@
       },
       "additionalProperties": false
     },
-    "SoftwareUpgradePermission": {
-      "type": "object",
-      "required": [
-        "cancel_upgrade",
-        "upgrade"
-      ],
-      "properties": {
-        "cancel_upgrade": {
-          "type": "boolean"
-        },
-        "upgrade": {
-          "type": "boolean"
-        }
-      }
-    },
     "SoftwareUpgradeProposal": {
       "description": "Deprecated. SoftwareUpgradeProposal defines the struct for software upgrade proposal.",
       "deprecated": true,

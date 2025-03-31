@@ -20,5 +20,5 @@ neutron-std = { git = "https://github.com/neutron-org/neutron-std", version = "5
 cw-storage-plus = "2.0.0"
 cw2 = "2.0.0"
 prost = "0.12.4"
-neutron-staking-info-proxy-common = { path = "../../../../packages/neutron-staking-info-proxy-common" }
-neutron-staking-tracker-common = { path = "../../../../packages/neutron-staking-tracker-common" }
+neutron-staking-info-proxy-common = { path = "../../../packages/neutron-staking-info-proxy-common" }
+neutron-staking-tracker-common = { path = "../../../packages/neutron-staking-tracker-common" }
