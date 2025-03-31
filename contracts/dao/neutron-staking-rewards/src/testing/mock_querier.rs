@@ -31,6 +31,17 @@ impl WasmMockQuerier {
             .or_default()
             .push((height, amount));
     }
+
+    // to update last amount to other value (this can happen since multiple actions can be called in one block)
+    pub fn update_last_stake(&mut self, user: String, amount: Coin) {
+        let (height, _) = self
+            .user_balances
+            .entry(user.clone())
+            .or_default()
+            .pop()
+            .unwrap();
+        self.update_stake(user, height, amount);
+    }
 }
 
 impl Querier for WasmMockQuerier {
