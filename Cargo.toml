@@ -4,6 +4,7 @@ members = [
     "contracts/dao/neutron-chain-manager",
     "contracts/dao/neutron-staking-rewards",
     "contracts/dao/neutron-staking-info-proxy",
+    "contracts/dao/neutron-staking-tracker",
     "contracts/dao/proposal/*",
     "contracts/dao/pre-propose/*",
     "contracts/dao/voting/*",
@@ -13,7 +14,6 @@ members = [
     "contracts/subdaos/cwd-subdao-timelock-single",
     "contracts/tokenomics/reserve",
     "contracts/tokenomics/distribution",
-    "contracts/dao/voting/neutron-staking-tracker",
     "contracts/dao/voting/neutron-staking-vault",
     "packages/*",
 ]
