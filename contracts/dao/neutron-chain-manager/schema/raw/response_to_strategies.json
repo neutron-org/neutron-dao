@@ -115,6 +115,9 @@
         },
         "paused": {
           "type": "boolean"
+        },
+        "whitelisted_lps": {
+          "type": "boolean"
         }
       },
       "additionalProperties": false

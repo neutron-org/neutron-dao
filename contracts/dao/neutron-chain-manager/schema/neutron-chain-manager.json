@@ -1,6 +1,6 @@
 {
   "contract_name": "neutron-chain-manager",
-  "contract_version": "0.4.0",
+  "contract_version": "0.5.0",
   "idl_version": "1.0.0",
   "instantiate": {
     "$schema": "http://json-schema.org/draft-07/schema#",
@@ -2378,21 +2378,6 @@
           }
         },
         "additionalProperties": false
-      },
-      "SoftwareUpgradePermission": {
-        "type": "object",
-        "required": [
-          "cancel_upgrade",
-          "upgrade"
-        ],
-        "properties": {
-          "cancel_upgrade": {
-            "type": "boolean"
-          },
-          "upgrade": {
-            "type": "boolean"
-          }
-        }
       },
       "SoftwareUpgradeProposal": {
         "description": "Deprecated. SoftwareUpgradeProposal defines the struct for software upgrade proposal.",

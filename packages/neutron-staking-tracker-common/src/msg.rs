@@ -1,8 +1,10 @@
+use crate::types::{Delegation, Validator};
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Decimal256, Uint128};
+use cosmwasm_std::{Addr, Decimal256, Uint128};
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 
-#[cw_serde]
-#[serde(rename_all = "snake_case")]
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 pub struct InstantiateMsg {
     /// Name contains the vault name which is used to ease the vault's recognition.
     pub name: String,
@@ -81,6 +83,20 @@ pub enum QueryMsg {
     /// Stake of unbonded validators does not count.
     #[returns(Uint128)]
     TotalStakeAtHeight { height: Option<u64> },
+
+    /// Returns all delegations.
+    #[returns(Vec<Vec<((Addr, Addr), Delegation)>>)]
+    ListDelegations {
+        start_after: Option<(Addr, Addr)>,
+        limit: Option<u32>,
+    },
+
+    /// Returns list of all validators.
+    #[returns(Vec<Validator>)]
+    ListValidators {
+        start_after: Option<Addr>,
+        limit: Option<u32>,
+    },
 }
 
 #[cw_serde]
