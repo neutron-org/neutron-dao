@@ -68,6 +68,7 @@ impl WasmMockQuerier {
                             denom_creation_gas_consume: None,
                             fee_collector_address: "test_addr".to_string(),
                             whitelisted_hooks: vec![],
+                            track_before_send_gas_limit: 123456,
                         }),
                     }
                     .to_proto_bytes();

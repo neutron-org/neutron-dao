@@ -350,6 +350,13 @@ fn check_tokenfactory_update_msg_params(
         return Err(ContractError::Unauthorized {});
     }
 
+    if tokenfactory_params.track_before_send_gas_limit
+        != msg_update_params.track_before_send_gas_limit
+        && !tokenfactory_update_param_permission.track_before_send_gas_limit
+    {
+        return Err(ContractError::Unauthorized {});
+    }
+
     Ok(())
 }
 

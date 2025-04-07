@@ -141,6 +141,7 @@ impl Strategy {
                 denom_creation_gas_consume: true,
                 fee_collector_address: true,
                 whitelisted_hooks: true,
+                track_before_send_gas_limit: true,
             }),
             Strategy::AllowOnly(permissions) => {
                 match permissions.get(&PermissionType::UpdateTokenfactoryParamsPermission) {
@@ -355,6 +356,7 @@ pub struct TokenfactoryUpdateParamsPermission {
     pub denom_creation_gas_consume: bool,
     pub fee_collector_address: bool,
     pub whitelisted_hooks: bool,
+    pub track_before_send_gas_limit: bool,
 }
 
 #[cw_serde]
