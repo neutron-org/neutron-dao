@@ -465,7 +465,7 @@ pub fn test_execute_execute_message_update_params_tokenfactory_authorized() {
         admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
             message: r#"{"@type":"/osmosis.tokenfactory.v1beta1.MsgUpdateParams",
             "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
-            "params": {"denom_creation_fee": [{"denom": "untrn", "amount": "100"}], "denom_creation_gas_consume": "100", "fee_collector_address": "neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z", "whitelisted_hooks": [{"code_id": "1", "denom_creator": "neutron1yw4xvtc43me9scqfr2jr2gzvcxd3a9y4eq7gaukreugw2yd2f8ts8g30fq"}]}}"#
+            "params": {"denom_creation_fee": [{"denom": "untrn", "amount": "100"}], "denom_creation_gas_consume": "100", "fee_collector_address": "neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z", "whitelisted_hooks": [{"code_id": "1", "denom_creator": "neutron1yw4xvtc43me9scqfr2jr2gzvcxd3a9y4eq7gaukreugw2yd2f8ts8g30fq"}],"track_before_send_gas_limit":10000}}"#
                 .to_string(),
         }),
     });
@@ -495,6 +495,7 @@ pub fn test_execute_execute_message_update_params_tokenfactory_authorized() {
                 denom_creation_gas_consume: true,
                 fee_collector_address: true,
                 whitelisted_hooks: true,
+                track_before_send_gas_limit: true,
             },
         )]),
     )
@@ -511,7 +512,7 @@ pub fn test_execute_execute_message_update_params_tokenfactory_unauthorized_deno
         admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
             message: r#"{"@type":"/osmosis.tokenfactory.v1beta1.MsgUpdateParams",
              "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
-             "params": {"denom_creation_fee": [{"denom": "untrn", "amount": "100"}], "denom_creation_gas_consume": "100", "fee_collector_address": "neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z", "whitelisted_hooks": [{"code_id": "1", "denom_creator": "neutron1yw4xvtc43me9scqfr2jr2gzvcxd3a9y4eq7gaukreugw2yd2f8ts8g30fq"}]}}"#
+             "params": {"denom_creation_fee": [{"denom": "untrn", "amount": "100"}], "denom_creation_gas_consume": "100", "fee_collector_address": "neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z", "whitelisted_hooks": [{"code_id": "1", "denom_creator": "neutron1yw4xvtc43me9scqfr2jr2gzvcxd3a9y4eq7gaukreugw2yd2f8ts8g30fq"}],"track_before_send_gas_limit":10000}}"#
                 .to_string(),
         }),
     });
@@ -541,6 +542,7 @@ pub fn test_execute_execute_message_update_params_tokenfactory_unauthorized_deno
                 denom_creation_gas_consume: true,
                 fee_collector_address: true,
                 whitelisted_hooks: true,
+                track_before_send_gas_limit: true,
             },
         )]),
     )
@@ -560,7 +562,7 @@ pub fn test_execute_execute_message_update_params_tokenfactory_unauthorized_deno
         admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
             message: r#"{"@type":"/osmosis.tokenfactory.v1beta1.MsgUpdateParams",
              "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
-             "params": {"denom_creation_fee": [{"denom": "untrn", "amount": "100"}], "denom_creation_gas_consume": "100", "fee_collector_address": "neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z", "whitelisted_hooks": [{"code_id": "1", "denom_creator": "neutron1yw4xvtc43me9scqfr2jr2gzvcxd3a9y4eq7gaukreugw2yd2f8ts8g30fq"}]}}"#
+             "params": {"denom_creation_fee": [{"denom": "untrn", "amount": "100"}], "denom_creation_gas_consume": "100", "fee_collector_address": "neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z", "whitelisted_hooks": [{"code_id": "1", "denom_creator": "neutron1yw4xvtc43me9scqfr2jr2gzvcxd3a9y4eq7gaukreugw2yd2f8ts8g30fq"}],"track_before_send_gas_limit":10000}}"#
                 .to_string(),
         }),
     });
@@ -590,6 +592,7 @@ pub fn test_execute_execute_message_update_params_tokenfactory_unauthorized_deno
                 denom_creation_gas_consume: false,
                 fee_collector_address: true,
                 whitelisted_hooks: true,
+                track_before_send_gas_limit: true,
             },
         )]),
     )
@@ -609,7 +612,7 @@ pub fn test_execute_execute_message_update_params_tokenfactory_unauthorized_fee_
         admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
             message: r#"{"@type":"/osmosis.tokenfactory.v1beta1.MsgUpdateParams",
              "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
-             "params": {"denom_creation_fee": [{"denom": "untrn", "amount": "100"}], "denom_creation_gas_consume": "100", "fee_collector_address": "neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z", "whitelisted_hooks": [{"code_id": "1", "denom_creator": "neutron1yw4xvtc43me9scqfr2jr2gzvcxd3a9y4eq7gaukreugw2yd2f8ts8g30fq"}]}}"#
+             "params": {"denom_creation_fee": [{"denom": "untrn", "amount": "100"}], "denom_creation_gas_consume": "100", "fee_collector_address": "neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z", "whitelisted_hooks": [{"code_id": "1", "denom_creator": "neutron1yw4xvtc43me9scqfr2jr2gzvcxd3a9y4eq7gaukreugw2yd2f8ts8g30fq"}],"track_before_send_gas_limit":10000}}"#
                 .to_string(),
         }),
     });
@@ -639,6 +642,7 @@ pub fn test_execute_execute_message_update_params_tokenfactory_unauthorized_fee_
                 denom_creation_gas_consume: true,
                 fee_collector_address: false,
                 whitelisted_hooks: true,
+                track_before_send_gas_limit: true,
             },
         )]),
     )
@@ -657,7 +661,7 @@ pub fn test_execute_execute_message_update_params_tokenfactory_unauthorized_whit
         admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
             message: r#"{"@type":"/osmosis.tokenfactory.v1beta1.MsgUpdateParams",
              "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
-             "params": {"denom_creation_fee": [{"denom": "untrn", "amount": "100"}], "denom_creation_gas_consume": "100", "fee_collector_address": "neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z", "whitelisted_hooks": [{"code_id": "1", "denom_creator": "neutron1yw4xvtc43me9scqfr2jr2gzvcxd3a9y4eq7gaukreugw2yd2f8ts8g30fq"}]}}"#
+             "params": {"denom_creation_fee": [{"denom": "untrn", "amount": "100"}], "denom_creation_gas_consume": "100", "fee_collector_address": "neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z", "whitelisted_hooks": [{"code_id": "1", "denom_creator": "neutron1yw4xvtc43me9scqfr2jr2gzvcxd3a9y4eq7gaukreugw2yd2f8ts8g30fq"}],"track_before_send_gas_limit":10000}}"#
                 .to_string(),
         }),
     });
@@ -687,6 +691,57 @@ pub fn test_execute_execute_message_update_params_tokenfactory_unauthorized_whit
                 denom_creation_gas_consume: true,
                 fee_collector_address: true,
                 whitelisted_hooks: false,
+                track_before_send_gas_limit: true,
+            },
+        )]),
+    )
+    .unwrap();
+
+    let info = message_info(&Addr::unchecked("addr1"), &[]);
+    let err = execute_execute_messages(deps.as_mut(), info.clone(), vec![msg]).unwrap_err();
+    assert_eq!(err, Unauthorized {});
+}
+
+/// Checks that you can't change the track_before_send_gas_limit if you don't have the permission to do so
+/// (new style parameter changes).
+#[test]
+pub fn test_execute_execute_message_update_params_tokenfactory_unauthorized_track_before_send_gas_limit(
+) {
+    let msg = CosmosMsg::Custom(NeutronMsg::SubmitAdminProposal {
+        admin_proposal: AdminProposal::ProposalExecuteMessage(ProposalExecuteMessage {
+            message: r#"{"@type":"/osmosis.tokenfactory.v1beta1.MsgUpdateParams",
+             "authority":"neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z",
+             "params": {"denom_creation_fee": [{"denom": "untrn", "amount": "100"}], "denom_creation_gas_consume": "100", "fee_collector_address": "neutron1hxskfdxpp5hqgtjj6am6nkjefhfzj359x0ar3z", "whitelisted_hooks": [{"code_id": "1", "denom_creator": "neutron1yw4xvtc43me9scqfr2jr2gzvcxd3a9y4eq7gaukreugw2yd2f8ts8g30fq"}],"track_before_send_gas_limit":10000}}"#
+                .to_string(),
+        }),
+    });
+
+    let mut deps = mock_dependencies();
+    let env = mock_env();
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+
+    instantiate(
+        deps.as_mut(),
+        env.clone(),
+        info.clone(),
+        InstantiateMsg {
+            initial_strategy_address: Addr::unchecked("neutron_dao_address".to_string()),
+        },
+    )
+    .unwrap();
+
+    let info = message_info(&Addr::unchecked("neutron_dao_address"), &[]);
+    execute_add_strategy(
+        deps.as_mut(),
+        info.clone(),
+        Addr::unchecked("addr1".to_string()),
+        StrategyMsg::AllowOnly(vec![UpdateTokenfactoryParamsPermission(
+            TokenfactoryUpdateParamsPermission {
+                denom_creation_fee: true,
+                denom_creation_gas_consume: true,
+                fee_collector_address: true,
+                whitelisted_hooks: true,
+                track_before_send_gas_limit: false,
             },
         )]),
     )

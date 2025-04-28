@@ -2468,7 +2468,7 @@ dependencies = [
  "cwd-interface",
  "cwd-macros",
  "neutron-sdk 0.11.0",
- "neutron-std 5.1.2 (git+https://github.com/neutron-org/neutron-std.git?branch=main)",
+ "neutron-std 5.1.4",
  "prost 0.9.0",
  "schemars",
  "serde",
@@ -2674,7 +2674,7 @@ dependencies = [
  "cw2 2.0.0",
  "neutron-staking-info-proxy-common",
  "neutron-staking-tracker-common",
- "neutron-std 5.1.2 (git+https://github.com/neutron-org/neutron-std)",
+ "neutron-std 5.1.2",
  "prost 0.12.6",
 ]
 
@@ -2712,30 +2712,6 @@ dependencies = [
 [[package]]
 name = "neutron-std"
 version = "5.1.2"
-source = "git+https://github.com/neutron-org/neutron-std.git?branch=main#15d5fa8328cc55a6d3563268e67ff0206014681a"
-dependencies = [
- "bech32 0.9.1",
- "chrono",
- "cosmos-sdk-proto",
- "cosmwasm-schema 2.2.2",
- "cosmwasm-std 2.2.2",
- "neutron-std-derive 0.20.1 (git+https://github.com/neutron-org/neutron-std.git?branch=main)",
- "prost 0.12.6",
- "prost-types",
- "protobuf 3.3.0",
- "schemars",
- "serde",
- "serde-cw-value",
- "serde-json-wasm 1.0.1",
- "serde_json",
- "speedate",
- "tendermint-proto",
- "thiserror",
-]
-
-[[package]]
-name = "neutron-std"
-version = "5.1.2"
 source = "git+https://github.com/neutron-org/neutron-std#15d5fa8328cc55a6d3563268e67ff0206014681a"
 dependencies = [
  "bech32 0.9.1",
@@ -2758,9 +2734,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "neutron-std"
+version = "5.1.4"
+source = "git+https://github.com/neutron-org/neutron-std.git?rev=434d24d568a6f6ccb5db6bcf0729b715a1104b5e#434d24d568a6f6ccb5db6bcf0729b715a1104b5e"
+dependencies = [
+ "bech32 0.9.1",
+ "chrono",
+ "cosmos-sdk-proto",
+ "cosmwasm-schema 2.2.2",
+ "cosmwasm-std 2.2.2",
+ "neutron-std-derive 0.20.1 (git+https://github.com/neutron-org/neutron-std.git?rev=434d24d568a6f6ccb5db6bcf0729b715a1104b5e)",
+ "prost 0.12.6",
+ "prost-types",
+ "protobuf 3.3.0",
+ "schemars",
+ "serde",
+ "serde-cw-value",
+ "serde-json-wasm 1.0.1",
+ "serde_json",
+ "speedate",
+ "tendermint-proto",
+ "thiserror",
+]
+
+[[package]]
 name = "neutron-std-derive"
 version = "0.20.1"
-source = "git+https://github.com/neutron-org/neutron-std.git?branch=main#15d5fa8328cc55a6d3563268e67ff0206014681a"
+source = "git+https://github.com/neutron-org/neutron-std.git?rev=434d24d568a6f6ccb5db6bcf0729b715a1104b5e#434d24d568a6f6ccb5db6bcf0729b715a1104b5e"
 dependencies = [
  "itertools 0.10.5",
  "proc-macro2",
