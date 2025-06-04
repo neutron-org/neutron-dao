@@ -246,8 +246,8 @@ fn test_after_validator_removed() {
     let res = after_validator_removed(
         deps.as_mut(),
         env.clone(),
-        oper_addr.to_string(),
         cons_addr.to_string(),
+        oper_addr.to_string(),
     );
     assert!(res.is_ok(), "Error: {:?}", res.err());
 

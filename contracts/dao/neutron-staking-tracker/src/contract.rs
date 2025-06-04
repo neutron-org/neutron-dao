@@ -208,8 +208,8 @@ pub(crate) fn after_validator_created(
 pub(crate) fn after_validator_removed(
     deps: DepsMut,
     env: Env,
-    valoper_address: String,
     _valcons_address: String,
+    valoper_address: String,
 ) -> Result<Response, ContractError> {
     let validator_addr = Addr::unchecked(&valoper_address);
 
@@ -650,6 +650,12 @@ pub fn query_list_delegations(
 pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     // Set contract to version to latest
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
+    // Remove validator
+    let validator_addr = Addr::unchecked("neutronvaloper1v9xys5c4zdr89tvwq983ycnj3j4pekpjwr0raa");
+    let remove_height = 26438494;
+    VALIDATORS.remove(deps.storage, &validator_addr, remove_height)?;
+
     Ok(Response::default())
 }
 
