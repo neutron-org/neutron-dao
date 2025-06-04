@@ -139,18 +139,15 @@ pub fn execute_update_config(
 pub fn sudo(deps: DepsMut, env: Env, msg: SudoMsg) -> Result<Response, ContractError> {
     match msg {
         SudoMsg::AfterValidatorCreated { val_addr } => after_validator_created(deps, env, val_addr),
-        SudoMsg::AfterValidatorRemoved {
-            cons_addr,
-            val_addr,
-        } => after_validator_removed(deps, env, cons_addr, val_addr),
-        SudoMsg::AfterValidatorBonded {
-            cons_addr,
-            val_addr,
-        } => after_validator_bonded(deps, env, cons_addr, val_addr),
-        SudoMsg::AfterValidatorBeginUnbonding {
-            cons_addr,
-            val_addr,
-        } => after_validator_begin_unbonding(deps, env, cons_addr, val_addr),
+        SudoMsg::AfterValidatorRemoved { val_addr, .. } => {
+            after_validator_removed(deps, env, val_addr)
+        }
+        SudoMsg::AfterValidatorBonded { val_addr, .. } => {
+            after_validator_bonded(deps, env, val_addr)
+        }
+        SudoMsg::AfterValidatorBeginUnbonding { val_addr, .. } => {
+            after_validator_begin_unbonding(deps, env, val_addr)
+        }
         SudoMsg::AfterDelegationModified { del_addr, val_addr } => {
             after_delegation_modified(deps, env, del_addr, val_addr)
         }
@@ -208,7 +205,6 @@ pub(crate) fn after_validator_created(
 pub(crate) fn after_validator_removed(
     deps: DepsMut,
     env: Env,
-    _valcons_address: String,
     valoper_address: String,
 ) -> Result<Response, ContractError> {
     let validator_addr = Addr::unchecked(&valoper_address);
@@ -224,7 +220,6 @@ pub(crate) fn after_validator_removed(
 pub(crate) fn after_validator_bonded(
     deps: DepsMut,
     env: Env,
-    _valcons_address: String,
     valoper_address: String,
 ) -> Result<Response, ContractError> {
     let valoper_addr = Addr::unchecked(&valoper_address);
@@ -322,7 +317,6 @@ pub fn before_validator_slashed(
 pub(crate) fn after_validator_begin_unbonding(
     deps: DepsMut,
     env: Env,
-    _valcons_address: String,
     valoper_address: String,
 ) -> Result<Response, ContractError> {
     let mut resp = Response::new()

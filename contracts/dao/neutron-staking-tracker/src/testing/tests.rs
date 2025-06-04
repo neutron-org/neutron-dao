@@ -224,7 +224,6 @@ fn test_after_validator_removed() {
 
     // Define operator (valoper) and consensus (valcons) addresses
     let oper_addr = Addr::unchecked("neutronvaloper1xyz");
-    let cons_addr = Addr::unchecked("neutronvalconsoper1xyz");
 
     // Store some validator
     let validator = Validator {
@@ -243,12 +242,7 @@ fn test_after_validator_removed() {
         .unwrap();
 
     // Call `after_validator_removed`
-    let res = after_validator_removed(
-        deps.as_mut(),
-        env.clone(),
-        cons_addr.to_string(),
-        oper_addr.to_string(),
-    );
+    let res = after_validator_removed(deps.as_mut(), env.clone(), oper_addr.to_string());
     assert!(res.is_ok(), "Error: {:?}", res.err());
 
     let validator = VALIDATORS
@@ -275,7 +269,6 @@ fn test_after_validator_bonded_with_mock_query() {
 
     // Define operator (valoper) and consensus (valcons) addresses
     let oper_addr = Addr::unchecked("neutronvaloper1xyz");
-    let cons_addr = Addr::unchecked("neutronvalcons1xyz");
 
     BONDED_VALIDATORS_SET
         .save(deps.as_mut().storage, &Vec::new(), env.block.height)
@@ -313,12 +306,7 @@ fn test_after_validator_bonded_with_mock_query() {
     deps.querier.with_validators(vec![proto_validator]);
 
     // Call `after_validator_bonded`
-    let res = after_validator_bonded(
-        deps.as_mut(),
-        env.clone(),
-        cons_addr.to_string(),
-        oper_addr.to_string(),
-    );
+    let res = after_validator_bonded(deps.as_mut(), env.clone(), oper_addr.to_string());
     assert!(res.is_ok(), "Error: {:?}", res.err());
 
     // Load updated validator state
@@ -1208,7 +1196,6 @@ fn test_after_validator_begin_unbonding() {
     let admin = deps.api.addr_make("admin");
     // Define operator (valoper) and consensus (valcons) addresses
     let oper_addr = Addr::unchecked("neutronvaloper1xyz");
-    let cons_addr = Addr::unchecked("neutronvalcons1xyz");
 
     let config = Config {
         name: String::from("Test Config"),
@@ -1263,12 +1250,7 @@ fn test_after_validator_begin_unbonding() {
     deps.querier.with_validators(vec![proto_validator]);
 
     // Call `after_validator_begin_unbonding`
-    let res = after_validator_begin_unbonding(
-        deps.as_mut(),
-        env.clone(),
-        cons_addr.to_string(),
-        oper_addr.to_string(),
-    );
+    let res = after_validator_begin_unbonding(deps.as_mut(), env.clone(), oper_addr.to_string());
     assert!(res.is_ok(), "Error: {:?}", res.err());
     assert!(
         !BONDED_VALIDATORS_SET
