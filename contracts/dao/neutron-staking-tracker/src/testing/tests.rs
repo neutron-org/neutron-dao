@@ -245,8 +245,8 @@ fn test_after_validator_removed_during_migration() {
     let proto_validator = CosmosValidator {
         operator_address: oper_addr.to_string(),
         consensus_pubkey: None,
-        status: 3,                 // Bonded status
-        tokens: "900".to_string(), // 10% slashed, from 1000 → 900
+        status: 3,
+        tokens: "900".to_string(),
         jailed: false,
         delegator_shares: "1000".to_string(),
         description: None,
