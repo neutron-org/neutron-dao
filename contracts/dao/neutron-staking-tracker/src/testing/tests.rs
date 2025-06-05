@@ -241,6 +241,45 @@ fn test_after_validator_removed_during_migration() {
     VALIDATORS
         .save(deps.as_mut().storage, &oper_addr, &validator, 30000000)
         .unwrap();
+    // Mock validator query to reflect its existence in the staking module
+    let proto_validator = CosmosValidator {
+        operator_address: oper_addr.to_string(),
+        consensus_pubkey: None,
+        status: 3,                 // Bonded status
+        tokens: "900".to_string(), // 10% slashed, from 1000 → 900
+        jailed: false,
+        delegator_shares: "1000".to_string(),
+        description: None,
+        unbonding_height: 0,
+        unbonding_time: None,
+        commission: None,
+        min_self_delegation: "1".to_string(),
+        unbonding_on_hold_ref_count: 0,
+        unbonding_ids: vec![],
+    };
+    deps.querier.with_validators(vec![proto_validator]);
+
+    // Call `after_validator_removed`
+    let res = migrate(deps.as_mut(), env.clone(), MigrateMsg {});
+    assert!(res.is_ok(), "Error: {:?}", res.err());
+
+    assert!(
+        VALIDATORS
+            .may_load(deps.as_ref().storage, &oper_addr)
+            .unwrap()
+            .is_some(),
+        "Validator should not be removed"
+    );
+
+    //-------------------------
+    // now almost the same situation but a validator is not created again after needed height
+
+    let mut deps = dependencies();
+
+    // Validator is created some time ago
+    VALIDATORS
+        .save(deps.as_mut().storage, &oper_addr, &validator, 16438494)
+        .unwrap();
 
     // Call `after_validator_removed`
     let res = migrate(deps.as_mut(), env.clone(), MigrateMsg {});
@@ -249,7 +288,7 @@ fn test_after_validator_removed_during_migration() {
     let validator = VALIDATORS
         .may_load(deps.as_ref().storage, &oper_addr)
         .unwrap();
-    assert!(validator.is_some(), "Validator should not be removed")
+    assert!(validator.is_none(), "Validator should be removed")
 }
 
 #[test]

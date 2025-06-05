@@ -647,6 +647,15 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
 
     // Remove validator
     let validator_addr = Addr::unchecked("neutronvaloper1v9xys5c4zdr89tvwq983ycnj3j4pekpjwr0raa");
+
+    let querier = StakingQuerier::new(&deps.querier);
+    // if a validator is found, do not remove it
+    let validator = querier.validator(validator_addr.to_string());
+
+    if validator.is_ok() && validator?.validator.is_some() {
+        return Ok(Response::default());
+    }
+
     let remove_height = 26438494;
     VALIDATORS.remove(deps.storage, &validator_addr, remove_height)?;
 
