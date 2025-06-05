@@ -4,7 +4,7 @@ use crate::contract::{
     before_validator_slashed, execute, instantiate, query_stake_at_height,
     query_total_stake_at_height,
 };
-use crate::contract::{after_validator_created, after_validator_removed};
+use crate::contract::{after_validator_created, after_validator_removed, migrate};
 use crate::state::{BONDED_VALIDATORS_SET, CONFIG, DELEGATIONS, VALIDATORS};
 use crate::testing::mock_querier::mock_dependencies as dependencies;
 use cosmwasm_std::testing::message_info;
@@ -12,7 +12,7 @@ use cosmwasm_std::{
     testing::{mock_dependencies, mock_env},
     to_json_binary, Addr, Decimal256, Uint128,
 };
-use neutron_staking_tracker_common::msg::{ExecuteMsg, InstantiateMsg};
+use neutron_staking_tracker_common::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg};
 use neutron_staking_tracker_common::types::{Config, Delegation, Validator};
 use neutron_std::types::cosmos::staking::v1beta1::{
     QueryValidatorResponse, Validator as CosmosValidator,
@@ -214,6 +214,42 @@ fn test_after_validator_created_with_mock_query() {
         Uint128::new(1000),
         "Total shares do not match the mocked data"
     );
+}
+
+#[test]
+fn test_after_validator_removed_during_migration() {
+    let mut deps = dependencies();
+
+    let env = mock_env();
+
+    // Define operator (valoper) and consensus (valcons) addresses
+    let oper_addr = Addr::unchecked("neutronvaloper1v9xys5c4zdr89tvwq983ycnj3j4pekpjwr0raa");
+
+    // Store some validator
+    let validator = Validator {
+        oper_address: oper_addr.clone(),
+        total_tokens: Uint128::new(1000), // Self-bonded tokens
+        total_shares: Uint128::new(1000), // No external delegators
+    };
+
+    // Validator is created some time ago
+    VALIDATORS
+        .save(deps.as_mut().storage, &oper_addr, &validator, 16438494)
+        .unwrap();
+
+    // Validator is created on some height again for some reason on a height (the one after validator should've been removed)
+    VALIDATORS
+        .save(deps.as_mut().storage, &oper_addr, &validator, 30000000)
+        .unwrap();
+
+    // Call `after_validator_removed`
+    let res = migrate(deps.as_mut(), env.clone(), MigrateMsg {});
+    assert!(res.is_ok(), "Error: {:?}", res.err());
+
+    let validator = VALIDATORS
+        .may_load(deps.as_ref().storage, &oper_addr)
+        .unwrap();
+    assert!(validator.is_some(), "Validator should not be removed")
 }
 
 #[test]
