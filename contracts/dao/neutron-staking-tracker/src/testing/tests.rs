@@ -216,10 +216,10 @@ fn test_after_validator_created_with_mock_query() {
     );
 }
 
-// This test covers v2.0.2 migration logic
+// This test covers v0.2.2 migration logic
 // The test should be removed in the next releases
 #[test]
-fn test_after_validator_removed_during_migration_v2_0_2() {
+fn test_after_validator_removed_during_migration_v0_2_2() {
     let mut deps = dependencies();
 
     let env = mock_env();
