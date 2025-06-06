@@ -2666,7 +2666,7 @@ dependencies = [
 
 [[package]]
 name = "neutron-staking-tracker"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "cosmwasm-schema 2.2.2",
  "cosmwasm-std 2.2.2",

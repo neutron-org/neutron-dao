@@ -5,7 +5,7 @@ edition = "2021"
 name = "neutron-staking-tracker"
 license = "Apache-2.0"
 repository = "https://github.com/neutron/neutron-dao"
-version = "0.2.1"
+version = "0.2.2"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
