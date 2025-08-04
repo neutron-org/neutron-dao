@@ -102,7 +102,7 @@ jobs:
         if: ${{ env.ARTIFACTS_EXIST == 'false' }}
         with:
           toolchain: ${{ env.TOOLCHAIN }}
-          target: ${{ env.TARGET}}
+          target: ${{ env.TARGET }}
           components: rustfmt, clippy
       - run: make schema
         if: ${{ env.ARTIFACTS_EXIST == 'false' }}
