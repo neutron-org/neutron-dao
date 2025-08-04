@@ -39,7 +39,7 @@ env:
 jobs:
   build:
     name: Build & Upload contracts
-    runs-on: self-hosted
+    runs-on: ubicloud-standard-16
     steps:
       - uses: actions/checkout@v3
         with:
