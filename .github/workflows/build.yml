@@ -39,9 +39,9 @@ env:
 jobs:
   build:
     name: Build & Upload contracts
-    runs-on: ubicloud-standard-16
+    runs-on: ubicloud-standard-30
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ env.REF }}
           fetch-depth: 0
@@ -76,11 +76,11 @@ jobs:
           REF: ${{ env.REF }}
       - id: 'auth'
         name: 'Authenticate to Google Cloud'
-        uses: 'google-github-actions/auth@v1'
+        uses: 'google-github-actions/auth@v2'
         with:
           credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
       - name: 'Set up Cloud SDK'
-        uses: 'google-github-actions/setup-gcloud@v1'
+        uses: 'google-github-actions/setup-gcloud@v2'
       - name: Evaluate Artifacts in GCP
         run: |
           if gsutil -q stat gs://neutron-contracts/${{ github.repository }}/${{ env.sha }}/*.wasm; then
