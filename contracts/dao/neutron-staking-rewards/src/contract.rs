@@ -3,9 +3,11 @@ use cosmwasm_std::{
     MessageInfo, Response, StdError, StdResult,
 };
 use cw2::set_contract_version;
+use cw_storage_plus::Item;
 
 use crate::state::{
-    assert_pause, is_allowed_to_pause, is_allowed_to_unpause, CONFIG, PAUSED, STATE, USERS,
+    assert_pause, is_allowed_to_pause, is_allowed_to_unpause, CONFIG, PAUSED, SLASHING_EVENTS,
+    STATE, USERS,
 };
 use neutron_staking_info_proxy_common::msg::QueryMsg as InfoProxyQueryMsg;
 use neutron_staking_rewards_common::error::ContractError;
@@ -55,7 +57,6 @@ pub fn instantiate(
     let state = State {
         global_reward_index: Decimal::zero(),
         global_update_height: env.block.height,
-        slashing_events: vec![],
     };
     STATE.save(deps.storage, &state)?;
 
@@ -288,21 +289,28 @@ fn slashing(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Cont
         return Err(Unauthorized {});
     }
 
-    let state = STATE.load(deps.storage)?;
-    if let Some((_, last_event_height)) = state.slashing_events.last() {
-        if *last_event_height >= env.block.height {
+    // Check if the last slashing event height is >= current block height
+    let maybe_last_event = SLASHING_EVENTS
+        .range(deps.storage, None, None, cosmwasm_std::Order::Descending)
+        .next();
+
+    if let Some(Ok((last_event_height, _))) = maybe_last_event {
+        if last_event_height >= env.block.height {
             return Ok(Response::new()
                 .add_attribute("action", "slashing")
                 .add_attribute("result", "ignored"));
         }
     }
 
-    let mut updated_state = get_updated_state(&config, &state, env.block.height)?;
-    updated_state.slashing_events.push((
-        updated_state.global_reward_index,
-        updated_state.global_update_height,
-    ));
-    STATE.save(deps.storage, &updated_state)?;
+    let mut state = STATE.load(deps.storage)?;
+    state = get_updated_state(&config, &state, env.block.height)?;
+
+    SLASHING_EVENTS.save(
+        deps.storage,
+        state.global_update_height,
+        &state.global_reward_index,
+    )?;
+    STATE.save(deps.storage, &state)?;
 
     Ok(Response::new()
         .add_attribute("action", "slashing")
@@ -397,10 +405,34 @@ fn query_state(deps: Deps) -> StdResult<StateResponse> {
 
 /// Returns slice of slashing events.
 fn query_slashing_events(deps: Deps, from_height: u64) -> StdResult<SlashingEventsResponse> {
-    let state = STATE.load(deps.storage)?;
-    Ok(SlashingEventsResponse {
-        slashing_events: state.load_unprocessed_slashing_events(from_height),
-    })
+    let slashing_events = load_unprocessed_slashing_events(deps, from_height)?;
+    Ok(SlashingEventsResponse { slashing_events })
+}
+
+/// Loads slashing events from the given height onwards.
+fn load_unprocessed_slashing_events(
+    deps: Deps,
+    from_height: u64,
+) -> StdResult<Vec<(Decimal, u64)>> {
+    // Map's keys are u64 (height), values are Decimal (global_reward_index)
+    // Iterate in descending order to efficiently find events >= from_height
+    let mut events: Vec<(u64, Decimal)> = Vec::new();
+
+    for item in SLASHING_EVENTS.range(deps.storage, None, None, cosmwasm_std::Order::Descending) {
+        let (height, index) = item?;
+        if height < from_height {
+            break;
+        }
+        events.push((height, index));
+    }
+
+    // Reverse to get chronological order
+    events.reverse();
+
+    Ok(events
+        .into_iter()
+        .map(|(height, index)| (index, height))
+        .collect())
 }
 
 /// Returns true if contract is paused, false if not
@@ -434,6 +466,44 @@ fn query_rewards(deps: Deps, env: Env, user: String) -> Result<RewardsResponse, 
 pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     // Set contract to version to latest
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
+    /// Legacy State struct with slashing_events as a Vec.
+    /// Used for migrating old data to the new storage format.
+    #[cosmwasm_schema::cw_serde]
+    struct LegacyState {
+        pub global_reward_index: Decimal,
+        pub global_update_height: u64,
+        pub slashing_events: Vec<(Decimal, u64)>,
+    }
+
+    /// Legacy State item for migration.
+    const LEGACY_STATE: Item<LegacyState> = Item::new("state");
+
+    // Try to load legacy State. If it fails (not found or parse error),
+    // the contract is already using the new format, so we can skip migration.
+    let legacy_state = match LEGACY_STATE.load(deps.storage) {
+        Ok(state) => state,
+        Err(err) => {
+            let err_str = err.to_string();
+            // If error is about loading or parsing, assume migration already done
+            if err_str.contains("could not load")
+                || err_str.contains("not found")
+                || err_str.contains("missing field")
+                || err_str.contains("parse")
+            {
+                // Migration already done - proceed normally
+                return Ok(Response::default());
+            }
+            // Otherwise, propagate the actual error
+            return Err(err.into());
+        }
+    };
+
+    // Transfer all slashing events from the Vec to the Map
+    for (global_reward_index, height) in legacy_state.slashing_events {
+        SLASHING_EVENTS.save(deps.storage, height, &global_reward_index)?;
+    }
+
     Ok(Response::default())
 }
 
@@ -483,13 +553,13 @@ fn process_slashing_events(
     user_addr: Addr,
 ) -> Result<(UserInfo, State), ContractError> {
     let state = STATE.load(deps.storage)?;
-    // Load the user’s current info, or create a default if not present
+    // Load the user's current info, or create a default if not present
     let (mut user_info, existed) =
         load_user_or_default(deps, user_addr.clone(), config.staking_denom.clone())?;
 
     if existed {
-        let slashing_events = state.load_unprocessed_slashing_events(user_info.last_update_block);
-        for (slashing_event_global_index, slashing_event_height) in slashing_events.into_iter() {
+        let events = load_unprocessed_slashing_events(deps, user_info.last_update_block)?;
+        for (slashing_event_global_index, slashing_event_height) in events.into_iter() {
             user_info = get_updated_user_info(
                 user_info.clone(),
                 slashing_event_global_index,
