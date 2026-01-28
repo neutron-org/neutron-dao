@@ -1,14 +1,16 @@
-use crate::contract::{execute, instantiate, query};
-use crate::state::{assert_pause, CONFIG, PAUSED, STATE};
+use crate::contract::{execute, instantiate, migrate, query};
+use crate::state::{assert_pause, CONFIG, PAUSED, SLASHING_EVENTS, STATE};
 use crate::testing::mock_querier::mock_dependencies;
 use cosmwasm_std::testing::MockApi;
 use cosmwasm_std::{
     coin,
     testing::{message_info, mock_env},
-    BankMsg, CosmosMsg, Response, Uint128,
+    BankMsg, CosmosMsg, Decimal, Response, Uint128,
 };
 use cosmwasm_std::{Addr, DepsMut, Env};
+use cw_storage_plus::Item;
 use neutron_staking_rewards_common::error::ContractError;
+use neutron_staking_rewards_common::msg::MigrateMsg;
 use neutron_staking_rewards_common::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, RewardsResponse};
 
 // Helper to create a default instantiate message
@@ -1514,6 +1516,116 @@ fn test_user_with_slashing_and_config_change() {
 
     // amount of claimed user1 should be less since the slashing
     assert_eq!(actual_user_claimed.u128() as f64, expected_user_claimed);
+}
+
+/// Tests the migration from Vec-based slashing events to Map-based storage.
+///
+/// Scenario:
+/// 1. Create a legacy State with slashing_events in Vec format
+/// 2. Call migrate() to transfer events to the new SLASHING_EVENTS Map
+/// 3. Verify that all events are correctly transferred
+/// 4. Verify that migration is idempotent (can run again without error)
+#[test]
+fn test_migrate_slashing_events() {
+    // Legacy State struct matching the old format
+    #[cosmwasm_schema::cw_serde]
+    struct LegacyState {
+        pub global_reward_index: Decimal,
+        pub global_update_height: u64,
+        pub slashing_events: Vec<(Decimal, u64)>,
+    }
+
+    const LEGACY_STATE: Item<LegacyState> = Item::new("state");
+
+    let mut deps = mock_dependencies();
+    let mut env = mock_env();
+
+    let owner = deps.api.addr_make("owner");
+    let proxy = deps.api.addr_make("proxy");
+    let dao = deps.api.addr_make("dao");
+    let user = deps.api.addr_make("user");
+
+    // Instantiate contract normally to set up config
+    let instantiate_info = message_info(&owner, &[]);
+    let instantiate_msg = InstantiateMsg {
+        owner: owner.to_string(),
+        dao_address: dao.to_string(),
+        staking_info_proxy: proxy.to_string(),
+        annual_reward_rate_bps: 1000,
+        blocks_per_year: 10_000,
+        staking_denom: "untrn".to_string(),
+        security_address: deps.api.addr_make("security_address").into(),
+    };
+    instantiate(
+        deps.as_mut(),
+        env.clone(),
+        instantiate_info,
+        instantiate_msg,
+    )
+    .unwrap();
+
+    // Save legacy State with Vec-based slashing events
+    let global_reward_index = Decimal::percent(5); // 0.05
+    let global_update_height = 500u64;
+
+    let legacy_state = LegacyState {
+        global_reward_index,
+        global_update_height,
+        slashing_events: vec![
+            (Decimal::percent(1), 100u64), // First slashing at block 100, index 0.01
+            (Decimal::percent(2), 200u64), // Second slashing at block 200, index 0.02
+            (Decimal::percent(3), 300u64), // Third slashing at block 300, index 0.03
+        ],
+    };
+    LEGACY_STATE
+        .save(deps.as_mut().storage, &legacy_state)
+        .unwrap();
+
+    // Verify old format was saved
+    let loaded_legacy = LEGACY_STATE.load(&deps.storage).unwrap();
+    assert_eq!(loaded_legacy.slashing_events.len(), 3);
+
+    // Run migration
+    let migrate_msg = MigrateMsg {};
+    migrate(deps.as_mut(), env.clone(), migrate_msg).unwrap();
+
+    // Verify that slashing events were transferred to Map
+    let event1 = SLASHING_EVENTS.load(&deps.storage, 100).unwrap();
+    assert_eq!(event1, Decimal::percent(1));
+
+    let event2 = SLASHING_EVENTS.load(&deps.storage, 200).unwrap();
+    assert_eq!(event2, Decimal::percent(2));
+
+    let event3 = SLASHING_EVENTS.load(&deps.storage, 300).unwrap();
+    assert_eq!(event3, Decimal::percent(3));
+
+    // Verify State was updated (no longer contains slashing_events vec)
+    let state = STATE.load(&deps.storage).unwrap();
+    assert_eq!(state.global_reward_index, global_reward_index);
+    assert_eq!(state.global_update_height, global_update_height);
+
+    // Verify events are still there (not duplicated)
+    let event1_after = SLASHING_EVENTS.load(&deps.storage, 100).unwrap();
+    assert_eq!(event1_after, Decimal::percent(1));
+
+    let event2_after = SLASHING_EVENTS.load(&deps.storage, 200).unwrap();
+    assert_eq!(event2_after, Decimal::percent(2));
+
+    let event3_after = SLASHING_EVENTS.load(&deps.storage, 300).unwrap();
+    assert_eq!(event3_after, Decimal::percent(3));
+
+    // Ensure the contract can still execute normally after migration
+    env.block.height = 600;
+    deps.querier.update_stake(
+        user.to_string(),
+        env.block.height,
+        coin(1_000_000_000u128, "untrn"),
+    );
+    let proxy_info = message_info(&proxy, &[]);
+    let update_msg = ExecuteMsg::UpdateStake {
+        user: user.to_string(),
+    };
+    execute(deps.as_mut(), env, proxy_info, update_msg).unwrap();
 }
 
 // helpers

@@ -43,19 +43,6 @@ type GlobalRewardIndex = Decimal;
 pub struct State {
     pub global_reward_index: GlobalRewardIndex,
     pub global_update_height: u64,
-    pub slashing_events: Vec<SlashingEvent>,
-}
-
-impl State {
-    pub fn load_unprocessed_slashing_events(&self, from_height: u64) -> Vec<SlashingEvent> {
-        let events = self
-            .slashing_events
-            .iter()
-            .skip_while(|&&(_, event_height)| event_height < from_height)
-            .cloned()
-            .collect();
-        events
-    }
 }
 
 /// Per-user info about stake, reward index, and accrued rewards.
