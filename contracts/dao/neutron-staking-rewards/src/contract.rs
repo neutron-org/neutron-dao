@@ -3,7 +3,7 @@ use cosmwasm_std::{
     MessageInfo, Response, StdError, StdResult,
 };
 use cw2::set_contract_version;
-use cw_storage_plus::Item;
+use cw_storage_plus::{Bounder, Item};
 
 use crate::state::{
     assert_pause, is_allowed_to_pause, is_allowed_to_unpause, CONFIG, PAUSED, SLASHING_EVENTS,
@@ -18,7 +18,7 @@ use neutron_staking_rewards_common::msg::{
     ConfigResponse, InstantiateMsg, MigrateMsg, QueryMsg, RewardsResponse, StateResponse,
 };
 use neutron_staking_rewards_common::msg::{ExecuteMsg, SlashingEventsResponse};
-use neutron_staking_rewards_common::types::{Config, State, UserInfo};
+use neutron_staking_rewards_common::types::{Config, SlashingEvent, State, UserInfo};
 
 const CONTRACT_NAME: &str = "crates.io:neutron-staking-rewards";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -405,34 +405,16 @@ fn query_state(deps: Deps) -> StdResult<StateResponse> {
 
 /// Returns slice of slashing events.
 fn query_slashing_events(deps: Deps, from_height: u64) -> StdResult<SlashingEventsResponse> {
-    let slashing_events = load_unprocessed_slashing_events(deps, from_height)?;
+    let slashing_events: Vec<SlashingEvent> = SLASHING_EVENTS
+        .range(
+            deps.storage,
+            from_height.inclusive_bound(),
+            None,
+            cosmwasm_std::Order::Ascending,
+        )
+        .map(|e| e.map(|(h, i)| (i, h)))
+        .collect::<StdResult<Vec<SlashingEvent>>>()?;
     Ok(SlashingEventsResponse { slashing_events })
-}
-
-/// Loads slashing events from the given height onwards.
-fn load_unprocessed_slashing_events(
-    deps: Deps,
-    from_height: u64,
-) -> StdResult<Vec<(Decimal, u64)>> {
-    // Map's keys are u64 (height), values are Decimal (global_reward_index)
-    // Iterate in descending order to efficiently find events >= from_height
-    let mut events: Vec<(u64, Decimal)> = Vec::new();
-
-    for item in SLASHING_EVENTS.range(deps.storage, None, None, cosmwasm_std::Order::Descending) {
-        let (height, index) = item?;
-        if height < from_height {
-            break;
-        }
-        events.push((height, index));
-    }
-
-    // Reverse to get chronological order
-    events.reverse();
-
-    Ok(events
-        .into_iter()
-        .map(|(height, index)| (index, height))
-        .collect())
 }
 
 /// Returns true if contract is paused, false if not
@@ -558,8 +540,13 @@ fn process_slashing_events(
         load_user_or_default(deps, user_addr.clone(), config.staking_denom.clone())?;
 
     if existed {
-        let events = load_unprocessed_slashing_events(deps, user_info.last_update_block)?;
-        for (slashing_event_global_index, slashing_event_height) in events.into_iter() {
+        for event in SLASHING_EVENTS.range(
+            deps.storage,
+            user_info.last_update_block.inclusive_bound(),
+            None,
+            cosmwasm_std::Order::Ascending,
+        ) {
+            let (slashing_event_height, slashing_event_global_index) = event?;
             user_info = get_updated_user_info(
                 user_info.clone(),
                 slashing_event_global_index,
