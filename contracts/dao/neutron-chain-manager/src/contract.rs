@@ -7,7 +7,6 @@ use cw2::set_contract_version;
 use neutron_sdk::bindings::msg::{AdminProposal, NeutronMsg, ProposalExecuteMessage};
 use neutron_std::types::cosmos::upgrade::v1beta1::{MsgCancelUpgrade, MsgSoftwareUpgrade};
 use neutron_std::types::gaia::globalfee;
-use neutron_std::types::interchain_security::ccv::consumer;
 use neutron_std::types::neutron::cron;
 use neutron_std::types::neutron::dex;
 use neutron_std::types::neutron::dynamicfees;
@@ -245,10 +244,6 @@ fn check_proposal_execute_message(
         }
         globalfee::v1beta1::MsgUpdateParams::TYPE_URL => {
             check_globalfee_update_msg_params(deps, strategy, proposal)?;
-            Ok(())
-        }
-        consumer::v1::MsgUpdateParams::TYPE_URL => {
-            check_ccv_update_msg_params(deps, strategy, proposal)?;
             Ok(())
         }
         cron::MsgAddSchedule::TYPE_URL => match strategy.has_cron_add_schedule_permission() {
@@ -500,105 +495,6 @@ fn check_globalfee_update_msg_params(
 pub fn get_globalfee_params(deps: Deps) -> StdResult<globalfee::v1beta1::QueryParamsResponse> {
     let globalfee_querier = globalfee::v1beta1::GlobalfeeQuerier::new(&deps.querier);
     globalfee_querier.params()
-}
-
-/// Checks that the strategy owner is authorised to change the parameters of the
-/// ccv module. We query the current values for each parameter & compare them to
-/// the values in the proposal; all modifications must be allowed by the strategy.
-#[allow(deprecated)]
-fn check_ccv_update_msg_params(
-    deps: Deps,
-    strategy: Strategy,
-    proposal: ProposalExecuteMessage,
-) -> Result<(), ContractError> {
-    let msg_update_params =
-        serde_json_wasm::from_str::<consumer::v1::MsgUpdateParams>(proposal.message.as_str())?
-            .params
-            .ok_or(ContractError::Unauthorized {})?;
-
-    let ccv_update_param_permission = strategy
-        .get_ccv_update_param_permission()
-        .ok_or(ContractError::Unauthorized {})?;
-
-    let ccv_params = get_ccv_params(deps)?.params.unwrap_or_default();
-
-    // never allow to change 'enabled'
-    if ccv_params.enabled != msg_update_params.enabled {
-        return Err(ContractError::Unauthorized {});
-    }
-
-    if ccv_params.blocks_per_distribution_transmission
-        != msg_update_params.blocks_per_distribution_transmission
-        && !ccv_update_param_permission.blocks_per_distribution_transmission
-    {
-        return Err(ContractError::Unauthorized {});
-    }
-
-    if ccv_params.ccv_timeout_period != msg_update_params.ccv_timeout_period
-        && !ccv_update_param_permission.ccv_timeout_period
-    {
-        return Err(ContractError::Unauthorized {});
-    }
-    if ccv_params.consumer_redistribution_fraction
-        != msg_update_params.consumer_redistribution_fraction
-        && !ccv_update_param_permission.consumer_redistribution_fraction
-    {
-        return Err(ContractError::Unauthorized {});
-    }
-    if ccv_params.distribution_transmission_channel
-        != msg_update_params.distribution_transmission_channel
-        && !ccv_update_param_permission.distribution_transmission_channel
-    {
-        return Err(ContractError::Unauthorized {});
-    }
-    if ccv_params.historical_entries != msg_update_params.historical_entries
-        && !ccv_update_param_permission.historical_entries
-    {
-        return Err(ContractError::Unauthorized {});
-    }
-    if ccv_params.provider_fee_pool_addr_str != msg_update_params.provider_fee_pool_addr_str
-        && !ccv_update_param_permission.provider_fee_pool_addr_str
-    {
-        return Err(ContractError::Unauthorized {});
-    }
-    if ccv_params.provider_reward_denoms != msg_update_params.provider_reward_denoms
-        && !ccv_update_param_permission.provider_reward_denoms
-    {
-        return Err(ContractError::Unauthorized {});
-    }
-    if ccv_params.retry_delay_period != msg_update_params.retry_delay_period
-        && !ccv_update_param_permission.retry_delay_period
-    {
-        return Err(ContractError::Unauthorized {});
-    }
-    if ccv_params.reward_denoms != msg_update_params.reward_denoms
-        && !ccv_update_param_permission.reward_denoms
-    {
-        return Err(ContractError::Unauthorized {});
-    }
-    if ccv_params.soft_opt_out_threshold != msg_update_params.soft_opt_out_threshold
-        && !ccv_update_param_permission.soft_opt_out_threshold
-    {
-        return Err(ContractError::Unauthorized {});
-    }
-    if ccv_params.transfer_timeout_period != msg_update_params.transfer_timeout_period
-        && !ccv_update_param_permission.transfer_timeout_period
-    {
-        return Err(ContractError::Unauthorized {});
-    }
-    if ccv_params.unbonding_period != msg_update_params.unbonding_period
-        && !ccv_update_param_permission.unbonding_period
-    {
-        return Err(ContractError::Unauthorized {});
-    }
-
-    Ok(())
-}
-
-/// Queries the parameters of the ccv module.
-pub fn get_ccv_params(deps: Deps) -> StdResult<consumer::v1::QueryParamsResponse> {
-    let ccv_querier = consumer::v1::ConsumerQuerier::new(&deps.querier);
-    ccv_querier.query_params()
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

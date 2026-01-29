@@ -29,7 +29,9 @@ serde = { version = "1.0.175", default-features = false, features = ["derive"] }
 serde_with = { version = "3.7.0", features = ["json"] }
 thiserror = { version = "1.0" }
 
-neutron-std = { git = "https://github.com/neutron-org/neutron-std.git", rev = "434d24d568a6f6ccb5db6bcf0729b715a1104b5e" }
+neutron-std = { git = "https://github.com/neutron-org/neutron-std.git", rev = "f6067785cce251062f2decc28e6a74771a86f037" }
+getrandom = { version = "0.2.15", features = ["js"]}
+ed25519-zebra = { version = "=4.0.3", default-features = false }
 neutron-sdk = "0.11.0"
 serde-json-wasm = "1.0.1"
 prost = "0.9.0"
