@@ -4,7 +4,7 @@ use crate::contract::{
     before_validator_slashed, execute, instantiate, query_stake_at_height,
     query_total_stake_at_height,
 };
-use crate::contract::{after_validator_created, after_validator_removed};
+use crate::contract::{after_validator_created, after_validator_removed, migrate};
 use crate::state::{BONDED_VALIDATORS_SET, CONFIG, DELEGATIONS, VALIDATORS};
 use crate::testing::mock_querier::mock_dependencies as dependencies;
 use cosmwasm_std::testing::message_info;
@@ -12,7 +12,7 @@ use cosmwasm_std::{
     testing::{mock_dependencies, mock_env},
     to_json_binary, Addr, Decimal256, Uint128,
 };
-use neutron_staking_tracker_common::msg::{ExecuteMsg, InstantiateMsg};
+use neutron_staking_tracker_common::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg};
 use neutron_staking_tracker_common::types::{Config, Delegation, Validator};
 use neutron_std::types::cosmos::staking::v1beta1::{
     QueryValidatorResponse, Validator as CosmosValidator,
@@ -216,6 +216,83 @@ fn test_after_validator_created_with_mock_query() {
     );
 }
 
+// This test covers v0.2.2 migration logic
+// The test should be removed in the next releases
+#[test]
+fn test_after_validator_removed_during_migration_v0_2_2() {
+    let mut deps = dependencies();
+
+    let env = mock_env();
+
+    // Define operator (valoper) and consensus (valcons) addresses
+    let oper_addr = Addr::unchecked("neutronvaloper1v9xys5c4zdr89tvwq983ycnj3j4pekpjwr0raa");
+
+    // Store some validator
+    let validator = Validator {
+        oper_address: oper_addr.clone(),
+        total_tokens: Uint128::new(1000), // Self-bonded tokens
+        total_shares: Uint128::new(1000), // No external delegators
+    };
+
+    // Validator is created some time ago
+    VALIDATORS
+        .save(deps.as_mut().storage, &oper_addr, &validator, 16438494)
+        .unwrap();
+
+    // Validator is created on some height again for some reason on a height (the one after validator should've been removed)
+    VALIDATORS
+        .save(deps.as_mut().storage, &oper_addr, &validator, 30000000)
+        .unwrap();
+    // Mock validator query to reflect its existence in the staking module
+    let proto_validator = CosmosValidator {
+        operator_address: oper_addr.to_string(),
+        consensus_pubkey: None,
+        status: 3,
+        tokens: "900".to_string(),
+        jailed: false,
+        delegator_shares: "1000".to_string(),
+        description: None,
+        unbonding_height: 0,
+        unbonding_time: None,
+        commission: None,
+        min_self_delegation: "1".to_string(),
+        unbonding_on_hold_ref_count: 0,
+        unbonding_ids: vec![],
+    };
+    deps.querier.with_validators(vec![proto_validator]);
+
+    // Call `after_validator_removed`
+    let res = migrate(deps.as_mut(), env.clone(), MigrateMsg {});
+    assert!(res.is_ok(), "Error: {:?}", res.err());
+
+    assert!(
+        VALIDATORS
+            .may_load(deps.as_ref().storage, &oper_addr)
+            .unwrap()
+            .is_some(),
+        "Validator should not be removed"
+    );
+
+    //-------------------------
+    // now almost the same situation but a validator is not created again after needed height
+
+    let mut deps = dependencies();
+
+    // Validator is created some time ago
+    VALIDATORS
+        .save(deps.as_mut().storage, &oper_addr, &validator, 16438494)
+        .unwrap();
+
+    // Call `after_validator_removed`
+    let res = migrate(deps.as_mut(), env.clone(), MigrateMsg {});
+    assert!(res.is_ok(), "Error: {:?}", res.err());
+
+    let validator = VALIDATORS
+        .may_load(deps.as_ref().storage, &oper_addr)
+        .unwrap();
+    assert!(validator.is_none(), "Validator should be removed")
+}
+
 #[test]
 fn test_after_validator_removed() {
     let mut deps = dependencies();
@@ -224,7 +301,6 @@ fn test_after_validator_removed() {
 
     // Define operator (valoper) and consensus (valcons) addresses
     let oper_addr = Addr::unchecked("neutronvaloper1xyz");
-    let cons_addr = Addr::unchecked("neutronvalconsoper1xyz");
 
     // Store some validator
     let validator = Validator {
@@ -243,12 +319,7 @@ fn test_after_validator_removed() {
         .unwrap();
 
     // Call `after_validator_removed`
-    let res = after_validator_removed(
-        deps.as_mut(),
-        env.clone(),
-        oper_addr.to_string(),
-        cons_addr.to_string(),
-    );
+    let res = after_validator_removed(deps.as_mut(), env.clone(), oper_addr.to_string());
     assert!(res.is_ok(), "Error: {:?}", res.err());
 
     let validator = VALIDATORS
@@ -275,7 +346,6 @@ fn test_after_validator_bonded_with_mock_query() {
 
     // Define operator (valoper) and consensus (valcons) addresses
     let oper_addr = Addr::unchecked("neutronvaloper1xyz");
-    let cons_addr = Addr::unchecked("neutronvalcons1xyz");
 
     BONDED_VALIDATORS_SET
         .save(deps.as_mut().storage, &Vec::new(), env.block.height)
@@ -313,12 +383,7 @@ fn test_after_validator_bonded_with_mock_query() {
     deps.querier.with_validators(vec![proto_validator]);
 
     // Call `after_validator_bonded`
-    let res = after_validator_bonded(
-        deps.as_mut(),
-        env.clone(),
-        cons_addr.to_string(),
-        oper_addr.to_string(),
-    );
+    let res = after_validator_bonded(deps.as_mut(), env.clone(), oper_addr.to_string());
     assert!(res.is_ok(), "Error: {:?}", res.err());
 
     // Load updated validator state
@@ -1208,7 +1273,6 @@ fn test_after_validator_begin_unbonding() {
     let admin = deps.api.addr_make("admin");
     // Define operator (valoper) and consensus (valcons) addresses
     let oper_addr = Addr::unchecked("neutronvaloper1xyz");
-    let cons_addr = Addr::unchecked("neutronvalcons1xyz");
 
     let config = Config {
         name: String::from("Test Config"),
@@ -1263,12 +1327,7 @@ fn test_after_validator_begin_unbonding() {
     deps.querier.with_validators(vec![proto_validator]);
 
     // Call `after_validator_begin_unbonding`
-    let res = after_validator_begin_unbonding(
-        deps.as_mut(),
-        env.clone(),
-        cons_addr.to_string(),
-        oper_addr.to_string(),
-    );
+    let res = after_validator_begin_unbonding(deps.as_mut(), env.clone(), oper_addr.to_string());
     assert!(res.is_ok(), "Error: {:?}", res.err());
     assert!(
         !BONDED_VALIDATORS_SET
