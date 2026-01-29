@@ -2481,6 +2481,7 @@
           "denom_creation_fee",
           "denom_creation_gas_consume",
           "fee_collector_address",
+          "track_before_send_gas_limit",
           "whitelisted_hooks"
         ],
         "properties": {
@@ -2491,6 +2492,9 @@
             "type": "boolean"
           },
           "fee_collector_address": {
+            "type": "boolean"
+          },
+          "track_before_send_gas_limit": {
             "type": "boolean"
           },
           "whitelisted_hooks": {
@@ -3240,6 +3244,7 @@
             "denom_creation_fee",
             "denom_creation_gas_consume",
             "fee_collector_address",
+            "track_before_send_gas_limit",
             "whitelisted_hooks"
           ],
           "properties": {
@@ -3250,6 +3255,9 @@
               "type": "boolean"
             },
             "fee_collector_address": {
+              "type": "boolean"
+            },
+            "track_before_send_gas_limit": {
               "type": "boolean"
             },
             "whitelisted_hooks": {
